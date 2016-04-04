@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<imageAtlas>
+	<subImage name="north_0">
+		<region x="0" y="0" width="48" height="64" />
+	</subImage>
+	<subImage name="north_1">
+		<region x="48" y="0" width="48" height="64" />
+	</subImage>
+	<subImage name="north_2">
+		<region x="96" y="0" width="48" height="64" />
+	</subImage>
+	<subImage name="north_3">
+		<region x="144" y="0" width="48" height="64" />
+	</subImage>
+	<subImage name="north_4">
+		<region x="192" y="0" width="48" height="64" />
+	</subImage>
+	
+	<subImage name="east_0">
+		<region x="0" y="64" width="48" height="64" />
+	</subImage>
+	<subImage name="east_1">
+		<region x="48" y="64" width="48" height="64" />
+	</subImage>
+	<subImage name="east_2">
+		<region x="96" y="64" width="48" height="64" />
+	</subImage>
+	<subImage name="east_3">
+		<region x="144" y="64" width="48" height="64" />
+	</subImage>
+	<subImage name="east_4">
+		<region x="192" y="64" width="48" height="64" />
+	</subImage>
+	
+	<subImage name="south_0">
+		<region x="0" y="128" width="48" height="64" />
+	</subImage>
+	<subImage name="south_1">
+		<region x="48" y="128" width="48" height="64" />
+	</subImage>
+	<subImage name="south_2">
+		<region x="96" y="128" width="48" height="64" />
+	</subImage>
+	<subImage name="south_3">
+		<region x="144" y="128" width="48" height="64" />
+	</subImage>
+	<subImage name="south_4">
+		<region x="192" y="128" width="48" height="64" />
+	</subImage>
+	
+	<subImage name="west_0">
+		<region x="0" y="192" width="48" height="64" />
+	</subImage>
+	<subImage name="west_1">
+		<region x="48" y="192" width="48" height="64" />
+	</subImage>
+	<subImage name="west_2">
+		<region x="96" y="192" width="48" height="64" />
+	</subImage>
+	<subImage name="west_3">
+		<region x="144" y="192" width="48" height="64" />
+	</subImage>
+	<subImage name="west_4">
+		<region x="192" y="192" width="48" height="64" />
+	</subImage>
+</imageAtlas>

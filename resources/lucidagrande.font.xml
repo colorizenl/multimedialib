@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<imageAtlas>
+    <subImage name=" ">
+        <region x="6" y="0" width="4" height="16" />
+    </subImage>
+    <subImage name="!">
+        <region x="118" y="112" width="4" height="16" />
+    </subImage>
+    <subImage name="&quot;">
+        <region x="6" y="160" width="4" height="16" />
+    </subImage>
+    <subImage name="#">
+        <region x="20" y="128" width="8" height="16" />
+    </subImage>
+    <subImage name="%">
+        <region x="36" y="128" width="8" height="16" />
+    </subImage>
+    <subImage name="&amp;">
+        <region x="52" y="128" width="8" height="16" />
+    </subImage>
+    <subImage name="'">
+        <region x="119" y="144" width="3" height="16" />
+    </subImage>
+    <subImage name="(">
+        <region x="86" y="128" width="4" height="16" />
+    </subImage>
+    <subImage name=")">
+        <region x="102" y="128" width="4" height="16" />
+    </subImage>
+    <subImage name="*">
+        <region x="69" y="128" width="6" height="16" />
+    </subImage>
+    <subImage name="+">
+        <region x="19" y="144" width="10" height="16" />
+    </subImage>
+    <subImage name=",">
+        <region x="54" y="160" width="4" height="16" />
+    </subImage>
+    <subImage name="-">
+        <region x="117" y="128" width="7" height="16" />
+    </subImage>
+    <subImage name=".">
+        <region x="70" y="160" width="4" height="16" />
+    </subImage>
+    <subImage name="/">
+        <region x="85" y="160" width="6" height="16" />
+    </subImage>
+    <subImage name="0">
+        <region x="100" y="112" width="8" height="16" />
+    </subImage>
+    <subImage name="1">
+        <region x="84" y="96" width="8" height="16" />
+    </subImage>
+    <subImage name="2">
+        <region x="100" y="96" width="8" height="16" />
+    </subImage>
+    <subImage name="3">
+        <region x="116" y="96" width="8" height="16" />
+    </subImage>
+    <subImage name="4">
+        <region x="4" y="112" width="8" height="16" />
+    </subImage>
+    <subImage name="5">
+        <region x="20" y="112" width="8" height="16" />
+    </subImage>
+    <subImage name="6">
+        <region x="36" y="112" width="8" height="16" />
+    </subImage>
+    <subImage name="7">
+        <region x="52" y="112" width="8" height="16" />
+    </subImage>
+    <subImage name="8">
+        <region x="68" y="112" width="8" height="16" />
+    </subImage>
+    <subImage name="9">
+        <region x="84" y="112" width="8" height="16" />
+    </subImage>
+    <subImage name=":">
+        <region x="86" y="144" width="4" height="16" />
+    </subImage>
+    <subImage name=";">
+        <region x="102" y="144" width="4" height="16" />
+    </subImage>
+    <subImage name="=">
+        <region x="35" y="144" width="10" height="16" />
+    </subImage>
+    <subImage name="?">
+        <region x="102" y="160" width="5" height="16" />
+    </subImage>
+    <subImage name="@">
+        <region x="3" y="128" width="10" height="16" />
+    </subImage>
+    <subImage name="A">
+        <region x="52" y="48" width="8" height="16" />
+    </subImage>
+    <subImage name="B">
+        <region x="69" y="48" width="7" height="16" />
+    </subImage>
+    <subImage name="C">
+        <region x="84" y="48" width="8" height="16" />
+    </subImage>
+    <subImage name="D">
+        <region x="100" y="48" width="9" height="16" />
+    </subImage>
+    <subImage name="E">
+        <region x="117" y="48" width="7" height="16" />
+    </subImage>
+    <subImage name="F">
+        <region x="5" y="64" width="6" height="16" />
+    </subImage>
+    <subImage name="G">
+        <region x="20" y="64" width="9" height="16" />
+    </subImage>
+    <subImage name="H">
+        <region x="36" y="64" width="9" height="16" />
+    </subImage>
+    <subImage name="I">
+        <region x="55" y="64" width="3" height="16" />
+    </subImage>
+    <subImage name="J">
+        <region x="70" y="64" width="4" height="16" />
+    </subImage>
+    <subImage name="K">
+        <region x="84" y="64" width="8" height="16" />
+    </subImage>
+    <subImage name="L">
+        <region x="101" y="64" width="6" height="16" />
+    </subImage>
+    <subImage name="M">
+        <region x="115" y="64" width="10" height="16" />
+    </subImage>
+    <subImage name="N">
+        <region x="4" y="80" width="9" height="16" />
+    </subImage>
+    <subImage name="O">
+        <region x="20" y="80" width="9" height="16" />
+    </subImage>
+    <subImage name="P">
+        <region x="37" y="80" width="7" height="16" />
+    </subImage>
+    <subImage name="Q">
+        <region x="52" y="80" width="9" height="16" />
+    </subImage>
+    <subImage name="R">
+        <region x="68" y="80" width="8" height="16" />
+    </subImage>
+    <subImage name="S">
+        <region x="85" y="80" width="6" height="16" />
+    </subImage>
+    <subImage name="T">
+        <region x="100" y="80" width="8" height="16" />
+    </subImage>
+    <subImage name="U">
+        <region x="116" y="80" width="8" height="16" />
+    </subImage>
+    <subImage name="V">
+        <region x="4" y="96" width="8" height="16" />
+    </subImage>
+    <subImage name="W">
+        <region x="19" y="96" width="10" height="16" />
+    </subImage>
+    <subImage name="X">
+        <region x="36" y="96" width="8" height="16" />
+    </subImage>
+    <subImage name="Y">
+        <region x="53" y="96" width="7" height="16" />
+    </subImage>
+    <subImage name="Z">
+        <region x="69" y="96" width="7" height="16" />
+    </subImage>
+    <subImage name="[">
+        <region x="54" y="144" width="4" height="16" />
+    </subImage>
+    <subImage name="\">
+        <region x="21" y="160" width="6" height="16" />
+    </subImage>
+    <subImage name="]">
+        <region x="70" y="144" width="4" height="16" />
+    </subImage>
+    <subImage name="_">
+        <region x="5" y="144" width="6" height="16" />
+    </subImage>
+    <subImage name="a">
+        <region x="21" y="0" width="7" height="16" />
+    </subImage>
+    <subImage name="b">
+        <region x="36" y="0" width="8" height="16" />
+    </subImage>
+    <subImage name="c">
+        <region x="53" y="0" width="6" height="16" />
+    </subImage>
+    <subImage name="d">
+        <region x="68" y="0" width="8" height="16" />
+    </subImage>
+    <subImage name="e">
+        <region x="85" y="0" width="7" height="16" />
+    </subImage>
+    <subImage name="f">
+        <region x="102" y="0" width="4" height="16" />
+    </subImage>
+    <subImage name="g">
+        <region x="117" y="0" width="7" height="16" />
+    </subImage>
+    <subImage name="h">
+        <region x="5" y="16" width="7" height="16" />
+    </subImage>
+    <subImage name="i">
+        <region x="23" y="16" width="3" height="16" />
+    </subImage>
+    <subImage name="j">
+        <region x="38" y="16" width="4" height="16" />
+    </subImage>
+    <subImage name="k">
+        <region x="53" y="16" width="7" height="16" />
+    </subImage>
+    <subImage name="l">
+        <region x="71" y="16" width="3" height="16" />
+    </subImage>
+    <subImage name="m">
+        <region x="83" y="16" width="11" height="16" />
+    </subImage>
+    <subImage name="n">
+        <region x="101" y="16" width="7" height="16" />
+    </subImage>
+    <subImage name="o">
+        <region x="117" y="16" width="7" height="16" />
+    </subImage>
+    <subImage name="p">
+        <region x="4" y="32" width="8" height="16" />
+    </subImage>
+    <subImage name="q">
+        <region x="20" y="32" width="8" height="16" />
+    </subImage>
+    <subImage name="r">
+        <region x="38" y="32" width="5" height="16" />
+    </subImage>
+    <subImage name="s">
+        <region x="53" y="32" width="6" height="16" />
+    </subImage>
+    <subImage name="t">
+        <region x="70" y="32" width="4" height="16" />
+    </subImage>
+    <subImage name="u">
+        <region x="85" y="32" width="7" height="16" />
+    </subImage>
+    <subImage name="v">
+        <region x="101" y="32" width="6" height="16" />
+    </subImage>
+    <subImage name="w">
+        <region x="116" y="32" width="9" height="16" />
+    </subImage>
+    <subImage name="x">
+        <region x="5" y="48" width="7" height="16" />
+    </subImage>
+    <subImage name="y">
+        <region x="21" y="48" width="6" height="16" />
+    </subImage>
+    <subImage name="z">
+        <region x="37" y="48" width="7" height="16" />
+    </subImage>
+    <subImage name="|">
+        <region x="38" y="160" width="4" height="16" />
+    </subImage>
+</imageAtlas>

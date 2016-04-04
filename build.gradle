@@ -1,0 +1,23 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+version = '2016.1'
+sourceCompatibility = '1.6'
+targetCompatibility = '1.6'
+compileJava.options.encoding = 'UTF-8'
+sourceSets.main.java.srcDirs = ['source']
+sourceSets.main.resources.srcDirs = ['resources']
+sourceSets.test.java.srcDirs = ['source.test']
+jar.archiveName = 'colorize-multimedialib.jar'
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	compile project(':Colorize Java Commons')
+	compile 'args4j:args4j:2.32'
+	compile 'javazoom:jlayer:1.0.1'
+	testCompile 'junit:junit:4.12'
+	testCompile files("$System.env.ANDROID_PLATFORM_HOME/android.jar")
+}

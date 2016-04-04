@@ -1,0 +1,2 @@
+include ':Colorize Java Commons'
+project(':Colorize Java Commons').projectDir = new File(settingsDir, '../Colorize Java Commons')
