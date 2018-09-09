@@ -1,49 +1,46 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2016 Colorize
+// Copyright 2011-2018 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.tool;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Level;
-
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
-
+import com.google.common.collect.ImmutableMap;
+import nl.colorize.multimedialib.graphics.Animation;
+import nl.colorize.multimedialib.graphics.Audio;
+import nl.colorize.multimedialib.graphics.BitmapFont;
+import nl.colorize.multimedialib.graphics.ColorRGB;
+import nl.colorize.multimedialib.graphics.Image;
+import nl.colorize.multimedialib.graphics.ImageAtlas;
+import nl.colorize.multimedialib.graphics.ImageAtlasLoader;
+import nl.colorize.multimedialib.graphics.Sprite;
+import nl.colorize.multimedialib.graphics.Transform;
+import nl.colorize.multimedialib.math.Point2D;
+import nl.colorize.multimedialib.math.Rand;
+import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.renderer.InputDevice;
+import nl.colorize.multimedialib.renderer.MediaLoader;
+import nl.colorize.multimedialib.renderer.RenderContext;
+import nl.colorize.multimedialib.renderer.Renderer;
+import nl.colorize.multimedialib.renderer.ScaleStrategy;
+import nl.colorize.multimedialib.renderer.java2d.Java2DRenderer;
+import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.multimedialib.scene.SceneManager;
+import nl.colorize.util.Formatting;
+import nl.colorize.util.LogHelper;
+import nl.colorize.util.ResourceFile;
+import nl.colorize.util.animation.Animatable;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.Option;
 
-import nl.colorize.multimedialib.app.AnimationLoop;
-import nl.colorize.multimedialib.app.ResourceLoader;
-import nl.colorize.multimedialib.app.Scene;
-import nl.colorize.multimedialib.graphics.Animation;
-import nl.colorize.multimedialib.graphics.AudioData;
-import nl.colorize.multimedialib.graphics.BitmapFont;
-import nl.colorize.multimedialib.graphics.ColorRGB;
-import nl.colorize.multimedialib.graphics.DisplayList;
-import nl.colorize.multimedialib.graphics.ImageAtlas;
-import nl.colorize.multimedialib.graphics.ImageRegion;
-import nl.colorize.multimedialib.graphics.Shape2D;
-import nl.colorize.multimedialib.graphics.Sprite;
-import nl.colorize.multimedialib.graphics.Text;
-import nl.colorize.multimedialib.math.Point;
-import nl.colorize.multimedialib.math.Rand;
-import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.multimedialib.math.TimeSeries;
-import nl.colorize.multimedialib.renderer.InputDevice;
-import nl.colorize.multimedialib.renderer.RenderStatistics;
-import nl.colorize.multimedialib.renderer.Renderer;
-import nl.colorize.multimedialib.renderer.ScaleStrategy;
-import nl.colorize.util.FormatUtils;
-import nl.colorize.util.ResourceFile;
-import nl.colorize.util.Tuple;
-import nl.colorize.util.animation.Animatable;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * Simple demo application that displays a number of animated Mario sprites on
@@ -51,322 +48,298 @@ import nl.colorize.util.animation.Animatable;
  * graphicss/audio/input features as well as its performance.
  * <p>
  * The demo can be configured using two ways. The first is to create a subclass
- * and provide a renderer programatically when calling {@link #startDemo(Renderer)}.
- * The second is running the demo from the command line, and specifying the
- * renderer class as a command line argument.
+ * and provide a renderer programatically, the second is running the demo from
+ * the command line, and specifying the renderer class as a command line argument.
  */
 public class RendererDemo extends CommandLineTool implements Scene {
-	
-	@Argument(index=0, metaVar="rendererClass", required=true, usage="Full class name for renderer")
-	private String rendererClassName;
-	
-	@Option(name="-statsFile", required=false, usage="Output file for storing render statistics")
-	private File statsFile;
-	
-	private ImageAtlas marioImageAtlas;
-	private List<Mario> marios;
-	private BitmapFont hudFont;
-	private List<Button> buttons;
-	private AudioData audioClip;
-	private List<TouchMarker> touchMarkers;
-	//TODO 
-	private Text kees;
-	private Shape2D leftBorder;
-	private Shape2D rightBorder;
-	
-	private static final ResourceFile MARIO_ATLAS_FILE = new ResourceFile("mario.png");
-	private static final ResourceFile MARIO_ATLAS_XML_FILE = new ResourceFile("mario.atlas.xml");
-	private static final ResourceFile FONT_IMAGE_FILE = new ResourceFile("lucidagrande.font.png");
-	private static final ResourceFile FONT_XML_FILE = new ResourceFile("lucidagrande.font.xml");
-	private static final ResourceFile AUDIO_FILE = new ResourceFile("test.mp3");
-	private static final int INITIAL_MARIOS = 10;
-	private static final List<String> DIRECTIONS = ImmutableList.of("north", "east", "south", "west");
-	private static final Rect BUTTON_SIZE = new Rect(0, 0, 100, 22);
-	private static final int BUTTON_ALPHA = 80;
-	
-	private static final int CANVAS_WIDTH = 800;
-	private static final int CANVAS_HEIGHT = 600;
-	private static final int FRAMERATE = 30;
-	
-	public static void main(String[] args) {
-		RendererDemo demo = new RendererDemo();
-		demo.start(args);
-	}
-	
-	public void run() {
-		ScaleStrategy defaultScaleStrategy = ScaleStrategy.flexible(CANVAS_WIDTH, CANVAS_HEIGHT);
-		
-		try {
-			Class<?> rendererClass = Class.forName(rendererClassName);
-			Renderer renderer = (Renderer) rendererClass.getConstructor(ScaleStrategy.class, int.class)
-					.newInstance(defaultScaleStrategy, FRAMERATE);
-			startDemo(renderer);
-		} catch (Exception e) {
-			LOGGER.log(Level.SEVERE, "Exception while initializing renderer", e);
-		}
-	}
+    
+    @Argument(index=0, metaVar="rendererClass", required=true, usage="Full class name for renderer")
+    private String rendererClassName;
+    
+    @Option(name="-statsFile", required=false, usage="Output file for storing render statistics")
+    private File statsFile;
 
-	public void startDemo(Renderer renderer) {
-		AnimationLoop animationLoop = new AnimationLoop(renderer, this);
-		animationLoop.start();
-	}
-	
-	public void onSceneStart(AnimationLoop animationLoop) {
-		Renderer renderer = animationLoop.getRenderer();
-		ResourceLoader resourceLoader = animationLoop.getResourceLoader();
-		
-		marioImageAtlas = resourceLoader.loadImageAtlas(MARIO_ATLAS_FILE, MARIO_ATLAS_XML_FILE);
-		marios = new ArrayList<Mario>();
-		addMarios(INITIAL_MARIOS, renderer.getCanvasBounds());
-		
-		hudFont = resourceLoader.loadBitmapFont(FONT_IMAGE_FILE, FONT_XML_FILE);
-		hudFont.setLetterSpacing(0);
-		
-		kees = new Text("This is a text that will animate...", hudFont, renderer.getCanvasWidth() / 2, 300);
-		kees.setAlignment(Text.Align.CENTER);
-		kees.enableAnimation(1f);
-		
-		leftBorder = new Shape2D(1, 2048, ColorRGB.WHITE);
-		leftBorder.setZIndex(100);
-		rightBorder = new Shape2D(1, 2048, ColorRGB.WHITE);
-		rightBorder.setZIndex(100);
-		
-		audioClip = renderer.loadAudio(AUDIO_FILE);
-		
-		touchMarkers = new ArrayList<TouchMarker>();
-		
-		ColorRGB red = new ColorRGB(228, 93, 97);
-		ColorRGB gray = new ColorRGB(173, 173, 173);
-		ColorRGB green = ColorRGB.parseHex("#72A725");
-		
-		buttons = new ArrayList<Button>();
-		addButton("Add sprite", red, renderer);
-		addButton("Remove sprite", red, renderer);
-		addButton("Flexible scaling", gray, renderer);
-		addButton("Fixed scaling", gray, renderer);
-		addButton("Stretch scaling", gray, renderer);
-		addButton("Prop. scaling", gray, renderer);
-		addButton("Smart scaling", gray, renderer);
-		addButton("Play sound", green, renderer);
-	}
-	
-	private void handleButtonClick(int index, Renderer renderer) {
-		switch (index) {
-			case 0 : addMarios(1, renderer.getCanvasBounds()); break;
-			case 1 : removeMarios(1); break;
-			case 2 : renderer.setScaleStrategy(ScaleStrategy.flexible(CANVAS_WIDTH, CANVAS_HEIGHT)); break;
-			case 3 : renderer.setScaleStrategy(ScaleStrategy.fixed(CANVAS_WIDTH, CANVAS_HEIGHT)); break;
-			case 4 : renderer.setScaleStrategy(ScaleStrategy.stretch(CANVAS_WIDTH, CANVAS_HEIGHT)); break;
-			case 5 : renderer.setScaleStrategy(ScaleStrategy.proportional(CANVAS_WIDTH, CANVAS_HEIGHT)); break;
-			case 6 : renderer.setScaleStrategy(ScaleStrategy.smart(CANVAS_WIDTH, CANVAS_HEIGHT)); break;
-			case 7 : renderer.getAudioQueue().play(audioClip); break;
-			default : return;
-		}
-	}
+    private Renderer renderer;
+    private ImageAtlas marioImageAtlas;
+    private List<Mario> marios;
+    private BitmapFont hudFont;
+    private Audio audioClip;
+    private List<TouchMarker> touchMarkers;
+    private Transform shapeTransform;
 
-	private void addButton(String label, ColorRGB backgroundColor, Renderer renderer) {
-		int x = renderer.getCanvasWidth() - BUTTON_SIZE.getWidth() / 2 - 20;
-		int y = 50 + buttons.size() * (BUTTON_SIZE.getHeight() + 5);
-		buttons.add(new Button(label, hudFont, x, y, backgroundColor));
-	}
+    private static final int CANVAS_WIDTH = 800;
+    private static final int CANVAS_HEIGHT = 600;
+    private static final int FRAMERATE = 60;
 
-	public void onFrame(AnimationLoop animationLoop, float deltaTime) {
-		Renderer renderer = animationLoop.getRenderer();
-		updateGraphics(deltaTime, renderer);
-		
-		InputDevice inputDevice = renderer.getInputDevice();
-		handleInput(inputDevice, renderer);
-	}
+    private static final ResourceFile MARIO_ATLAS_FILE = new ResourceFile("mario.png");
+    private static final ResourceFile MARIO_ATLAS_XML_FILE = new ResourceFile("mario.atlas.xml");
+    private static final ResourceFile FONT_IMAGE_FILE = new ResourceFile("lucidagrande.font.png");
+    private static final ResourceFile FONT_XML_FILE = new ResourceFile("lucidagrande.font.xml");
+    private static final ResourceFile AUDIO_FILE = new ResourceFile("test.mp3");
+    private static final int INITIAL_MARIOS = 20;
+    private static final List<String> DIRECTIONS = ImmutableList.of("north", "east", "south", "west");
+    private static final int NUM_BUTTONS = 7;
+    private static final int BUTTON_WIDTH = 100;
+    private static final int BUTTON_HEIGHT = 22;
+    private static final ColorRGB RED_BUTTON = new ColorRGB(228, 93, 97);
+    private static final ColorRGB GRAY_BUTTON = new ColorRGB(173, 173, 173);
+    private static final ColorRGB GREEN_BUTTON = ColorRGB.parseHex("#72A725");
+    private static final ColorRGB SHAPE_COLOR = new ColorRGB(200, 0, 0);
+    private static final int TOUCH_MARKER_AGE = 120;
+    private static final Logger LOGGER = LogHelper.getLogger(RendererDemo.class);
 
-	private void updateGraphics(float deltaTime, Renderer renderer) {
-		for (Mario mario : marios) {
-			mario.onFrame(deltaTime);
-		}
-		kees.onFrame(deltaTime);
-		
-		for (Button button : buttons) {
-			button.background.setX(renderer.getCanvasWidth() - BUTTON_SIZE.getWidth() / 2 - 20);
-			button.foreground.setX(renderer.getCanvasWidth() - BUTTON_SIZE.getWidth() / 2 - 20);
-		}
-		
-		leftBorder.setX(1);
-		rightBorder.setX(renderer.getCanvasWidth() - 2);
-		
-		for (TouchMarker touchMarker : touchMarkers) {
-			int alpha = touchMarker.marker.getTransform().getAlpha();
-			touchMarker.marker.getTransform().setAlpha(alpha - 2);
-		}
-	}
+    public static void main(String[] args) {
+        RendererDemo demo = new RendererDemo();
+        demo.start(args);
+    }
 
-	private void handleInput(InputDevice inputDevice, Renderer renderer) {
-		if (inputDevice.isPointerReleased()) {
-			for (int i = 0; i < buttons.size(); i++) {
-				if (buttons.get(i).background.getBounds().contains(inputDevice.getPointer())) {
-					handleButtonClick(i, renderer);
-					return;
-				}
-			}
-			
-			touchMarkers.add(new TouchMarker(inputDevice.getPointer(), hudFont));
-		}
-	}
+    @Override
+    public void run() {
+        ScaleStrategy scaleStrategy = ScaleStrategy.flexible(CANVAS_WIDTH, CANVAS_HEIGHT);
+        renderer = createRenderer(scaleStrategy, FRAMERATE);
+        renderer.registerCallback(new SceneManager(renderer, this));
+        renderer.initialize();
+    }
 
-	@SuppressWarnings("deprecation")
-	public DisplayList onRender(AnimationLoop animationLoop) {
-		DisplayList displayList = new DisplayList();
-		for (Mario mario : marios) {
-			displayList.add(mario.sprite);
-		}
-		
-		for (Button button : buttons) {
-			displayList.add(button.background);
-			displayList.add(button.foreground);
-		}
-		
-		for (TouchMarker touchMarker : touchMarkers) {
-			displayList.add(touchMarker.marker);
-		}
-		
-		Renderer renderer = animationLoop.getRenderer();
-		RenderStatistics stats = animationLoop.getRenderStats();
-		displayList.add(new Text("Display: " + renderer.getCanvasWidth() + "x" + renderer.getCanvasHeight(), 
-				hudFont, 20, 20));
-		displayList.add(new Text("Framerate: " + FormatUtils.numberFormat(stats.getFramerate(), 1), 
-				hudFont, 20, 40));
-		displayList.add(new Text("Memory usage: " + FormatUtils.memoryFormat(stats.getMemoryUsage(), 1) + 
-				" (GC: " + Math.round(stats.getTimeSinceGC()) + "s)", hudFont, 20, 60));
-		displayList.add(new Text("# Sprites: " + marios.size(), hudFont, 20, 80));
-		displayList.add(kees);
-		
-		displayList.add(leftBorder);
-		displayList.add(rightBorder);
-		
-		return displayList;
-	}
+    private Renderer createRenderer(ScaleStrategy scaling, int framerate) {
+        if (rendererClassName == null || rendererClassName.isEmpty()) {
+            return new Java2DRenderer(scaling, framerate);
+        }
 
-	public void onSceneEnd(AnimationLoop animationLoop) {
-		if (statsFile != null) {
-			saveRendererStats(animationLoop.getRenderStats());
-		}
-	}
-	
-	public void addMarios(int amount, Rect canvasBounds) {
-		for (int i = 0; i < amount; i++) {
-			Sprite marioSprite = createMarioSprite();
-			marios.add(new Mario(marioSprite, canvasBounds));
-		}
-	}
-	
-	private Sprite createMarioSprite() {
-		Sprite marioSprite = new Sprite();
-		for (String direction : DIRECTIONS) {
-			List<ImageRegion> frames = marioImageAtlas.getSubImages(direction + "_0", 
-					direction + "_1", direction + "_2", direction + "_3", direction + "_4");
-			Animation anim = new Animation(frames, 0.1f, true);
-			marioSprite.addState(direction, anim);
-		}
-		return marioSprite;
-	}
-	
-	public void removeMarios(int amount) {
-		for (int i = 0; i < amount && !marios.isEmpty(); i++) {
-			marios.remove(marios.size() - 1);
-		}
-	}
-	
-	private void saveRendererStats(RenderStatistics renderStats) {
-		if (statsFile.exists()) {
-			throw new IllegalArgumentException("Statistics file already exists");
-		}
-		
-		float timeRunning = renderStats.getTimeRunning();
-		TimeSeries frameTimes = renderStats.getFrameTimeSeries();
-		
-		try {
-			PrintWriter statsWriter = new PrintWriter(statsFile, Charsets.UTF_8.displayName());
-			statsWriter.println("Time,FrameTime");
-			for (Tuple<Long, Float> dataPoint : frameTimes.getDataPointTuples()) {
-				statsWriter.printf("%.3f,%.3f\n", dataPoint.getLeft() / 1000f, dataPoint.getRight());
-			}
-			statsWriter.close();
-		
-			LOGGER.info("Saved render statistics to " + statsFile.getAbsolutePath());
-			LOGGER.info(String.format("Time running: %.1fs", timeRunning));
-			LOGGER.info(String.format("Frame time: %.3fs (min %.3fs, max %.3fs)", 
-					frameTimes.getAverage(), frameTimes.getMin(), frameTimes.getMax()));
-		} catch (IOException e) {
-			LOGGER.warning("Could not save render statistics to " + statsFile.getAbsolutePath());
-		}
-	}
+        try {
+            Class<?> rendererClass = Class.forName(rendererClassName);
+            return (Renderer) rendererClass.getConstructor(ScaleStrategy.class, int.class)
+                    .newInstance(scaling, FRAMERATE);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Exception while initializing renderer", e);
+        }
+    }
 
-	/**
-	 * Represents one of the mario sprites that walks around the scene.
-	 */
-	private static class Mario implements Animatable {
-		
-		private Sprite sprite;
-		private Rect canvasBounds;
-		private int direction;
-		private int speed;
-		
-		public Mario(Sprite sprite, Rect canvasBounds) {
-			this.sprite = sprite;
-			this.sprite.setX(Rand.nextInt(0, canvasBounds.getWidth()));
-			this.sprite.setY(Rand.nextInt(0, canvasBounds.getHeight()));
-			
-			this.canvasBounds = canvasBounds;
-			this.direction = Rand.nextInt(0, 4);
-			this.speed = Rand.nextInt(1, 4);
-		}
+    @Override
+    public void onSceneStart(MediaLoader mediaLoader) {
+        ImageAtlasLoader imageAtlasLoader = new ImageAtlasLoader(mediaLoader);
 
-		public void onFrame(float deltaTime) {
-			sprite.changeState(DIRECTIONS.get(direction));
-			sprite.onFrame(deltaTime);
-			
-			switch (direction) {
-				case 0 : sprite.move(0, -speed); break;
-				case 1 : sprite.move(speed, 0); break;
-				case 2 : sprite.move(0, speed); break;
-				case 3 : sprite.move(-speed, 0); break;
-				default : throw new AssertionError();
-			}
-			
-			if (sprite.getX() < 0 || sprite.getX() > canvasBounds.getWidth() ||
-					sprite.getY() < 0 || sprite.getY() > canvasBounds.getHeight()) {
-				direction = (direction + 2) % 4;
-			}
-		}
-	}
-	
-	/**
-	 * Represents one of the buttons that can be used to interact with the demo.
-	 */
-	private static class Button {
-		
-		private Shape2D background;
-		private Text foreground;
-		
-		public Button(String label, BitmapFont labelFont, int x, int y, ColorRGB backgroundColor) {
-			background = new Shape2D(BUTTON_SIZE.getWidth(), BUTTON_SIZE.getHeight(), backgroundColor);
-			background.setPosition(x, y);
-			background.getTransform().setAlpha(BUTTON_ALPHA);
-			
-			foreground = new Text(label, labelFont, x, y + 5);
-			foreground.setAlignment(Text.Align.CENTER);
-		}
-	}
-	
-	/**
-	 * Shows the coordinates when the screen has been touched or clicked anywhere
-	 * that isn't a button.
-	 */
-	private static class TouchMarker {
-		
-		private Text marker;
-		
-		public TouchMarker(Point location, BitmapFont font) {
-			marker = new Text(location.getX() + ", " + location.getY(), font,
-					location.getX(), location.getY());
-		}
-	}
+        marioImageAtlas = imageAtlasLoader.load(MARIO_ATLAS_FILE, MARIO_ATLAS_XML_FILE);
+        marios = new ArrayList<>();
+        addMarios(INITIAL_MARIOS);
+        
+        hudFont = imageAtlasLoader.loadBitmapFont(FONT_IMAGE_FILE, FONT_XML_FILE);
+        audioClip = mediaLoader.loadAudio(AUDIO_FILE);
+        touchMarkers = new ArrayList<>();
+        shapeTransform = new Transform();
+    }
+    
+    private void handleButtonClick(int index, Renderer renderer) {
+        Map<Integer, ScaleStrategy> scaleStrategies = ImmutableMap.of(
+            2, ScaleStrategy.flexible(CANVAS_WIDTH, CANVAS_HEIGHT),
+            3, ScaleStrategy.fixed(CANVAS_WIDTH, CANVAS_HEIGHT),
+            4, ScaleStrategy.stretch(CANVAS_WIDTH, CANVAS_HEIGHT),
+            5, ScaleStrategy.proportional(CANVAS_WIDTH, CANVAS_HEIGHT),
+            6, ScaleStrategy.smart(CANVAS_WIDTH, CANVAS_HEIGHT));
+
+        switch (index) {
+            case 0 : addMarios(10); break;
+            case 1 : removeMarios(10); break;
+            case 7 : audioClip.play(); break;
+            default : attemptScaleStrategyChange(scaleStrategies.get(index)); break;
+        }
+    }
+
+    private void attemptScaleStrategyChange(ScaleStrategy scaleStrategy) {
+        if (renderer instanceof Java2DRenderer) {
+            ((Java2DRenderer) renderer).setScaleStrategy(scaleStrategy);
+        } else {
+            LOGGER.info("Scale strategy change not supported by renderer " +
+                    renderer.getClass().getSimpleName());
+        }
+    }
+
+    @Override
+    public void onFrame(float deltaTime, InputDevice input) {
+        updateGraphics(deltaTime, renderer);
+        
+        handleInput(input, renderer);
+    }
+
+    private void updateGraphics(float deltaTime, Renderer renderer) {
+        for (Mario mario : marios) {
+            mario.onFrame(deltaTime);
+        }
+
+        Iterator<TouchMarker> touchMarkerIterator = touchMarkers.iterator();
+        while (touchMarkerIterator.hasNext()) {
+            TouchMarker touchMarker = touchMarkerIterator.next();
+            touchMarker.age++;
+            if (touchMarker.age >= TOUCH_MARKER_AGE) {
+                touchMarkerIterator.remove();
+            }
+        }
+    }
+
+    private void handleInput(InputDevice input, Renderer renderer) {
+        if (input.isPointerReleased()) {
+            for (int i = 0; i <= NUM_BUTTONS; i++) {
+                if (isButtonClicked(input, i)) {
+                    handleButtonClick(i, renderer);
+                    return;
+                }
+            }
+
+            Point2D pointer = input.getPointer();
+            if (pointer.getX() <= 100 && pointer.getY() >= renderer.getCanvasHeight() - 100) {
+                randomizeShapeTransform();
+                return;
+            }
+            
+            touchMarkers.add(new TouchMarker(pointer.getX(), pointer.getY()));
+        }
+    }
+
+    private boolean isButtonClicked(InputDevice inputDevice, int buttonIndex) {
+        Rect buttonBounds = new Rect(renderer.getCanvasWidth() - BUTTON_WIDTH, buttonIndex * 25,
+                BUTTON_WIDTH, BUTTON_HEIGHT);
+        return buttonBounds.contains(inputDevice.getPointer());
+    }
+
+    private void randomizeShapeTransform() {
+        if (Math.random() >= 0.5) {
+            shapeTransform.setRotation(shapeTransform.getRotation() + 45);
+        } else {
+            shapeTransform.setScale(shapeTransform.getScaleX() + 10, shapeTransform.getScaleX() + 10);
+        }
+    }
+
+    @Override
+    public void onRender(RenderContext context) {
+        context.drawBackground(ColorRGB.BLACK);
+        drawSprites(context);
+        drawHUD(context);
+    }
+
+    private void drawSprites(RenderContext context) {
+        for (Mario mario : marios) {
+            context.drawSprite(mario.sprite, Math.round(mario.position.getX()),
+                Math.round(mario.position.getY()), null);
+        }
+
+        context.drawRect(new Rect(10, renderer.getCanvasHeight() - 110, 100, 100),
+                SHAPE_COLOR, shapeTransform);
+
+        for (TouchMarker touchMarker : touchMarkers) {
+            context.drawText(touchMarker.text, hudFont, (int) touchMarker.location.getX(),
+                (int) touchMarker.location.getY());
+        }
+    }
+
+    private void drawHUD(RenderContext context) {
+        drawButton(context, "Add sprites", RED_BUTTON, 0);
+        drawButton(context, "Remove sprites", RED_BUTTON, 25);
+        drawButton(context, "Flexible scaling", GRAY_BUTTON, 50);
+        drawButton(context, "Fixed scaling", GRAY_BUTTON, 75);
+        drawButton(context, "Stretch scaling", GRAY_BUTTON, 100);
+        drawButton(context, "Prop. scaling", GRAY_BUTTON, 125);
+        drawButton(context, "Smart scaling", GRAY_BUTTON, 150);
+        drawButton(context, "Play sound", GREEN_BUTTON, 175);
+
+        context.drawText("Canvas: " + renderer.getCanvasWidth() + "x" + renderer.getCanvasHeight(),
+                hudFont, 20, 20);
+        context.drawText("Framerate: " + Formatting.numberFormat(renderer.getStats().getAverageFPS(), 1)
+                + " / " + renderer.getTargetFramerate(), hudFont, 20, 40);
+        context.drawText("# Sprites: " + marios.size(), hudFont, 20, 60);
+    }
+
+    private void drawButton(RenderContext context, String label, ColorRGB background, int y) {
+        context.drawRect(new Rect(renderer.getCanvasWidth() - BUTTON_WIDTH - 2, y + 2,
+                BUTTON_WIDTH, BUTTON_HEIGHT), background, null);
+        context.drawText(label, hudFont, renderer.getCanvasWidth() - BUTTON_WIDTH + 5, y + 17);
+    }
+
+    @Override
+    public void onSceneEnd() {
+    }
+    
+    public void addMarios(int amount) {
+        for (int i = 0; i < amount; i++) {
+            Sprite marioSprite = createMarioSprite();
+            marios.add(new Mario(marioSprite,
+                    new Rect(0, 0, renderer.getCanvasWidth(), renderer.getCanvasHeight())));
+        }
+    }
+    
+    private Sprite createMarioSprite() {
+        Sprite marioSprite = new Sprite();
+        for (String direction : DIRECTIONS) {
+            List<Image> frames = marioImageAtlas.getSubImages(direction + "_0",
+                    direction + "_1", direction + "_2", direction + "_3", direction + "_4");
+            Animation anim = new Animation(frames, 0.1f, true);
+            marioSprite.addState(direction, anim);
+        }
+        return marioSprite;
+    }
+    
+    private void removeMarios(int amount) {
+        for (int i = 0; i < amount && !marios.isEmpty(); i++) {
+            marios.remove(marios.size() - 1);
+        }
+    }
+
+    /**
+     * Represents one of the mario sprites that walks around the scene.
+     */
+    private static class Mario implements Animatable {
+        
+        private Sprite sprite;
+        private Rect canvasBounds;
+        private Point2D position;
+        private int direction;
+        private int speed;
+        
+        public Mario(Sprite sprite, Rect canvasBounds) {
+            this.sprite = sprite;
+            this.position = new Point2D(Rand.nextInt(0, canvasBounds.getWidth()),
+                    Rand.nextInt(0, canvasBounds.getHeight()));
+            this.canvasBounds = canvasBounds;
+            this.direction = Rand.nextInt(0, 4);
+            this.speed = Rand.nextInt(1, 4);
+        }
+
+        @Override
+        public void onFrame(float deltaTime) {
+            sprite.changeState(DIRECTIONS.get(direction));
+            sprite.onFrame(deltaTime);
+            
+            switch (direction) {
+                case 0 : position.set(0, -speed); break;
+                case 1 : position.set(speed, 0); break;
+                case 2 : position.set(0, speed); break;
+                case 3 : position.set(-speed, 0); break;
+                default : throw new AssertionError();
+            }
+            
+            checkBounds();
+        }
+
+        private void checkBounds() {
+            if (position.getX() < 0 || position.getX() > canvasBounds.getWidth() ||
+                position.getY() < 0 || position.getY() > canvasBounds.getHeight()) {
+                direction = (direction + 2) % 4;
+            }
+        }
+    }
+    
+    /**
+     * Shows the coordinates when the screen has been touched or clicked anywhere
+     * that isn't a button.
+     */
+    private static class TouchMarker {
+        
+        private String text;
+        private Point2D location;
+        private int age;
+
+        public TouchMarker(float x, float y) {
+            this.text = x + ", " + y;
+            this.location = new Point2D(x, y);
+        }
+    }
 }

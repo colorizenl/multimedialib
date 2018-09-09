@@ -1,34 +1,52 @@
 MultimediaLib
 =============
 
-Library that provides a framework for multimedia applications. Applications built using this
-framework can run on multiple platforms, both as desktop applications on Windows/OS X/Linux
-and as mobile applications on Android. To achieve this, the framework includes a number of
-renderer implementations that enable graphics/audio/input on different platforms.
+Framework for building multimedia applications that support both desktop (Windows, macOS, Linux)
+and mobile (iOS, Android). 
 
-Build
+Usage
 -----
 
-Building the library requires the [Java JDK](http://java.oracle.com) and
-[Gradle](http://gradle.org). Building the Android renderer also required the Android SDK to be
+The library is available from the Maven Central repository. To use it in a Maven project, add it 
+to the dependencies section in `pom.xml`:
+
+    <dependency>
+        <groupId>nl.colorize</groupId>
+        <artifactId>multimedialib</artifactId>
+        <version>2018.2.1</version>
+    </dependency>  
+    
+The library can also be used in Gradle projects:
+
+    dependencies {
+        compile 'nl.colorize:multimedialib:2018.2.1'
+    }
+
+Build instructions
+------------------
+
+The build is cross-platform and supports Windows, macOS, and Linux, but requires the following 
+software to be available:
+
+  - [Java JDK](http://java.oracle.com)
+  - [Gradle](http://gradle.org)
+  - [Android SDK](https://developer.android.com/sdk/index.html)
+
+Building the Android renderer also required the Android SDK to be
 installed, with the environment variable `ANDROID_PLATFORM_HOME` pointing to the targeted Android
 platform version (e.g. `~/Developer/android/platforms/android-15`). 
 
-The source code has dependencies on the Colorize project *Colorize Java Commons*, which needs to 
-be available in the location specified in `settings.gradle`. 
-
 The following Gradle build tasks are available:
 
-- `gradle clean` cleans the build directory
-- `gradle assemble` creates the JAR file for distribution
-- `gradle test` runs all the unit tests
-- `gradle cobertura` runs all unit tests, calculates the test coverage, and generates a report
-- `gradle javadoc` generates the JavaDoc API documentation
+  - `gradle clean` cleans the build directory
+  - `gradle assemble` creates the JAR file for distribution
+  - `gradle test` runs all unit tests, then reports on test results and test coverage
+  - `gradle javadoc` generates the JavaDoc API documentation
 
 License
 -------
 
-Copyright 2011-2016 Colorize
+Copyright 2011-2018 Colorize
 
 The source code is licensed under the Apache License 2.0, meaning you can use it free of charge 
 in commercial and non-commercial projects as long as you mention the original copyright.

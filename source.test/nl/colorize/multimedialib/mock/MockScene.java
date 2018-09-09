@@ -1,72 +1,68 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2016 Colorize
+// Copyright 2011-2018 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.mock;
 
+import nl.colorize.multimedialib.renderer.InputDevice;
+import nl.colorize.multimedialib.renderer.MediaLoader;
+import nl.colorize.multimedialib.renderer.RenderContext;
+import nl.colorize.multimedialib.scene.Scene;
+
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.junit.Test;
-
-import nl.colorize.multimedialib.app.AnimationLoop;
-import nl.colorize.multimedialib.app.Scene;
-import nl.colorize.multimedialib.graphics.DisplayList;
 
 /**
  * Mock implementation of the {@code Scene} interface.
  */
 public class MockScene implements Scene {
-	
-	private DisplayList displayList;
-	
-	private AtomicInteger startCount;
-	private AtomicInteger endCount;
-	private AtomicInteger frameCount;
-	
-	public MockScene() {
-		displayList = new DisplayList();
-		
-		startCount = new AtomicInteger(0);
-		endCount = new AtomicInteger(0);
-		frameCount = new AtomicInteger(0);
-	}
+    
+    private AtomicInteger startCount;
+    private AtomicInteger endCount;
+    private AtomicInteger frameUpdateCount;
+    private AtomicInteger renderCount;
+    
+    public MockScene() {
+        startCount = new AtomicInteger(0);
+        endCount = new AtomicInteger(0);
+        frameUpdateCount = new AtomicInteger(0);
+        renderCount = new AtomicInteger(0);
+    }
 
-	public void onSceneStart(AnimationLoop animationLoop) {
-		startCount.incrementAndGet();
-	}
+    @Override
+    public void onSceneStart(MediaLoader mediaLoader) {
+        startCount.incrementAndGet();
+    }
 
-	public void onFrame(AnimationLoop animationLoop, float deltaTime) {
-		frameCount.incrementAndGet();
-	}
+    @Override
+    public void onFrame(float deltaTime, InputDevice input) {
+        frameUpdateCount.incrementAndGet();
+    }
 
-	public DisplayList onRender(AnimationLoop animationLoop) {
-		return displayList;
-	}
+    @Override
+    public void onRender(RenderContext context) {
+        renderCount.incrementAndGet();
+    }
 
-	public void onSceneEnd(AnimationLoop animationLoop) {
-		endCount.incrementAndGet();
-	}
-	
-	public DisplayList getDisplayList() {
-		return displayList;
-	}
-	
-	public int getStartCount() {
-		return startCount.get();
-	}
-	
-	public int getEndCount() {
-		return endCount.get();
-	}
-	
-	public int getFrameCount() {
-		return frameCount.get();
-	}
-	
-	@Test
-	public void testGradle() {
-		// Needed for Gradle bug GRADLE-1682.
-	}
+    @Override
+    public void onSceneEnd() {
+        endCount.incrementAndGet();
+    }
+
+    public int getStartCount() {
+        return startCount.get();
+    }
+    
+    public int getEndCount() {
+        return endCount.get();
+    }
+    
+    public int getFrameUpdateCount() {
+        return frameUpdateCount.get();
+    }
+
+    public int getRenderCount() {
+        return renderCount.get();
+    }
 }

@@ -1,98 +1,120 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2016 Colorize
+// Copyright 2011-2018 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.mock;
 
-import org.junit.Test;
-
-import nl.colorize.multimedialib.graphics.AudioData;
-import nl.colorize.multimedialib.graphics.ImageData;
-import nl.colorize.multimedialib.graphics.ImageRegion;
-import nl.colorize.multimedialib.graphics.Shape2D;
+import nl.colorize.multimedialib.graphics.Audio;
+import nl.colorize.multimedialib.graphics.BitmapFont;
+import nl.colorize.multimedialib.graphics.ColorRGB;
+import nl.colorize.multimedialib.graphics.Image;
 import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.multimedialib.renderer.AbstractRenderer;
-import nl.colorize.multimedialib.renderer.AudioQueue;
-import nl.colorize.multimedialib.renderer.InputDevice;
+import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.RenderCallback;
+import nl.colorize.multimedialib.renderer.RenderContext;
+import nl.colorize.multimedialib.renderer.RenderStats;
+import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.util.ResourceFile;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Mock implementation of the {@code Renderer} interface.
  */
-public class MockRenderer extends AbstractRenderer {
+public class MockRenderer implements Renderer, RenderContext, MediaLoader {
 
-	private Rect screenBounds;
+    private ScaleStrategy scaleStrategy;
+    private int framerate;
+    private Rect screen;
+    private List<RenderCallback> callbacks;
 
-	public MockRenderer() {
-		super(ScaleStrategy.flexible(640, 480), 25);
-		screenBounds = new Rect(0, 0, 1280, 800);
-	}
-	
-	protected void startRenderer() {
-		for (RenderCallback callback : callbacks) {
-			callback.onInitialized();
-		}
-	}
-	
-	protected void stopRenderer() {
-		for (RenderCallback callback : callbacks) {
-			callback.onStopped();
-		}
-	}
-	
-	public void doFrame(float deltaTime) {
-		for (RenderCallback callback : callbacks) {
-			callback.onFrame(deltaTime);
-		}
-	}
+    public MockRenderer() {
+        this.scaleStrategy = ScaleStrategy.flexible(800, 600);
+        this.framerate = 25;
+        screen = new Rect(0, 0, 1280, 800);
+        callbacks = new ArrayList<>();
+    }
 
-	public void setScreenBounds(Rect screenBounds) {
-		this.screenBounds = screenBounds;
-	}
-	
-	public Rect getScreenBounds() {
-		return screenBounds;
-	}
-	
-	public void drawImage(ImageData image, int x, int y, Transform transform) {
-	}
-	
-	public void drawImageRegion(ImageRegion imageRegion, int x, int y, Transform transform) {
-	}
+    @Override
+    public void initialize() {
+    }
 
-	public void drawShape(Shape2D shape) {
-	}
-	
-	public ImageData loadImage(ResourceFile source) {
-		return new MockImageData();
-	}
+    @Override
+    public void terminate() {
+    }
 
-	@Override
-	public AudioData loadAudio(ResourceFile source) {
-		return null;
-	}
-	
-	public InputDevice getInputDevice() {
-		//TODO
-		return null;
-	}
-	
-	public AudioQueue getAudioQueue() {
-		//TODO
-		return null;
-	}
+    @Override
+    public int getCanvasWidth() {
+        return scaleStrategy.getCanvasWidth(screen);
+    }
 
-	@Override
-	protected void onDisplayChanged() {
-	}
-	
-	@Test
-	public void testGradle() {
-		// Needed for Gradle bug GRADLE-1682.
-	}
+    @Override
+    public int getCanvasHeight() {
+        return scaleStrategy.getCanvasHeight(screen);
+    }
+
+    @Override
+    public ScaleStrategy getScaleStrategy() {
+        return scaleStrategy;
+    }
+
+    @Override
+    public int getTargetFramerate() {
+        return framerate;
+    }
+
+    @Override
+    public void drawBackground(ColorRGB backgroundColor) {
+    }
+
+    @Override
+    public void drawRect(Rect rect, ColorRGB color, Transform transform) {
+    }
+
+    @Override
+    public void drawImage(Image image, int x, int y, Transform transform) {
+    }
+
+    @Override
+    public void drawText(String text, BitmapFont font, int x, int y) {
+    }
+
+    @Override
+    public MediaLoader getMediaLoader() {
+        return this;
+    }
+
+    @Override
+    public Image loadImage(ResourceFile source) {
+        return new MockImage();
+    }
+
+    @Override
+    public Audio loadAudio(ResourceFile source) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RenderStats getStats() {
+        return null;
+    }
+
+    @Override
+    public void registerCallback(RenderCallback callback) {
+        callbacks.add(callback);
+    }
+
+    @Override
+    public void unregisterCallback(RenderCallback callback) {
+        callbacks.remove(callback);
+    }
+
+    public List<RenderCallback> getCallbacks() {
+        return callbacks;
+    }
 }

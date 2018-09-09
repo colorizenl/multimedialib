@@ -1,29 +1,34 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2016 Colorize
+// Copyright 2011-2018 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
-import nl.colorize.multimedialib.math.Point;
+import nl.colorize.multimedialib.math.Point2D;
 
 /**
- * The platform's method for user input, such as a keyboard, mouse, or touch 
- * screen.
- * <p>
- * As different platforms will have different input devices, this interface only
- * guarantees the availability of a pointer device, which will be either a mouse
- * or a touch screen.
- * <p>
- * Non-pointer input devices can be accessed through implementing classes, but
- * are not guaranteed to be available on all platforms.
+ * Used to poll the status of the platform's input devices. Depending on the
+ * device, this may consist of a mouse, keyboard, or touch screen. Attempting
+ * to access an input device that is not available will result in a
+ * {@code UnsupportedOperationException}.
  */
 public interface InputDevice {
 
-	public Point getPointer();
-	
-	public boolean isPointerPressed();
-	
-	public boolean isPointerReleased();
+    default boolean isPointerAvailable() {
+        return true;
+    }
+
+    public Point2D getPointer();
+    
+    public boolean isPointerPressed();
+    
+    public boolean isPointerReleased();
+
+    public boolean isKeyboardAvailable();
+
+    public boolean isKeyPressed(KeyCode keyCode);
+
+    public boolean isKeyReleased(KeyCode keyCode);
 }

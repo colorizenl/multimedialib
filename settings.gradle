@@ -1,2 +1,9 @@
-include ':Colorize Java Commons'
-project(':Colorize Java Commons').projectDir = new File(settingsDir, '../Colorize Java Commons')
+rootProject.name = 'MultimediaLib'
+
+if (file('../Colorize Java Commons').exists()) {
+    includeBuild('../Colorize Java Commons') {
+        dependencySubstitution {
+            substitute module('nl.colorize:colorize-java-commons') with project(':')
+        }
+    }
+}
