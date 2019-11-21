@@ -1,12 +1,12 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2018 Colorize
+// Copyright 2011-2019 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
-import nl.colorize.multimedialib.math.Point2D;
+import nl.colorize.multimedialib.math.Point;
 
 /**
  * Used to poll the status of the platform's input devices. Depending on the
@@ -16,11 +16,7 @@ import nl.colorize.multimedialib.math.Point2D;
  */
 public interface InputDevice {
 
-    default boolean isPointerAvailable() {
-        return true;
-    }
-
-    public Point2D getPointer();
+    public Point getPointer();
     
     public boolean isPointerPressed();
     

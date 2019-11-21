@@ -1,15 +1,17 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2018 Colorize
+// Copyright 2011-2019 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
+import nl.colorize.multimedialib.scene.Renderable;
 import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.multimedialib.scene.Updatable;
 
 /**
- * Renders audiovisual data to create multimedia applications.
+ * Renders audiovisual data to that can be used to display multimedia applications.
  * <p>
  * When started, the renderer will create the display system and then start the
  * animation loop. Frame updates will be scheduled to match the desired framerate,
@@ -24,38 +26,20 @@ import nl.colorize.multimedialib.scene.Scene;
  * screen is the entire available drawing surface, excluding any title and status 
  * bars and borders. The screen size can change, for example when the window is 
  * resized or when the device changes orientation. The canvas is the drawing area 
- * that the game uses. The way the canvas scales is determined by the scale strategy
- * that is being used by the renderer. Some scale strategies allow the canvas to be
- * resized with the screen, others do not. Depending on the scale strategy pixels
- * on the canvas may not directly correspond to pixels on the screen. Any pixel
- * coordinates used by the renderer are the coordinates on the canvas, not 
- * coordinates on the screen.
- * <p>
- * All drawing operations use X and Y coordinates that are relative to the canvas,
- * with the (0, 0) coordinate representing the top left corner. When drawing objects,
- * the X and Y coordinates indicate where the object's center will be drawn. The
- * Z coordinate (depth) is implicit: later drawing operations will draw over earlier
- * drawing operations.
+ * that the game uses. Transitioning between these two sets of coordinates is
+ * handled by the {@link Canvas}.
  */
 public interface Renderer {
 
-    public void initialize();
-    
-    public void terminate();
+    public Canvas getCanvas();
 
-    public int getCanvasWidth();
-
-    public int getCanvasHeight();
-
-    public ScaleStrategy getScaleStrategy();
-
-    public int getTargetFramerate();
+    public InputDevice getInputDevice();
 
     public MediaLoader getMediaLoader();
 
-    public RenderStats getStats();
+    public ApplicationData getApplicationData(String appName);
 
-    public void registerCallback(RenderCallback callback);
+    public void addUpdateCallback(Updatable callback);
 
-    public void unregisterCallback(RenderCallback callback);
+    public void addRenderCallback(Renderable callback);
 }

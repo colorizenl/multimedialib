@@ -1,135 +1,131 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2018 Colorize
+// Copyright 2011-2019 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.math;
 
+import com.google.common.base.Preconditions;
+
+import java.util.Objects;
+
 /**
- * A two-dimensional axis-aligned rectangle with integer precision coordinates. 
+ * A mutable two-dimensional rectangle. The coordinates are defined with float
+ * precision.
  */
 public class Rect implements Shape {
-    
-    private int x;
-    private int y;
-    private int width;
-    private int height;
-    
-    public Rect(int x, int y, int width, int height) {
+
+    private float x;
+    private float y;
+    private float width;
+    private float height;
+
+    public Rect(float x, float y, float width, float height) {
         set(x, y, width, height);
     }
-    
-    public void set(int x, int y, int width, int height) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-    }
-    
-    public void setX(int x) {
-        this.x = x;
-    }
-    
-    public int getX() {
+
+    public float getX() {
         return x;
     }
 
-    public void setY(int y) {
-        this.y = y;
+    public void setX(float x) {
+        this.x = x;
     }
-    
-    public int getY() {
+
+    public float getY() {
         return y;
     }
-    
-    public void setWidth(int width) {
-        this.width = width;
+
+    public void setY(float y) {
+        this.y = y;
     }
-    
-    public int getWidth() {
+
+    public float getWidth() {
         return width;
     }
 
-    public void setHeight(int height) {
+    public void setWidth(float width) {
+        Preconditions.checkArgument(width >= 0f, "Invalid width: " + width);
+        this.width = width;
+    }
+
+    public float getHeight() {
+        return height;
+    }
+
+    public void setHeight(float height) {
+        Preconditions.checkArgument(height >= 0f, "Invalid height: " + height);
         this.height = height;
     }
 
-    public int getHeight() {
-        return height;
+    public float getCenterX() {
+        return x + width / 2f;
     }
-    
-    public int getEndX() {
+
+    public float getCenterY() {
+        return y + height / 2f;
+    }
+
+    public float getEndX() {
         return x + width;
     }
-    
-    public int getEndY() {
+
+    public float getEndY() {
         return y + height;
     }
-    
-    public int getCenterX() {
-        return x + width / 2;
+
+    public void set(float x, float y, float width, float height) {
+        setX(x);
+        setY(y);
+        setWidth(width);
+        setHeight(height);
     }
-    
-    public int getCenterY() {
-        return y + height / 2;
+
+    public void set(Rect r) {
+        set(r.getX(), r.getY(), r.getWidth(), r.getHeight());
     }
-    
-    public boolean contains(Point2D p) {
-        return contains((int) p.getX(), (int) p.getY());
+
+    @Override
+    public boolean contains(Point p) {
+        return p.getX() >= x && p.getX() <= x + width &&
+            p.getY() >= y && p.getY() <= y + height;
     }
-    
-    public boolean contains(int px, int py) {
-        return px >= x && px <= x + width && py >= y && py <= y + height;
+
+    public boolean contains(Rect r) {
+        return r.x >= x && r.x + r.width <= x + width &&
+            r.y >= y && r.y + r.height <= y + height;
     }
-    
-    public boolean contains(Shape s) {
-        if (s instanceof Rect) {
-            Rect r = (Rect) s;
-            return contains(r.x, r.y, r.width, r.height);
-        } else {
-            return s.toPolygon().intersects(this);
-        }
+
+    public boolean intersects(Rect r) {
+        return !(r.x + r.width < x || r.x > x + width ||
+            r.y + r.height < y || r.y > y + height);
     }
-    
-    public boolean contains(int rx, int ry, int rwidth, int rheight) {
-        return rx >= x && rx + rwidth <= x + width && ry >= y && ry + rheight <= y + height;
+
+    public Rect copy() {
+        return new Rect(x, y, width, height);
     }
-    
-    public boolean intersects(Shape s) {
-        if (s instanceof Rect) {
-            Rect r = (Rect) s;
-            return intersects(r.x, r.y, r.width, r.height);
-        } else {
-            return s.toPolygon().intersects(this);
-        }
-    }
-    
-    public boolean intersects(int rx, int ry, int rwidth, int rheight) {
-        return !(rx + rwidth < x || rx > x + width || ry + rheight < y || ry > y + height);
-    }
-    
-    public Polygon toPolygon() {
-        int[] points = {x, y, x + width, y, x + width, y + height, x, y + height};
-        return new Polygon(points);
-    }
-    
+
     @Override
     public boolean equals(Object o) {
         if (o instanceof Rect) {
-            Rect r = (Rect) o;
-            return x == r.x && y == r.y && width == r.width && height == r.height;
+            Rect other = (Rect) o;
+            return Math.abs(x - other.x) < EPSILON &&
+                Math.abs(y - other.y) < EPSILON &&
+                Math.abs(width - other.width) < EPSILON &&
+                Math.abs(height - other.height) < EPSILON;
+        } else {
+            return false;
         }
-        return false;
     }
-    
+
     @Override
     public int hashCode() {
-        return x * 1_000_000 + y * 10_000 + width * 100 + height;
+        return Objects.hash(x, y, width, height);
     }
 
     @Override
     public String toString() {
-        return String.format("[%d, %d, %d, %d]", x, y, width, height);
+        return String.format("(%.1f, %.1f, %.1f, %.1f)", x, y, width, height);
     }
 }

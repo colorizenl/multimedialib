@@ -1,13 +1,13 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2018 Colorize
+// Copyright 2011-2019 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
 /**
- * Enumerates the keys on a keyboard.
+ * Enumerates the keys on a conventional keyboard.
  */
 public enum KeyCode {
     LEFT,
@@ -46,14 +46,14 @@ public enum KeyCode {
     Y,
     Z,
 
-    ONE,
-    TWO,
-    THREE,
-    FOUR,
-    FIVE,
-    SIX,
-    SEVEN,
-    EIGHT,
-    NINE,
-    ZERO;
+    N1,
+    N2,
+    N3,
+    N4,
+    N5,
+    N6,
+    N7,
+    N8,
+    N9,
+    N0;
 }

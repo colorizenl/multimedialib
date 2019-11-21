@@ -1,9 +1,9 @@
-rootProject.name = 'MultimediaLib'
+rootProject.name = "MultimediaLib"
 
-if (file('../Colorize Java Commons').exists()) {
-    includeBuild('../Colorize Java Commons') {
+if (file("../Colorize Java Commons").exists()) {
+    includeBuild("../Colorize Java Commons") {
         dependencySubstitution {
-            substitute module('nl.colorize:colorize-java-commons') with project(':')
+            substitute module("nl.colorize:colorize-java-commons") with project(":")
         }
     }
 }

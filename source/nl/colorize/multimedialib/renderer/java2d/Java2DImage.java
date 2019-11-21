@@ -1,11 +1,13 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2018 Colorize
+// Copyright 2011-2019 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.java2d;
 
+import com.google.common.base.Preconditions;
+import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
 import nl.colorize.multimedialib.math.Rect;
 
@@ -40,8 +42,27 @@ public class Java2DImage implements Image {
 
     @Override
     public Image getRegion(Rect region) {
-        BufferedImage subImage = image.getSubimage(region.getX(), region.getY(),
-            region.getWidth(), region.getHeight());
+        BufferedImage subImage = image.getSubimage(Math.round(region.getX()), Math.round(region.getY()),
+            Math.round(region.getWidth()), Math.round(region.getHeight()));
         return new Java2DImage(subImage);
+    }
+
+    @Override
+    public ColorRGB getColor(int x, int y) {
+        Preconditions.checkArgument(x >= 0 && x < getWidth() && y >= 0 && y < getHeight(),
+            "Invalid coordinate: " + x + ", " + y);
+
+        int rgba = image.getRGB(x, y);
+        return new ColorRGB(rgba);
+    }
+
+    @Override
+    public int getAlpha(int x, int y) {
+        Preconditions.checkArgument(x >= 0 && x < getWidth() && y >= 0 && y < getHeight(),
+            "Invalid coordinate: " + x + ", " + y);
+
+        int rgba = image.getRGB(x, y);
+        int alpha = (rgba >> 24) & 0xFF;
+        return Math.round(alpha / 2.55f);
     }
 }

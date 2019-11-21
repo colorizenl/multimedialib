@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>MultimediaLib | HTML5 canvas test</title>
+    <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no" />
+    <script src="../resources/web/main.js"></script>
+</head>
+
+<body>
+    <div id="loading"></div>
+    <div id="multimediaLibContainer"></div>
+    <div id="imageContainer"></div>
+    <div id="audioContainer"></div>
+    <div id="fontContainer"></div>
+    <div id="resourceContainer">
+        @@@RESOURCES
+    </div>
+
+    <img id="testImage" src="colorize.png" style="display: none;" />
+
+    <script>
+        function main() {
+            drawRect(10, 10, 100, 100, "#DD0000", 1.0);
+            drawRect(120, 10, 100, 100, "#DD0000", 0.5);
+
+            setTimeout(function() {
+                var testImage = document.getElementById("testImage");
+                context.globalAlpha = 1.0;
+                context.drawImage(testImage, 10, 200);
+                context.globalAlpha = 0.5;
+                context.drawImage(testImage, 100, 250);
+                context.globalCompositeOperation = "source-atop";
+                drawRect(100, 200, 100, 100, "#FFFFFF", 1.0);
+                context.globalCompositeOperation = "source-over";
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

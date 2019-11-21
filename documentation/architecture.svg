@@ -1,0 +1,37 @@
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="300" height="300">
+    <g transform="scale(0.75 0.75)">
+        <polygon points="160,140 240,140 270,200 240,260 160,260 130,200" fill="#e45d61" />
+        <text x="200" y="200" fill="#ffffff" text-anchor="middle" font-size="18" font-family="Helvetica">Platform</text>
+    
+        <g transform="translate(0 -130)">
+            <polygon points="160,140 240,140 270,200 240,260 160,260 130,200" fill="#adadad" />
+            <text x="200" y="200" fill="#ffffff" text-anchor="middle" font-size="18" font-family="Helvetica">Animation loop</text>
+        </g>
+    
+        <g transform="translate(120 -65)">
+            <polygon points="160,140 240,140 270,200 240,260 160,260 130,200" fill="#adadad" />
+            <text x="200" y="200" fill="#ffffff" text-anchor="middle" font-size="18" font-family="Helvetica">Graphics</text>
+        </g>
+    
+        <g transform="translate(120 65)">
+            <polygon points="160,140 240,140 270,200 240,260 160,260 130,200" fill="#adadad" />
+            <text x="200" y="200" fill="#ffffff" text-anchor="middle" font-size="18" font-family="Helvetica">Audio</text>
+        </g>
+    
+        <g transform="translate(0 130)">
+            <polygon points="160,140 240,140 270,200 240,260 160,260 130,200" fill="#adadad" />
+            <text x="200" y="200" fill="#ffffff" text-anchor="middle" font-size="18" font-family="Helvetica">Input devices</text>
+        </g>
+    
+        <g transform="translate(-120 65)">
+            <polygon points="160,140 240,140 270,200 240,260 160,260 130,200" fill="#adadad" />
+            <text x="200" y="200" fill="#ffffff" text-anchor="middle" font-size="18" font-family="Helvetica">Media loader</text>
+        </g>
+    
+        <g transform="translate(-120 -65)">
+            <polygon points="160,140 240,140 270,200 240,260 160,260 130,200" fill="#adadad" />
+            <text x="200" y="200" fill="#ffffff" text-anchor="middle" font-size="18" font-family="Helvetica">User data</text>
+        </g>
+    </g>
+</svg>

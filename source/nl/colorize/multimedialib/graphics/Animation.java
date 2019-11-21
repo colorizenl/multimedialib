@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2018 Colorize
+// Copyright 2011-2019 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -44,13 +44,14 @@ public class Animation {
             return frames.get(0);
         }
 
-        if (loop && time > getTotalDuration()) {
-            time = time % getTotalDuration();  
+        if (loop && time > getDuration()) {
+            time = time % getDuration();
         }
         
         for (int frameIndex = 0; frameIndex < frames.size(); frameIndex++) {
             float frameStartTime = frameIndex * frameDuration;
             float frameEndTime = frameStartTime + frameDuration;
+
             if (time >= frameStartTime && time < frameEndTime) {
                 return frames.get(frameIndex);
             }
@@ -59,25 +60,21 @@ public class Animation {
         return frames.get(frames.size() - 1);
     }
 
-    public List<Image> getFrames() {
-        return frames;
-    }
-    
-    public int getNumFrames() {
-        return frames.size();
-    }
-    
-    public float getFrameDuration() {
-        return frameDuration;
-    }
-    
-    public float getTotalDuration() {
+    public float getDuration() {
         if (frames.size() == 1) {
             return 0f;
         }
         return frames.size() * frameDuration;
     }
-    
+
+    public List<Image> getFrames() {
+        return ImmutableList.copyOf(frames);
+    }
+
+    public float getFrameDuration() {
+        return frameDuration;
+    }
+
     public boolean isLoop() {
         return loop;
     }

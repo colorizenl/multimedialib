@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2018 Colorize
+// Copyright 2011-2019 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -38,6 +38,16 @@ public final class ColorRGB {
         this.b = parseColorComponent(b);
     }
 
+    /**
+     * Creates a color from a single RGBA value. The value's alpha component
+     * will be ignored.
+     */
+    public ColorRGB(int rgba) {
+        this.r = (rgba >> 16) & 0xFF;
+        this.g = (rgba >> 8) & 0xFF;
+        this.b = rgba & 0xFF;
+    }
+
     public int getR() {
         return r;
     }
@@ -48,6 +58,13 @@ public final class ColorRGB {
 
     public int getB() {
         return b;
+    }
+
+    public int getRGB() {
+        int rgb = r;
+        rgb = (rgb << 8) + g;
+        rgb = (rgb << 8) + b;
+        return rgb;
     }
     
     @Override

@@ -1,0 +1,24 @@
+Verification instructions
+-------------------------
+
+- Display system
+    - Canvas size
+    - Target framerate
+- Input
+    - Pointer coordinates
+- Graphics
+    - Sprites
+    - Sprite rotation
+    - Sprite scaling
+    - Sprite alpha
+    - Sprite color mask
+    - Shapes
+    - Shape rotation
+    - Shape scaling
+    - Shape alpha
+    - Text
+    - Load TrueType fonts
+- Audio
+    - Audio clip
+- Resource files
+    - Load text files

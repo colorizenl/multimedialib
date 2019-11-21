@@ -1,22 +1,22 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2018 Colorize
+// Copyright 2011-2019 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.math;
 
-import java.util.Collection;
-
 import com.google.common.math.IntMath;
+
+import java.util.Collection;
 
 /**
  * Basic math-related functions that are not included in {@link java.lang.Math}
  * or Google Guava.
  */
 public final class MathUtils {
-    
-    private static final float EPSILON = 0.001f;
+
+    public static final float EPSILON = 0.001f;
     
     private MathUtils() {
     }
@@ -52,6 +52,12 @@ public final class MathUtils {
         if (value > max) value = max;
         return value;
     }
+
+    public static float clamp(float value, float min, float max) {
+        if (value < min) value = min;
+        if (value > max) value = max;
+        return value;
+    }
     
     public static long clamp(long value, long min, long max) {
         if (value < min) value = min;
@@ -83,16 +89,5 @@ public final class MathUtils {
         }
         
         throw new IllegalArgumentException("Number out of range");
-    }
-    
-    public static float getAspectRatio(int width, int height) {
-        if (width == 0 || height == 0) {
-            return 1f;
-        }
-        return (float) width / (float) height;
-    }
-    
-    public static float getAspectRatio(Rect r) {
-        return getAspectRatio(r.getWidth(), r.getHeight());
     }
 }

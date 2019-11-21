@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2018 Colorize
+// Copyright 2011-2019 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -25,15 +25,10 @@ public class Transform {
     private int scaleX;
     private int scaleY;
     private int alpha;
+    private ColorRGB mask;
     
     public Transform() {
         reset();
-    }
-
-    public Transform(int rotation, int scaleX, int scaleY, int alpha) {
-        setRotation(rotation);
-        setScale(scaleX, scaleY);
-        setAlpha(alpha);
     }
 
     public void reset() {
@@ -41,6 +36,7 @@ public class Transform {
         scaleX = 100;
         scaleY = 100;
         alpha = 100;
+        mask = null;
     }
     
     /**
@@ -48,7 +44,7 @@ public class Transform {
      * original/default values.
      */
     public boolean isDefaultTransform() {
-        return !isRotated() && !isScaled() && alpha == 100;
+        return !isRotated() && !isScaled() && alpha == 100 && mask == null;
     }
 
     public void setRotation(int rotation) {
@@ -102,7 +98,15 @@ public class Transform {
     public int getAlpha() {
         return alpha;
     }
-    
+
+    public void setMask(ColorRGB mask) {
+        this.mask = mask;
+    }
+
+    public ColorRGB getMask() {
+        return mask;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o instanceof Transform) {
@@ -110,7 +114,8 @@ public class Transform {
             return rotation == other.rotation &&
                 scaleX == other.scaleX &&
                 scaleY == other.scaleY &&
-                alpha == other.alpha;
+                alpha == other.alpha &&
+                Objects.equal(mask, other.mask);
         } else {
             return false;
         }
@@ -118,12 +123,47 @@ public class Transform {
     
     @Override
     public int hashCode() {
-        return Objects.hashCode(rotation, scaleX, scaleY, alpha);
+        return Objects.hashCode(rotation, scaleX, scaleY, alpha, mask);
     }
-    
-    @Override
-    public String toString() {
-        return String.format("Transform(rotation=%d, scale=%d/%d, alpha=%d)",
-            rotation, scaleX, scaleY, alpha);
+
+    /**
+     * Convenience method that creates a new transform with the specified
+     * rotation, but all other properties set to their default values.
+     */
+    public static Transform withRotation(int rotation) {
+        Transform transform = new Transform();
+        transform.setRotation(rotation);
+        return transform;
+    }
+
+    /**
+     * Convenience method that creates a new transform with the specified scale,
+     * but all other properties set to their default values.
+     */
+    public static Transform withScale(int scaleX, int scaleY) {
+        Transform transform = new Transform();
+        transform.setScaleX(scaleX);
+        transform.setScaleY(scaleY);
+        return transform;
+    }
+
+    /**
+     * Convenience method that creates a new transform with the specified alpha
+     * value, but all other properties set to their default values.
+     */
+    public static Transform withAlpha(int alpha) {
+        Transform transform = new Transform();
+        transform.setAlpha(alpha);
+        return transform;
+    }
+
+    /**
+     * Convenience method that creates a new transform with the specified color
+     * mask, but all other properties set to their default values.
+     */
+    public static Transform withMask(ColorRGB mask) {
+        Transform transform = new Transform();
+        transform.setMask(mask);
+        return transform;
     }
 }

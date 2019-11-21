@@ -1,29 +1,50 @@
-apply plugin: 'java'
-apply plugin: 'jacoco'
+apply plugin: "java"
+apply plugin: "jacoco"
 
-group = 'nl.colorize'
-version = '2018.2.1'
-sourceCompatibility = '1.8'
-targetCompatibility = '1.8'
-compileJava.options.encoding = 'UTF-8'
-sourceSets.main.java.srcDirs = ['source']
-sourceSets.main.resources.srcDirs = ['resources']
-sourceSets.test.java.srcDirs = ['source.test']
+group = "nl.colorize"
+version = "2019.1"
+sourceCompatibility = "11"
+targetCompatibility = "11"
+compileJava.options.encoding = "UTF-8"
+sourceSets.main.java.srcDirs = ["source"]
+sourceSets.main.resources.srcDirs = ["resources"]
+sourceSets.test.java.srcDirs = ["test"]
 
 repositories {
     mavenCentral()
+    maven {
+        url "https://dl.bintray.com/konsoletyper/teavm"
+    }
 }
 
 dependencies {
-    compile 'nl.colorize:colorize-java-commons:2018.6'
-    compile 'args4j:args4j:2.33'
-    compile 'com.badlogicgames.gdx:gdx:1.9.8'
-    compile 'com.badlogicgames.gdx:gdx-backend-lwjgl3:1.9.8'
-    compile 'com.badlogicgames.gdx:gdx-platform:1.9.8:natives-desktop'
-    compileOnly files("$System.env.ANDROID_PLATFORM_HOME/android.jar")
-    testCompile 'junit:junit:4.12'
+    compile "nl.colorize:colorize-java-commons:2019.2"
+    compile "args4j:args4j:2.33"
+    compile "com.badlogicgames.gdx:gdx:1.9.10"
+    compile "com.badlogicgames.gdx:gdx-backend-lwjgl3:1.9.10"
+    compile "com.badlogicgames.gdx:gdx-platform:1.9.10:natives-desktop"
+    compile "org.teavm:teavm:0.7.0-dev-929"
+    compile "org.teavm:teavm-jso:0.7.0-dev-929"
+    compile "org.teavm:teavm-jso-apis:0.7.0-dev-929"
+    compile "org.teavm:teavm-classlib:0.7.0-dev-929"
+    compile "org.teavm:teavm-tooling:0.7.0-dev-929"
+    testCompile "junit:junit:4.12"
 }
 
-test.doLast {
-    tasks.jacocoTestReport.execute()
+task coverage(dependsOn: ["test", "jacocoTestReport"]) {
+    doLast {
+        def report = file("${buildDir}/reports/jacoco/test/html/index.html").text
+        def coverage = report =~ "tfoot.*?ctr2.*?>([\\d.]+%).*?tfoot"
+        println "-" * 40
+        println "Test coverage: " + coverage[0][1]
+    }
 }
+
+task transpileDemoApplication(type: JavaExec, dependsOn: compileJava) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = "nl.colorize.multimedialib.tool.TeaVMTranspiler"
+    args "-project", "MultimediaLib-TeaVM-Demo", "-resources", "resources",
+        "-out", "${buildDir}/browserdemo", "-main", "nl.colorize.multimedialib.renderer.teavm.TeaDemo"
+}
+
+assemble.dependsOn transpileDemoApplication

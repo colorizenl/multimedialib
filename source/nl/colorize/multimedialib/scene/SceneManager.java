@@ -1,65 +1,130 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2018 Colorize
+// Copyright 2011-2019 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.scene;
 
+import com.google.common.base.Preconditions;
+import nl.colorize.multimedialib.math.RotatingBuffer;
+import nl.colorize.multimedialib.renderer.ApplicationData;
+import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.GraphicsContext;
 import nl.colorize.multimedialib.renderer.InputDevice;
-import nl.colorize.multimedialib.renderer.RenderCallback;
-import nl.colorize.multimedialib.renderer.RenderContext;
+import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Renderer;
+import nl.colorize.util.Stopwatch;
 
 /**
- * Controls which scene is currently being played. Once the scene manager has
- * been registered as a callback with the renderer, it will take care of scene
- * management, meaning that it ensures that each scene is properly started,
- * stopped, updated, and changed.
+ * Implements a mechanism that divides the application life cycle into a number
+ * of separate scenes. One scene is marked as currently active, and will receive
+ * frame updates and render graphics for as a long as it is active. Scenes will
+ * also receive notifications whenever the active scene changes.
  */
-public class SceneManager implements RenderCallback {
+public class SceneManager implements Updatable, Renderable, SceneContext {
 
     private Renderer renderer;
-    private Scene currentScene;
+    private Scene activeScene;
     private Scene requestedScene;
 
-    public SceneManager(Renderer renderer, Scene initialScene) {
+    private Stopwatch fpsTimer;
+    private RotatingBuffer fpsBuffer;
+    private RotatingBuffer frameTimeBuffer;
+
+    private static final int FPS_MEASUREMENT_BUFFER_SIZE = 100;
+
+    private SceneManager(Renderer renderer) {
         this.renderer = renderer;
-        this.requestedScene = initialScene;
+
+        this.fpsTimer = new Stopwatch();
+        this.fpsBuffer = new RotatingBuffer(FPS_MEASUREMENT_BUFFER_SIZE);
+        this.frameTimeBuffer = new RotatingBuffer(FPS_MEASUREMENT_BUFFER_SIZE);
     }
 
+    /**
+     * Requests to change the active scene after the current frame has been
+     * completed.
+     */
+    @Override
     public void changeScene(Scene requestedScene) {
+        Preconditions.checkState(this.requestedScene == null,
+            "Another scene has already been requested: " + requestedScene);
+
         this.requestedScene = requestedScene;
     }
 
-    public Scene getCurrentScene() {
-        return currentScene;
+    public Scene getActiveScene() {
+        return activeScene;
     }
 
     @Override
-    public void onFrame(float deltaTime, InputDevice input) {
+    public void update(float deltaTime) {
         if (requestedScene != null) {
-            if (currentScene != null) {
-                currentScene.onSceneEnd();
-            }
-
-            currentScene = requestedScene;
+            activeScene = requestedScene;
             requestedScene = null;
-
-            if (currentScene != null) {
-                currentScene.onSceneStart(renderer.getMediaLoader());
-            }
+            activeScene.start(this);
         }
 
-        if (currentScene != null) {
-            currentScene.onFrame(deltaTime, input);
+        Stopwatch frameTimer = new Stopwatch();
+        frameTimer.tick();
+
+        if (activeScene != null) {
+            activeScene.update(deltaTime);
+        }
+
+        long actualFrameTime = frameTimer.tick();
+        frameTimeBuffer.add(actualFrameTime);
+    }
+
+    @Override
+    public void render(GraphicsContext graphics) {
+        if (activeScene != null) {
+            long fpsValue = fpsTimer.tick();
+            fpsBuffer.add(fpsValue);
+
+            activeScene.render(graphics);
         }
     }
 
     @Override
-    public void onRender(RenderContext context) {
-        if (currentScene != null) {
-            currentScene.onRender(context);
-        }
+    public Canvas getCanvas() {
+        return renderer.getCanvas();
+    }
+
+    @Override
+    public InputDevice getInputDevice() {
+        return renderer.getInputDevice();
+    }
+
+    @Override
+    public MediaLoader getMediaLoader() {
+        return renderer.getMediaLoader();
+    }
+
+    @Override
+    public ApplicationData getApplicationData(String appName) {
+        return renderer.getApplicationData(appName);
+    }
+
+    @Override
+    public float getAverageFPS() {
+        return 1000f / fpsBuffer.getAverageValue();
+    }
+
+    @Override
+    public float getAverageFrameTime() {
+        return frameTimeBuffer.getAverageValue();
+    }
+
+    /**
+     * Creates a new {@code SceneManager} and immediately attaches it as a
+     * callback to the specified renderer.
+     */
+    public static SceneManager attach(Renderer renderer) {
+        SceneManager sceneManager = new SceneManager(renderer);
+        renderer.addUpdateCallback(sceneManager);
+        renderer.addRenderCallback(sceneManager);
+        return sceneManager;
     }
 }
