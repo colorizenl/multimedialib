@@ -1,14 +1,13 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
-import nl.colorize.multimedialib.graphics.Audio;
 import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.graphics.TrueTypeFont;
+import nl.colorize.multimedialib.graphics.TTFont;
 
 /**
  * Loads media files such as images or audio in a format that can later be used
@@ -20,17 +19,17 @@ import nl.colorize.multimedialib.graphics.TrueTypeFont;
 public interface MediaLoader {
 
     /**
-     * Loads an image from a file. Only JPEG and PNG images are guaranteed
-     * to be supported, though other image formats may also be supported
-     * depending on the platform.
+     * Loads an image from a file. JPEG and PNG images are guaranteed to be
+     * supported, though other image formats may also be supported depending
+     * on the platform.
      * @throws MediaException if the image format is not supported by the
      *         renderer or by the platform, or if the file does not exist.
      */
     public Image loadImage(FilePointer file);
 
     /**
-     * Loads an audio clip from a file. Only MP3 files are guaranteed to be
-     * supported, though other audio formats may be also be supported
+     * Loads an audio clip from a file. OGG and MP3 files are guaranteed to
+     * be supported, though other audio formats may be also be supported
      * depending on the platform.
      * @throws MediaException if the audio format is not supported by the
      *         renderer or by the platform, or if the file does not exist.
@@ -44,13 +43,13 @@ public interface MediaLoader {
      * @throws MediaException if the file does not exist, or if the font
      *         cannot be loaded on the current platform.
      */
-    public TrueTypeFont loadFont(String fontFamily, FilePointer file);
+    public TTFont loadFont(String fontFamily, FilePointer file);
 
     /**
      * Loads the default font, the open source font Open Sans. This is included
      * in MultimediaLib and therefore guaranteed to be always available.
      */
-    default TrueTypeFont loadDefaultFont() {
+    default TTFont loadDefaultFont() {
         FilePointer file = new FilePointer("OpenSans-Regular.ttf");
         return loadFont("Open Sans", file);
     }

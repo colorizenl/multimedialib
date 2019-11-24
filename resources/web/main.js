@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -91,6 +91,15 @@ function drawRect(x, y, width, height, color, alpha) {
     context.globalAlpha = 1.0;
 }
 
+function drawCircle(x, y, radius, color, alpha) {
+    context.globalAlpha = alpha;
+    context.fillStyle = color;
+    context.beginPath();
+    context.arc(x, y, radius, 0, 2.0 * Math.PI);
+    context.fill();
+    context.globalAlpha = 1.0;
+}
+
 function drawPolygon(points, color, alpha) {
     context.fillStyle = color;
     context.globalAlpha = alpha;
@@ -147,11 +156,13 @@ function prepareImage(image, mask) {
     return maskImageCanvas;
 }
 
-function drawText(text, font, size, color, x, y, align) {
+function drawText(text, font, size, color, x, y, align, alpha) {
+    context.globalAlpha = alpha;
     context.fillStyle = color;
     context.font = size + "px " + font;
     context.textAlign = align;
     context.fillText(text, x, y);
+    context.globalAlpha = 1.0;
 }
 
 function onMouseMove(event) {
@@ -183,6 +194,10 @@ function loadImage(id, path) {
     images[id] = imageElement;
 }
 
+function loadAudio(id, path) {
+    audio[id] = new Audio(path);
+}
+
 function loadFont(id, path, fontFamily) {
     var css = "";
     css += "@font-face { ";
@@ -196,6 +211,19 @@ function loadFont(id, path, fontFamily) {
     style.type = 'text/css';
     style.appendChild(document.createTextNode(css));
     fontContainer.appendChild(style);
+}
+
+function playAudio(id, volume, loop) {
+    audio[id].volume = volume;
+    audio[id].loop = loop;
+    audio[id].play();
+}
+
+function stopAudio(id, reset) {
+    audio[id].pause();
+    if (reset) {
+        audio[id].currentTime = 0.0;
+    }
 }
 
 function sendGetRequest(url) {

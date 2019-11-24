@@ -1,21 +1,21 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.tool;
 
 import com.google.common.collect.ImmutableList;
-import nl.colorize.multimedialib.graphics.Alignment;
+import nl.colorize.multimedialib.graphics.Align;
 import nl.colorize.multimedialib.graphics.Animation;
-import nl.colorize.multimedialib.graphics.Audio;
+import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
 import nl.colorize.multimedialib.graphics.ImageAtlas;
 import nl.colorize.multimedialib.graphics.Sprite;
 import nl.colorize.multimedialib.graphics.Transform;
-import nl.colorize.multimedialib.graphics.TrueTypeFont;
+import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.math.Point;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.RandomGenerator;
@@ -26,37 +26,40 @@ import nl.colorize.multimedialib.renderer.GraphicsContext;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Renderer;
+import nl.colorize.multimedialib.scene.Effect;
+import nl.colorize.multimedialib.scene.EffectManager;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.Updatable;
+import nl.colorize.util.animation.Timeline;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 /**
  * Simple demo application that displays a number of animated Mario sprites on
- * top of a black background. The demo application serves two purposes. First,
- * it can be used as an example when using the framework to implement applications.
- * Second, it can be used for verification purposes to determine if a new platform
- * is fully supported.
+ * top of a black background.
+ * <p>
+ * The demo application serves two purposes. First, it can be used as an example
+ * application when using the framework to implement an application. Second, it
+ * can be used for verification purposes to determine if a new platform is fully
+ * supported.
  * <p>
  * The demo application can be started from the command line using the
- * {@link DemoLauncher}. It can also be embedded in applications by embedding
- * this class directly.
+ * {@link DemoLauncher}. It can also be embedded in applications by creating an
+ * instance of this class from the application code.
  */
 public class DemoApplication implements Scene {
 
     private Renderer renderer;
     private SceneContext sceneContext;
 
-    private ImageAtlas marioImageAtlas;
-    private TrueTypeFont font;
+    private ImageAtlas marioSpriteSheet;
+    private TTFont font;
     private List<Mario> marios;
     private Audio audioClip;
-    private List<TouchMarker> touchMarkers;
     private Transform shapeTransform;
-    private boolean mask;
+    private EffectManager effectManager;
 
     private static final FilePointer MARIO_SPRITES_FILE = new FilePointer("mario.png");
     private static final FilePointer AUDIO_FILE = new FilePointer("test.mp3");
@@ -68,7 +71,6 @@ public class DemoApplication implements Scene {
     private static final ColorRGB RED_BUTTON = new ColorRGB(228, 93, 97);
     private static final ColorRGB GREEN_BUTTON = ColorRGB.parseHex("#72A725");
     private static final ColorRGB SHAPE_COLOR = new ColorRGB(200, 0, 0);
-    private static final int TOUCH_MARKER_AGE = 120;
     private static final ColorRGB BACKGROUND_COLOR = ColorRGB.parseHex("#343434");
     private static final Transform MASK_TRANSFORM = Transform.withMask(ColorRGB.WHITE);
 
@@ -88,18 +90,18 @@ public class DemoApplication implements Scene {
 
         font = mediaLoader.loadDefaultFont().derive(ColorRGB.WHITE);
         audioClip = mediaLoader.loadAudio(AUDIO_FILE);
-        touchMarkers = new ArrayList<>();
         shapeTransform = new Transform();
+        effectManager = new EffectManager();
     }
 
     private void initMarioSprites(MediaLoader mediaLoader) {
         Image image = mediaLoader.loadImage(MARIO_SPRITES_FILE);
-        marioImageAtlas = new ImageAtlas(image);
+        marioSpriteSheet = new ImageAtlas(image);
 
         int y = 0;
         for (String direction : ImmutableList.of("north", "east", "south", "west")) {
             for (int i = 0; i <= 4; i++) {
-                marioImageAtlas.markSubImage(direction + "_" + i, new Rect(i * 48, y, 48, 64));
+                marioSpriteSheet.markSubImage(direction + "_" + i, new Rect(i * 48, y, 48, 64));
             }
             y += 64;
         }
@@ -107,27 +109,40 @@ public class DemoApplication implements Scene {
 
     @Override
     public void update(float deltaTime) {
-        handleInput(renderer.getInputDevice());
-        updatePositions(deltaTime);
+        InputDevice inputDevice = renderer.getInputDevice();
+        if (inputDevice.isPointerReleased()) {
+            handleClick(inputDevice);
+        }
+
+        for (Mario mario : marios) {
+            mario.update(deltaTime);
+        }
+
+        effectManager.update(deltaTime);
     }
 
-    private void handleInput(InputDevice inputDevice) {
-        if (inputDevice.isPointerReleased()) {
-            for (int i = 0; i <= NUM_BUTTONS; i++) {
-                if (isButtonClicked(i)) {
-                    handleButtonClick(i);
-                    return;
-                }
-            }
-
-            Point pointer = inputDevice.getPointer();
-            if (pointer.getX() <= 100 && pointer.getY() >= renderer.getCanvas().getHeight() - 100) {
-                randomizeShapeTransform();
+    private void handleClick(InputDevice inputDevice) {
+        for (int i = 0; i <= NUM_BUTTONS; i++) {
+            if (isButtonClicked(i)) {
+                handleButtonClick(i);
                 return;
             }
-
-            touchMarkers.add(new TouchMarker(pointer.getX(), pointer.getY()));
         }
+
+        for (Mario mario : marios) {
+            if (mario.contains(inputDevice.getPointer())) {
+                mario.mask = !mario.mask;
+                return;
+            }
+        }
+
+        Point pointer = inputDevice.getPointer();
+        if (pointer.getX() <= 100 && pointer.getY() >= renderer.getCanvas().getHeight() - 100) {
+            randomizeShapeTransform();
+            return;
+        }
+
+        createTouchMarker(pointer);
     }
 
     private boolean isButtonClicked(int buttonIndex) {
@@ -145,21 +160,6 @@ public class DemoApplication implements Scene {
         }
     }
 
-    private void updatePositions(float deltaTime) {
-        for (Mario mario : marios) {
-            mario.update(deltaTime);
-        }
-
-        Iterator<TouchMarker> touchMarkerIterator = touchMarkers.iterator();
-        while (touchMarkerIterator.hasNext()) {
-            TouchMarker touchMarker = touchMarkerIterator.next();
-            touchMarker.age++;
-            if (touchMarker.age >= TOUCH_MARKER_AGE) {
-                touchMarkerIterator.remove();
-            }
-        }
-    }
-
     private void randomizeShapeTransform() {
         if (Math.random() >= 0.5) {
             shapeTransform.setRotation(shapeTransform.getRotation() + 45);
@@ -168,28 +168,37 @@ public class DemoApplication implements Scene {
         }
     }
 
+    private void createTouchMarker(Point position) {
+        Timeline timeline = new Timeline();
+        timeline.addKeyFrame(0f, 100f);
+        timeline.addKeyFrame(1f, 100f);
+        timeline.addKeyFrame(1.5f, 0f);
+
+        String text = Math.round(position.getX()) + ", " + Math.round(position.getY());
+
+        Effect effect = Effect.forTextAlpha(text, font, Align.LEFT, timeline);
+        effect.setPosition(position);
+        effectManager.play(effect);
+    }
+
     @Override
     public void render(GraphicsContext context) {
         context.drawBackground(BACKGROUND_COLOR);
         drawSprites(context);
         drawHUD(context);
+        effectManager.render(context);
     }
 
     private void drawSprites(GraphicsContext context) {
         for (Mario mario : marios) {
             context.drawSprite(mario.sprite, Math.round(mario.position.getX()),
-                Math.round(mario.position.getY()), mask ? MASK_TRANSFORM : null);
+                Math.round(mario.position.getY()), mario.mask ? MASK_TRANSFORM : null);
         }
 
         context.drawRect(new Rect(10, renderer.getCanvas().getHeight() - 110, 100, 100),
             SHAPE_COLOR, shapeTransform);
         Polygon circle = Polygon.createCircle(10, renderer.getCanvas().getHeight() - 110, 20f, 16);
         context.drawPolygon(circle, ColorRGB.WHITE, Transform.withAlpha(50));
-
-        for (TouchMarker touchMarker : touchMarkers) {
-            context.drawText(touchMarker.text, font, (int) touchMarker.location.getX(),
-                (int) touchMarker.location.getY(), Alignment.LEFT);
-        }
     }
 
     private void drawHUD(GraphicsContext context) {
@@ -200,20 +209,20 @@ public class DemoApplication implements Scene {
         Canvas canvas = renderer.getCanvas();
 
         context.drawText(String.format("Canvas:  %dx%d @ %dx", canvas.getWidth(), canvas.getHeight(),
-            Math.round(canvas.getZoomLevel())), font, 20, 20, Alignment.LEFT);
+            Math.round(canvas.getZoomLevel())), font, 20, 20, Align.LEFT);
         context.drawText("Framerate:  " + Math.round(sceneContext.getAverageFPS()), font, 20, 40,
-            Alignment.LEFT);
+            Align.LEFT);
         context.drawText("Frame time:  " + Math.round(sceneContext.getAverageFrameTime()) + "ms",
-            font, 20, 60, Alignment.LEFT);
+            font, 20, 60, Align.LEFT);
         context.drawText("Sprites:  " + marios.size(), font, 20, 80,
-            Alignment.LEFT);
+            Align.LEFT);
     }
 
     private void drawButton(GraphicsContext context, String label, ColorRGB background, int y) {
         context.drawRect(new Rect(renderer.getCanvas().getWidth() - BUTTON_WIDTH - 2, y + 2,
             BUTTON_WIDTH, BUTTON_HEIGHT), background, null);
         context.drawText(label, font, renderer.getCanvas().getWidth() - BUTTON_WIDTH / 2f, y + 17,
-            Alignment.CENTER);
+            Align.CENTER);
     }
 
     public void addMarios(int amount) {
@@ -227,7 +236,7 @@ public class DemoApplication implements Scene {
     private Sprite createMarioSprite() {
         Sprite marioSprite = new Sprite();
         for (String direction : DIRECTIONS) {
-            List<Image> frames = marioImageAtlas.getSubImages(direction + "_0",
+            List<Image> frames = marioSpriteSheet.getSubImages(direction + "_0",
                 direction + "_1", direction + "_2", direction + "_3", direction + "_4");
             Animation anim = new Animation(frames, 0.1f, true);
             marioSprite.addState(direction, anim);
@@ -251,6 +260,7 @@ public class DemoApplication implements Scene {
         private Point position;
         private int direction;
         private int speed;
+        private boolean mask;
 
         public Mario(Sprite sprite, Rect canvasBounds) {
             RandomGenerator random = new RandomGenerator();
@@ -261,6 +271,7 @@ public class DemoApplication implements Scene {
             this.canvasBounds = canvasBounds;
             this.direction = random.getInt(0, 4);
             this.speed = random.getInt(1, 4);
+            this.mask = false;
         }
 
         @Override
@@ -285,21 +296,12 @@ public class DemoApplication implements Scene {
                 direction = (direction + 2) % 4;
             }
         }
-    }
 
-    /**
-     * Shows the coordinates when the screen has been touched or clicked anywhere
-     * that isn't a button.
-     */
-    private static class TouchMarker {
-
-        private String text;
-        private Point location;
-        private int age;
-
-        public TouchMarker(float x, float y) {
-            this.text = Math.round(x) + ", " + Math.round(y);
-            this.location = new Point(x, y);
+        private boolean contains(Point p) {
+            Rect bounds = new Rect(position.getX() - sprite.getCurrentWidth() / 2f,
+                position.getY() - sprite.getCurrentHeight() / 2f,
+                sprite.getCurrentWidth(), sprite.getCurrentHeight());
+            return bounds.contains(p);
         }
     }
 }

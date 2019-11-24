@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -16,7 +16,7 @@ import java.awt.image.BufferedImage;
 
 import static org.junit.Assert.assertEquals;
 
-public class Java2DImageTest {
+public class AWTImageTest {
 
     @Test
     public void testGetColor() {
@@ -25,7 +25,7 @@ public class Java2DImageTest {
         image.setRGB(1, 0, Color.GREEN.getRGB());
         image.setRGB(2, 0, Color.BLUE.getRGB());
 
-        Java2DImage texture = new Java2DImage(image);
+        AWTImage texture = new AWTImage(image);
 
         assertEquals(ColorRGB.RED, texture.getColor(0, 0));
         assertEquals(ColorRGB.GREEN, texture.getColor(1, 0));
@@ -39,7 +39,7 @@ public class Java2DImageTest {
         image.setRGB(1, 0, new Color(255, 0, 0, 127).getRGB());
         image.setRGB(2, 0, new Color(255, 0, 0, 0).getRGB());
 
-        Java2DImage texture = new Java2DImage(image);
+        AWTImage texture = new AWTImage(image);
 
         assertEquals(100, texture.getAlpha(0, 0));
         assertEquals(50, texture.getAlpha(1, 0));
@@ -53,7 +53,7 @@ public class Java2DImageTest {
         image.setRGB(1, 0, Color.GREEN.getRGB());
         image.setRGB(2, 0, Color.BLUE.getRGB());
 
-        Java2DImage texture = new Java2DImage(image);
+        AWTImage texture = new AWTImage(image);
         Image region = texture.getRegion(new Rect(1, 0, 2, 1));
 
         assertEquals(2, region.getWidth());

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -27,8 +27,9 @@ public class EffectManagerTest {
 
         AtomicInteger count = new AtomicInteger();
 
-        Effect effect = new Effect(new MockImage(), timeline, (e, v) -> {
-            e.getPosition().setY(v);
+        Effect effect = Effect.forImage(new MockImage(), timeline);
+        effect.modify(value -> {
+            effect.getPosition().setY(value);
             count.addAndGet(1);
         });
 

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -12,10 +12,10 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
-import nl.colorize.multimedialib.graphics.Audio;
+import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.graphics.TrueTypeFont;
+import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.math.MathUtils;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.MediaException;
@@ -106,7 +106,7 @@ public class GDXMediaLoader implements MediaLoader {
     }
 
     @Override
-    public TrueTypeFont loadFont(String fontFamily, FilePointer file) {
+    public TTFont loadFont(String fontFamily, FilePointer file) {
         //TODO
         throw new UnsupportedOperationException();
     }

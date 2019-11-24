@@ -17,6 +17,7 @@ Verification instructions
     - Shape scaling
     - Shape alpha
     - Text
+    - Text alpha
     - Load TrueType fonts
 - Audio
     - Audio clip

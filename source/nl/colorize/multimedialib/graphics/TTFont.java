@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -17,7 +17,7 @@ import nl.colorize.multimedialib.renderer.MediaLoader;
  * The second approach is to load a font from a {@code .ttf} file using the
  * {@link MediaLoader} class. This ensures that the requested font is available.
  */
-public class TrueTypeFont {
+public class TTFont {
 
     private String family;
     private int size;
@@ -25,7 +25,7 @@ public class TrueTypeFont {
 
     public static final int DEFAULT_SIZE = 12;
 
-    public TrueTypeFont(String family, int size, ColorRGB color) {
+    public TTFont(String family, int size, ColorRGB color) {
         this.family = family;
         this.size = size;
         this.color = color;
@@ -47,22 +47,22 @@ public class TrueTypeFont {
      * Returns a version of this font that uses the same font family and color,
      * but has a different size.
      */
-    public TrueTypeFont derive(int newSize) {
-        return new TrueTypeFont(family, newSize, color);
+    public TTFont derive(int newSize) {
+        return new TTFont(family, newSize, color);
     }
 
     /**
      * Returns a version of this font which uses the same font family and size,
      * but has a different color.
      */
-    public TrueTypeFont derive(ColorRGB newColor) {
-        return new TrueTypeFont(family, size, newColor);
+    public TTFont derive(ColorRGB newColor) {
+        return new TTFont(family, size, newColor);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof TrueTypeFont) {
-            TrueTypeFont other = (TrueTypeFont) o;
+        if (o instanceof TTFont) {
+            TTFont other = (TTFont) o;
             return family.equals(other.family) && size == other.size;
         } else {
             return false;

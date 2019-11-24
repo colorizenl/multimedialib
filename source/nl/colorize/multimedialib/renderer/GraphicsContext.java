@@ -1,17 +1,19 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
-import nl.colorize.multimedialib.graphics.Alignment;
+import nl.colorize.multimedialib.graphics.Align;
+import nl.colorize.multimedialib.graphics.AlphaTransform;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
 import nl.colorize.multimedialib.graphics.Sprite;
 import nl.colorize.multimedialib.graphics.Transform;
-import nl.colorize.multimedialib.graphics.TrueTypeFont;
+import nl.colorize.multimedialib.graphics.TTFont;
+import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 
@@ -39,9 +41,11 @@ public interface GraphicsContext {
 
     public void drawBackground(ColorRGB backgroundColor);
 
-    public void drawRect(Rect rect, ColorRGB color, Transform transform);
+    public void drawRect(Rect rect, ColorRGB color, AlphaTransform alpha);
 
-    public void drawPolygon(Polygon polygon, ColorRGB color, Transform transform);
+    public void drawCircle(Circle circle, ColorRGB color, AlphaTransform alpha);
+
+    public void drawPolygon(Polygon polygon, ColorRGB color, AlphaTransform alpha);
 
     public void drawImage(Image image, float x, float y, Transform transform);
 
@@ -49,9 +53,13 @@ public interface GraphicsContext {
         drawImage(sprite.getCurrentGraphics(), x, y, transform);
     }
 
-    public void drawText(String text, TrueTypeFont font, float x, float y, Alignment align);
+    public void drawText(String text, TTFont font, float x, float y, Align align, AlphaTransform alpha);
 
-    default void drawText(String text, TrueTypeFont font, float x, float y) {
-        drawText(text, font, x, y, Alignment.LEFT);
+    default void drawText(String text, TTFont font, float x, float y, Align align) {
+        drawText(text, font, x, y, align, null);
+    }
+
+    default void drawText(String text, TTFont font, float x, float y) {
+        drawText(text, font, x, y, Align.LEFT, null);
     }
 }

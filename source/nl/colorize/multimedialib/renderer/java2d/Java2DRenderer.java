@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -187,8 +187,6 @@ public class Java2DRenderer extends AbstractRenderer {
     }
 
     private void performFrameRender(Graphics2D g2) {
-        Canvas canvas = getCanvas();
-
         g2.setColor(Color.BLACK);
         g2.fillRect(0, 0, window.getWidth(), window.getHeight());
 

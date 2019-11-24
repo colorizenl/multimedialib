@@ -1,16 +1,16 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.java2d;
 
 import com.google.common.base.Charsets;
-import nl.colorize.multimedialib.graphics.Audio;
+import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.graphics.TrueTypeFont;
+import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
@@ -34,7 +34,7 @@ import java.util.Map;
  */
 public class StandardMediaLoader implements MediaLoader {
 
-    private Map<TrueTypeFont, Font> loadedFonts;
+    private Map<TTFont, Font> loadedFonts;
 
     public StandardMediaLoader() {
         this.loadedFonts = new HashMap<>();
@@ -46,7 +46,7 @@ public class StandardMediaLoader implements MediaLoader {
             ResourceFile source = new ResourceFile(file.getPath());
             BufferedImage loadedImage = Utils2D.loadImage(source.openStream());
             BufferedImage compatibleImage = Utils2D.makeImageCompatible(loadedImage);
-            return new Java2DImage(compatibleImage);
+            return new AWTImage(compatibleImage);
         } catch (IOException e) {
             throw new MediaException("Cannot load image from " + file.getPath(), e);
         }
@@ -54,15 +54,15 @@ public class StandardMediaLoader implements MediaLoader {
 
     @Override
     public Audio loadAudio(FilePointer file) {
-        return new JavaSoundPlayer();
+        return new MP3(new ResourceFile(file.getPath()));
     }
 
     @Override
-    public TrueTypeFont loadFont(String fontFamily, FilePointer file) {
+    public TTFont loadFont(String fontFamily, FilePointer file) {
         ResourceFile source = new ResourceFile(file.getPath());
         try (InputStream stream = source.openStream()) {
             Font awtFont = Font.createFont(Font.TRUETYPE_FONT, stream);
-            awtFont = awtFont.deriveFont(Font.PLAIN, TrueTypeFont.DEFAULT_SIZE);
+            awtFont = awtFont.deriveFont(Font.PLAIN, TTFont.DEFAULT_SIZE);
 
             GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
             env.registerFont(awtFont);
@@ -70,7 +70,7 @@ public class StandardMediaLoader implements MediaLoader {
             // This ignores the value of the fontFamily parameter and
             // will use whatever font family name defined in the file
             // itself, since this is considered more reliable.
-            TrueTypeFont font = new TrueTypeFont(awtFont.getFamily(), TrueTypeFont.DEFAULT_SIZE,
+            TTFont font = new TTFont(awtFont.getFamily(), TTFont.DEFAULT_SIZE,
                 ColorRGB.BLACK);
             loadedFonts.put(font, awtFont);
 
@@ -80,7 +80,7 @@ public class StandardMediaLoader implements MediaLoader {
         }
     }
 
-    protected Font getFont(TrueTypeFont font) {
+    protected Font getFont(TTFont font) {
         Font awtFont = loadedFonts.get(font);
         if (awtFont == null) {
             awtFont = new Font(font.getFamily(), Font.PLAIN, font.getSize());

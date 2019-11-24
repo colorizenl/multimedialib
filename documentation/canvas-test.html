@@ -23,6 +23,12 @@
         function main() {
             drawRect(10, 10, 100, 100, "#DD0000", 1.0);
             drawRect(120, 10, 100, 100, "#DD0000", 0.5);
+            drawCircle(200, 100, 50, "DD0000", 1.0);
+
+            context.fillStyle = "#FFFFFF";
+            context.font = "20px Helvetica";
+            context.globalAlpha = 0.5;
+            context.fillText("Text rendering", 300, 100);
 
             setTimeout(function() {
                 var testImage = document.getElementById("testImage");

@@ -1,13 +1,12 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.graphics;
+package nl.colorize.multimedialib.renderer;
 
 import com.google.common.base.Preconditions;
-import nl.colorize.multimedialib.renderer.MediaLoader;
 
 /**
  * Represents an audio clip. Audio can be loaded from one of the common file
@@ -27,11 +26,14 @@ public abstract class Audio {
 
     public abstract void play();
 
+    public abstract void pause();
+
     public abstract void stop();
 
     public void setVolume(int volume) {
         Preconditions.checkArgument(volume >= 0 && volume <= 100,
             "Volume out of range 0 - 100: " + volume);
+
         this.volume = volume;
     }
 

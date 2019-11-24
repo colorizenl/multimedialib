@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -40,11 +40,11 @@ public class TeaVMTranspilerTest {
         String generatedCode = Files.toString(new File(outputDir, "classes.js"), Charsets.UTF_8);
 
         String expected = "";
-        expected += "function ncmt_TeaVMTranspilerToolTest$MockApp_main($args) {\n";
+        expected += "function ncmt_TeaVMTranspilerTest$MockApp_main($args) {\n";
         expected += "    var $result;\n";
         expected += "    $result = ju_ArrayList__init_();\n";
-        expected += "    $result.$add($rt_s(3));\n";
-        expected += "    $result.$add($rt_s(4));\n";
+        expected += "    $result.$add($rt_s(1));\n";
+        expected += "    $result.$add($rt_s(2));\n";
         expected += "    $result.$clear();\n";
         expected += "}\n";
 

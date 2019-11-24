@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -19,11 +19,13 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import nl.colorize.multimedialib.graphics.Alignment;
+import nl.colorize.multimedialib.graphics.Align;
+import nl.colorize.multimedialib.graphics.AlphaTransform;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
+import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.graphics.Transform;
-import nl.colorize.multimedialib.graphics.TrueTypeFont;
+import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.AbstractRenderer;
@@ -55,6 +57,7 @@ public class GDXRenderer extends AbstractRenderer implements ApplicationListener
 
     private static final Transform DEFAULT_TRANSFORM = new Transform();
     private static final List<Integer> SUPPORTED_FRAMERATES = ImmutableList.of(20, 25, 30, 60);
+    private static final int CIRCLE_PRECISION = 16;
 
     public GDXRenderer(Canvas canvas, int framerate, WindowOptions windowOptions) {
         super(canvas);
@@ -148,9 +151,10 @@ public class GDXRenderer extends AbstractRenderer implements ApplicationListener
     }
 
     @Override
-    public void drawRect(Rect rect, ColorRGB color, Transform transform) {
-        if (transform == null) {
-            transform = DEFAULT_TRANSFORM;
+    public void drawRect(Rect rect, ColorRGB color, AlphaTransform alpha) {
+        Transform transform = new Transform();
+        if (alpha != null) {
+            transform.setAlpha(alpha.getAlpha());
         }
 
         Texture colorTexture = mediaLoader.getColorTexture(color);
@@ -162,7 +166,19 @@ public class GDXRenderer extends AbstractRenderer implements ApplicationListener
     }
 
     @Override
-    public void drawPolygon(Polygon polygon, ColorRGB color, Transform transform) {
+    public void drawCircle(Circle circle, ColorRGB color, AlphaTransform transform) {
+        Polygon polygon = Polygon.createCircle(circle.getCenter().getX(), circle.getCenter().getY(),
+            circle.getRadius(), CIRCLE_PRECISION);
+        drawPolygon(polygon, color, transform);
+    }
+
+    @Override
+    public void drawPolygon(Polygon polygon, ColorRGB color, AlphaTransform alpha) {
+        Transform transform = new Transform();
+        if (alpha != null) {
+            transform.setAlpha(alpha.getAlpha());
+        }
+
         float minX = polygon.getPointX(0);
         float minY = polygon.getPointY(1);
         float maxX = polygon.getPointX(0);
@@ -207,7 +223,7 @@ public class GDXRenderer extends AbstractRenderer implements ApplicationListener
     }
 
     @Override
-    public void drawText(String text, TrueTypeFont font, float x, float y, Alignment align) {
+    public void drawText(String text, TTFont font, float x, float y, Align align, AlphaTransform transform) {
         //TODO
         throw new UnsupportedOperationException();
     }

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -18,11 +18,11 @@ import java.awt.image.BufferedImage;
  * Images can be loaded from files using ImageIO, and can also be created
  * programmatically.
  */
-public class Java2DImage implements Image {
+public class AWTImage implements Image {
 
     private BufferedImage image;
     
-    public Java2DImage(BufferedImage image) {
+    public AWTImage(BufferedImage image) {
         this.image = image;
     }
     
@@ -44,7 +44,7 @@ public class Java2DImage implements Image {
     public Image getRegion(Rect region) {
         BufferedImage subImage = image.getSubimage(Math.round(region.getX()), Math.round(region.getY()),
             Math.round(region.getWidth()), Math.round(region.getHeight()));
-        return new Java2DImage(subImage);
+        return new AWTImage(subImage);
     }
 
     @Override

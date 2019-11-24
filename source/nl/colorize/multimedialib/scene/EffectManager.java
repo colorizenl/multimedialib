@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -13,7 +13,10 @@ import java.util.List;
 
 /**
  * Controls registration and playback for graphical effects that can be played
- * as part of a scene.
+ * as part of a scene. It can either be used in combination with
+ * {@link Subsystem} for out-of-the-box support, but instances can also be
+ * created manually assuming the effect manager is updated and rendered during
+ * every frame.
  */
 public class EffectManager implements Subsystem {
 

@@ -1,13 +1,20 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.teavm;
 
-import nl.colorize.multimedialib.graphics.Audio;
+import nl.colorize.multimedialib.renderer.Audio;
 
+/**
+ * Plays audio clips using the HTML5 media API that is supported by all modern
+ * browsers.
+ * <p>
+ * Supported audio formats depend on the browser. All browsers support OGG,
+ * all browsers except Firefox support MP3.
+ */
 public class TeaAudio extends Audio {
 
     private String id;
@@ -18,11 +25,16 @@ public class TeaAudio extends Audio {
 
     @Override
     public void play() {
-        Browser.playAudio(id);
+        Browser.playAudio(id, getVolume() / 100f, isLoop());
+    }
+
+    @Override
+    public void pause() {
+        Browser.stopAudio(id, false);
     }
 
     @Override
     public void stop() {
-        Browser.stopAudio(id);
+        Browser.stopAudio(id, true);
     }
 }

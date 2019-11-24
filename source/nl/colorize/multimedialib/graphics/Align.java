@@ -1,14 +1,16 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
-package org.teavm.classlib.java.util.logging;
+package nl.colorize.multimedialib.graphics;
 
-import java.util.logging.LogRecord;
-
-public abstract class TFormatter {
-
-    public abstract String format(LogRecord record);
+/**
+ * Describes the alignment with which a text should be displayed.
+ */
+public enum Align {
+    LEFT,
+    CENTER,
+    RIGHT
 }

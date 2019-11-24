@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -9,8 +9,7 @@ package nl.colorize.multimedialib.math;
 import java.util.Objects;
 
 /**
- * A mutable point describing two-dimensional coordinates. The coordinates
- * are defined with float precision.
+ * Point with X and Y coordinates, defined with float precision.
  */
 public class Point {
 
@@ -49,9 +48,13 @@ public class Point {
         set(p.getX(), p.getY());
     }
 
-    public void add(float deltaX, float deltaY) {
+    public void move(float deltaX, float deltaY) {
         x += deltaX;
         y += deltaY;
+    }
+
+    public void add(float deltaX, float deltaY) {
+        move(deltaX, deltaY);
     }
 
     /**

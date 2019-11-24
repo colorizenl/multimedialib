@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -12,7 +12,7 @@ import com.google.common.collect.ImmutableList;
 import nl.colorize.multimedialib.graphics.SpriteSheet;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.MediaException;
-import nl.colorize.multimedialib.renderer.java2d.Java2DImage;
+import nl.colorize.multimedialib.renderer.java2d.AWTImage;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.swing.Utils2D;
 import org.kohsuke.args4j.Option;
@@ -72,7 +72,7 @@ public class SpriteSheetPacker extends CommandLineTool {
         SpriteSheet spritesheet = packImages(images);
 
         try {
-            Utils2D.savePNG(((Java2DImage) spritesheet.getImage()).getImage(), outputImageFile);
+            Utils2D.savePNG(((AWTImage) spritesheet.getImage()).getImage(), outputImageFile);
             saveDataFile(spritesheet);
             LOGGER.info("Saved sprite sheet to " + outputImageFile.getAbsolutePath());
         } catch (IOException e) {
@@ -111,7 +111,7 @@ public class SpriteSheetPacker extends CommandLineTool {
     private SpriteSheet packImages(Map<File, BufferedImage> images) {
         BufferedImage buffer = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = Utils2D.createGraphics(buffer, true, true);
-        SpriteSheet spritesheet = new SpriteSheet(new Java2DImage(buffer));
+        SpriteSheet spritesheet = new SpriteSheet(new AWTImage(buffer));
 
         int x = 0;
         int y = 0;

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -11,8 +11,7 @@ import com.google.common.base.Preconditions;
 import java.util.Objects;
 
 /**
- * A mutable two-dimensional rectangle. The coordinates are defined with float
- * precision.
+ * Two-dimensional rectangle with coordinates defined with float precision.
  */
 public class Rect implements Shape {
 

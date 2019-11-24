@@ -59,8 +59,8 @@ This command line tool takes the following arguments:
 | -main        | yes      | Main class that acts as application entry point.                   |
 | -incremental | no       | Enable to preserve existing resource files and not overwrite them. |
 
-Packing multiple images into a sprite sheet
--------------------------------------------
+Packing images into a sprite sheet
+----------------------------------
 
 A "sprite sheet" is a large image that consists of a large image that contains multiple sprites,
 with each sprite is identified by a name and a set of coordinates. A sprite sheet consists of the
@@ -77,6 +77,10 @@ following arguments.
 | -outimage | yes      | Generated image file location.      |
 | -outdata  | yes      | Generated YAML data file location.  |
 | -size     | yes      | Width/height of the sprite sheet.   |
+
+This will generate the PNG file containing the sprite sheet graphics and the YAML file with
+metadata in the specified locations. A description of the YAML file format can be found in the
+[sprite sheet file format documentation.](documentation/spritesheet-file-format.md).  
     
 Starting the demo application
 -----------------------------
@@ -124,7 +128,7 @@ The following Gradle build tasks are available:
 License
 -------
 
-Copyright 2011-2019 Colorize
+Copyright 2009-2020 Colorize
 
 The source code is licensed under the Apache License 2.0, meaning you can use it free of charge 
 in commercial and non-commercial projects as long as you mention the original copyright.

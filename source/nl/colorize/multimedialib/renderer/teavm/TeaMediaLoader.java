@@ -1,16 +1,16 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.teavm;
 
 import com.google.common.base.Splitter;
-import nl.colorize.multimedialib.graphics.Audio;
+import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.graphics.TrueTypeFont;
+import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 
@@ -23,7 +23,7 @@ public class TeaMediaLoader implements MediaLoader {
 
     private Map<Image, String> imageIds;
     private Map<Audio, String> audioIds;
-    private Map<TrueTypeFont, String> fontIds;
+    private Map<TTFont, String> fontIds;
 
     private static final Splitter LINE_SPLITTER = Splitter.on("\n").trimResults().omitEmptyStrings();
 
@@ -54,10 +54,10 @@ public class TeaMediaLoader implements MediaLoader {
     }
 
     @Override
-    public TrueTypeFont loadFont(String fontFamily, FilePointer file) {
+    public TTFont loadFont(String fontFamily, FilePointer file) {
         String id = String.valueOf(fontIds.size() + 1);
         Browser.loadFont(id, normalizeFilePath(file, false), fontFamily);
-        return new TrueTypeFont(fontFamily, TrueTypeFont.DEFAULT_SIZE, ColorRGB.BLACK);
+        return new TTFont(fontFamily, TTFont.DEFAULT_SIZE, ColorRGB.BLACK);
     }
 
     @Override

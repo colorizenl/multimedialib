@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -80,6 +80,12 @@ public class Browser {
                                        String color, float alpha);
 
     @JSBody(
+        params = {"x", "y", "radius", "color", "alpha"},
+        script = "drawCircle(x, y, radius, color, alpha);"
+    )
+    public static native void drawCircle(float x, float y, float radius, String color, float alpha);
+
+    @JSBody(
         params = {"points", "color", "alpha"},
         script = "drawPolygon(points, color, alpha);"
     )
@@ -104,11 +110,11 @@ public class Browser {
                                               float alpha, String mask);
 
     @JSBody(
-        params = {"text", "font", "size", "color", "x", "y", "align"},
-        script = "drawText(text, font, size, color, x, y, align);"
+        params = {"text", "font", "size", "color", "x", "y", "align", "alpha"},
+        script = "drawText(text, font, size, color, x, y, align, alpha);"
     )
     public static native void drawText(String text, String font, int size, String color,
-                                       float x, float y, String align);
+                                       float x, float y, String align, float alpha);
 
     @JSBody(script = "return pointerX;")
     public static native float getPointerX();
@@ -145,21 +151,21 @@ public class Browser {
 
     @JSBody(
         params = {"id", "path"},
-        script = "audio[id] = new Audio(path);"
+        script = "loadAudio(id, path);"
     )
     public static native void loadAudio(String id, String path);
 
     @JSBody(
-        params = {"id"},
-        script = "audio[id].play();"
+        params = {"id", "volume", "loop"},
+        script = "playAudio(id, volume, loop);"
     )
-    public static native void playAudio(String id);
+    public static native void playAudio(String id, float volume, boolean loop);
 
     @JSBody(
-        params = {"id"},
-        script = "audio[id].pause();"
+        params = {"id", "reset"},
+        script = "stopAudio(id, reset);"
     )
-    public static native void stopAudio(String id);
+    public static native void stopAudio(String id, boolean reset);
 
     @JSBody(
         params = {"id", "path", "fontFamily"},

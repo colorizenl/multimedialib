@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -9,11 +9,11 @@ package nl.colorize.multimedialib.math;
 import java.util.Objects;
 
 /**
- * A mutable two-dimensional vector with float precision. The vector is defined
- * by a magnitude, and a direction which is an angle in degrees. An angle of 0
- * degrees represents the vector (1, 0). Angles greater than 0 rotate in a
- * clockwise direction, so an angle of 180 degress would represent the vector
- * (-1, 0).
+ * A two-dimensional vector with a direction and a magnitude, both defined with
+ * float precision. The direction of the vector is defined by an angle in
+ * degrees. An angle of 0 degrees represents the vector (1, 0). Angles greater
+ * than 0 rotate in a clockwise direction, so an angle of 180 degress would
+ * represent the vector (-1, 0).
  */
 public class Vector {
 

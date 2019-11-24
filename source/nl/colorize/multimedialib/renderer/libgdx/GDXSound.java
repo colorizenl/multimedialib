@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -8,7 +8,7 @@ package nl.colorize.multimedialib.renderer.libgdx;
 
 import com.badlogic.gdx.audio.Sound;
 import com.google.common.base.Preconditions;
-import nl.colorize.multimedialib.graphics.Audio;
+import nl.colorize.multimedialib.renderer.Audio;
 
 /**
  * Refers to an audio clip that is managed by libGDX.
@@ -26,7 +26,17 @@ public class GDXSound extends Audio {
     @Override
     public void play() {
         Preconditions.checkState(!disposed, "Sound has already been disposed");
-        sound.play();
+
+        if (isLoop()) {
+            sound.loop(getVolume() / 100f);
+        } else {
+            sound.play(getVolume() / 100f);
+        }
+    }
+
+    @Override
+    public void pause() {
+        sound.pause();
     }
 
     @Override

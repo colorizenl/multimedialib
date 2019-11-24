@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2011-2019 Colorize
+// Copyright 2009-2020 Colorize
 // Apache license (http://www.colorize.nl/code_license.txt)
 //-----------------------------------------------------------------------------
 
@@ -19,7 +19,7 @@ import com.google.common.base.Preconditions;
  *   <li>Alpha (as a percentage, 100% is opaque, 0% is fully transparent)
  * </ul>
  */
-public class Transform {
+public class Transform implements AlphaTransform {
 
     private int rotation;
     private int scaleX;
@@ -94,7 +94,8 @@ public class Transform {
         Preconditions.checkArgument(alpha >= 0 && alpha <= 100, "Invalid alpha: " + alpha);
         this.alpha = alpha;
     }
-    
+
+    @Override
     public int getAlpha() {
         return alpha;
     }
