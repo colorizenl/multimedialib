@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.libgdx;
@@ -12,19 +12,17 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
-import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
 import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.math.MathUtils;
+import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
-import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.ResourceFile;
 import org.teavm.apachecommons.io.Charsets;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -114,11 +112,7 @@ public class GDXMediaLoader implements MediaLoader {
     @Override
     public String loadText(FilePointer file) {
         ResourceFile resourceFile = new ResourceFile(file.getPath());
-        try {
-            return resourceFile.read(Charsets.UTF_8);
-        } catch (IOException e) {
-            throw new MediaException("Cannot load file: " + file);
-        }
+        return resourceFile.read(Charsets.UTF_8);
     }
 
     public void dispose() {

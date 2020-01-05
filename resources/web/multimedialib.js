@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 var canvas = null;
@@ -20,8 +20,7 @@ var pointerState = 0;
 var keyStates = {};
 
 var maskCache = {};
-
-var ASPECT_RATIO = 1.6;
+var imageDataCache = {};
 
 document.addEventListener("DOMContentLoaded", function(event) {
     var container = document.getElementById("multimediaLibContainer");
@@ -49,11 +48,9 @@ function initContainer(container) {
 
 function initCanvas(container) {
     var width = Math.round(container.offsetWidth);
-    var height = Math.round(width / ASPECT_RATIO);
+    var height = Math.round(document.documentElement.clientHeight);
 
     canvas = createCanvas(width, height);
-    canvas.style["margin-left"] = "auto";
-    canvas.style["margin-right"] = "auto";
     canvas.addEventListener("mousemove", onMouseMove);
     canvas.addEventListener("mousedown", onMouseDown);
     canvas.addEventListener("mouseup", onMouseUp);
@@ -63,6 +60,11 @@ function initCanvas(container) {
     container.appendChild(canvas);
 
     context = canvas.getContext("2d");
+
+    window.addEventListener("resize", function() {
+        canvas.width = Math.round(container.offsetWidth);
+        canvas.height = Math.round(document.documentElement.clientHeight);
+    });
 
     document.getElementById("loading").style.display = "none";
 }
@@ -114,23 +116,25 @@ function drawPolygon(points, color, alpha) {
 
 function drawImage(id, x, y, width, height, alpha, mask) {
     if (images[id]) {
-        var image = prepareImage(images[id], mask);
-
-        context.globalAlpha = alpha;
-        context.drawImage(image, x, y, width, height);
-        context.globalAlpha = 1.0;
+        drawImageRegion(id, 0, 0, images[id].width, images[id].height, x, y, width, height,
+            0.0, 1.0, 1.0, alpha, mask);
     }
 }
 
 function drawImageRegion(id, regionX, regionY, regionWidth, regionHeight, x, y, width, height,
-                         alpha, mask) {
+                         rotation, scaleX, scaleY, alpha, mask) {
     if (images[id]) {
         var image = prepareImage(images[id], mask);
 
+        context.save();
         context.globalAlpha = alpha;
+        context.translate(x, y);
+        context.rotate(rotation);
+        context.scale(scaleX, scaleY);
         context.drawImage(image, regionX, regionY, regionWidth, regionHeight,
-                          x, y, width, height);
+                          -width / 2.0, -height / 2.0, width, height);
         context.globalAlpha = 1.0;
+        context.restore();
     }
 }
 
@@ -207,10 +211,37 @@ function loadFont(id, path, fontFamily) {
     css += "    src: url('" + path + "') format('truetype'); ";
     css += "}; ";
 
-    var style = document.createElement('style');
-    style.type = 'text/css';
+    var style = document.createElement("style");
+    style.type = "text/css";
     style.appendChild(document.createTextNode(css));
     fontContainer.appendChild(style);
+}
+
+function getImageData(id, x, y) {
+    if (images[id]) {
+        var image = images[id];
+        var imageData = imageDataCache[id];
+
+        if (imageData == null) {
+            var imageCanvas = createCanvas(image.width, image.height);
+            var imageCanvasContext = imageCanvas.getContext("2d");
+            imageCanvasContext.drawImage(image, 0, 0);
+            imageData = imageCanvasContext;
+
+            if (isImageDataAvailable(imageData, x, y)) {
+                imageDataCache[id] = imageData;
+            }
+        }
+
+        return imageData.getImageData(x, y, 1, 1).data;
+    } else {
+        return [-1, -1, -1, 255];
+    }
+}
+
+function isImageDataAvailable(imageData, x, y) {
+    var rgba = imageData.getImageData(x, y, 1, 1).data;
+    return (rgba[0] + rgba[1] + rgba[2] + rgba[3]) != 0;
 }
 
 function playAudio(id, volume, loop) {

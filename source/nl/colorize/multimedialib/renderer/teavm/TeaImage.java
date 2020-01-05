@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.teavm;
@@ -55,12 +55,22 @@ public class TeaImage implements Image {
 
     @Override
     public ColorRGB getColor(int x, int y) {
-        throw new UnsupportedOperationException();
+        float[] rgba = Browser.getImageData(id, x, y);
+        int r = Math.round(rgba[0]);
+        int g = Math.round(rgba[1]);
+        int b = Math.round(rgba[2]);
+
+        if (r < 0) {
+            return null;
+        }
+
+        return new ColorRGB(r, g, b);
     }
 
     @Override
     public int getAlpha(int x, int y) {
-        throw new UnsupportedOperationException();
+        float[] rgba = Browser.getImageData(id, x, y);
+        return Math.round(rgba[3] / 2.55f);
     }
 
     @Override

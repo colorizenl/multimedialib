@@ -1,22 +1,16 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.mock;
 
-import nl.colorize.multimedialib.renderer.InputDevice;
-import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.GraphicsContext;
 import nl.colorize.multimedialib.scene.Scene;
-import nl.colorize.multimedialib.scene.SceneContext;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Mock implementation of the {@code Scene} interface.
- */
 public class MockScene implements Scene {
     
     private AtomicInteger startCount;
@@ -30,7 +24,7 @@ public class MockScene implements Scene {
     }
 
     @Override
-    public void start(SceneContext context) {
+    public void start() {
         startCount.incrementAndGet();
     }
 

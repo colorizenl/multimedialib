@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.math;
@@ -57,6 +57,23 @@ public class Point {
         move(deltaX, deltaY);
     }
 
+    public void add(float delta) {
+        add(delta, delta);
+    }
+
+    public void add(Point p) {
+        add(p.getX(), p.getY());
+    }
+
+    public void multiply(float deltaX, float deltaY) {
+        x *= deltaX;
+        y *= deltaY;
+    }
+
+    public void multiply(float delta) {
+        multiply(delta, delta);
+    }
+
     /**
      * Returns the distance between this point and the specified other point.
      */
@@ -107,6 +124,6 @@ public class Point {
 
     @Override
     public String toString() {
-        return Math.round(x) + ", " + Math.round(y);
+        return "(" + Math.round(x) + ", " + Math.round(y) + ")";
     }
 }

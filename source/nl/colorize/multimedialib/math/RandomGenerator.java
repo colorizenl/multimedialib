@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.math;
@@ -18,17 +18,16 @@ import java.util.Random;
  */
 public class RandomGenerator {
 
-    private Random generator;
+    private static Random generator = new Random();
 
-    public RandomGenerator() {
-        this.generator = new Random();
+    private RandomGenerator() {
     }
 
     /**
      * Returns a random integer somewhere in the range between the minimum
      * (inclusive) and maximum (exclusive).
      */
-    public int getInt(int min, int max) {
+    public static int getInt(int min, int max) {
         Preconditions.checkArgument(max > min, "Invalid range: " + min + " - " + max);
 
         return min + generator.nextInt(max - min);
@@ -38,7 +37,7 @@ public class RandomGenerator {
      * Returns a random float somewhere in the range between the minimum
      * (inclusive) and maximum (exclusive).
      */
-    public float getFloat(float min, float max) {
+    public static float getFloat(float min, float max) {
         Preconditions.checkArgument(max > min, "Invalid range: " + min + " - " + max);
 
         return min + generator.nextFloat() * (max - min);
@@ -49,7 +48,7 @@ public class RandomGenerator {
      * against {@code n} and returns the result. In other words, passing a value
      * of 0.9 against this method will have a 90% chance of returning true.
      */
-    public boolean chance(float n) {
+    public static boolean chance(float n) {
         Preconditions.checkArgument(n >= 0f && n <= 1f, "Number out of range: " + n);
 
         float value = generator.nextFloat();
@@ -60,7 +59,7 @@ public class RandomGenerator {
      * Picks and returns a random element from the specified list.
      * @throws IllegalArgumentException if the provided list is empty.
      */
-    public <T> T pick(List<T> elements) {
+    public static <T> T pick(List<T> elements) {
         Preconditions.checkArgument(!elements.isEmpty(), "Cannot pick from empty list");
 
         int index = getInt(0, elements.size());

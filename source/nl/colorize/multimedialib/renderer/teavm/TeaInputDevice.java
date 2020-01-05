@@ -1,13 +1,14 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.teavm;
 
 import com.google.common.collect.ImmutableMap;
 import nl.colorize.multimedialib.math.Point;
+import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.scene.Updatable;
@@ -18,9 +19,12 @@ import java.util.Set;
 
 public class TeaInputDevice implements InputDevice, Updatable {
 
+    private Canvas canvas;
+
     private Point pointer;
     private boolean pointerDown;
     private boolean pointerUp;
+
     private Set<Integer> keysDown;
     private Set<Integer> keysUp;
 
@@ -33,6 +37,8 @@ public class TeaInputDevice implements InputDevice, Updatable {
             .put(KeyCode.ENTER, 13)
             .put(KeyCode.SPACEBAR, 32)
             .put(KeyCode.ESCAPE, 27)
+            .put(KeyCode.SHIFT, 16)
+            .put(KeyCode.BACKSPACE, 8)
             .put(KeyCode.A, 65)
             .put(KeyCode.B, 66)
             .put(KeyCode.C, 67)
@@ -71,10 +77,13 @@ public class TeaInputDevice implements InputDevice, Updatable {
             .put(KeyCode.N0, 48)
             .build();
 
-    public TeaInputDevice() {
+    public TeaInputDevice(Canvas canvas) {
+        this.canvas = canvas;
+
         this.pointer = new Point(0f, 0f);
         this.pointerDown = false;
         this.pointerUp = false;
+
         this.keysDown = new HashSet<>();
         this.keysUp = new HashSet<>();
     }
@@ -123,7 +132,9 @@ public class TeaInputDevice implements InputDevice, Updatable {
 
     @Override
     public Point getPointer() {
-        return pointer.copy();
+        float canvasX = canvas.toCanvasX(Math.round(pointer.getX()));
+        float canvasY = canvas.toCanvasY(Math.round(pointer.getY()));
+        return new Point(canvasX, canvasY);
     }
 
     @Override
@@ -149,5 +160,10 @@ public class TeaInputDevice implements InputDevice, Updatable {
     @Override
     public boolean isKeyReleased(KeyCode keyCode) {
         return keysUp.contains(BROWSER_KEY_CODE_MAPPING.get(keyCode));
+    }
+
+    @Override
+    public String requestTextInput(String label, String initialValue) {
+        return Browser.prompt(label, initialValue);
     }
 }

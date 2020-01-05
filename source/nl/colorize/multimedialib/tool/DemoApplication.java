@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.tool;
@@ -9,32 +9,39 @@ package nl.colorize.multimedialib.tool;
 import com.google.common.collect.ImmutableList;
 import nl.colorize.multimedialib.graphics.Align;
 import nl.colorize.multimedialib.graphics.Animation;
-import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.graphics.ImageAtlas;
 import nl.colorize.multimedialib.graphics.Sprite;
-import nl.colorize.multimedialib.graphics.Transform;
+import nl.colorize.multimedialib.graphics.SpriteSheet;
 import nl.colorize.multimedialib.graphics.TTFont;
+import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Point;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.RandomGenerator;
 import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GraphicsContext;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Renderer;
+import nl.colorize.multimedialib.scene.Application;
+import nl.colorize.multimedialib.scene.Button;
 import nl.colorize.multimedialib.scene.Effect;
 import nl.colorize.multimedialib.scene.EffectManager;
 import nl.colorize.multimedialib.scene.Scene;
-import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.scene.SelectBox;
+import nl.colorize.multimedialib.scene.Subsystem;
+import nl.colorize.multimedialib.scene.TextField;
 import nl.colorize.multimedialib.scene.Updatable;
+import nl.colorize.util.LogHelper;
 import nl.colorize.util.animation.Timeline;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * Simple demo application that displays a number of animated Mario sprites on
@@ -52,14 +59,20 @@ import java.util.List;
 public class DemoApplication implements Scene {
 
     private Renderer renderer;
-    private SceneContext sceneContext;
+    private Application app;
 
-    private ImageAtlas marioSpriteSheet;
+    private SpriteSheet marioSpriteSheet;
     private TTFont font;
     private List<Mario> marios;
     private Audio audioClip;
     private Transform shapeTransform;
     private EffectManager effectManager;
+    private boolean canvasMask;
+    private List<Subsystem> uiWidgets;
+
+    public static final int DEFAULT_CANVAS_WIDTH = 800;
+    public static final int DEFAULT_CANVAS_HEIGHT = 600;
+    public static final int DEFAULT_FRAMERATE = 60;
 
     private static final FilePointer MARIO_SPRITES_FILE = new FilePointer("mario.png");
     private static final FilePointer AUDIO_FILE = new FilePointer("test.mp3");
@@ -73,16 +86,16 @@ public class DemoApplication implements Scene {
     private static final ColorRGB SHAPE_COLOR = new ColorRGB(200, 0, 0);
     private static final ColorRGB BACKGROUND_COLOR = ColorRGB.parseHex("#343434");
     private static final Transform MASK_TRANSFORM = Transform.withMask(ColorRGB.WHITE);
+    private static final Logger LOGGER = LogHelper.getLogger(DemoApplication.class);
 
-    public DemoApplication(Renderer renderer) {
-        this.renderer = renderer;
+    public DemoApplication(Application app) {
+        this.app = app;
+        this.renderer = app.getRenderer();
     }
 
     @Override
-    public void start(SceneContext sceneContext) {
-        this.sceneContext = sceneContext;
-
-        MediaLoader mediaLoader = sceneContext.getMediaLoader();
+    public void start() {
+        MediaLoader mediaLoader = renderer.getMediaLoader();
 
         initMarioSprites(mediaLoader);
         marios = new ArrayList<>();
@@ -92,16 +105,17 @@ public class DemoApplication implements Scene {
         audioClip = mediaLoader.loadAudio(AUDIO_FILE);
         shapeTransform = new Transform();
         effectManager = new EffectManager();
+        uiWidgets = Collections.emptyList();
     }
 
     private void initMarioSprites(MediaLoader mediaLoader) {
         Image image = mediaLoader.loadImage(MARIO_SPRITES_FILE);
-        marioSpriteSheet = new ImageAtlas(image);
+        marioSpriteSheet = new SpriteSheet(image);
 
         int y = 0;
         for (String direction : ImmutableList.of("north", "east", "south", "west")) {
             for (int i = 0; i <= 4; i++) {
-                marioSpriteSheet.markSubImage(direction + "_" + i, new Rect(i * 48, y, 48, 64));
+                marioSpriteSheet.markRegion(direction + "_" + i, new Rect(i * 48, y, 48, 64));
             }
             y += 64;
         }
@@ -119,6 +133,7 @@ public class DemoApplication implements Scene {
         }
 
         effectManager.update(deltaTime);
+        uiWidgets.forEach(widget -> widget.update(deltaTime));
     }
 
     private void handleClick(InputDevice inputDevice) {
@@ -156,8 +171,30 @@ public class DemoApplication implements Scene {
             case 0 : addMarios(10); break;
             case 1 : removeMarios(10); break;
             case 2 : audioClip.play(); break;
+            case 3 : canvasMask = !canvasMask; break;
+            case 4 : initUIWidgets(); break;
             default : break;
         }
+    }
+
+    private void initUIWidgets() {
+        if (!uiWidgets.isEmpty()) {
+            uiWidgets = Collections.emptyList();
+            return;
+        }
+
+        Button button = new Button(new Rect(200, 200, 200, 30), ColorRGB.RED, "Click", font);
+        button.setClickHandler(app.getInputDevice(), () -> LOGGER.info("Button clicked"));
+
+        SelectBox select = new SelectBox(new Rect(200, 240, 200, 30),
+            ImmutableList.of("A", "B", "C"), "A", ColorRGB.BLUE, font);
+        select.setClickHandler(app.getInputDevice(), item -> LOGGER.info("Selected item " + item));
+
+        TextField textField = new TextField(new Rect(200, 280, 200, 30), ColorRGB.WHITE,
+            font.derive(ColorRGB.BLACK), "Enter text:");
+        textField.setChangeHandler(app.getInputDevice(), text -> LOGGER.info("Entered text: " + text));
+
+        uiWidgets = ImmutableList.of(button, select, textField);
     }
 
     private void randomizeShapeTransform() {
@@ -182,46 +219,50 @@ public class DemoApplication implements Scene {
     }
 
     @Override
-    public void render(GraphicsContext context) {
-        context.drawBackground(BACKGROUND_COLOR);
-        drawSprites(context);
-        drawHUD(context);
-        effectManager.render(context);
+    public void render(GraphicsContext graphics) {
+        graphics.drawBackground(BACKGROUND_COLOR);
+        drawSprites(graphics);
+        drawHUD(graphics);
+        if (canvasMask) {
+            graphics.drawRect(new Rect(10f, 10f, DEFAULT_CANVAS_WIDTH - 20f, DEFAULT_CANVAS_HEIGHT - 20f),
+                ColorRGB.WHITE, Transform.withAlpha(10));
+        }
+        effectManager.render(graphics);
+        uiWidgets.forEach(widget -> widget.render(graphics));
     }
 
-    private void drawSprites(GraphicsContext context) {
+    private void drawSprites(GraphicsContext graphics) {
         for (Mario mario : marios) {
-            context.drawSprite(mario.sprite, Math.round(mario.position.getX()),
+            graphics.drawSprite(mario.sprite, Math.round(mario.position.getX()),
                 Math.round(mario.position.getY()), mario.mask ? MASK_TRANSFORM : null);
         }
 
-        context.drawRect(new Rect(10, renderer.getCanvas().getHeight() - 110, 100, 100),
+        graphics.drawRect(new Rect(10, renderer.getCanvas().getHeight() - 110, 100, 100),
             SHAPE_COLOR, shapeTransform);
         Polygon circle = Polygon.createCircle(10, renderer.getCanvas().getHeight() - 110, 20f, 16);
-        context.drawPolygon(circle, ColorRGB.WHITE, Transform.withAlpha(50));
+        graphics.drawPolygon(circle, ColorRGB.WHITE, Transform.withAlpha(50));
     }
 
-    private void drawHUD(GraphicsContext context) {
-        drawButton(context, "Add sprites", RED_BUTTON, 0);
-        drawButton(context, "Remove sprites", RED_BUTTON, 30);
-        drawButton(context, "Play sound", GREEN_BUTTON, 60);
+    private void drawHUD(GraphicsContext graphics) {
+        drawButton(graphics, "Add sprites", RED_BUTTON, 0);
+        drawButton(graphics, "Remove sprites", RED_BUTTON, 30);
+        drawButton(graphics, "Play sound", GREEN_BUTTON, 60);
+        drawButton(graphics, "Canvas bounds", GREEN_BUTTON, 90);
+        drawButton(graphics, "UI widgets", GREEN_BUTTON, 120);
 
         Canvas canvas = renderer.getCanvas();
 
-        context.drawText(String.format("Canvas:  %dx%d @ %dx", canvas.getWidth(), canvas.getHeight(),
-            Math.round(canvas.getZoomLevel())), font, 20, 20, Align.LEFT);
-        context.drawText("Framerate:  " + Math.round(sceneContext.getAverageFPS()), font, 20, 40,
-            Align.LEFT);
-        context.drawText("Frame time:  " + Math.round(sceneContext.getAverageFrameTime()) + "ms",
-            font, 20, 60, Align.LEFT);
-        context.drawText("Sprites:  " + marios.size(), font, 20, 80,
-            Align.LEFT);
+        graphics.drawText("Canvas:  " + canvas, font, 20, 20);
+        graphics.drawText("Framerate:  " + Math.round(app.getAverageFPS()), font, 20, 40);
+        graphics.drawText("Frame time:  " + Math.round(app.getAverageFrameTime()) + "ms",
+            font, 20, 60);
+        graphics.drawText("Sprites:  " + marios.size(), font, 20, 80);
     }
 
-    private void drawButton(GraphicsContext context, String label, ColorRGB background, int y) {
-        context.drawRect(new Rect(renderer.getCanvas().getWidth() - BUTTON_WIDTH - 2, y + 2,
+    private void drawButton(GraphicsContext graphics, String label, ColorRGB background, int y) {
+        graphics.drawRect(new Rect(renderer.getCanvas().getWidth() - BUTTON_WIDTH - 2, y + 2,
             BUTTON_WIDTH, BUTTON_HEIGHT), background, null);
-        context.drawText(label, font, renderer.getCanvas().getWidth() - BUTTON_WIDTH / 2f, y + 17,
+        graphics.drawText(label, font, renderer.getCanvas().getWidth() - BUTTON_WIDTH / 2f, y + 17,
             Align.CENTER);
     }
 
@@ -236,7 +277,7 @@ public class DemoApplication implements Scene {
     private Sprite createMarioSprite() {
         Sprite marioSprite = new Sprite();
         for (String direction : DIRECTIONS) {
-            List<Image> frames = marioSpriteSheet.getSubImages(direction + "_0",
+            List<Image> frames = marioSpriteSheet.get(direction + "_0",
                 direction + "_1", direction + "_2", direction + "_3", direction + "_4");
             Animation anim = new Animation(frames, 0.1f, true);
             marioSprite.addState(direction, anim);
@@ -263,14 +304,12 @@ public class DemoApplication implements Scene {
         private boolean mask;
 
         public Mario(Sprite sprite, Rect canvasBounds) {
-            RandomGenerator random = new RandomGenerator();
-
             this.sprite = sprite;
-            this.position = new Point(random.getFloat(0f, canvasBounds.getWidth()),
-                random.getFloat(0f, canvasBounds.getHeight()));
+            this.position = new Point(RandomGenerator.getFloat(0f, canvasBounds.getWidth()),
+                RandomGenerator.getFloat(0f, canvasBounds.getHeight()));
             this.canvasBounds = canvasBounds;
-            this.direction = random.getInt(0, 4);
-            this.speed = random.getInt(1, 4);
+            this.direction = RandomGenerator.getInt(0, 4);
+            this.speed = RandomGenerator.getInt(1, 4);
             this.mask = false;
         }
 

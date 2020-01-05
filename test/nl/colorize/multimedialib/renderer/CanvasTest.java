@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
@@ -12,46 +12,103 @@ import static org.junit.Assert.*;
 
 public class CanvasTest {
 
+    private static final float EPSILON = 0.001f;
+
     @Test
-    public void testDefaultZoomLevel() {
-        Canvas canvas = new Canvas(800, 600, 1f);
-        canvas.resize(1024, 768);
+    public void testFixedCanvas() {
+        Canvas canvas = Canvas.create(800, 600);
+        canvas.resizeScreen(1024, 768);
 
-        assertEquals(0, canvas.toScreenX(0));
-        assertEquals(512, canvas.toScreenX(512));
-        assertEquals(1024, canvas.toScreenX(1024));
+        assertEquals(0, canvas.toScreenX(0), EPSILON);
+        assertEquals(512, canvas.toScreenX(400), EPSILON);
+        assertEquals(1024, canvas.toScreenX(800), EPSILON);
 
-        assertEquals(0, canvas.toCanvasX(0));
-        assertEquals(512, canvas.toCanvasX(512));
-        assertEquals(1024, canvas.toCanvasX(1024));
+        assertEquals(0, canvas.toCanvasX(0), EPSILON);
+        assertEquals(400, canvas.toCanvasX(512), EPSILON);
+        assertEquals(800, canvas.toCanvasX(1024), EPSILON);
+    }
+
+    @Test
+    public void testDifferentAspectRatioHorizontal() {
+        Canvas canvas = Canvas.create(800, 600);
+        canvas.resizeScreen(1000, 600);
+
+        assertEquals(0, canvas.toScreenX(0), EPSILON);
+        assertEquals(400, canvas.toScreenX(400), EPSILON);
+        assertEquals(800, canvas.toScreenX(800), EPSILON);
+        assertEquals(0, canvas.toScreenY(0), EPSILON);
+        assertEquals(300, canvas.toScreenY(300), EPSILON);
+        assertEquals(600, canvas.toScreenY(600), EPSILON);
+
+        assertEquals(0, canvas.toCanvasX(0), EPSILON);
+        assertEquals(500, canvas.toCanvasX(500), EPSILON);
+        assertEquals(1000, canvas.toCanvasX(1000), EPSILON);
+        assertEquals(0, canvas.toCanvasY(0), EPSILON);
+        assertEquals(300, canvas.toCanvasY(300), EPSILON);
+        assertEquals(600, canvas.toCanvasY(600), EPSILON);
+    }
+
+    @Test
+    public void testDifferentAspectRatioVertical() {
+        Canvas canvas = Canvas.create(800, 600);
+        canvas.resizeScreen(800, 1000);
+
+        assertEquals(0, canvas.toScreenY(0), EPSILON);
+        assertEquals(400, canvas.toScreenY(400), EPSILON);
+        assertEquals(800, canvas.toScreenY(800), EPSILON);
+        assertEquals(0, canvas.toScreenY(0), EPSILON);
+        assertEquals(300, canvas.toScreenY(300), EPSILON);
+        assertEquals(600, canvas.toScreenY(600), EPSILON);
+
+        assertEquals(0, canvas.toCanvasX(0), EPSILON);
+        assertEquals(400, canvas.toCanvasX(400), EPSILON);
+        assertEquals(800, canvas.toCanvasX(800), EPSILON);
+        assertEquals(0, canvas.toCanvasY(0), EPSILON);
+        assertEquals(500, canvas.toCanvasY(500), EPSILON);
+        assertEquals(1000, canvas.toCanvasY(1000), EPSILON);
     }
 
     @Test
     public void testOffset() {
-        Canvas canvas = new Canvas(800, 600, 1f);
-        canvas.resize(1024, 768);
-        canvas.offset(0, 20);
+        Canvas canvas = Canvas.create(800, 600);
+        canvas.resizeScreen(1024, 768);
+        canvas.offsetScreen(0, 20);
 
-        assertEquals(20, canvas.toScreenY(0));
-        assertEquals(532, canvas.toScreenY(512));
-        assertEquals(1044, canvas.toScreenY(1024));
+        assertEquals(20, canvas.toScreenY(0), EPSILON);
+        assertEquals(404, canvas.toScreenY(300), EPSILON);
+        assertEquals(788, canvas.toScreenY(600), EPSILON);
 
-        assertEquals(-20, canvas.toCanvasY(0));
-        assertEquals(492, canvas.toCanvasY(512));
-        assertEquals(1004, canvas.toCanvasY(1024));
+        assertEquals(-15.625, canvas.toCanvasY(0), EPSILON);
+        assertEquals(284.375, canvas.toCanvasY(384), EPSILON);
+        assertEquals(584.375, canvas.toCanvasY(768), EPSILON);
     }
 
     @Test
-    public void testCustomZoomLevel() {
-        Canvas canvas = new Canvas(800, 600, 2f);
-        canvas.resize(1024, 768);
+    public void testFlexibleCanvas() {
+        Canvas canvas = Canvas.flexible(800, 600);
+        canvas.resizeScreen(1280, 800);
 
-        assertEquals(0, canvas.toScreenX(0));
-        assertEquals(512, canvas.toScreenX(256));
-        assertEquals(1024, canvas.toScreenX(512));
+        assertEquals(0, canvas.toScreenY(0), EPSILON);
+        assertEquals(512, canvas.toScreenY(512), EPSILON);
+        assertEquals(1024, canvas.toScreenY(1024), EPSILON);
 
-        assertEquals(0, canvas.toCanvasX(0));
-        assertEquals(256, canvas.toCanvasX(512));
-        assertEquals(512, canvas.toCanvasX(1024));
+        assertEquals(0, canvas.toCanvasY(0), EPSILON);
+        assertEquals(512, canvas.toCanvasY(512), EPSILON);
+        assertEquals(1024, canvas.toCanvasY(1024), EPSILON);
+    }
+
+    @Test
+    public void testFlexibleCanvasWithOffset() {
+        Canvas canvas = Canvas.create(800, 600);
+        canvas.resizeScreen(1280, 800);
+        canvas.offsetScreen(0, 20);
+
+        assertEquals(20, canvas.toScreenY(0), EPSILON);
+        assertEquals(702.666f, canvas.toScreenY(512), EPSILON);
+        assertEquals(1385.333f, canvas.toScreenY(1024), EPSILON);
+
+        assertEquals(-15, canvas.toCanvasY(0), EPSILON);
+        assertEquals(369, canvas.toCanvasY(512), EPSILON);
+        assertEquals(753, canvas.toCanvasY(1024), EPSILON);
     }
 }

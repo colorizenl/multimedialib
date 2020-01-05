@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.teavm;
@@ -75,24 +75,22 @@ public class TeaGraphicsContext implements GraphicsContext {
         }
 
         TeaImage pointer = (TeaImage) image;
+        String id = pointer.getId();
         float canvasX = canvas.toScreenX(x);
         float canvasY = canvas.toScreenY(y);
 
-        if (pointer.getRegion() == null) {
-            float width = image.getWidth() * canvas.getZoomLevel();
-            float height = image.getHeight() * canvas.getZoomLevel();
-
-            Browser.drawImage(pointer.getId(), canvasX - width / 2f, canvasY - height / 2f,
-                width, height, transform.getAlpha() / 100f, getMask(transform));
-        } else {
-            Rect region = pointer.getRegion();
-            float width = region.getWidth() * canvas.getZoomLevel();
-            float height = region.getHeight() * canvas.getZoomLevel();
-
-            Browser.drawImageRegion(pointer.getId(), region.getX(), region.getY(),
-                region.getWidth(), region.getHeight(),
-                canvasX, canvasY, width, height, transform.getAlpha() / 100f, getMask(transform));
+        Rect region = pointer.getRegion();
+        if (region == null) {
+            region = new Rect(0f, 0f, Browser.getImageWidth(id), Browser.getImageHeight(id));
         }
+
+        float width = region.getWidth() * canvas.getZoomLevel();
+        float height = region.getHeight() * canvas.getZoomLevel();
+
+        Browser.drawImageRegion(pointer.getId(), region.getX(), region.getY(),
+            region.getWidth(), region.getHeight(), canvasX, canvasY, width, height,
+            transform.getRotationInRadians(), transform.getScaleX() / 100f,
+            transform.getScaleY() / 100f, transform.getAlpha() / 100f, getMask(transform));
     }
 
     @Override

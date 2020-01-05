@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.graphics;
@@ -61,6 +61,11 @@ public class Transform implements AlphaTransform {
     
     public boolean isRotated() {
         return rotation != 0;
+    }
+
+    public void setScale(int scale) {
+        setScaleX(scale);
+        setScaleY(scale);
     }
 
     public void setScale(int scaleX, int scaleY) {

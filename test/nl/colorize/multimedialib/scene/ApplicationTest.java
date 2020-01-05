@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.scene;
@@ -12,17 +12,17 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class SceneManagerTest {
+public class ApplicationTest {
 
     @Test
     public void testInitialScene() {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        SceneManager sceneManager = SceneManager.attach(new MockRenderer());
-        sceneManager.changeScene(sceneA);
-        sceneManager.update(1f);
-        sceneManager.update(1f);
+        Application app = new Application(new MockRenderer());
+        app.changeScene(sceneA);
+        app.update(1f);
+        app.update(1f);
 
         assertEquals(1, sceneA.getStartCount());
         assertEquals(2, sceneA.getFrameUpdateCount());
@@ -36,12 +36,12 @@ public class SceneManagerTest {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        SceneManager sceneManager = SceneManager.attach(new MockRenderer());
-        sceneManager.changeScene(sceneA);
-        sceneManager.update(1f);
-        sceneManager.changeScene(sceneB);
-        sceneManager.update(1f);
-        sceneManager.update(1f);
+        Application app = new Application(new MockRenderer());
+        app.changeScene(sceneA);
+        app.update(1f);
+        app.changeScene(sceneB);
+        app.update(1f);
+        app.update(1f);
 
         assertEquals(1, sceneA.getStartCount());
         assertEquals(1, sceneA.getFrameUpdateCount());

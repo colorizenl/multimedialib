@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.libgdx;
@@ -105,7 +105,7 @@ public class GDXRenderer extends AbstractRenderer implements ApplicationListener
 
     @Override
     public void resize(int width, int height) {
-        getCanvas().resize(width, height);
+        getCanvas().resizeScreen(width, height);
         camera.setToOrtho(false, width, height);
     }
 

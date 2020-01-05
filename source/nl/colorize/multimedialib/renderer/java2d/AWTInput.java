@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.java2d;
@@ -12,7 +12,13 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.scene.Updatable;
+import nl.colorize.util.swing.Popups;
+import nl.colorize.util.swing.SwingUtils;
 
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import java.awt.BorderLayout;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -55,6 +61,8 @@ public class AWTInput implements InputDevice, Updatable, KeyListener, MouseListe
         .put(KeyCode.ENTER, KeyEvent.VK_ENTER)
         .put(KeyCode.SPACEBAR, KeyEvent.VK_SPACE)
         .put(KeyCode.ESCAPE, KeyEvent.VK_ESCAPE)
+        .put(KeyCode.SHIFT, KeyEvent.VK_SHIFT)
+        .put(KeyCode.BACKSPACE, KeyEvent.VK_BACK_SPACE)
         .put(KeyCode.A, KeyEvent.VK_A)
         .put(KeyCode.B, KeyEvent.VK_B)
         .put(KeyCode.C, KeyEvent.VK_C)
@@ -257,5 +265,20 @@ public class AWTInput implements InputDevice, Updatable, KeyListener, MouseListe
     
     public boolean isKeyReleased(int keycode) {
         return keyStates[keycode] == KEY_STATE_RELEASED;
+    }
+
+    @Override
+    public String requestTextInput(String labelText, String initialValue) {
+        JLabel label = new JLabel(labelText);
+        JTextField field = new JTextField(initialValue);
+
+        JPanel panel = new JPanel(new BorderLayout(0, 5));
+        panel.add(label, BorderLayout.NORTH);
+        panel.add(field, BorderLayout.CENTER);
+        SwingUtils.setPreferredWidth(panel, 300);
+
+        Popups.message(null, "", panel);
+
+        return field.getText();
     }
 }

@@ -1,43 +1,48 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
 import com.google.common.base.Preconditions;
+import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.util.Formatting;
 
 /**
- * Used to control the size of the canvas displaying the application's graphics,
- * independent from the size of the screen. This allows the application to control
- * the zoom level, therefore controlling the user experience in situations where
- * the same application is used across a variety of devices with different screen
- * sizes. This class allows to translate between the two coordinate systems.
+ * Represents the resolution of the application graphics independently from
+ * the device's screen resolution. The canvas is initially created with a
+ * preferred width and height. When the screen or window is resized, the
+ * canvas will also be resized while keeping its original aspect ratio.
  * <p>
- * Although the canvas is given a preferred size and aspect ratio upon creation,
- * it is not guaranteed that these will ever be used. This is especially true for
- * mobile apps, where the application will usually fill the entire screen.
+ * Having a consistent canvas size across different devices ensures a
+ * consistent user experience in situations where the same application is
+ * used across a variety of devices with different screen sizes. This class
+ * is then used to translate between the two coordinate systems.
+ * <p>
+ * Alternatively, a flexible canvas can be created. In this case, the canvas
+ * follows the screen resolution without considering the requested
+ * width/height or aspect ratio.
  */
 public class Canvas {
 
     private int preferredWidth;
     private int preferredHeight;
-    private float preferredZoomLevel;
+    private boolean flexible;
 
     private int screenWidth;
     private int screenHeight;
     private int offsetX;
     private int offsetY;
 
-    public Canvas(int preferredWidth, int preferredHeight, float zoomLevel) {
+    private Canvas(int preferredWidth, int preferredHeight, boolean flexible) {
         Preconditions.checkArgument(preferredWidth > 0 && preferredHeight > 0,
             "Invalid canvas dimensions: " + preferredWidth + "x" + preferredHeight);
-        Preconditions.checkArgument(zoomLevel > 0f, "Invalid zoom level: " + zoomLevel);
 
         this.preferredWidth = preferredWidth;
         this.preferredHeight = preferredHeight;
-        this.preferredZoomLevel = zoomLevel;
+        this.flexible = flexible;
 
         this.screenWidth = preferredWidth;
         this.screenHeight = preferredHeight;
@@ -45,16 +50,12 @@ public class Canvas {
         this.offsetY = 0;
     }
 
-    public Canvas(int preferredWidth, int preferredHeight) {
-        this(preferredWidth, preferredHeight, 1f);
-    }
-
     /**
      * Sets the screen dimensions to the specified values. This method should be
      * called by the renderer when the application window is first created, and
      * whenever the window is resized.
      */
-    public void resize(int screenWidth, int screenHeight) {
+    public void resizeScreen(int screenWidth, int screenHeight) {
         Preconditions.checkArgument(screenWidth > 0 && screenHeight > 0,
             "Invalid screen dimensions: " + screenWidth + "x" + screenHeight);
 
@@ -62,7 +63,12 @@ public class Canvas {
         this.screenHeight = screenHeight;
     }
 
-    public void offset(int offsetX, int offsetY) {
+    /**
+     * Offset the canvas position on the screen. This is mainly needed for when
+     * the screen contains system UI such as a status bar or window title where
+     * no application graphics can be displayed.
+     */
+    public void offsetScreen(int offsetX, int offsetY) {
         this.offsetX = offsetX;
         this.offsetY = offsetY;
     }
@@ -75,31 +81,48 @@ public class Canvas {
         return Math.round((screenHeight - offsetY) / getZoomLevel());
     }
 
-    public int getScreenWidth() {
-        return screenWidth;
-    }
-
-    public int getScreenHeight() {
-        return screenHeight;
+    public Rect getBounds() {
+        return new Rect(0f, 0f, getWidth(), getHeight());
     }
 
     public float getZoomLevel() {
-        return preferredZoomLevel;
+        if (flexible) {
+            return 1f;
+        } else {
+            float horizontalZoom = (float) screenWidth / (float) preferredWidth;
+            float verticalZoom = (float) screenHeight / (float) preferredHeight;
+            return Math.min(horizontalZoom, verticalZoom);
+        }
     }
 
-    public int toCanvasX(int screenX) {
-        return Math.round((screenX - offsetX) / getZoomLevel());
+    public float toCanvasX(int screenX) {
+        return (screenX - offsetX) / getZoomLevel();
     }
 
-    public int toCanvasY(int screenY) {
-        return Math.round((screenY - offsetY) / getZoomLevel());
+    public float toCanvasY(int screenY) {
+        return (screenY - offsetY) / getZoomLevel();
     }
 
-    public int toScreenX(float canvasX) {
-        return Math.round((canvasX * getZoomLevel()) + offsetX);
+    public float toScreenX(float canvasX) {
+        return canvasX * getZoomLevel() + offsetX;
     }
 
-    public int toScreenY(float canvasY) {
-        return Math.round((canvasY * getZoomLevel()) + offsetY);
+    public float toScreenY(float canvasY) {
+        return canvasY * getZoomLevel() + offsetY;
+    }
+
+    @Override
+    public String toString() {
+        // Cannot use String.format or printf since those have issues in TeaVM.
+        String zoom = Formatting.numberFormat(getZoomLevel(), 1);
+        return getWidth() + "x" + getHeight() + " @ " + zoom + "x";
+    }
+
+    public static Canvas create(int preferredWidth, int preferredHeight) {
+        return new Canvas(preferredWidth, preferredHeight, false);
+    }
+
+    public static Canvas flexible(int initialWidth, int initialHeight) {
+        return new Canvas(initialWidth, initialHeight, true);
     }
 }

@@ -33,13 +33,13 @@ to the dependencies section in `pom.xml`:
     <dependency>
         <groupId>nl.colorize</groupId>
         <artifactId>multimedialib</artifactId>
-        <version>2019.2</version>
+        <version>2019.2.4</version>
     </dependency>  
     
 The library can also be used in Gradle projects:
 
     dependencies {
-        compile "nl.colorize:multimedialib:2019.2"
+        compile "nl.colorize:multimedialib:2019.2.4"
     }
     
 Transpiling applications to HTML5/JavaScript
@@ -96,14 +96,22 @@ To start the desktop version of the demo application, run the class
 `nl.colorize.multimedialib.tool.DemoLauncher`. This class supports the following command line 
 parameters:
 
-| Name          | Required | Description                                 |
-|---------------|----------|---------------------------------------------|
-| -renderer     | yes      | Renderer to use for the demo (java2d, gdx). |
-| -framerate    | no       | Demo framerate, default is 60 fps.          |
-| -verification | no       | Prints instructions for verification.       |
+| Name          | Required | Description                                   |
+|---------------|----------|-----------------------------------------------|
+| -renderer     | yes      | Renderer to use for the demo (java2d, gdx).   |
+| -framerate    | no       | Demo framerate, default is 60 fps.            |
+| -canvas       | no       | Uses a fixed canvas size to display graphics. | 
+| -verification | no       | Prints instructions for verification.         |
 
 The browser version of the demo application is saved to the directory `build/browserdemo`, 
 and can be started by opening `index.html` in a browser.
+
+Creating an application icon
+----------------------------
+
+MultimediaLib includes a command line tool for creating ICNS icons that can be used for Mac and/or
+iOS applications. The entry point for this tool is `nl.colorize.multimedialib.tool.AppleIconTool`,
+which takes the input image and output file as arguments. 
 
 Build instructions
 ------------------
@@ -130,10 +138,6 @@ License
 
 Copyright 2009-2020 Colorize
 
-The source code is licensed under the Apache License 2.0, meaning you can use it free of charge 
-in commercial and non-commercial projects as long as you mention the original copyright.
-The full license text can be found at 
-[http://www.colorize.nl/code_license.txt](http://www.colorize.nl/code_license.txt).
-
-By using the source code you agree to the Colorize terms and conditions, which are available 
-from the Colorize website at [http://www.colorize.nl/en/](http://www.colorize.nl/en/).
+The source code is licensed under the Apache License. Refer to
+[http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0) for
+the full license text.

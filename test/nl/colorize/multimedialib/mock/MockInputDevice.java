@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.mock;
@@ -68,5 +68,10 @@ public class MockInputDevice implements InputDevice {
     @Override
     public boolean isKeyReleased(KeyCode keyCode) {
         return keysPressed.getOrDefault(keyCode, Boolean.FALSE);
+    }
+
+    @Override
+    public String requestTextInput(String label, String initialValue) {
+        return null;
     }
 }

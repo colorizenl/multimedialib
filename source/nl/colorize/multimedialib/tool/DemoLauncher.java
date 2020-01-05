@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.tool;
@@ -14,14 +14,13 @@ import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.multimedialib.renderer.java2d.Java2DRenderer;
 import nl.colorize.multimedialib.renderer.libgdx.GDXRenderer;
-import nl.colorize.multimedialib.scene.SceneManager;
+import nl.colorize.multimedialib.scene.Application;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.swing.ApplicationMenuListener;
 import nl.colorize.util.swing.Popups;
 import org.kohsuke.args4j.Option;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
@@ -39,14 +38,14 @@ public class DemoLauncher extends CommandLineTool implements ApplicationMenuList
     public String rendererName;
 
     @Option(name = "-framerate", required = false, usage = "Demo framerate, default is 30 fps")
-    private int framerate = DEFAULT_FRAMERATE;
+    private int framerate = DemoApplication.DEFAULT_FRAMERATE;
+
+    @Option(name = "-canvas", required = false, usage = "Uses a fixed canvas size to display graphics")
+    private boolean canvas = false;
 
     @Option(name = "-verification", required = false, usage = "Prints instructions for verification")
     public boolean verification = false;
 
-    private static final int DEFAULT_CANVAS_WIDTH = 800;
-    private static final int DEFAULT_CANVAS_HEIGHT = 600;
-    private static final int DEFAULT_FRAMERATE = 60;
     private static final ResourceFile VERIFICATION_FILE = new ResourceFile("verification-instructions.txt");
     private static final Logger LOGGER = LogHelper.getLogger(DemoLauncher.class);
 
@@ -58,12 +57,10 @@ public class DemoLauncher extends CommandLineTool implements ApplicationMenuList
     @Override
     public void run() {
         Renderer renderer = createRenderer();
-        SceneManager sceneManager = SceneManager.attach(renderer);
-
         LOGGER.info("Launching demo application using " + renderer.getClass().getName());
 
-        DemoApplication demo = new DemoApplication(renderer);
-        sceneManager.changeScene(demo);
+        Application app = new Application(renderer);
+        app.changeScene(new DemoApplication(app));
 
         if (verification) {
             printVerificationInstructions();
@@ -91,7 +88,11 @@ public class DemoLauncher extends CommandLineTool implements ApplicationMenuList
     }
 
     private Canvas getCanvas() {
-        return new Canvas(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT, 1f);
+        if (canvas) {
+            return Canvas.create(DemoApplication.DEFAULT_CANVAS_WIDTH, DemoApplication.DEFAULT_CANVAS_HEIGHT);
+        } else {
+            return Canvas.flexible(DemoApplication.DEFAULT_CANVAS_WIDTH, DemoApplication.DEFAULT_CANVAS_HEIGHT);
+        }
     }
 
     private WindowOptions getWindowOptions() {
@@ -101,12 +102,8 @@ public class DemoLauncher extends CommandLineTool implements ApplicationMenuList
     }
 
     private void printVerificationInstructions() {
-        try {
-            String instructions = VERIFICATION_FILE.read(Charsets.UTF_8);
-            LOGGER.info("\n\n" + instructions);
-        } catch (IOException e) {
-            throw new AssertionError("Cannot load verification instructions", e);
-        }
+        String instructions = VERIFICATION_FILE.read(Charsets.UTF_8);
+        LOGGER.info("\n\n" + instructions);
     }
 
     @Override

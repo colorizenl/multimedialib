@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.scene;
@@ -17,14 +17,17 @@ import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.util.Stopwatch;
 
 /**
- * Implements a mechanism that divides the application life cycle into a number
- * of separate scenes. One scene is marked as currently active, and will receive
- * frame updates and render graphics for as a long as it is active. Scenes will
- * also receive notifications whenever the active scene changes.
+ * Implements a mechanism on top of the renderer that divides the application
+ * life cycle into a number of separate scenes. One scene is marked as currently
+ * active, and will receive frame updates and render graphics for as a long as
+ * it is active. Scenes will also receive notifications whenever the active scene
+ * changes.
  */
-public class SceneManager implements Updatable, Renderable, SceneContext {
+public class Application implements Updatable, Renderable {
 
     private Renderer renderer;
+    private MediaCache mediaCache;
+
     private Scene activeScene;
     private Scene requestedScene;
 
@@ -34,19 +37,24 @@ public class SceneManager implements Updatable, Renderable, SceneContext {
 
     private static final int FPS_MEASUREMENT_BUFFER_SIZE = 100;
 
-    private SceneManager(Renderer renderer) {
+    public Application(Renderer renderer) {
         this.renderer = renderer;
+        this.mediaCache = new MediaCache(renderer.getMediaLoader());
 
         this.fpsTimer = new Stopwatch();
         this.fpsBuffer = new RotatingBuffer(FPS_MEASUREMENT_BUFFER_SIZE);
         this.frameTimeBuffer = new RotatingBuffer(FPS_MEASUREMENT_BUFFER_SIZE);
+
+        renderer.addUpdateCallback(this);
+        renderer.addRenderCallback(this);
     }
 
     /**
      * Requests to change the active scene after the current frame has been
      * completed.
+     * @throws IllegalStateException if a different scene has already been
+     *         requested, but that scene has not yet started.
      */
-    @Override
     public void changeScene(Scene requestedScene) {
         Preconditions.checkState(this.requestedScene == null,
             "Another scene has already been requested: " + requestedScene);
@@ -63,7 +71,7 @@ public class SceneManager implements Updatable, Renderable, SceneContext {
         if (requestedScene != null) {
             activeScene = requestedScene;
             requestedScene = null;
-            activeScene.start(this);
+            activeScene.start();
         }
 
         Stopwatch frameTimer = new Stopwatch();
@@ -87,44 +95,39 @@ public class SceneManager implements Updatable, Renderable, SceneContext {
         }
     }
 
-    @Override
+    /**
+     * Returns the renderer that is used by this application.
+     * @deprecated The purpose of this class is to wrap the renderer, so scenes
+     *             should not access it directly. When needing to access one of
+     *             the renderer's fields, use one of the more specific methods
+     *             provided by this class instead.
+     */
+    @Deprecated
+    public Renderer getRenderer() {
+        return renderer;
+    }
+
     public Canvas getCanvas() {
         return renderer.getCanvas();
     }
 
-    @Override
     public InputDevice getInputDevice() {
         return renderer.getInputDevice();
     }
 
-    @Override
     public MediaLoader getMediaLoader() {
-        return renderer.getMediaLoader();
+        return mediaCache;
     }
 
-    @Override
     public ApplicationData getApplicationData(String appName) {
         return renderer.getApplicationData(appName);
     }
 
-    @Override
     public float getAverageFPS() {
         return 1000f / fpsBuffer.getAverageValue();
     }
 
-    @Override
     public float getAverageFrameTime() {
         return frameTimeBuffer.getAverageValue();
-    }
-
-    /**
-     * Creates a new {@code SceneManager} and immediately attaches it as a
-     * callback to the specified renderer.
-     */
-    public static SceneManager attach(Renderer renderer) {
-        SceneManager sceneManager = new SceneManager(renderer);
-        renderer.addUpdateCallback(sceneManager);
-        renderer.addRenderCallback(sceneManager);
-        return sceneManager;
     }
 }

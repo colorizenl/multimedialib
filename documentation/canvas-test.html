@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <title>MultimediaLib | HTML5 canvas test</title>
     <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no" />
-    <script src="../resources/web/main.js"></script>
+    <script src="../resources/web/multimedialib.js"></script>
 </head>
 
 <body>
@@ -39,6 +39,12 @@
                 context.globalCompositeOperation = "source-atop";
                 drawRect(100, 200, 100, 100, "#FFFFFF", 1.0);
                 context.globalCompositeOperation = "source-over";
+
+                context.save();
+                context.translate(300, 200);
+                context.rotate(Math.PI);
+                context.drawImage(testImage, -testImage.width / 2, -testImage.height / 2);
+                context.restore();
             }, 1000);
         }
     </script>

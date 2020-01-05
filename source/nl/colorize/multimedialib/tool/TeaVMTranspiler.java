@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.tool;
@@ -59,7 +59,7 @@ public class TeaVMTranspiler extends CommandLineTool {
 
     private static final List<ResourceFile> WEB_RESOURCE_FILES = ImmutableList.of(
         new ResourceFile("web/index.html"),
-        new ResourceFile("web/main.js"),
+        new ResourceFile("web/multimedialib.js"),
         new ResourceFile("web/favicon.png"),
         new ResourceFile("web/loading.gif"),
         new ResourceFile("web/OpenSans-Regular.ttf")
@@ -214,6 +214,7 @@ public class TeaVMTranspiler extends CommandLineTool {
 
             List<String> entries = resourceFiles.stream()
                 .map(file -> normalizeFileName(file))
+                .sorted()
                 .collect(Collectors.toList());
 
             Files.write(manifestFile.toPath(), entries, Charsets.UTF_8);

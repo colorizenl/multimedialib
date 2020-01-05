@@ -1,19 +1,21 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.scene;
 
+import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.graphics.Align;
 import nl.colorize.multimedialib.graphics.Animation;
 import nl.colorize.multimedialib.graphics.Image;
 import nl.colorize.multimedialib.graphics.Sprite;
-import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.graphics.TTFont;
+import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Point;
 import nl.colorize.multimedialib.renderer.GraphicsContext;
+import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
 
 import java.util.ArrayList;
@@ -69,6 +71,10 @@ public abstract class Effect implements Updatable, Renderable {
         this.position = position;
     }
 
+    public void setPosition(float x, float y) {
+        this.position.set(x, y);
+    }
+
     public Point getPosition() {
         return position;
     }
@@ -91,7 +97,7 @@ public abstract class Effect implements Updatable, Renderable {
     }
 
     public boolean isCompleted() {
-        return timeline.isCompleted();
+        return timeline.isCompleted() && !timeline.isLoop();
     }
 
     @Override
@@ -127,6 +133,21 @@ public abstract class Effect implements Updatable, Renderable {
     }
 
     /**
+     * Shorthand for creating an effect that rotates a sprite.
+     */
+    public static Effect forSpriteRotation(Sprite sprite, float duration) {
+        Preconditions.checkArgument(duration > 0f, "Invalid duration: " + duration);
+
+        Timeline timeline = new Timeline(Interpolation.LINEAR, true);
+        timeline.addKeyFrame(0f, 0f);
+        timeline.addKeyFrame(duration, 360f);
+
+        Effect effect = forSprite(sprite, timeline);
+        effect.modify(value -> effect.getTransform().setRotation(Math.round(value)));
+        return effect;
+    }
+
+    /**
      * Shorthand for creating an effect that modifies the sprite's alpha value
      * based on a timeline.
      */
@@ -153,6 +174,29 @@ public abstract class Effect implements Updatable, Renderable {
             @Override
             public void render(GraphicsContext graphics) {
                 graphics.drawText(text, font, getPosition().getX(), getPosition().getY(),
+                    align, getTransform());
+            }
+        };
+    }
+
+    /**
+     * Shorthand for creating an effect that will make the text slowly appear
+     * over time, with more and more characters appearing on screen over time
+     * until the entire text is shown.
+     */
+    public static Effect forTextAppear(String text, TTFont font, Align align, float duration) {
+        Preconditions.checkArgument(text.length() > 0, "Cannot animate empty text");
+        Preconditions.checkArgument(duration > 0f, "Invalid duration: " + duration);
+
+        Timeline timeline = new Timeline();
+        timeline.addKeyFrame(0f, 0f);
+        timeline.addKeyFrame(duration, text.length());
+
+        return new Effect(timeline) {
+            @Override
+            public void render(GraphicsContext graphics) {
+                String visibleText = text.substring(0, (int) timeline.getValue());
+                graphics.drawText(visibleText, font, getPosition().getX(), getPosition().getY(),
                     align, getTransform());
             }
         };

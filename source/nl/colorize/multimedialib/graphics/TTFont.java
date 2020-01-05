@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.graphics;
@@ -57,6 +57,14 @@ public class TTFont {
      */
     public TTFont derive(ColorRGB newColor) {
         return new TTFont(family, size, newColor);
+    }
+
+    /**
+     * Returns a version of this font which uses the same font family, but with
+     * a different color and font size.
+     */
+    public TTFont derive(int newSize, ColorRGB newColor) {
+        return new TTFont(family, newSize, newColor);
     }
 
     @Override

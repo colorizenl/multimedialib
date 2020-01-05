@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.java2d;
@@ -80,17 +80,18 @@ public class Java2DRenderer extends AbstractRenderer {
         // the first frame after the rendering thread starts.
         canvasDirty = new AtomicBoolean(true);
 
-        initializeWindow(windowOptions);
+        window = initializeWindow(windowOptions);
         initializeInput();
 
         window.createBufferStrategy(2);
         windowBuffer = window.getBufferStrategy();
+        addUpdateCallback(inputDevice);
 
         Thread renderingThread = new Thread(this::runAnimationLoop, "MultimediaLib-RenderingThread");
         renderingThread.start();
     }
 
-    private void initializeWindow(WindowOptions windowOptions) {
+    protected JFrame initializeWindow(WindowOptions windowOptions) {
         window = new JFrame();
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         window.setResizable(true);
@@ -115,6 +116,8 @@ public class Java2DRenderer extends AbstractRenderer {
         if (Platform.isMac()) {
             MacIntegration.setApplicationMenuListener(windowOptions.getAppMenuListener(), false);
         }
+
+        return window;
     }
 
     private Image loadIcon(WindowOptions windowOptions) {
@@ -140,7 +143,6 @@ public class Java2DRenderer extends AbstractRenderer {
         window.addKeyListener(inputDevice);
         window.addMouseListener(inputDevice);
         window.addMouseMotionListener(inputDevice);
-        addUpdateCallback(inputDevice);
     }
 
     /**
@@ -176,8 +178,8 @@ public class Java2DRenderer extends AbstractRenderer {
         int windowHeight = window.getHeight() - windowInsets.top - windowInsets.bottom;
 
         Canvas canvas = getCanvas();
-        canvas.resize(windowWidth, windowHeight);
-        canvas.offset(windowInsets.left, windowInsets.top);
+        canvas.resizeScreen(windowWidth, windowHeight);
+        canvas.offsetScreen(windowInsets.left, windowInsets.top);
         graphicsContext = new Java2DGraphicsContext(canvas, mediaLoader);
     }
 
@@ -188,7 +190,7 @@ public class Java2DRenderer extends AbstractRenderer {
 
     private void performFrameRender(Graphics2D g2) {
         g2.setColor(Color.BLACK);
-        g2.fillRect(0, 0, window.getWidth(), window.getHeight());
+        g2.fillRect(0, 0, window.getWidth(), window.getHeight() + 50);
 
         notifyRenderCallbacks(graphicsContext);
     }
@@ -238,5 +240,9 @@ public class Java2DRenderer extends AbstractRenderer {
     @Override
     public ApplicationData getApplicationData(String appName) {
         return new StandardApplicationData(appName);
+    }
+
+    public void terminate() {
+        window.dispose();
     }
 }

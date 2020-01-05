@@ -1,18 +1,24 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.scene;
 
 import nl.colorize.multimedialib.graphics.Align;
+import nl.colorize.multimedialib.graphics.AlphaTransform;
 import nl.colorize.multimedialib.graphics.Sprite;
+import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.mock.MockImage;
+import nl.colorize.multimedialib.mock.MockRenderer;
 import nl.colorize.util.animation.Timeline;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 public class EffectTest {
 
@@ -75,5 +81,31 @@ public class EffectTest {
         assertEquals(50f, effect.getTransform().getAlpha(), EPSILON);
         effect.update(1f);
         assertEquals(0f, effect.getTransform().getAlpha(), EPSILON);
+    }
+
+    @Test
+    public void testForTextAppear() {
+        Effect effect = Effect.forTextAppear("test", null, Align.LEFT, 4f);
+
+        List<String> rendered = new ArrayList<>();
+        MockRenderer renderer = new MockRenderer() {
+            @Override
+            public void drawText(String text, TTFont font, float x, float y, Align al, AlphaTransform at) {
+                rendered.add(text);
+            }
+        };
+
+        assertEquals(100f, effect.getTransform().getAlpha(), EPSILON);
+        effect.update(1f);
+        effect.render(renderer);
+        effect.update(1f);
+        effect.render(renderer);
+        effect.update(2f);
+        effect.render(renderer);
+
+        assertEquals(3, rendered.size());
+        assertEquals("t", rendered.get(0));
+        assertEquals("te", rendered.get(1));
+        assertEquals("test", rendered.get(2));
     }
 }

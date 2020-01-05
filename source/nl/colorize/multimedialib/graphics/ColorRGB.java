@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.graphics;
@@ -83,7 +83,7 @@ public final class ColorRGB {
     
     @Override
     public String toString() {
-        return String.format("ColorRGB(%d, %d, %d)", r, g, b);
+        return "ColorRGB(" + r + ", " + g + ", " + b + ")";
     }
     
     /**

@@ -1,12 +1,11 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.scene;
 
-import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.renderer.GraphicsContext;
 
 import java.util.ArrayList;
@@ -21,23 +20,21 @@ import java.util.List;
 public class ComplexScene implements Scene {
 
     private List<Subsystem> subsystems;
-    private SceneContext context;
 
     public ComplexScene() {
         this.subsystems = new ArrayList<>();
     }
 
     public void register(Subsystem subsystem) {
-        Preconditions.checkState(context == null,
-            "Subsystem cannot be registered, scene has already started");
-
         subsystems.add(subsystem);
     }
 
-    @Override
-    public void start(SceneContext context) {
-        this.context = context;
+    public void unregister(Subsystem subsystem) {
+        subsystems.remove(subsystem);
+    }
 
+    @Override
+    public void start() {
         for (Subsystem subsystem : subsystems) {
             subsystem.init();
         }
@@ -55,10 +52,5 @@ public class ComplexScene implements Scene {
         for (Subsystem subsystem : subsystems) {
             subsystem.render(graphics);
         }
-    }
-
-    public SceneContext getContext() {
-        Preconditions.checkState(context != null, "Scene has not started yet");
-        return context;
     }
 }

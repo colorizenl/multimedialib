@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.java2d;
@@ -71,38 +71,40 @@ public class Java2DGraphicsContext implements GraphicsContext {
 
     @Override
     public void drawBackground(ColorRGB backgroundColor) {
-        int width = canvas.toScreenX(canvas.getWidth());
-        int height = canvas.toScreenY(canvas.getHeight());
+        float width = canvas.toScreenX(canvas.getWidth());
+        float height = canvas.toScreenY(canvas.getHeight());
 
         g2.setColor(convertColor(backgroundColor));
-        g2.fillRect(0, 0, width, height);
+        g2.fillRect(0, 0, Math.round(width), Math.round(height) + 30);
     }
 
     @Override
     public void drawRect(Rect rect, ColorRGB color, AlphaTransform alpha) {
-        int screenX = canvas.toScreenX(rect.getX());
-        int screenY = canvas.toScreenY(rect.getY());
-        int screenWidth = canvas.toScreenX(rect.getEndX()) - screenX;
-        int screenHeight = canvas.toScreenY(rect.getEndY()) - screenY;
+        float screenX = canvas.toScreenX(rect.getX());
+        float screenY = canvas.toScreenY(rect.getY());
+        float screenWidth = canvas.toScreenX(rect.getEndX()) - screenX;
+        float screenHeight = canvas.toScreenY(rect.getEndY()) - screenY;
 
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(alpha);
         g2.setColor(convertColor(color));
-        g2.fillRect(screenX, screenY, screenWidth, screenHeight);
+        g2.fillRect(Math.round(screenX), Math.round(screenY), Math.round(screenWidth),
+            Math.round(screenHeight));
         g2.setComposite(originalComposite);
     }
 
     @Override
     public void drawCircle(Circle circle, ColorRGB color, AlphaTransform alpha) {
-        int screenX = canvas.toScreenX(circle.getCenterX() - circle.getRadius());
-        int screenY = canvas.toScreenY(circle.getCenterY() - circle.getRadius());
-        int screenWidth = canvas.toScreenX(circle.getCenterX() + circle.getRadius()) - screenX;
-        int screenHeight = canvas.toScreenY(circle.getCenterY() + circle.getRadius()) - screenY;
+        float screenX = canvas.toScreenX(circle.getCenterX() - circle.getRadius());
+        float screenY = canvas.toScreenY(circle.getCenterY() - circle.getRadius());
+        float screenWidth = canvas.toScreenX(circle.getCenterX() + circle.getRadius()) - screenX;
+        float screenHeight = canvas.toScreenY(circle.getCenterY() + circle.getRadius()) - screenY;
 
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(alpha);
         g2.setColor(convertColor(color));
-        g2.fillOval(screenX, screenY, screenWidth, screenHeight);
+        g2.fillOval(Math.round(screenX), Math.round(screenY), Math.round(screenWidth),
+            Math.round(screenHeight));
         g2.setComposite(originalComposite);
     }
 
@@ -112,8 +114,8 @@ public class Java2DGraphicsContext implements GraphicsContext {
         int[] py = new int[polygon.getNumPoints()];
 
         for (int i = 0; i < polygon.getNumPoints(); i++) {
-            px[i] = canvas.toScreenX(polygon.getPointX(i));
-            py[i] = canvas.toScreenY(polygon.getPointY(i));
+            px[i] = Math.round(canvas.toScreenX(polygon.getPointX(i)));
+            py[i] = Math.round(canvas.toScreenY(polygon.getPointY(i)));
         }
 
         Composite originalComposite = g2.getComposite();
@@ -136,8 +138,7 @@ public class Java2DGraphicsContext implements GraphicsContext {
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(transform);
 
-        AffineTransform transform2D = applyTransform(x, y, image.getWidth(), image.getHeight(),
-            transform);
+        AffineTransform transform2D = applyTransform(x, y, image.getWidth(), image.getHeight(), transform);
         g2.drawImage(image, transform2D, null);
 
         if (transform.getMask() != null) {
@@ -150,8 +151,8 @@ public class Java2DGraphicsContext implements GraphicsContext {
 
     @Override
     public void drawText(String text, TTFont font, float x, float y, Align align, AlphaTransform alpha) {
-        int screenX = canvas.toScreenX(x);
-        int screenY = canvas.toScreenY(y);
+        float screenX = canvas.toScreenX(x);
+        float screenY = canvas.toScreenY(y);
         Font awtFont = mediaLoader.getFont(font);
         int estimatedWidth = g2.getFontMetrics(awtFont).stringWidth(text);
 
@@ -173,8 +174,8 @@ public class Java2DGraphicsContext implements GraphicsContext {
     }
 
     private AffineTransform applyTransform(int x, int y, int width, int height, Transform transform) {
-        int screenX = canvas.toScreenX(x);
-        int screenY = canvas.toScreenY(y);
+        float screenX = canvas.toScreenX(x);
+        float screenY = canvas.toScreenY(y);
         float scaleX = canvas.getZoomLevel() * (transform.getScaleX() / 100f);
         float scaleY = canvas.getZoomLevel() * (transform.getScaleY() / 100f);
         int screenWidth = (int) (width * scaleX);

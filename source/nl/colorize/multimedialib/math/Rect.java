@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.math;
@@ -87,18 +87,19 @@ public class Rect implements Shape {
 
     @Override
     public boolean contains(Point p) {
-        return p.getX() >= x && p.getX() <= x + width &&
-            p.getY() >= y && p.getY() <= y + height;
+        return contains(p.getX(), p.getY());
+    }
+
+    public boolean contains(float px, float py) {
+        return px >= x && px <= x + width && py >= y && py <= y + height;
     }
 
     public boolean contains(Rect r) {
-        return r.x >= x && r.x + r.width <= x + width &&
-            r.y >= y && r.y + r.height <= y + height;
+        return r.x >= x && r.x + r.width <= x + width && r.y >= y && r.y + r.height <= y + height;
     }
 
     public boolean intersects(Rect r) {
-        return !(r.x + r.width < x || r.x > x + width ||
-            r.y + r.height < y || r.y > y + height);
+        return !(r.x + r.width < x || r.x > x + width || r.y + r.height < y || r.y > y + height);
     }
 
     public Rect copy() {

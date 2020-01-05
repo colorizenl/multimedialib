@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.mock;
@@ -40,7 +40,7 @@ public class MockRenderer implements Renderer, GraphicsContext, MediaLoader {
     private List<Renderable> renderCallbacks;
 
     public MockRenderer() {
-        this.canvas = new Canvas(800, 600, 1f);
+        this.canvas = Canvas.flexible(800, 600);
         this.inputDevice = new MockInputDevice();
         this.updateCallbacks = new ArrayList<>();
         this.renderCallbacks = new ArrayList<>();

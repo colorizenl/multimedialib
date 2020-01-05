@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
 // Copyright 2009-2020 Colorize
-// Apache license (http://www.colorize.nl/code_license.txt)
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.teavm;
@@ -36,7 +36,7 @@ public class TeaRenderer implements Renderer, AnimationFrameCallback {
     public TeaRenderer(Canvas canvas) {
         this.canvas = canvas;
         this.graphics = new TeaGraphicsContext(canvas);
-        this.inputDevice = new TeaInputDevice();
+        this.inputDevice = new TeaInputDevice(canvas);
         this.mediaLoader = new TeaMediaLoader();
         this.localStorage = new TeaLocalStorage();
         this.updateCallbacks = new ArrayList<>();
@@ -96,7 +96,27 @@ public class TeaRenderer implements Renderer, AnimationFrameCallback {
         int canvasHeight = Math.round(Browser.getCanvasHeight());
 
         if (canvasWidth > 0 && canvasHeight > 0) {
-            canvas.resize(canvasWidth, canvasHeight);
+            canvas.resizeScreen(canvasWidth, canvasHeight);
+        }
+    }
+
+    /**
+     * Returns the display name of the current platform. This method is similar
+     * to {@code Platform.getPlatformName()}, but detects the platform based on
+     * the browser's {@code User-Agent} header rather than from the system
+     * properties.
+     */
+    public String getPlatformName() {
+        String userAgent = Browser.getUserAgent().toLowerCase();
+
+        if (userAgent.contains("iphone") || userAgent.contains("ipad")) {
+            return "iOS";
+        } else if (userAgent.contains("android")) {
+            return "Android";
+        } else if (userAgent.contains("mac")) {
+            return "Mac";
+        } else {
+            return "Windows";
         }
     }
 }
