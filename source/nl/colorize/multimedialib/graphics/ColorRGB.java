@@ -8,6 +8,9 @@ package nl.colorize.multimedialib.graphics;
 
 import com.google.common.base.Preconditions;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Represents a color built out of red, green, and blue components. The color
  * components have a value between 0 and 255, where (0, 0, 0) is black and
@@ -65,6 +68,32 @@ public final class ColorRGB {
         rgb = (rgb << 8) + g;
         rgb = (rgb << 8) + b;
         return rgb;
+    }
+
+    /**
+     * Creates a list of colors that interpolate linearly between this color and
+     * the target color.
+     *
+     * @throws IllegalArgumentException if the number of steps is not at least 2,
+     *         or if the source and target colors are already identical.
+     */
+    public List<ColorRGB> interpolate(ColorRGB target, int steps) {
+        Preconditions.checkArgument(!equals(target), "Cannot interpolate between identical colors");
+        Preconditions.checkArgument(steps >= 2, "Need at least 2 colors for interpolation");
+
+        int stepR = (target.r - r) / (steps - 1);
+        int stepG = (target.g - g) / (steps - 1);
+        int stepB = (target.b - b) / (steps - 1);
+
+        List<ColorRGB> colors = new ArrayList<>();
+        colors.add(this);
+
+        for (int i = 1; i < steps - 1; i++) {
+            colors.add(new ColorRGB(r + i * stepR, g + i * stepG, b + i * stepB));
+        }
+        colors.add(target);
+
+        return colors;
     }
     
     @Override

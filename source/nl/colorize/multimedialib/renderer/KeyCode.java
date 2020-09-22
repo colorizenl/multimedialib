@@ -57,5 +57,18 @@ public enum KeyCode {
     N7,
     N8,
     N9,
-    N0;
+    N0,
+
+    F1,
+    F2,
+    F3,
+    F4,
+    F5,
+    F6,
+    F7,
+    F8,
+    F9,
+    F10,
+    F11,
+    F12;
 }

@@ -8,7 +8,7 @@ package nl.colorize.multimedialib.math;
 
 import com.google.common.math.IntMath;
 
-import java.util.Collection;
+import java.util.List;
 
 /**
  * Basic math-related functions that are not included in {@link java.lang.Math}
@@ -19,6 +19,10 @@ public final class MathUtils {
     public static final float EPSILON = 0.001f;
     
     private MathUtils() {
+    }
+
+    public static int floor(float n) {
+        return (int) n;
     }
     
     public static int ceiling(float n) {
@@ -69,7 +73,7 @@ public final class MathUtils {
         return value;
     }
     
-    public static float average(Collection<? extends Number> numbers) {
+    public static float average(List<? extends Number> numbers) {
         float sum = 0f;
         for (Number num : numbers) {
             sum += num.floatValue();
@@ -93,5 +97,25 @@ public final class MathUtils {
         }
         
         throw new IllegalArgumentException("Number out of range");
+    }
+
+    /**
+     * Returns the distance between two angles in degrees. The result will be
+     * in the range between 0 and 180.
+     */
+    public static float angleDistance(float a, float b) {
+        float phi = Math.abs(b - a) % 360f;
+        if (phi > 180f) {
+            return 360f - phi;
+        }
+        return phi;
+    }
+
+    /**
+     * Returns true if the specified two float values are either exactly equal,
+     * or so similar that they fall within the {@link #EPSILON} range.
+     */
+    public static boolean equals(float a, float b) {
+        return Math.abs(a - b) < EPSILON;
     }
 }

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>MultimediaLib | PeerJS test</title>
+        <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no" />
+        <link rel="stylesheet" type="text/css" href="../../resources/browser/multimedialib.css" />
+        <script src="../../resources/browser/lib/peerjs-1.2.0.min.js"></script>
+        <script src="../../resources/browser/network.js"></script>
+    </head>
+
+    <body>
+        <textarea id="output" style="width: 500px; height: 300px;"></textarea>
+        <div>
+            <button onclick="openConnection()">Open connection</button>
+        </div>
+        <div>
+            <input id="connectTo" type="text" placeholder="Connection ID" />
+            <button onclick="joinConnection()">Join connection</button>
+        </div>
+
+        <div>
+            <input id="messageText" type="text" placeholder="Message" />
+            <button onclick="sendMessage()">Send message</button>
+        </div>
+    
+        <script>
+            function showOutput(message) {
+                document.getElementById("output").value += message + "\n";
+            }
+
+            function openConnection() {
+                showOutput("Opening connection");
+                openPeerConnection(null, message => showOutput(message));
+                return false;
+            }
+            
+            function joinConnection() {
+                let connectionID = document.getElementById("connectTo").value;
+                showOutput("Connecting to " + connectionID);
+                openPeerConnection(connectionID, message => showOutput(message));
+                return false;
+            }
+
+            function sendMessage() {
+                let message = document.getElementById("messageText").value;
+                showOutput("Sending message: " + message);
+                sendPeerMessage(message);
+                return false;
+            }
+        
+            document.addEventListener("DOMContentLoaded", event => {
+                showOutput("Initializing");
+            });
+        </script>
+    </body>
+</html>

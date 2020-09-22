@@ -8,23 +8,31 @@ package nl.colorize.multimedialib.mock;
 
 import nl.colorize.multimedialib.graphics.Align;
 import nl.colorize.multimedialib.graphics.AlphaTransform;
-import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
+import nl.colorize.multimedialib.graphics.PolygonMesh;
 import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.ApplicationData;
+import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.FilePointer;
-import nl.colorize.multimedialib.renderer.GraphicsContext;
+import nl.colorize.multimedialib.renderer.GraphicsContext2D;
+import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.InputDevice;
+import nl.colorize.multimedialib.renderer.NetworkAccess;
 import nl.colorize.multimedialib.renderer.MediaLoader;
+import nl.colorize.multimedialib.renderer.NetworkConnection;
+import nl.colorize.multimedialib.renderer.RenderCallback;
 import nl.colorize.multimedialib.renderer.Renderer;
-import nl.colorize.multimedialib.scene.Renderable;
-import nl.colorize.multimedialib.scene.Updatable;
+import nl.colorize.multimedialib.renderer.Stage;
+import nl.colorize.util.PlatformFamily;
+import nl.colorize.util.Task;
+import nl.colorize.util.http.Headers;
+import nl.colorize.util.http.PostData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,18 +40,35 @@ import java.util.List;
 /**
  * Mock implementation of the {@code Renderer} interface plus all nested objects.
  */
-public class MockRenderer implements Renderer, GraphicsContext, MediaLoader {
+public class MockRenderer implements Renderer, GraphicsContext2D, MediaLoader, NetworkAccess {
 
+    private List<RenderCallback> callbacks;
     private Canvas canvas;
     private InputDevice inputDevice;
-    private List<Updatable> updateCallbacks;
-    private List<Renderable> renderCallbacks;
 
     public MockRenderer() {
+        this.callbacks = new ArrayList<>();
         this.canvas = Canvas.flexible(800, 600);
         this.inputDevice = new MockInputDevice();
-        this.updateCallbacks = new ArrayList<>();
-        this.renderCallbacks = new ArrayList<>();
+    }
+
+    @Override
+    public void attach(RenderCallback callback) {
+        callbacks.add(callback);
+    }
+
+    @Override
+    public void start() {
+    }
+
+    @Override
+    public GraphicsMode getSupportedGraphicsMode() {
+        return GraphicsMode.HEADLESS;
+    }
+
+    @Override
+    public Stage getStage() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -91,13 +116,8 @@ public class MockRenderer implements Renderer, GraphicsContext, MediaLoader {
     }
 
     @Override
-    public void addUpdateCallback(Updatable callback) {
-        updateCallbacks.add(callback);
-    }
-
-    @Override
-    public void addRenderCallback(Renderable callback) {
-        renderCallbacks.add(callback);
+    public NetworkAccess getNetwork() {
+        return this;
     }
 
     @Override
@@ -111,7 +131,7 @@ public class MockRenderer implements Renderer, GraphicsContext, MediaLoader {
     }
 
     @Override
-    public TTFont loadFont(String fontFamily, FilePointer file) {
+    public TTFont loadFont(FilePointer file, String family, int size, ColorRGB color, boolean bold) {
         throw new UnsupportedOperationException();
     }
 
@@ -121,7 +141,52 @@ public class MockRenderer implements Renderer, GraphicsContext, MediaLoader {
     }
 
     @Override
+    public PolygonMesh loadMesh(FilePointer file) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean containsResourceFile(FilePointer file) {
         return true;
+    }
+
+    @Override
+    public Task<String> get(String url, Headers headers) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Task<String> post(String url, Headers headers, PostData body) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isWebSocketSupported() {
+        return false;
+    }
+
+    @Override
+    public NetworkConnection connectWebSocket(String uri) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isWebRtcSupported() {
+        return false;
+    }
+
+    @Override
+    public NetworkConnection connectWebRTC(String id) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String takeScreenshot() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public PlatformFamily getPlatform() {
+        throw new UnsupportedOperationException();
     }
 }

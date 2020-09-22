@@ -11,7 +11,7 @@ package nl.colorize.multimedialib.math;
  */
 public interface Shape {
 
-    public static final float EPSILON = 0.001f;
+    public static final float EPSILON = MathUtils.EPSILON;
 
-    public boolean contains(Point p);
+    public boolean contains(Point2D p);
 }

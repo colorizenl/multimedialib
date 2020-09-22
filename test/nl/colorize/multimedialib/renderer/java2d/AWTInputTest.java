@@ -7,7 +7,7 @@
 package nl.colorize.multimedialib.renderer.java2d;
 
 import nl.colorize.multimedialib.renderer.KeyCode;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AWTInputTest {
 
@@ -29,6 +29,6 @@ public class AWTInputTest {
             .filter(keyCode -> !mapping.containsKey(keyCode))
             .collect(Collectors.toList());
 
-        assertTrue("Not all key codes have been mapped: " + culprits, culprits.isEmpty());
+        assertTrue(culprits.isEmpty(), "Not all key codes have been mapped: " + culprits);
     }
 }

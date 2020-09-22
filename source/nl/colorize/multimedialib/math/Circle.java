@@ -14,21 +14,21 @@ import com.google.common.base.Preconditions;
  */
 public class Circle implements Shape {
 
-    private Point center;
+    private Point2D center;
     private float radius;
 
-    public Circle(Point center, float radius) {
+    public Circle(Point2D center, float radius) {
         Preconditions.checkArgument(radius > 0f, "Invalid radius: " + radius);
 
-        this.center = center;
+        this.center = center.copy();
         this.radius = radius;
     }
 
     public Circle(float x, float y, float radius) {
-        this(new Point(x, y), radius);
+        this(new Point2D(x, y), radius);
     }
 
-    public Point getCenter() {
+    public Point2D getCenter() {
         return center;
     }
 
@@ -49,7 +49,7 @@ public class Circle implements Shape {
     }
 
     @Override
-    public boolean contains(Point p) {
+    public boolean contains(Point2D p) {
         return calculateDistance(p) <= radius;
     }
 
@@ -61,7 +61,7 @@ public class Circle implements Shape {
      * Returns the distance between the center of this circle and the specified
      * point.
      */
-    public float calculateDistance(Point p) {
+    public float calculateDistance(Point2D p) {
         return center.calculateDistance(p);
     }
 

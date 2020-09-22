@@ -35,6 +35,7 @@ public class SpriteSheet {
      * Marks a region within the sprite sheet and returns the corresponding
      * sun-image. The sub-image can also be retrieved at a later time using
      * {@link #get(String)}.
+     *
      * @throws IllegalArgumentException if the region does not fit within
      *         the sprite sheet image, or if a region with the same name
      *         already exists.
@@ -42,14 +43,20 @@ public class SpriteSheet {
     public Image markRegion(String name, Rect region) {
         Preconditions.checkArgument(!regions.containsKey(name),
             "Sprite sheet already contains a region with the same name: " + name);
-
-        if (image.getWidth() > 0 && image.getHeight() > 0) {
-            Rect imageBounds = new Rect(0, 0, image.getWidth(), image.getHeight());
-            Preconditions.checkArgument(imageBounds.contains(region), "Invalid region: " + name);
-        }
+        Preconditions.checkArgument(isValidRegion(region),
+            "Invalid region: " + name + " @ " + region);
 
         regions.put(name, region);
         return get(name);
+    }
+
+    protected boolean isValidRegion(Rect region) {
+        if (image.getWidth() > 0 && image.getHeight() > 0) {
+            Rect imageBounds = new Rect(0, 0, image.getWidth(), image.getHeight());
+            return imageBounds.contains(region);
+        } else {
+            return true;
+        }
     }
 
     /**
@@ -63,7 +70,7 @@ public class SpriteSheet {
             return subImageCache.get(name);
         } else {
             Rect region = getRegion(name);
-            Image subImage = image.getRegion(region);
+            Image subImage = image.extractRegion(region);
             subImageCache.put(name, subImage);
             return subImage;
         }

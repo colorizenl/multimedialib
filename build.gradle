@@ -1,8 +1,8 @@
-apply plugin: "java"
+apply plugin: "java-library"
 apply plugin: "jacoco"
 
 group = "nl.colorize"
-version = "2019.2.4"
+version = "2020.4"
 sourceCompatibility = "11"
 targetCompatibility = "11"
 compileJava.options.encoding = "UTF-8"
@@ -18,21 +18,34 @@ repositories {
 }
 
 dependencies {
-    compile "nl.colorize:colorize-java-commons:2019.2.4"
-    compile "args4j:args4j:2.33"
-    compile "com.badlogicgames.gdx:gdx:1.9.10"
-    compile "com.badlogicgames.gdx:gdx-backend-lwjgl3:1.9.10"
-    compile "com.badlogicgames.gdx:gdx-platform:1.9.10:natives-desktop"
-    compile "org.teavm:teavm:0.7.0-dev-943"
-    compile "org.teavm:teavm-jso:0.7.0-dev-943"
-    compile "org.teavm:teavm-jso-apis:0.7.0-dev-943"
-    compile "org.teavm:teavm-classlib:0.7.0-dev-943"
-    compile "org.teavm:teavm-tooling:0.7.0-dev-943"
-    compile "javazoom:jlayer:1.0.1"
-    testCompile "junit:junit:4.12"
-    testCompile "org.easymock:easymock:4.1"
-    testCompile "org.powermock:powermock-module-junit4:2.0.4"
-    testCompile "org.powermock:powermock-api-easymock:2.0.4"
+    api "nl.colorize:colorize-java-commons:2020.1.13"
+    api "args4j:args4j:2.33"
+    implementation "com.badlogicgames.gdx:gdx:1.9.11"
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:1.9.11"
+    implementation "com.badlogicgames.gdx:gdx-platform:1.9.11:natives-desktop"
+    implementation "com.badlogicgames.gdx:gdx-freetype:1.9.11"
+    implementation "com.badlogicgames.gdx:gdx-freetype-platform:1.9.11:natives-desktop"
+    implementation "org.teavm:teavm:0.7.0-dev-988"
+    implementation "org.teavm:teavm-jso:0.7.0-dev-988"
+    implementation "org.teavm:teavm-jso-apis:0.7.0-dev-988"
+    implementation "org.teavm:teavm-classlib:0.7.0-dev-988"
+    implementation "org.teavm:teavm-tooling:0.7.0-dev-988"
+    implementation "javazoom:jlayer:1.0.1"
+    implementation "org.java-websocket:Java-WebSocket:1.5.1"
+    implementation "org.slf4j:slf4j-jdk14:1.7.30"
+    testImplementation "org.junit.jupiter:junit-jupiter:5.6.2"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+jacocoTestReport {
+    afterEvaluate {
+        classDirectories.from = files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: ["**/java2d/**", "**/libgdx/**", "**/teavm/**"])
+        })
+    }
 }
 
 task coverage(dependsOn: ["test", "jacocoTestReport"]) {
@@ -44,11 +57,25 @@ task coverage(dependsOn: ["test", "jacocoTestReport"]) {
     }
 }
 
-task transpileDemoApplication(type: JavaExec, dependsOn: ["compileJava", "processResources"]) {
+task transpileDemoApplication2D(type: JavaExec, dependsOn: ["compileJava", "processResources"]) {
     classpath = sourceSets.main.runtimeClasspath
     main = "nl.colorize.multimedialib.tool.TeaVMTranspiler"
-    args "-project", "MultimediaLib-TeaVM-Demo", "-resources", "resources",
-        "-out", "${buildDir}/browserdemo", "-main", "nl.colorize.multimedialib.renderer.teavm.TeaDemo"
+    args "-project", "MultimediaLib-TeaVM-Demo", "-resources", "resources", "-renderer", "webgl",
+        "-out", "${buildDir}/browserdemo2d", "-main", "nl.colorize.multimedialib.tool.TeaDemo2D"
 }
 
-assemble.dependsOn transpileDemoApplication
+task transpileDemoApplication3D(type: JavaExec, dependsOn: ["compileJava", "processResources"]) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = "nl.colorize.multimedialib.tool.TeaVMTranspiler"
+    args "-project", "MultimediaLib-TeaVM-Demo", "-resources", "resources", "-renderer", "three",
+        "-out", "${buildDir}/browserdemo2d", "-main", "nl.colorize.multimedialib.tool.TeaDemo3D"
+}
+
+task generateCordovaDemoApplication2D(type: JavaExec, dependsOn: transpileDemoApplication2D) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = "nl.colorize.multimedialib.tool.CordovaWrapper"
+    args "-webapp", "${buildDir}/browserdemo2d", "-out", "${buildDir}/cordova",
+         "-appid", "nl.colorize.multimedialib", "-appname", "MultimediaLib-Demo2D",
+         "-version", "${version}", "-icon", "resources/icon.png", "-dist", "debug",
+         "-buildjson", System.getProperty("user.home") + "/Developer/cordova/build-multimedialib.json"
+}

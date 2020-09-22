@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>MultimediaLib | WebGL test</title>
+    <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no" />
+    <link rel="stylesheet" type="text/css" href="../resources/web/multimedialib.css" />
+    <script src="../resources/web/multimedialib.js"></script>
+</head>
+
+<body>
+    <div id="loading"></div>
+    <div id="console"></div>
+    <div id="multimediaLibContainer"></div>
+    <div id="imageContainer"></div>
+    <div id="audioContainer"></div>
+    <div id="fontContainer"></div>
+    <div id="resourceContainer"></div>
+
+    <script>
+        function main() {
+            loadImage("test", "colorize.png");
+
+            onFrame(() => {
+                renderer.drawRect(10, 10, 100, 100, "#FF0000", 1.0);
+                renderer.drawRect(120, 10, 100, 100, "#FF0000", 0.5);
+                renderer.drawImageRegion("test", 0, 0, 170, 147,
+                    10, 200, 170, 147, 0, 100, 100, 100, null);
+                renderer.drawImageRegion("test", 0, 0, 170 / 2, 147 / 2,
+                    200, 200, 170, 147, 0, 100, 100, 100, null);
+                renderer.drawText("This is some text", "Arial", 16, "#FFFFFF", false, 50, 50, "left", 100);
+            });
+        }
+    </script>
+</body>
+</html>

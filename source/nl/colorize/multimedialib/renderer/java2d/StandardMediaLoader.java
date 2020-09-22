@@ -7,8 +7,10 @@
 package nl.colorize.multimedialib.renderer.java2d;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
+import nl.colorize.multimedialib.graphics.PolygonMesh;
 import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
@@ -45,8 +47,7 @@ public class StandardMediaLoader implements MediaLoader {
         try {
             ResourceFile source = new ResourceFile(file.getPath());
             BufferedImage loadedImage = Utils2D.loadImage(source.openStream());
-            BufferedImage compatibleImage = Utils2D.makeImageCompatible(loadedImage);
-            return new AWTImage(compatibleImage);
+            return new AWTImage(loadedImage, file);
         } catch (IOException e) {
             throw new MediaException("Cannot load image from " + file.getPath(), e);
         }
@@ -58,11 +59,12 @@ public class StandardMediaLoader implements MediaLoader {
     }
 
     @Override
-    public TTFont loadFont(String fontFamily, FilePointer file) {
+    public TTFont loadFont(FilePointer file, String family, int size, ColorRGB color, boolean bold) {
         ResourceFile source = new ResourceFile(file.getPath());
+        int style = bold ? Font.BOLD : Font.PLAIN;
+
         try (InputStream stream = source.openStream()) {
-            Font awtFont = Font.createFont(Font.TRUETYPE_FONT, stream);
-            awtFont = awtFont.deriveFont(Font.PLAIN, TTFont.DEFAULT_SIZE);
+            Font awtFont = Font.createFont(Font.TRUETYPE_FONT, stream).deriveFont(style, size);
 
             GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
             env.registerFont(awtFont);
@@ -70,10 +72,8 @@ public class StandardMediaLoader implements MediaLoader {
             // This ignores the value of the fontFamily parameter and
             // will use whatever font family name defined in the file
             // itself, since this is considered more reliable.
-            TTFont font = new TTFont(awtFont.getFamily(), TTFont.DEFAULT_SIZE,
-                ColorRGB.BLACK);
+            TTFont font = new TTFont(awtFont.getFamily(), size, color, bold);
             loadedFonts.put(font, awtFont);
-
             return font;
         } catch (IOException | FontFormatException e) {
             throw new MediaException("Cannot load font from " + file.getPath(), e);
@@ -82,9 +82,7 @@ public class StandardMediaLoader implements MediaLoader {
 
     protected Font getFont(TTFont font) {
         Font awtFont = loadedFonts.get(font);
-        if (awtFont == null) {
-            awtFont = new Font(font.getFamily(), Font.PLAIN, font.getSize());
-        }
+        Preconditions.checkArgument(awtFont != null, "Unknown font: " + font);
         return awtFont;
     }
 
@@ -92,6 +90,11 @@ public class StandardMediaLoader implements MediaLoader {
     public String loadText(FilePointer file) {
         ResourceFile resourceFile = new ResourceFile(file.getPath());
         return resourceFile.read(Charsets.UTF_8);
+    }
+
+    @Override
+    public PolygonMesh loadMesh(FilePointer file) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

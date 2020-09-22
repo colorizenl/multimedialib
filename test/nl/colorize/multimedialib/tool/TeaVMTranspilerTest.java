@@ -9,7 +9,7 @@ package nl.colorize.multimedialib.tool;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.Files;
 import nl.colorize.util.swing.Utils2D;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.teavm.apachecommons.io.Charsets;
 
 import java.awt.Color;
@@ -20,13 +20,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TeaVMTranspilerTest {
 
     @Test
     public void testTranspile() throws IOException {
-        File sourceDir = Files.createTempDir();
         File resourcesDir = Files.createTempDir();
         File outputDir = Files.createTempDir();
 
@@ -35,6 +35,7 @@ public class TeaVMTranspilerTest {
         tool.resourceDir = resourcesDir;
         tool.outputDir = outputDir;
         tool.mainClassName = MockApp.class.getName();
+        tool.renderer = "canvas";
         tool.run();
 
         String generatedCode = Files.toString(new File(outputDir, "classes.js"), Charsets.UTF_8);
@@ -48,12 +49,11 @@ public class TeaVMTranspilerTest {
         expected += "    $result.$clear();\n";
         expected += "}\n";
 
-        assertTrue("Generated code:\n" + generatedCode, generatedCode.contains(expected));
+        assertTrue(generatedCode.contains(expected), "Generated code:\n" + generatedCode);
     }
 
     @Test
     public void testCopyStandardOutputFiles() {
-        File sourceDir = Files.createTempDir();
         File resourcesDir = Files.createTempDir();
         File outputDir = Files.createTempDir();
 
@@ -62,6 +62,7 @@ public class TeaVMTranspilerTest {
         tool.resourceDir = resourcesDir;
         tool.outputDir = outputDir;
         tool.mainClassName = MockApp.class.getName();
+        tool.renderer = "canvas";
         tool.run();
 
         assertTrue(new File(outputDir, "multimedialib.js").exists());
@@ -70,7 +71,6 @@ public class TeaVMTranspilerTest {
 
     @Test
     public void testCopyBinaryFiles() throws IOException {
-        File sourceDir = Files.createTempDir();
         File resourcesDir = Files.createTempDir();
         File outputDir = Files.createTempDir();
 
@@ -80,21 +80,21 @@ public class TeaVMTranspilerTest {
         g2.fillOval(0, 0, 100, 100);
         g2.dispose();
 
-        Utils2D.savePNG(image, new File(resourcesDir, "test.png"));
+        Utils2D.savePNG(image, new File(resourcesDir, "test.x"));
 
         TeaVMTranspiler tool = new TeaVMTranspiler();
         tool.projectName = "test";
         tool.resourceDir = resourcesDir;
         tool.outputDir = outputDir;
         tool.mainClassName = MockApp.class.getName();
+        tool.renderer = "canvas";
         tool.run();
 
-        assertTrue(new File(outputDir, "test.png").exists());
+        assertTrue(new File(outputDir, "test.x").exists());
     }
 
     @Test
     public void testRewriteHTML() throws IOException {
-        File sourceDir = Files.createTempDir();
         File resourcesDir = Files.createTempDir();
         File outputDir = Files.createTempDir();
 
@@ -106,6 +106,7 @@ public class TeaVMTranspilerTest {
         tool.resourceDir = resourcesDir;
         tool.outputDir = outputDir;
         tool.mainClassName = MockApp.class.getName();
+        tool.renderer = "canvas";
         tool.run();
 
         String generatedHTML = Files.toString(new File(outputDir, "index.html"), Charsets.UTF_8);
@@ -114,12 +115,11 @@ public class TeaVMTranspilerTest {
         expected += "<div id=\"test_txt\">This is a test file\n";
         expected += "containing multiple lines</div>\n";
 
-        assertTrue("Generated HTML:\n" + generatedHTML, generatedHTML.contains(expected));
+        assertTrue(generatedHTML.contains(expected), "Generated HTML:\n" + generatedHTML);
     }
 
     @Test
     public void testGenerateResourceFileManifest() throws IOException {
-        File sourceDir = Files.createTempDir();
         File resourcesDir = Files.createTempDir();
         File outputDir = Files.createTempDir();
 
@@ -131,6 +131,7 @@ public class TeaVMTranspilerTest {
         tool.resourceDir = resourcesDir;
         tool.outputDir = outputDir;
         tool.mainClassName = MockApp.class.getName();
+        tool.renderer = "canvas";
         tool.run();
 
         String generatedHTML = Files.toString(new File(outputDir, "index.html"), Charsets.UTF_8);
@@ -139,7 +140,35 @@ public class TeaVMTranspilerTest {
         expected += "<div id=\"resource-file-manifest\">test1.txt\n";
         expected += "test2.txt</div>\n";
 
-        assertTrue("Generated HTML:\n" + generatedHTML, generatedHTML.contains(expected));
+        assertTrue(generatedHTML.contains(expected), "Generated HTML:\n" + generatedHTML);
+    }
+    
+    @Test
+    public void testAccessImageContents() throws IOException {
+        File resourcesDir = Files.createTempDir();
+        File outputDir = Files.createTempDir();
+        
+        BufferedImage image = new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB);
+        image.setRGB(0, 0, Color.RED.getRGB());
+        image.setRGB(1, 0, Color.BLUE.getRGB());
+        Utils2D.savePNG(image, new File(resourcesDir, "image.png"));
+
+        TeaVMTranspiler tool = new TeaVMTranspiler();
+        tool.projectName = "test";
+        tool.resourceDir = resourcesDir;
+        tool.outputDir = outputDir;
+        tool.mainClassName = MockApp.class.getName();
+        tool.renderer = "webgl";
+        tool.run();
+
+        String generated = Files.toString(new File(outputDir, "image-data.js"), Charsets.UTF_8);
+
+        String expected = "let imageData = {\n    \"image.png\": \"" +
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAE" +
+            "ElEQVR4XmP4z8AAQkAMBQAz3gP9NSox0gAAAABJRU5ErkJggg==\"\n};\n";
+
+        assertTrue(new File(outputDir, "image-data.js").exists());
+        assertEquals(expected, generated, "Generated:\n" + generated);
     }
 
     /**

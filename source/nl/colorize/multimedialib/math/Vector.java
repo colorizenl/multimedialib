@@ -31,12 +31,20 @@ public class Vector {
         this.direction = direction;
     }
 
+    public void addDirection(float delta) {
+        setDirection(direction + delta);
+    }
+
     public float getDirection() {
         return direction;
     }
 
     public void setMagnitude(float magnitude) {
-        this.magnitude = magnitude;
+        this.magnitude = Math.max(magnitude, 0f);
+    }
+
+    public void addMagnitude(float delta) {
+        setMagnitude(magnitude + delta);
     }
 
     public float getMagnitude() {
@@ -51,8 +59,8 @@ public class Vector {
         return magnitude * (float) Math.sin(Math.toRadians(direction));
     }
 
-    public Point toPoint() {
-        return new Point(getX(), getY());
+    public Point2D toPoint() {
+        return new Point2D(getX(), getY());
     }
 
     public Vector copy() {

@@ -37,10 +37,16 @@ public class MockImage implements Image {
         this(128, 128);
     }
 
+    @Override
+    public Rect getRegion() {
+        return new Rect(0, 0, width, height);
+    }
+
     public void setWidth(int width) {
         this.width = width;
     }
-    
+
+    @Override
     public int getWidth() {
         return width;
     }
@@ -48,12 +54,14 @@ public class MockImage implements Image {
     public void setHeight(int height) {
         this.height = height;
     }
-    
+
+    @Override
     public int getHeight() {
         return height;
     }
 
-    public Image getRegion(Rect region) {
+    @Override
+    public Image extractRegion(Rect region) {
         return new MockImage(Math.round(region.getWidth()), Math.round(region.getHeight()));
     }
 
@@ -65,6 +73,11 @@ public class MockImage implements Image {
     @Override
     public int getAlpha(int x, int y) {
         return 100;
+    }
+
+    @Override
+    public Image tint(ColorRGB color) {
+        return this;
     }
 
     @Override

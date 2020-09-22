@@ -7,9 +7,11 @@
 package nl.colorize.multimedialib.graphics;
 
 import nl.colorize.multimedialib.mock.MockImage;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.*;
+import com.google.common.collect.ImmutableList;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class AnimationTest {
 
@@ -109,5 +111,82 @@ public class AnimationTest {
         assertEquals(frameA, anim.getFrameAtTime(0f));
         assertEquals(frameA, anim.getFrameAtTime(0.5f));
         assertEquals(frameC, anim.getFrameAtTime(1f));
+    }
+    
+    @Test
+    void append() {
+        MockImage frameA = new MockImage("A");
+        MockImage frameB = new MockImage("B");
+        MockImage frameC = new MockImage("C");
+        MockImage frameD = new MockImage("D");
+        
+        Animation anim1 = new Animation(ImmutableList.of(frameA, frameB), 0.1f, false);
+        Animation anim2 = new Animation(ImmutableList.of(frameC, frameD), 0.2f, false);
+        Animation result = anim1.append(anim2);
+        
+        assertEquals(4, result.getFrameCount());
+        assertEquals("A", result.getFrameAtIndex(0).toString());
+        assertEquals("B", result.getFrameAtIndex(1).toString());
+        assertEquals("C", result.getFrameAtIndex(2).toString());
+        assertEquals("D", result.getFrameAtIndex(3).toString());
+    }
+    
+    @Test
+    void reverse() {
+        MockImage frameA = new MockImage("A");
+        MockImage frameB = new MockImage("B");
+        
+        Animation anim = new Animation(ImmutableList.of(frameA, frameB), 0.1f, false);
+        anim.setFrameTime(1, 0.2f);
+        
+        Animation reversed = anim.reverse();
+        
+        assertEquals(2, reversed.getFrameCount());
+        assertEquals("B", reversed.getFrameAtIndex(0).toString());
+        assertEquals("A", reversed.getFrameAtIndex(1).toString());
+        assertEquals(0.2f, reversed.getFrameTime(0), EPSILON);
+        assertEquals(0.1f, reversed.getFrameTime(1), EPSILON);
+    }
+    
+    @Test
+    void repeat() {
+        MockImage frameA = new MockImage("A");
+        MockImage frameB = new MockImage("B");
+        
+        Animation anim = new Animation(ImmutableList.of(frameA, frameB), 0.1f, false);
+        anim.setFrameTime(1, 0.2f);
+        
+        Animation repeating = anim.repeat(2);
+        
+        assertEquals(4, repeating.getFrameCount());
+        assertEquals("A", repeating.getFrameAtIndex(0).toString());
+        assertEquals("B", repeating.getFrameAtIndex(1).toString());
+        assertEquals("A", repeating.getFrameAtIndex(2).toString());
+        assertEquals("B", repeating.getFrameAtIndex(3).toString());
+        assertEquals(0.1f, repeating.getFrameTime(0), EPSILON);
+        assertEquals(0.2f, repeating.getFrameTime(1), EPSILON);
+        assertEquals(0.1f, repeating.getFrameTime(2), EPSILON);
+        assertEquals(0.2f, repeating.getFrameTime(3), EPSILON);
+    }
+    
+    @Test
+    void mirror() {
+        MockImage frameA = new MockImage("A");
+        MockImage frameB = new MockImage("B");
+        
+        Animation anim = new Animation(ImmutableList.of(frameA, frameB), 0.1f, false);
+        anim.setFrameTime(1, 0.2f);
+        
+        Animation mirrored = anim.mirror();
+        
+        assertEquals(4, mirrored.getFrameCount());
+        assertEquals("A", mirrored.getFrameAtIndex(0).toString());
+        assertEquals("B", mirrored.getFrameAtIndex(1).toString());
+        assertEquals("B", mirrored.getFrameAtIndex(2).toString());
+        assertEquals("A", mirrored.getFrameAtIndex(3).toString());
+        assertEquals(0.1f, mirrored.getFrameTime(0), EPSILON);
+        assertEquals(0.2f, mirrored.getFrameTime(1), EPSILON);
+        assertEquals(0.2f, mirrored.getFrameTime(2), EPSILON);
+        assertEquals(0.1f, mirrored.getFrameTime(3), EPSILON);
     }
 }

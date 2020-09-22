@@ -7,13 +7,12 @@
 package nl.colorize.multimedialib.math;
 
 import com.google.common.collect.ImmutableList;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Unit tests for classes in the {@link nl.colorize.multimedialib.math} package.
- */
 public class MathUtilsTest {
     
     private static final float EPSILON = 0.001f;
@@ -75,5 +74,13 @@ public class MathUtilsTest {
         assertEquals(2f, MathUtils.average(ImmutableList.of(2f)), EPSILON);
         assertEquals(2.1f, MathUtils.average(ImmutableList.of(2f, 2.2f)), EPSILON);
         assertEquals(3.733f, MathUtils.average(ImmutableList.of(2f, 2.2f, 7f)), EPSILON);
+    }
+
+    @Test
+    void floatEquals() {
+        assertTrue(MathUtils.equals(1f, 1f));
+        assertTrue(MathUtils.equals(1f, 1.0001f));
+        assertFalse(MathUtils.equals(1f, 1.001f));
+        assertFalse(MathUtils.equals(1f, 2f));
     }
 }

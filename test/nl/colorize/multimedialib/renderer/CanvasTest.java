@@ -6,9 +6,9 @@
 
 package nl.colorize.multimedialib.renderer;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CanvasTest {
 
@@ -16,7 +16,7 @@ public class CanvasTest {
 
     @Test
     public void testFixedCanvas() {
-        Canvas canvas = Canvas.create(800, 600);
+        Canvas canvas = Canvas.zoomOut(800, 600);
         canvas.resizeScreen(1024, 768);
 
         assertEquals(0, canvas.toScreenX(0), EPSILON);
@@ -30,7 +30,7 @@ public class CanvasTest {
 
     @Test
     public void testDifferentAspectRatioHorizontal() {
-        Canvas canvas = Canvas.create(800, 600);
+        Canvas canvas = Canvas.zoomOut(800, 600);
         canvas.resizeScreen(1000, 600);
 
         assertEquals(0, canvas.toScreenX(0), EPSILON);
@@ -50,7 +50,7 @@ public class CanvasTest {
 
     @Test
     public void testDifferentAspectRatioVertical() {
-        Canvas canvas = Canvas.create(800, 600);
+        Canvas canvas = Canvas.zoomOut(800, 600);
         canvas.resizeScreen(800, 1000);
 
         assertEquals(0, canvas.toScreenY(0), EPSILON);
@@ -70,7 +70,7 @@ public class CanvasTest {
 
     @Test
     public void testOffset() {
-        Canvas canvas = Canvas.create(800, 600);
+        Canvas canvas = Canvas.zoomOut(800, 600);
         canvas.resizeScreen(1024, 768);
         canvas.offsetScreen(0, 20);
 
@@ -99,7 +99,7 @@ public class CanvasTest {
 
     @Test
     public void testFlexibleCanvasWithOffset() {
-        Canvas canvas = Canvas.create(800, 600);
+        Canvas canvas = Canvas.zoomOut(800, 600);
         canvas.resizeScreen(1280, 800);
         canvas.offsetScreen(0, 20);
 
@@ -110,5 +110,38 @@ public class CanvasTest {
         assertEquals(-15, canvas.toCanvasY(0), EPSILON);
         assertEquals(369, canvas.toCanvasY(512), EPSILON);
         assertEquals(753, canvas.toCanvasY(1024), EPSILON);
+    }
+
+    @Test
+    void zoomIn() {
+        Canvas canvas = Canvas.zoomIn(800, 600);
+        canvas.resizeScreen(500, 1000);
+
+        assertEquals(0f, canvas.toCanvasX(0), EPSILON);
+        assertEquals(300f, canvas.toCanvasX(500), EPSILON);
+        assertEquals(0f, canvas.toCanvasY(0), EPSILON);
+        assertEquals(600f, canvas.toCanvasY(1000), EPSILON);
+    }
+
+    @Test
+    void zoomOut() {
+        Canvas canvas = Canvas.zoomOut(800, 600);
+        canvas.resizeScreen(500, 1000);
+
+        assertEquals(0f, canvas.toCanvasX(0), EPSILON);
+        assertEquals(800f, canvas.toCanvasX(500), EPSILON);
+        assertEquals(0f, canvas.toCanvasY(0), EPSILON);
+        assertEquals(1600f, canvas.toCanvasY(1000), EPSILON);
+    }
+
+    @Test
+    void zoomBalanced() {
+        Canvas canvas = Canvas.zoomBalanced(800, 600);
+        canvas.resizeScreen(500, 1000);
+
+        assertEquals(0f, canvas.toCanvasX(0), EPSILON);
+        assertEquals(436.363f, canvas.toCanvasX(500), EPSILON);
+        assertEquals(0f, canvas.toCanvasY(0), EPSILON);
+        assertEquals(872.727f, canvas.toCanvasY(1000), EPSILON);
     }
 }

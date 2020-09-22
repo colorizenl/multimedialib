@@ -16,10 +16,21 @@ import com.google.common.base.Preconditions;
 @FunctionalInterface
 public interface AlphaTransform {
 
-    public int getAlpha();
+    public float getAlpha();
 
-    public static AlphaTransform create(int value) {
-        Preconditions.checkArgument(value >= 0 && value <= 100,
+    /**
+     * Converts this {@code AlphaTransform} into a regular {@code Transform}.
+     * All non-alpha values will be set to default values.
+     */
+    default Transform toTransform() {
+        return Transform.withAlpha(getAlpha());
+    }
+
+    /**
+     * Creates a new alpha transform that uses a fixed alpha value.
+     */
+    public static AlphaTransform create(float value) {
+        Preconditions.checkArgument(value >= 0f && value <= 100f,
             "Invalid alpha value: " + value);
 
         return () -> value;

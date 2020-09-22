@@ -7,12 +7,12 @@
 package nl.colorize.multimedialib.renderer.teavm;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
 import java.util.List;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BrowserTest {
 
@@ -24,17 +24,22 @@ public class BrowserTest {
         float[].class,
         boolean.class,
         boolean[].class,
+        double.class,
+        double[].class,
         String.class,
         String[].class,
-        AnimationFrameCallback.class
+        AnimationFrameCallback.class,
+        AjaxCallback.class,
+        ConnectionCallback.class,
+        ModelLoadCallback.class
     );
 
     @Test
     public void testAllParametersHaveCompatibleTypes() {
         for (Method method : Browser.class.getDeclaredMethods()) {
             for (Class<?> type : method.getParameterTypes()) {
-                assertTrue("Parameter types is not allowed by TeaVM: " + type,
-                    ALLOWED_TYPES.contains(type) || type.getName().startsWith("java.lang"));
+                assertTrue(ALLOWED_TYPES.contains(type) || type.getName().startsWith("java.lang"),
+                    "Parameter types is not allowed by TeaVM: " + type);
             }
         }
     }
@@ -43,8 +48,8 @@ public class BrowserTest {
     public void testAllReturnTypesAreCompatible() {
         for (Method method : Browser.class.getDeclaredMethods()) {
             Class<?> returnType = method.getReturnType();
-            assertTrue("Return type is not allowed by TeaVM: " + returnType,
-                ALLOWED_TYPES.contains(returnType));
+            assertTrue(ALLOWED_TYPES.contains(returnType),
+                "Return type is not allowed by TeaVM: " + returnType);
         }
     }
 }

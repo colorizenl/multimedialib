@@ -6,9 +6,9 @@
 
 package nl.colorize.multimedialib.math;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CircleTest {
 
@@ -16,12 +16,12 @@ public class CircleTest {
     public void testContainsPoint() {
         Circle circle = new Circle(10f, 10f, 10f);
 
-        assertTrue(circle.contains(new Point(10f, 10f)));
-        assertTrue(circle.contains(new Point(5f, 10f)));
-        assertTrue(circle.contains(new Point(15f, 10f)));
+        assertTrue(circle.contains(new Point2D(10f, 10f)));
+        assertTrue(circle.contains(new Point2D(5f, 10f)));
+        assertTrue(circle.contains(new Point2D(15f, 10f)));
 
-        assertFalse(circle.contains(new Point(0f, 0f)));
-        assertFalse(circle.contains(new Point(20f, 20f)));
+        assertFalse(circle.contains(new Point2D(0f, 0f)));
+        assertFalse(circle.contains(new Point2D(20f, 20f)));
     }
 
     @Test

@@ -66,6 +66,10 @@ public class Rect implements Shape {
         return y + height / 2f;
     }
 
+    public Point2D getCenter() {
+        return new Point2D(getCenterX(), getCenterY());
+    }
+
     public float getEndX() {
         return x + width;
     }
@@ -86,7 +90,7 @@ public class Rect implements Shape {
     }
 
     @Override
-    public boolean contains(Point p) {
+    public boolean contains(Point2D p) {
         return contains(p.getX(), p.getY());
     }
 
@@ -104,6 +108,15 @@ public class Rect implements Shape {
 
     public Rect copy() {
         return new Rect(x, y, width, height);
+    }
+
+    public Polygon toPolygon() {
+        return new Polygon(
+            x, y,
+            x + width, y,
+            x + width, y + height,
+            x, y + height
+        );
     }
 
     @Override
@@ -126,6 +139,23 @@ public class Rect implements Shape {
 
     @Override
     public String toString() {
-        return String.format("(%.1f, %.1f, %.1f, %.1f)", x, y, width, height);
+        return Math.round(x) + ", " + Math.round(y) + ", " +
+            Math.round(width) + ", " + Math.round(height);
+    }
+
+    /**
+     * Returns a rectangle that has X and Y coordinates so that the specified
+     * point becomes its center.
+     */
+    public static Rect around(float x, float y, float width, float height) {
+        return around(new Point2D(x, y), width, height);
+    }
+
+    /**
+     * Returns a rectangle that has X and Y coordinates so that the specified
+     * point becomes its center.
+     */
+    public static Rect around(Point2D center, float width, float height) {
+        return new Rect(center.getX() - width / 2f, center.getY() - height / 2f, width, height);
     }
 }

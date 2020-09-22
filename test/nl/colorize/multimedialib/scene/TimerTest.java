@@ -1,10 +1,11 @@
 package nl.colorize.multimedialib.scene;
 
-import org.junit.Test;
+import nl.colorize.multimedialib.scene.action.Timer;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TimerTest {
 

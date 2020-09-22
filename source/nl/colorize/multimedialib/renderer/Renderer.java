@@ -6,12 +6,12 @@
 
 package nl.colorize.multimedialib.renderer;
 
-import nl.colorize.multimedialib.scene.Renderable;
-import nl.colorize.multimedialib.scene.Scene;
-import nl.colorize.multimedialib.scene.Updatable;
+import nl.colorize.util.PlatformFamily;
 
 /**
- * Renders audiovisual data to that can be used to display multimedia applications.
+ * The renderer acts as the entry point for accessing platform-specific
+ * behavior such as running the animation loop, displaying 2D and 3D graphics,
+ * playing audio, and capturing user input from input devices.
  * <p>
  * When started, the renderer will create the display system and then start the
  * animation loop. Frame updates will be scheduled to match the desired framerate,
@@ -19,19 +19,34 @@ import nl.colorize.multimedialib.scene.Updatable;
  * amount and complexity of graphics that are drawn.
  * <p>
  * All interaction with the renderer should be done from callbacks that are called
- * during the animation loop. The {@link Scene} interface splits the application
- * into different phases.
+ * every frame during the animation loop, represented by {@link RenderCallback}.
  * <p>
- * The renderer has two concepts of display size: the screen and the canvas. The
- * screen is the entire available drawing surface, excluding any title and status 
- * bars and borders. The screen size can change, for example when the window is 
- * resized or when the device changes orientation. The canvas is the drawing area 
- * that the game uses. Transitioning between these two sets of coordinates is
- * handled by the {@link Canvas}.
+ * For 3D graphics, the renderer will draw all objects that are part of the
+ * <em>stage</em>. Note that some renderer implementations may be limited to 2D
+ * graphics and do not support 3D graphics. The capabilities of the renderer and
+ * platform can be checked using {@link #getSupportedGraphicsMode()}.
+ * <p>
+ * For 2D graphics, the renderer does not use the concept of a stage: all 2D
+ * graphics are directly drawn to the screen during each frame. The
+ * {@code Graphic2D} interface can be used to implement objects that will draw
+ * 2D graphics.
+ * <p>
+ * The renderer has two concepts of display size: the screen and the canvas. This
+ * difference exists to allow applications to support multiple resolutions that
+ * may be different from the native screen resolution. The resolution at which
+ * the graphics are rendered is referred to as the canvas.
  */
 public interface Renderer {
 
+    public void attach(RenderCallback callback);
+
+    public void start();
+
+    public GraphicsMode getSupportedGraphicsMode();
+
     public Canvas getCanvas();
+
+    public Stage getStage();
 
     public InputDevice getInputDevice();
 
@@ -39,7 +54,13 @@ public interface Renderer {
 
     public ApplicationData getApplicationData(String appName);
 
-    public void addUpdateCallback(Updatable callback);
+    public NetworkAccess getNetwork();
 
-    public void addRenderCallback(Renderable callback);
+    /**
+     * Takes a screenshots of the renderer's current graphics, and saves it to an
+     * image. The image is returned as a data URL for a PNG image.
+     */
+    public String takeScreenshot();
+
+    public PlatformFamily getPlatform();
 }

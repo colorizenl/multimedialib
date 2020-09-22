@@ -14,6 +14,7 @@ import nl.colorize.util.FileUtils;
 import nl.colorize.util.LoadUtils;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.ResourceFile;
+import nl.colorize.util.swing.Utils2D;
 import nl.colorize.util.xml.XMLHelper;
 import org.jdom2.Element;
 import org.kohsuke.args4j.Option;
@@ -23,6 +24,7 @@ import org.teavm.tooling.TeaVMTargetType;
 import org.teavm.tooling.TeaVMTool;
 import org.teavm.tooling.TeaVMToolException;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,6 +32,7 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -45,6 +48,9 @@ public class TeaVMTranspiler extends CommandLineTool {
     @Option(name = "-project", required = true, usage = "Project name for the application")
     public String projectName;
 
+    @Option(name = "-renderer", required = true, usage = "One of 'canvas', 'webgl', 'three'")
+    public String renderer;
+
     @Option(name = "-resources", required = true, usage = "Location of the application's resource files")
     public File resourceDir;
 
@@ -54,20 +60,35 @@ public class TeaVMTranspiler extends CommandLineTool {
     @Option(name = "-main", required = true, usage = "Main class that acts as application entry point")
     public String mainClassName;
 
-    @Option(name = "-incremental", usage = "Enable to preserveexisting resource files and not overwrite them")
-    public boolean incremental = false;
-
     private static final List<ResourceFile> WEB_RESOURCE_FILES = ImmutableList.of(
-        new ResourceFile("web/index.html"),
-        new ResourceFile("web/multimedialib.js"),
-        new ResourceFile("web/favicon.png"),
-        new ResourceFile("web/loading.gif"),
-        new ResourceFile("web/OpenSans-Regular.ttf")
+        new ResourceFile("browser/index.html"),
+        new ResourceFile("browser/multimedialib.css"),
+        new ResourceFile("browser/multimedialib.js"),
+        new ResourceFile("browser/canvas-renderer.js"),
+        new ResourceFile("browser/webgl2d-renderer.js"),
+        new ResourceFile("browser/threejs-renderer.js"),
+        new ResourceFile("browser/network.js"),
+        new ResourceFile("browser/favicon.png"),
+        new ResourceFile("browser/apple-icon.png"),
+        new ResourceFile("browser/orientation-lock.png"),
+        new ResourceFile("browser/loading.gif"),
+        new ResourceFile("browser/OpenSans-Regular.ttf"),
+        new ResourceFile("browser/lib/peerjs-1.2.0.min.js"),
+        new ResourceFile("browser/lib/three.js"),
+        new ResourceFile("browser/lib/FBXLoader.js"),
+        new ResourceFile("browser/lib/inflate.min.js"),
+        new ResourceFile("colorize-logo.png"),
+        new ResourceFile("orientation-lock.png"),
+        new ResourceFile("ui-widget-background.png"),
+        new ResourceFile("transition-effect.png")
     );
+    
+    private static final List<String> TEXT_FILE_TYPES = ImmutableList.of(
+        ".txt", ".md", ".json", ".yml", ".yaml", ".properties", ".fnt", ".csv", "-manifest");
 
-    private static final List<String> TEXT_RESOURCE_FILE_TYPES = ImmutableList.of(
-        ".txt", ".md", ".json", ".yml", ".yaml", ".properties", "-manifest");
-
+    private static final List<String> IMAGE_FILES_TYPES = ImmutableList.of(".png", ".jpg");
+    private static final List<String> SUPPORTED_RENDERS = ImmutableList.of("canvas", "webgl", "three");
+    private static final List<String> KNOWN_MISSING_CLASSES = Collections.emptyList();
     private static final Logger LOGGER = LogHelper.getLogger(TeaVMTranspiler.class);
 
     public static void main(String[] args) {
@@ -77,7 +98,10 @@ public class TeaVMTranspiler extends CommandLineTool {
 
     @Override
     public void run() {
-        Preconditions.checkArgument(resourceDir.exists(), "Resource directory not found");
+        Preconditions.checkArgument(resourceDir.exists(),
+            "Resource directory not found: " + resourceDir.getAbsolutePath());
+        Preconditions.checkArgument(SUPPORTED_RENDERS.contains(renderer),
+            "Invalid renderer: " + renderer);
 
         outputDir.mkdir();
 
@@ -106,8 +130,16 @@ public class TeaVMTranspiler extends CommandLineTool {
         transpiler.generate();
 
         for (Problem problem : transpiler.getProblemProvider().getProblems()) {
-            LOGGER.log(Level.WARNING, "Error while transpiling: " + format(problem));
+            if (shouldReport(problem)) {
+                LOGGER.log(Level.WARNING, "Error while transpiling: " + format(problem));
+            }
         }
+    }
+
+    private boolean shouldReport(Problem problem) {
+        String params = Arrays.toString(problem.getParams());
+        return KNOWN_MISSING_CLASSES.stream()
+            .noneMatch(entry -> params.equals(entry));
     }
 
     private String format(Problem problem) {
@@ -121,47 +153,55 @@ public class TeaVMTranspiler extends CommandLineTool {
     private void copyResources() {
         List<ResourceFile> resourceFiles = gatherResourceFiles();
         resourceFiles.add(generateManifest(resourceFiles));
-
-        List<ResourceFile> textResourceFiles = new ArrayList<>();
+        
+        List<ResourceFile> textFiles = new ArrayList<>();
+        List<ResourceFile> imageFiles = new ArrayList<>();
 
         for (ResourceFile file : resourceFiles) {
-            if (isTextResourceFile(file)) {
-                textResourceFiles.add(file);
-            } else if (shouldWrite(file)) {
-                LOGGER.info("Copying resource file " + file.getPath());
+            if (isFileType(file, TEXT_FILE_TYPES)) {
+                LOGGER.info("Using text file " + file);
+                textFiles.add(file);
+            } else if (isFileType(file, IMAGE_FILES_TYPES)) {
+                LOGGER.info("Using image file " + file);
+                imageFiles.add(file);                
+            } else {
+                LOGGER.info("Copying resource file " + file);
                 copyBinaryResourceFile(file);
             }
         }
+
+        List<File> imageDataFiles = imageFiles.stream()
+            .peek(imageFile -> LOGGER.info("Generating image data file for " + imageFile))
+            .map(imageFile -> generateImageDataFile(imageFile))
+            .collect(Collectors.toList());
 
         for (ResourceFile file : WEB_RESOURCE_FILES) {
             if (file.getName().endsWith(".html")) {
-                LOGGER.info("Generating HTML file " + file.getPath());
-                rewriteHTML(file, textResourceFiles);
-            } else if (shouldWrite(file)) {
-                LOGGER.info("Generating file " + file.getPath());
+                LOGGER.info("Generating HTML file " + file);
+                rewriteHTML(file, textFiles, imageDataFiles);
+            } else {
+                LOGGER.info("Generating file " + file);
                 copyBinaryResourceFile(file);
             }
         }
     }
 
-    private boolean isTextResourceFile(ResourceFile file) {
-        return TEXT_RESOURCE_FILE_TYPES.stream()
-            .anyMatch(type -> file.getName().toLowerCase().endsWith(type));
+    private boolean isFileType(ResourceFile needle, List<String> haystack) {
+        return haystack.stream()
+            .anyMatch(type -> needle.getName().toLowerCase().endsWith(type));
     }
 
-    private boolean shouldWrite(ResourceFile file) {
-        File outputFile = getOutputFile(file);
-        return !incremental || !outputFile.exists();
-    }
-
-    private void rewriteHTML(ResourceFile file, List<ResourceFile> textResourceFiles) {
+    private void rewriteHTML(ResourceFile file, List<ResourceFile> textResources, List<File> imageData) {
         File outputFile = getOutputFile(file);
 
         try (PrintWriter writer = new PrintWriter(outputFile, Charsets.UTF_8.displayName())) {
             for (String line : file.readLines(Charsets.UTF_8)) {
                 line = line.replace("@@@PROJECT", projectName);
+                line = line.replace("@@@RENDERER", renderer);
                 if (line.trim().equals("@@@RESOURCES")) {
-                    line = generateTextResourceFilesHTML(textResourceFiles);
+                    line = generateTextResourceFilesHTML(textResources);
+                } else if (line.trim().equals("@@@IMAGE_DATA")) {
+                    line = generateImageDataList(imageData) + "\n";
                 }
                 writer.println(line);
             }
@@ -170,7 +210,7 @@ public class TeaVMTranspiler extends CommandLineTool {
         }
     }
 
-    private String generateTextResourceFilesHTML(List<ResourceFile> files) throws IOException {
+    private String generateTextResourceFilesHTML(List<ResourceFile> files) {
         StringBuilder buffer = new StringBuilder();
 
         for (ResourceFile file : files) {
@@ -184,6 +224,12 @@ public class TeaVMTranspiler extends CommandLineTool {
         }
 
         return buffer.toString();
+    }
+
+    private String generateImageDataList(List<File> imageDataFiles) {
+        return imageDataFiles.stream()
+            .map(file -> "        <script src=\"images/" + file.getName() + "\" async></script>")
+            .collect(Collectors.joining("\n"));
     }
 
     private void copyBinaryResourceFile(ResourceFile file) {
@@ -222,6 +268,23 @@ public class TeaVMTranspiler extends CommandLineTool {
             return new ResourceFile(manifestFile);
         } catch (IOException e) {
             throw new MediaException("Cannot generate resource file manifest", e);
+        }
+    }
+    
+    private File generateImageDataFile(ResourceFile imageFile) {
+        try {
+            File imagesDir = new File(outputDir, "images");
+            FileUtils.mkdir(imagesDir);
+
+            File imageDataFile = new File(imagesDir, "image-" + normalizeFileName(imageFile) + ".js");
+            BufferedImage image = Utils2D.loadImage(imageFile);
+            String contents = "imageDataURLs[\"" + normalizeFileName(imageFile) + "\"] = \"" +
+                Utils2D.toDataURL(image) + "\";";
+
+            Files.write(imageDataFile.toPath(), contents.getBytes(Charsets.UTF_8));
+            return imageDataFile;
+        } catch (IOException e) {
+            throw new MediaException("Unable to generate image data file", e);
         }
     }
 

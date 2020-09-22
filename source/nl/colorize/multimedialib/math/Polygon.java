@@ -7,8 +7,11 @@
 package nl.colorize.multimedialib.math;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Describes a two-dimensional convex polygon with float precision coordinates.
@@ -18,24 +21,79 @@ public class Polygon implements Shape {
 
     private float[] points;
 
-    public Polygon(float[] points) {
+    public Polygon(float... points) {
+        setPoints(points);
+    }
+    
+    public Polygon(List<Point2D> points) {
+        setPoints(points);
+    }
+    
+    public Polygon(Point2D... points) {
         setPoints(points);
     }
 
-    public void setPoints(float[] points) {
-        Preconditions.checkArgument(points.length >= 6, "Convex polygon must have at least 3 points");
+    public void setPoints(float... points) {
+        Preconditions.checkArgument(points.length >= 6,
+            "Convex polygon must have at least 3 points");
         Preconditions.checkArgument(points.length % 2 != 1,
             "Points array must have equal number of X and Y coordinates: " + Arrays.toString(points));
 
         this.points = points;
     }
+    
+    public void setPoints(List<Point2D> points) {
+        setPoints(points.toArray(new Point2D[0]));
+    }
+    
+    public void setPoints(Point2D... points) {
+        Preconditions.checkArgument(points.length >= 3, 
+            "Convex polygon must have at least 3 points");
+        
+        this.points = new float[points.length * 2];
+        int offset = 0;
+        
+        for (Point2D point : points) {
+            this.points[offset] = point.getX();
+            this.points[offset + 1] = point.getY();
+            offset += 2;
+        }
+    }
 
+    /**
+     * Returns a list of all coordinates in all points that make up this polygon.
+     * In application code you would normally prefer to use {@link #getPointsList()}
+     * instead. This method is provided because some renderer implementations
+     * operate directly on the underlying vertices array.
+     */
+    public float[] getVertices() {
+        return points;
+    }
+
+    /**
+     * Returns a list of all coordinates in all points.
+     * @deprecated Use either {@link #getVertices()} or {@link #getPointsList()}
+     *             instead.
+     */
+    @Deprecated
     public float[] getPoints() {
         return points;
     }
     
+    public List<Point2D> getPointsList() {
+        List<Point2D> result = new ArrayList<>();
+        for (int i = 0; i < getNumPoints(); i++) {
+            result.add(getPoint(i));
+        }
+        return result;
+    }
+    
     public int getNumPoints() {
         return points.length / 2;
+    }
+    
+    public Point2D getPoint(int n) {
+        return new Point2D(getPointX(n), getPointY(n));
     }
     
     public float getPointX(int n) {
@@ -54,13 +112,15 @@ public class Polygon implements Shape {
     }
 
     @Override
-    public boolean contains(Point p) {
+    public boolean contains(Point2D p) {
         return isPointInPolygon(p.getX(), p.getY()) || isPointOnLineSegment(p.getX(), p.getY());
     }
 
+    /**
+     * Returns true if the specified point is located within this polygon.
+     * Implementation based on http://www.java-gaming.org/index.php?topic=26013.0
+     */
     private boolean isPointInPolygon(float px, float py) {
-        // Implementation based on the suggestions from
-        // http://www.java-gaming.org/index.php?topic=26013.0 
         boolean oddNodes = false;
         float x1 = 0f;
         float y1 = 0f;
@@ -71,7 +131,7 @@ public class Polygon implements Shape {
             x1 = points[i];
             y1 = points[i + 1];
 
-            if (((y1 < py) && (y2 >= py)) || (y1 >= py) && (y2 < py)) {
+            if ((y1 < py && y2 >= py) || y1 >= py && y2 < py) {
                 if ((py - y1) / (y2 - y1) * (x2 - x1) < (px - x1)) {
                     oddNodes = !oddNodes;
                 }
@@ -109,11 +169,12 @@ public class Polygon implements Shape {
         return dotproduct <= squaredLength;
     }
 
+    /**
+     * Returns true if this polygon intersects with the specified other polygon.
+     * Implementation based on http://slick.cokeandcode.com.
+     */
     public boolean intersects(Polygon p) {
-        // Implementation based on the polygon/polygon collision check
-        // from Slick (http://slick.cokeandcode.com).
         float[] pPoints = p.getPoints();
-        
         double unknownA;
         double unknownB;
         
@@ -148,6 +209,78 @@ public class Polygon implements Shape {
         return false;
     }
 
+    /**
+     * Returns the smallest possible axis-aligned rectangle that contains this
+     * polygon.
+     */
+    public Rect getBounds() {
+        float minX = points[0];
+        float minY = points[1];
+        float maxX = points[0];
+        float maxY = points[1];
+
+        for (int i = 2; i < points.length; i += 2) {
+            minX = Math.min(minX, points[i]);
+            minY = Math.min(minY, points[i + 1]);
+            maxX = Math.max(maxX, points[i]);
+            maxY = Math.max(maxY, points[i + 1]);
+        }
+
+        return new Rect(minX, minY, maxX - minX, maxY - minY);
+    }
+
+    public Point2D getCenter() {
+        return getBounds().getCenter();
+    }
+
+    /**
+     * Subdivides this polygon into a number of triangles. This requires this
+     * polygon to be convex.
+     */
+    public List<Polygon> subdivide() {
+        if (points.length == 6) {
+            return ImmutableList.of(copy());
+        }
+
+        List<Point2D> vertices = subdivideVertices();
+        List<Polygon> triangles = new ArrayList<>();
+
+        for (int i = 0; i < vertices.size(); i += 3) {
+            triangles.add(new Polygon(vertices.get(i), vertices.get(i + 1), vertices.get(i + 2)));
+        }
+
+        return triangles;
+    }
+
+    private List<Point2D> subdivideVertices() {
+        List<Point2D> vertices = new ArrayList<>();
+        Point2D center = getCenter();
+
+        for (int i = 0; i < points.length; i += 2) {
+            vertices.add(new Point2D(points[i], points[i + 1]));
+
+            if (i >= 2) {
+                vertices.add(center.copy());
+                vertices.add(new Point2D(points[i], points[i + 1]));
+            }
+
+            if (i == points.length - 2) {
+                vertices.add(new Point2D(points[0], points[1]));
+                vertices.add(center.copy());
+            }
+        }
+
+        return vertices;
+    }
+
+    public Polygon copy() {
+        float[] pointsCopy = new float[points.length];
+        for (int i = 0; i < points.length; i++) {
+            pointsCopy[i] = points[i];
+        }
+        return new Polygon(pointsCopy);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o instanceof Polygon) {
@@ -179,7 +312,11 @@ public class Polygon implements Shape {
         return Arrays.toString(points);
     }
 
-    public static Polygon createCircle(float x, float y, float radius, int numPoints) {
+    /**
+     * Convenience method to create a polygon in the shape of a circle with the
+     * specified properties.
+     */
+    public static Polygon createCircle(Point2D origin, float radius, int numPoints) {
         Preconditions.checkArgument(numPoints >= 4,
             "Circle polygon must consist of at least 4 points, got " + numPoints);
         Preconditions.checkArgument(radius > EPSILON, "Invalid radius: " + radius);
@@ -190,10 +327,27 @@ public class Polygon implements Shape {
         for (int i = 0; i < numPoints; i++) {
             vector.setDirection(i * (360f / numPoints));
 
-            points[i * 2] = x + vector.getX();
-            points[i * 2 + 1] = y + vector.getY();
+            points[i * 2] = origin.getX() + vector.getX();
+            points[i * 2 + 1] = origin.getY() + vector.getY();
         }
 
         return new Polygon(points);
+    }
+
+    /**
+     * Convenience method to create a polygon in the shape of a circle with the
+     * specified properties. The cone's start angle and arc are specified in
+     * degrees.
+     */
+    public static Polygon createCone(Point2D origin, float startAngle, float arc, float length) {
+        Preconditions.checkArgument(arc > 0f && arc <= 180f, "Invalid arc: " + arc);
+        Preconditions.checkArgument(length > 0f, "Invalid length: " + length);
+
+        Vector left = new Vector((startAngle % 360) - arc / 2f, length);
+        Vector right = new Vector((startAngle % 360) + arc / 2f, length);
+
+        return new Polygon(origin.getX(), origin.getY(),
+            origin.getX() + left.getX(), origin.getY() + left.getY(),
+            origin.getX() + right.getX(), origin.getY() + right.getY());
     }
 }

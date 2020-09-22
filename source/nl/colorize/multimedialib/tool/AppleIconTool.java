@@ -6,21 +6,22 @@
 
 package nl.colorize.multimedialib.tool;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import nl.colorize.util.CommandRunner;
+import nl.colorize.util.FileUtils;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.swing.Utils2D;
 import org.kohsuke.args4j.Argument;
+import org.kohsuke.args4j.Option;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.LinkedHashMap;
+import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -29,10 +30,14 @@ public class AppleIconTool extends CommandLineTool {
     @Argument(index = 0, metaVar = "image", required = true)
     public File inputImageFile;
 
-    @Argument(index = 1, metaVar = "outputFile", required = true)
-    public File outputFile;
+    @Argument(index = 1, metaVar = "location", required = true)
+    public File location;
 
-    private static final List<Integer> SIZE_VARIANTS = ImmutableList.of(16, 32, 128, 256, 512);
+    @Option(name = "-platform", required = true, usage = "Either 'mac' or 'ios'")
+    public String platform = "mac";
+
+    private static final List<Integer> MAC_VARIANTS = ImmutableList.of(16, 32, 128, 256, 512);
+    private static final List<Integer> IOS_VARIANTS = ImmutableList.of(60, 76, 1024);
     private static final Logger LOGGER = LogHelper.getLogger(AppleIconTool.class);
 
     public static void main(String[] args) {
@@ -42,34 +47,31 @@ public class AppleIconTool extends CommandLineTool {
 
     @Override
     public void run() {
-        Preconditions.checkArgument(outputFile.getName().endsWith(".icns"),
-            "Output file must be an ICNS icon");
-
         try {
-            BufferedImage sourceImage = loadImage(inputImageFile);
-            Map<String, BufferedImage> iconSet = createIconSet(sourceImage);
-            File iconSetDir = getIconSetDir();
-            saveIconSet(iconSet, iconSetDir);
-
-            if (Platform.isMac()) {
-                convertIconSetToICNS(iconSetDir, outputFile);
-                LOGGER.info("Done, wrote ICNS icon to " + outputFile.getAbsolutePath());
-            } else {
+            if (!Platform.isMac()) {
                 LOGGER.warning("Creating ICNS icons is only possible on Mac OS");
+                return;
+            }
+
+            BufferedImage sourceImage = loadImage(inputImageFile);
+            List<Icon> iconSet = createIconSet(sourceImage, getIconVariants());
+
+            switch (platform) {
+                case "mac" : createICNS(iconSet); break;
+                case "ios" : createIOS(iconSet); break;
+                default : throw new IllegalArgumentException("Unsupported platform: " + platform);
             }
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Failed to create ICNS icon", e);
         }
     }
 
-    private File getIconSetDir() throws IOException {
-        File iconset = new File(outputFile.getParentFile(), "icon.iconset");
-        if (iconset.exists()) {
-            throw new IOException("Icon set already exists: " + iconset.getAbsolutePath());
+    private List<Integer> getIconVariants() {
+        switch (platform) {
+            case "mac" : return MAC_VARIANTS;
+            case "ios" : return IOS_VARIANTS;
+            default : throw new IllegalArgumentException("Unsupported platform: " + platform);
         }
-        iconset.mkdir();
-        iconset.deleteOnExit();
-        return iconset;
     }
 
     private BufferedImage loadImage(File sourceImageFile) {
@@ -84,15 +86,28 @@ public class AppleIconTool extends CommandLineTool {
         }
     }
 
-    private Map<String, BufferedImage> createIconSet(BufferedImage sourceImage) {
-        Map<String, BufferedImage> iconSet = new LinkedHashMap<String, BufferedImage>();
-        for (int variant : SIZE_VARIANTS) {
-            iconSet.put("icon_" + variant + "x" + variant + ".png",
-                scaleIconImage(sourceImage, variant));
-            iconSet.put("icon_" + variant + "x" + variant + "@2x.png",
-                scaleIconImage(sourceImage, 2 * variant));
+    private List<Icon> createIconSet(BufferedImage source, List<Integer> variants) {
+        List<Icon> iconSet = new ArrayList<>();
+
+        for (int variant : variants) {
+            iconSet.add(new Icon(getIconName(variant, 1), 1, scaleIconImage(source, variant)));
+            if (variant < 1024) {
+                iconSet.add(new Icon(getIconName(variant, 2), 2, scaleIconImage(source, 2 * variant)));
+            }
+            if (variant == 60) {
+                iconSet.add(new Icon(getIconName(variant, 3), 3, scaleIconImage(source, 3 * variant)));
+            }
         }
+
         return iconSet;
+    }
+
+    private String getIconName(int size, int factor) {
+        String separator = platform.equals("mac") ? "_" : "-";
+        if (factor == 1) {
+            return "icon" + separator + size + "x" + size + ".png";
+        }
+        return "icon" + separator + size + "x" + size + "@" + factor + "x.png";
     }
 
     private BufferedImage scaleIconImage(BufferedImage sourceImage, int size) {
@@ -103,27 +118,100 @@ public class AppleIconTool extends CommandLineTool {
         }
     }
 
-    private void saveIconSet(Map<String, BufferedImage> iconSet, File outputDir) throws IOException {
-        if (!outputDir.exists()) {
-            outputDir.mkdir();
-        }
+    private void createICNS(List<Icon> iconSet) {
+        Preconditions.checkArgument(location.getName().endsWith(".icns"),
+            "Output file must be an ICNS icon");
 
-        for (Map.Entry<String, BufferedImage> entry : iconSet.entrySet()) {
-            File imageFile = new File(outputDir, entry.getKey());
-            LOGGER.info("Creating icon " + imageFile.getAbsolutePath());
-            Utils2D.savePNG(entry.getValue(), imageFile);
+        try {
+            File tempDir = FileUtils.createTempDir();
+            File iconSetDir = createMacIconSet(iconSet, tempDir);
+            String inputPath = iconSetDir.getAbsolutePath();
+            String outputPath = location.getAbsolutePath();
+
+            new ProcessBuilder("iconutil", "-c", "icns", inputPath, "-o", outputPath)
+                .inheritIO()
+                .start()
+                .waitFor();
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("Unable to create icon", e);
         }
     }
 
-    private void convertIconSetToICNS(File iconSetDir, File icnsFile) throws IOException {
-        CommandRunner commandRunner = new CommandRunner("iconutil", "-c", "icns",
-            iconSetDir.getAbsolutePath(), "-o", icnsFile.getAbsolutePath());
-        commandRunner.setShellMode(true);
-        commandRunner.setLoggingEnabled(true);
-        try {
-            commandRunner.execute();
-        } catch (TimeoutException e) {
-            throw new IOException("iconutil timeout");
+    private File createMacIconSet(List<Icon> iconSet, File tempDir) throws IOException {
+        File iconSetDir = new File(tempDir, "icon.iconset");
+        if (iconSetDir.exists()) {
+            throw new IOException("Icon set already exists: " + iconSetDir.getAbsolutePath());
+        }
+        iconSetDir.mkdir();
+        saveIconSet(iconSet, iconSetDir);
+        return iconSetDir;
+    }
+
+    private void saveIconSet(List<Icon> iconSet, File dir) throws IOException {
+        for (Icon icon : iconSet) {
+            File imageFile = new File(dir, icon.name);
+            Utils2D.savePNG(icon.image, imageFile);
+        }
+    }
+
+    private void createIOS(List<Icon> iconSet) throws IOException {
+        location.mkdir();
+        saveIconSet(iconSet, location);
+        generateContentsJSON(iconSet, new File(location, "Contents.json"));
+    }
+
+    private void generateContentsJSON(List<Icon> iconSet, File outputFile) {
+        try (PrintWriter writer = new PrintWriter(outputFile, Charsets.UTF_8)) {
+            writer.println("{");
+            writer.println("  \"images\" : [");
+            for (Icon icon : iconSet) {
+                writer.println("    {");
+                writer.println("      \"size\" : \"" + icon.getSize() + "\",");
+                writer.println("      \"idiom\" : \"" + icon.getIdiom() + "\",");
+                writer.println("      \"filename\" : \"" + icon.name + "\",");
+                writer.println("      \"scale\" : \"" + icon.variant + "x\"");
+                writer.println(iconSet.get(iconSet.size() - 1).equals(icon) ? "    }" : "    },");
+            }
+            writer.println("  ],");
+            writer.println("  \"info\" : {");
+            writer.println("    \"version\" : 1,");
+            writer.println("    \"author\" : \"xcode\"");
+            writer.println("  }");
+            writer.println("}");
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to generate " + outputFile.getAbsolutePath());
+        }
+    }
+
+    /**
+     * Represents all properties corresponding to one of the icon images within
+     * an Apple icon.
+     */
+    private static class Icon {
+
+        private String name;
+        private int variant;
+        private BufferedImage image;
+
+        public Icon(String name, int variant, BufferedImage image) {
+            this.name = name;
+            this.variant = variant;
+            this.image = image;
+        }
+
+        public String getSize() {
+            int size = image.getWidth() / variant;
+            return size + "x" + size;
+        }
+
+        public String getIdiom() {
+            if (image.getWidth() == 1024) {
+                return "ios-marketing";
+            } else if (image.getWidth() % 76 == 0) {
+                return "ipad";
+            } else {
+                return "iphone";
+            }
         }
     }
 }

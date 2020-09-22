@@ -6,29 +6,29 @@
 
 package nl.colorize.multimedialib.graphics;
 
+import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 
 /**
- * Represents a TrueType font that can be used to draw text.
- * <p>
- * There are two ways to obtain a font. The first is to create an instance of
- * this class manually, which will use the local system fonts. If no font with
- * the requested name is available, this will revert to the system's default font.
- * The second approach is to load a font from a {@code .ttf} file using the
- * {@link MediaLoader} class. This ensures that the requested font is available.
+ * Represents a TrueType font that can be used to draw text. Fonts can be loaded
+ * from {@code .ttf} using the {@link MediaLoader}, which will convert the font
+ * into a format that can be used by the renderer.
  */
-public class TTFont {
+public final class TTFont {
 
     private String family;
     private int size;
     private ColorRGB color;
+    private boolean bold;
 
-    public static final int DEFAULT_SIZE = 12;
+    public TTFont(String family, int size, ColorRGB color, boolean bold) {
+        Preconditions.checkArgument(family.length() >= 1, "Invalid font family: " + family);
+        Preconditions.checkArgument(size >= 4, "Invalid font size: " + size);
 
-    public TTFont(String family, int size, ColorRGB color) {
         this.family = family;
         this.size = size;
         this.color = color;
+        this.bold = bold;
     }
 
     public String getFamily() {
@@ -43,35 +43,18 @@ public class TTFont {
         return color;
     }
 
-    /**
-     * Returns a version of this font that uses the same font family and color,
-     * but has a different size.
-     */
-    public TTFont derive(int newSize) {
-        return new TTFont(family, newSize, color);
-    }
-
-    /**
-     * Returns a version of this font which uses the same font family and size,
-     * but has a different color.
-     */
-    public TTFont derive(ColorRGB newColor) {
-        return new TTFont(family, size, newColor);
-    }
-
-    /**
-     * Returns a version of this font which uses the same font family, but with
-     * a different color and font size.
-     */
-    public TTFont derive(int newSize, ColorRGB newColor) {
-        return new TTFont(family, newSize, newColor);
+    public boolean isBold() {
+        return bold;
     }
 
     @Override
     public boolean equals(Object o) {
         if (o instanceof TTFont) {
             TTFont other = (TTFont) o;
-            return family.equals(other.family) && size == other.size;
+            return family.equals(other.family) &&
+                size == other.size &&
+                color.equals(other.color) &&
+                bold == other.bold;
         } else {
             return false;
         }
@@ -84,6 +67,6 @@ public class TTFont {
 
     @Override
     public String toString() {
-        return family;
+        return size + "px " + family + " (" + color + ")";
     }
 }

@@ -6,12 +6,14 @@
 
 package nl.colorize.multimedialib.renderer.java2d;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import nl.colorize.multimedialib.math.Point;
+import nl.colorize.multimedialib.math.Point2D;
+import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
-import nl.colorize.multimedialib.scene.Updatable;
+import nl.colorize.multimedialib.renderer.Updatable;
 import nl.colorize.util.swing.Popups;
 import nl.colorize.util.swing.SwingUtils;
 
@@ -99,6 +101,18 @@ public class AWTInput implements InputDevice, Updatable, KeyListener, MouseListe
         .put(KeyCode.N8, KeyEvent.VK_8)
         .put(KeyCode.N9, KeyEvent.VK_9)
         .put(KeyCode.N0, KeyEvent.VK_0)
+        .put(KeyCode.F1, KeyEvent.VK_F1)
+        .put(KeyCode.F2, KeyEvent.VK_F2)
+        .put(KeyCode.F3, KeyEvent.VK_F3)
+        .put(KeyCode.F4, KeyEvent.VK_F4)
+        .put(KeyCode.F5, KeyEvent.VK_F5)
+        .put(KeyCode.F6, KeyEvent.VK_F6)
+        .put(KeyCode.F7, KeyEvent.VK_F7)
+        .put(KeyCode.F8, KeyEvent.VK_F8)
+        .put(KeyCode.F9, KeyEvent.VK_F9)
+        .put(KeyCode.F10, KeyEvent.VK_F10)
+        .put(KeyCode.F11, KeyEvent.VK_F11)
+        .put(KeyCode.F12, KeyEvent.VK_F12)
         .build();
 
     public AWTInput(Canvas canvas) {
@@ -226,22 +240,32 @@ public class AWTInput implements InputDevice, Updatable, KeyListener, MouseListe
         e.consume();
     }
 
-    @Override
-    public Point getPointer() {
-        float canvasX  = canvas.toCanvasX(mouseX);
+    private Point2D getMousePosition() {
+        float canvasX = canvas.toCanvasX(mouseX);
         float canvasY = canvas.toCanvasY(mouseY);
-
-        return new Point(canvasX, canvasY);
+        return new Point2D(canvasX, canvasY);
     }
 
     @Override
-    public boolean isPointerPressed() {
-        return mouseState == MOUSE_STATE_PRESSED;
+    public List<Point2D> getPointers() {
+        return ImmutableList.of(getMousePosition());
     }
 
     @Override
-    public boolean isPointerReleased() {
-        return mouseState == MOUSE_STATE_RELEASED;
+    public boolean isPointerPressed(Rect area) {
+        Point2D mousePosition = getMousePosition();
+        return mouseState == MOUSE_STATE_PRESSED && area.contains(mousePosition);
+    }
+
+    @Override
+    public boolean isPointerReleased(Rect area) {
+        Point2D mousePosition = getMousePosition();
+        return mouseState == MOUSE_STATE_RELEASED && area.contains(mousePosition);
+    }
+
+    @Override
+    public boolean isTouchAvailable() {
+        return false;
     }
 
     @Override

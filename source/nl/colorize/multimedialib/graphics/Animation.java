@@ -7,8 +7,10 @@
 package nl.colorize.multimedialib.graphics;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,6 +29,11 @@ public class Animation {
     
     private List<FrameInfo> frames;
     private boolean loop;
+    
+    private Animation(List<FrameInfo> frames, boolean loop) {
+        this.frames = ImmutableList.copyOf(frames);
+        this.loop = loop;
+    }
 
     public Animation(boolean loop) {
         this.frames = new ArrayList<>();
@@ -103,9 +110,79 @@ public class Animation {
 
         frames.get(index).frameTime = frameTime;
     }
+    
+    public void setFrameTimes(List<Float> frameTimes) {
+        Preconditions.checkArgument(frameTimes.size() == frames.size(), 
+            "Animation has " + frames.size() + " frame, but provided " + frameTimes.size());
+        
+        for (int i = 0; i < frameTimes.size(); i++) {
+            frames.get(i).frameTime = frameTimes.get(i);
+        }
+    }
 
     public float getFrameTime(int index) {
         return frames.get(index).frameTime;
+    }
+
+    public boolean isLoop() {
+        return loop;
+    }
+    
+    private List<FrameInfo> copyFrames() {
+        return frames.stream()
+            .map(frame -> new FrameInfo(frame.image, frame.frameTime))
+            .collect(Collectors.toList());
+    }
+    
+    /**
+     * Returns a new animation with the same frames as this one, but with all
+     * frames and corresponding frame times in reverse compared to the original.
+     */
+    public Animation reverse() {
+        List<FrameInfo> reverseFrames = copyFrames();
+        Collections.reverse(reverseFrames);
+        
+        return new Animation(reverseFrames, loop);
+    }
+    
+    /**
+     * Returns a new animation that contains all frames of this animation
+     * followed by all frames of the specified other animation.
+     */
+    public Animation append(Animation other) {
+        List<FrameInfo> combinedFrames = new ArrayList<>();
+        combinedFrames.addAll(copyFrames());
+        combinedFrames.addAll(other.copyFrames());
+        
+        return new Animation(combinedFrames, loop);
+    }
+    
+    /**
+     * Returns a new animation with the same frames as this one, but repeated
+     * by the specified number of times.
+     * 
+     * @throws IllegalArgumentException if the new animation does not repeat
+     *         at least twice (since repeating once would be identical to the
+     *         original animation.
+     */
+    public Animation repeat(int times) {
+        Preconditions.checkArgument(times >= 2, "Must repeat at least twice");
+        
+        List<FrameInfo> repeatingFrames = new ArrayList<>();
+        for (int i = 0; i < times; i++) {
+            repeatingFrames.addAll(copyFrames());
+        }
+        
+        return new Animation(repeatingFrames, loop);
+    }
+    
+    /**
+     * Returns a new animation with the same frames as this one, but appends the
+     * reversed version of the animation. For example, if the original animation
+     * consists of frames 1-2-3, the result would be 1-2-3-3-2-1.
+     */
+    public Animation mirror() {
+        return append(reverse());
     }
 
     /**

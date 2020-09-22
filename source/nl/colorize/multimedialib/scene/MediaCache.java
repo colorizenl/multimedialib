@@ -7,7 +7,9 @@
 package nl.colorize.multimedialib.scene;
 
 import com.google.common.base.Preconditions;
+import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
+import nl.colorize.multimedialib.graphics.PolygonMesh;
 import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
@@ -18,32 +20,40 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 /**
- * Wrapper around {@link MediaLoader} that caches all loaded media files. If
- * the same file is requested multiple times, the version from the cache is
- * returned. Obviously, it is also possible to just load the file once and
- * then use the reference, but in practice this tends to be occasionally
- * forgotten, so automated caching will lead to better performance for such
- * situations.
+ * Wrapper around a {@code MediaLoader} that caches all media, that when the
+ * same file is multiple times the results are retrieved from the cache.
+ *
+ * @deprecated The functionality of this class has been replaced by the
+ *             {@link MediaManager}, which serves a similar purpose, but
+ *             allows to identify media by name instead of the underlying
+ *             files(s).
  */
+@Deprecated
 public class MediaCache implements MediaLoader {
 
     private MediaLoader delegate;
-    private Map<FilePointer, Object> cache;
+    private Map<String, Object> cache;
 
-    protected MediaCache(MediaLoader delegate) {
+    public MediaCache(MediaLoader delegate) {
         Preconditions.checkArgument(!(delegate instanceof MediaCache),
             "Cannot use nested instances of MediaCache");
+
         this.delegate = delegate;
         this.cache = new HashMap<>();
     }
 
-    private <T> T get(FilePointer file, Supplier<T> mediaSupplier) {
-        T result = (T) cache.get(file);
+    @SuppressWarnings("unchecked")
+    private <T> T get(String cacheKey, Supplier<T> mediaSupplier) {
+        T result = (T) cache.get(cacheKey);
         if (result == null) {
             result = mediaSupplier.get();
-            cache.put(file, result);
+            cache.put(cacheKey, result);
         }
         return result;
+    }
+
+    private <T> T get(FilePointer file, Supplier<T> mediaSupplier) {
+        return get(file.getPath(), mediaSupplier);
     }
 
     @Override
@@ -57,13 +67,21 @@ public class MediaCache implements MediaLoader {
     }
 
     @Override
-    public TTFont loadFont(String fontFamily, FilePointer file) {
-        return get(file, () -> delegate.loadFont(fontFamily, file));
+    public TTFont loadFont(FilePointer file, String family, int size, ColorRGB color, boolean bold) {
+        // Some renderer implementations need to reload the font
+        // for each size/color combination.
+        String key = file.getPath() + "@" + size + "@" + color + "@" + bold;
+        return get(key, () -> delegate.loadFont(file, family, size, color, bold));
     }
 
     @Override
     public String loadText(FilePointer file) {
         return get(file, () -> delegate.loadText(file));
+    }
+
+    @Override
+    public PolygonMesh loadMesh(FilePointer file) {
+        return get(file, () -> delegate.loadMesh(file));
     }
 
     @Override

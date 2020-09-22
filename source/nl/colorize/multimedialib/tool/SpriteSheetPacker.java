@@ -13,6 +13,7 @@ import nl.colorize.multimedialib.graphics.SpriteSheet;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.java2d.AWTImage;
+import nl.colorize.util.CSVRecord;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.swing.Utils2D;
 import org.kohsuke.args4j.Option;
@@ -23,6 +24,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -42,13 +45,20 @@ public class SpriteSheetPacker extends CommandLineTool {
     @Option(name = "-outimage", required = true, usage = "Generated image file location")
     public File outputImageFile;
 
-    @Option(name = "-outdata", required = true, usage = "Generated YAML data file location")
+    @Option(name = "-outdata", required = true, usage = "Generated metadata file location")
     public File outputDataFile;
+
+    @Option(name = "-metadata", required = true, usage = "Metadata file format, either 'yaml' or 'csv'")
+    public String metadataFormat;
 
     @Option(name = "-size", required = true, usage = "Width/height of the sprite sheet")
     public int size;
 
-    private static final List<Integer> VALID_SIZES = ImmutableList.of(32, 64, 128, 256, 512, 1024);
+    @Option(name = "-exclude", required = false, usage = "Excludes all images beyond a certain size")
+    public int excludeSize;
+
+    private static final List<Integer> VALID_SIZES = ImmutableList.of(32, 64, 128, 256, 512, 1024, 2048);
+    private static final int PADDING = 1;
     private static final Logger LOGGER = LogHelper.getLogger(SpriteSheetPacker.class);
 
     public static void main(String[] args) {
@@ -73,7 +83,7 @@ public class SpriteSheetPacker extends CommandLineTool {
 
         try {
             Utils2D.savePNG(((AWTImage) spritesheet.getImage()).getImage(), outputImageFile);
-            saveDataFile(spritesheet);
+            saveMetadata(spritesheet);
             LOGGER.info("Saved sprite sheet to " + outputImageFile.getAbsolutePath());
         } catch (IOException e) {
             throw new MediaException("Could not save sprite sheet", e);
@@ -92,7 +102,7 @@ public class SpriteSheetPacker extends CommandLineTool {
 
             return images;
         } catch (IOException e) {
-            throw new MediaException("Cannot load images from source directory");
+            throw new MediaException("Cannot load images from source directory", e);
         }
     }
 
@@ -113,22 +123,24 @@ public class SpriteSheetPacker extends CommandLineTool {
         Graphics2D g2 = Utils2D.createGraphics(buffer, true, true);
         SpriteSheet spritesheet = new SpriteSheet(new AWTImage(buffer));
 
-        int x = 0;
-        int y = 0;
+        int x = PADDING;
+        int y = PADDING;
+        int rowHeight = 0;
 
-        for (File imageFile : sortByImageHeight(images)) {
+        for (File imageFile : prepareImages(images)) {
             BufferedImage image = images.get(imageFile);
 
             if (x + image.getWidth() > size) {
-                x = 0;
-                y += image.getHeight();
-                Preconditions.checkState(y < size, "Images do not fit in sprite sheet");
+                x = PADDING;
+                y += rowHeight + 2 * PADDING;
+                rowHeight = 0;
             }
 
             Rect region = new Rect(x, y, image.getWidth(), image.getHeight());
-            spritesheet.markRegion(imageFile.getName(), region);
+            spritesheet.markRegion(toRegionName(imageFile), region);
             g2.drawImage(image, x, y, null);
-            x += region.getWidth();
+            x += region.getWidth() + 2 * PADDING;
+            rowHeight = Math.max(rowHeight, image.getHeight());
         }
 
         g2.dispose();
@@ -136,13 +148,49 @@ public class SpriteSheetPacker extends CommandLineTool {
         return spritesheet;
     }
 
-    private Iterable<File> sortByImageHeight(Map<File, BufferedImage> images) {
+    private String toRegionName(File imageFile) {
+        String relativePath = inputDir.toPath().relativize(imageFile.toPath()).toString();
+        if (relativePath.indexOf('.') != -1) {
+            relativePath = relativePath.substring(0, relativePath.lastIndexOf('.'));
+        }
+        return relativePath;
+    }
+
+    private boolean isImageExcluded(BufferedImage image) {
+        if (excludeSize > 0) {
+            return image.getWidth() >= excludeSize || image.getHeight() >= excludeSize;
+        } else {
+            return image.getWidth() > size || image.getHeight() > size;
+        }
+    }
+
+    private Iterable<File> prepareImages(Map<File, BufferedImage> images) {
+        List<File> excluded = new ArrayList<>();
+
+        for (Map.Entry<File, BufferedImage> entry : images.entrySet()) {
+            if (isImageExcluded(entry.getValue())) {
+                LOGGER.info("Excluding image " + entry.getKey().getName());
+                excluded.add(entry.getKey());
+            }
+        }
+
         return images.keySet().stream()
+            .filter(file -> !excluded.contains(file))
             .sorted((a, b) -> images.get(b).getHeight() - images.get(a).getHeight())
             .collect(Collectors.toList());
     }
 
-    private void saveDataFile(SpriteSheet spritesheet) throws IOException {
+    private void saveMetadata(SpriteSheet spritesheet) throws IOException {
+        if (metadataFormat.equals("yaml")) {
+            saveMetadataYAML(spritesheet);
+        } else if (metadataFormat.equals("csv")) {
+            saveMetadataCSV(spritesheet);
+        } else {
+            throw new IllegalArgumentException("Unknown metadata format: " + metadataFormat);
+        }
+    }
+
+    private void saveMetadataYAML(SpriteSheet spritesheet) throws IOException {
         try (PrintWriter writer = new PrintWriter(outputDataFile, Charsets.UTF_8.displayName())) {
             for (String name : spritesheet.getRegionNames()) {
                 Rect region = spritesheet.getRegion(name);
@@ -154,5 +202,32 @@ public class SpriteSheetPacker extends CommandLineTool {
                 writer.println("  height: " + Math.round(region.getHeight()));
             }
         }
+    }
+
+    private void saveMetadataCSV(SpriteSheet spriteSheet) throws IOException {
+        List<String> headers = ImmutableList.of("name", "x", "y", "width", "height");
+
+        List<String> regions = new ArrayList<>();
+        regions.addAll(spriteSheet.getRegionNames());
+        Collections.sort(regions);
+
+        List<CSVRecord> records = regions.stream()
+            .map(region -> getFields(spriteSheet, region))
+            .map(fields -> CSVRecord.create(fields, ";"))
+            .collect(Collectors.toList());
+
+        try (PrintWriter writer = new PrintWriter(outputDataFile, Charsets.UTF_8.displayName())) {
+            writer.write(CSVRecord.toCSV(records, headers));
+        }
+    }
+
+    private List<String> getFields(SpriteSheet spriteSheet, String region) {
+        Rect bounds = spriteSheet.getRegion(region);
+        return ImmutableList.of(region, format(bounds.getX()), format(bounds.getY()),
+            format(bounds.getWidth()), format(bounds.getHeight()));
+    }
+
+    private String format(float coordinate) {
+        return String.valueOf(Math.round(coordinate));
     }
 }

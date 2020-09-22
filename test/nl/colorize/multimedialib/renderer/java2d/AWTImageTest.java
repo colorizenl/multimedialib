@@ -9,12 +9,12 @@ package nl.colorize.multimedialib.renderer.java2d;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
 import nl.colorize.multimedialib.math.Rect;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AWTImageTest {
 
@@ -47,14 +47,14 @@ public class AWTImageTest {
     }
 
     @Test
-    public void testGetRegion() {
+    public void testExtractRegion() {
         BufferedImage image = new BufferedImage(3, 2, BufferedImage.TYPE_INT_ARGB);
         image.setRGB(0, 0, Color.RED.getRGB());
         image.setRGB(1, 0, Color.GREEN.getRGB());
         image.setRGB(2, 0, Color.BLUE.getRGB());
 
         AWTImage texture = new AWTImage(image);
-        Image region = texture.getRegion(new Rect(1, 0, 2, 1));
+        Image region = texture.extractRegion(new Rect(1, 0, 2, 1));
 
         assertEquals(2, region.getWidth());
         assertEquals(1, region.getHeight());

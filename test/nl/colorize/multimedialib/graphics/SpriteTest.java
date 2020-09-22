@@ -8,9 +8,10 @@ package nl.colorize.multimedialib.graphics;
 
 import com.google.common.collect.ImmutableList;
 import nl.colorize.multimedialib.mock.MockImage;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SpriteTest {
 
@@ -23,20 +24,23 @@ public class SpriteTest {
         sprite.addState("a", imageA);
         sprite.addState("b", imageB);
 
-        assertEquals("a", sprite.getCurrentState());
+        assertEquals("a", sprite.getActiveState());
         assertEquals(imageA, sprite.getCurrentGraphics());
 
         sprite.changeState("b");
 
-        assertEquals("b", sprite.getCurrentState());
+        assertEquals("b", sprite.getActiveState());
         assertEquals(imageB, sprite.getCurrentGraphics());
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test
     public void testCannotAddSameStateTwice() {
         Sprite sprite = new Sprite();
         sprite.addState("a", new MockImage(100, 100));
-        sprite.addState("a", new MockImage(100, 100));
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            sprite.addState("a", new MockImage(100, 100));
+        });
     }
 
     @Test
@@ -61,9 +65,9 @@ public class SpriteTest {
         assertEquals(first, sprite.getCurrentGraphics());
     }
 
-    @Test(expected=IllegalStateException.class)
+    @Test
     public void testCannotAnimateSpriteWithoutStates() {
         Sprite sprite = new Sprite();
-        sprite.update(1f);
+        assertThrows(IllegalStateException.class, () -> sprite.update(1f));
     }
 }

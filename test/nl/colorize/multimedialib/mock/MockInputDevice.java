@@ -6,11 +6,14 @@
 
 package nl.colorize.multimedialib.mock;
 
-import nl.colorize.multimedialib.math.Point;
+import com.google.common.collect.ImmutableList;
+import nl.colorize.multimedialib.math.Point2D;
+import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,12 +21,12 @@ import java.util.Map;
  */
 public class MockInputDevice implements InputDevice {
 
-    private Point pointer;
+    private Point2D pointer;
     private boolean pointerPressed;
     private Map<KeyCode, Boolean> keysPressed;
 
     public MockInputDevice() {
-        pointer = new Point(0, 0);
+        pointer = new Point2D(0, 0);
         pointerPressed = false;
         keysPressed = new HashMap<>();
     }
@@ -33,8 +36,8 @@ public class MockInputDevice implements InputDevice {
     }
 
     @Override
-    public Point getPointer() {
-        return pointer;
+    public List<Point2D> getPointers() {
+        return ImmutableList.of(pointer);
     }
 
     public void setPointerPressed(boolean pointerPressed) {
@@ -42,12 +45,17 @@ public class MockInputDevice implements InputDevice {
     }
 
     @Override
-    public boolean isPointerPressed() {
-        return pointerPressed;
+    public boolean isPointerPressed(Rect area) {
+        return pointerPressed && area.contains(pointer);
     }
 
     @Override
-    public boolean isPointerReleased() {
+    public boolean isPointerReleased(Rect area) {
+        return false;
+    }
+
+    @Override
+    public boolean isTouchAvailable() {
         return false;
     }
 

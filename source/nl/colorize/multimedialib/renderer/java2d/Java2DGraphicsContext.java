@@ -16,7 +16,7 @@ import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.GraphicsContext;
+import nl.colorize.multimedialib.renderer.GraphicsContext2D;
 import nl.colorize.util.swing.Utils2D;
 
 import java.awt.AlphaComposite;
@@ -34,7 +34,7 @@ import java.util.Map;
  * supports several graphics contexts: drawing can be either directly to a
  * window using active rendering, but also to a Swing component, or to an image.
  */
-public class Java2DGraphicsContext implements GraphicsContext {
+public class Java2DGraphicsContext implements GraphicsContext2D {
 
     private Canvas canvas;
     private Graphics2D g2;
@@ -45,7 +45,7 @@ public class Java2DGraphicsContext implements GraphicsContext {
 
     private static final Transform NULL_TRANSFORM = new Transform();
 
-    protected Java2DGraphicsContext(Canvas canvas, StandardMediaLoader mediaLoader) {
+    public Java2DGraphicsContext(Canvas canvas, StandardMediaLoader mediaLoader) {
         this.canvas = canvas;
         this.mediaLoader = mediaLoader;
 
@@ -153,7 +153,10 @@ public class Java2DGraphicsContext implements GraphicsContext {
     public void drawText(String text, TTFont font, float x, float y, Align align, AlphaTransform alpha) {
         float screenX = canvas.toScreenX(x);
         float screenY = canvas.toScreenY(y);
-        Font awtFont = mediaLoader.getFont(font);
+
+        float normalizedFontSize = Math.round(canvas.getZoomLevel() * font.getSize());
+        Font awtFont = mediaLoader.getFont(font).deriveFont(font.isBold() ? Font.BOLD : Font.PLAIN,
+            normalizedFontSize);
         int estimatedWidth = g2.getFontMetrics(awtFont).stringWidth(text);
 
         Composite originalComposite = g2.getComposite();

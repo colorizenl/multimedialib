@@ -9,11 +9,12 @@ package nl.colorize.multimedialib.graphics;
 import com.google.common.collect.ImmutableSet;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.mock.MockImage;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SpriteSheetTest {
 
@@ -43,16 +44,22 @@ public class SpriteSheetTest {
         assertEquals(imageB, sequence.get(1));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testOutOfBoundsNotAllowed() {
         SpriteSheet spriteSheet = new SpriteSheet(new MockImage(100, 100));
-        spriteSheet.markRegion("a", new Rect(95, 0, 10, 10));
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            spriteSheet.markRegion("a", new Rect(95, 0, 10, 10));
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testDuplicateRegionNotAllowed() {
         SpriteSheet spriteSheet = new SpriteSheet(new MockImage(100, 100));
         spriteSheet.markRegion("a", new Rect(0, 0, 10, 10));
-        spriteSheet.markRegion("a", new Rect(10, 10, 10, 10));
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            spriteSheet.markRegion("a", new Rect(10, 10, 10, 10));
+        });
     }
 }

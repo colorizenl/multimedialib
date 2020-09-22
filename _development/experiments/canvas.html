@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>MultimediaLib | HTML5 canvas test</title>
+    <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no" />
+</head>
+
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+
+    <img id="testImage" src="../colorize.png" style="display: none;" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", event => {
+            let canvas = document.getElementById("canvas");
+            let context = canvas.getContext("2d");
+            
+            setTimeout(() => {
+                context.fillStyle = "#000000";
+                context.fillRect(0, 0, 800, 600);
+                context.drawImage(document.getElementById("testImage"), 100, 100);
+                
+                context.globalCompositeOperation = "destination-atop";
+                context.fillStyle = "#FFFFFF";
+                context.fillRect(100, 100, 200, 200);
+            }, 500);
+        });
+    </script>
+</body>
+</html>

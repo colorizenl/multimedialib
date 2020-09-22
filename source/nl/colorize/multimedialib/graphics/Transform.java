@@ -8,6 +8,7 @@ package nl.colorize.multimedialib.graphics;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import nl.colorize.multimedialib.math.MathUtils;
 
 /**
  * Transformation that can be applied to a graphic when displaying it. The
@@ -21,22 +22,23 @@ import com.google.common.base.Preconditions;
  */
 public class Transform implements AlphaTransform {
 
-    private int rotation;
-    private int scaleX;
-    private int scaleY;
-    private int alpha;
+    private float rotation;
+    private float scaleX;
+    private float scaleY;
+    private float alpha;
     private ColorRGB mask;
-    
+
+    private static final Transform DEFAULT_TRANSFORM = new Transform();
+
     public Transform() {
         reset();
     }
 
     public void reset() {
-        rotation = 0;
-        scaleX = 100;
-        scaleY = 100;
-        alpha = 100;
-        mask = null;
+        rotation = 0f;
+        scaleX = 100f;
+        scaleY = 100f;
+        alpha = 100f;
     }
     
     /**
@@ -44,64 +46,60 @@ public class Transform implements AlphaTransform {
      * original/default values.
      */
     public boolean isDefaultTransform() {
-        return !isRotated() && !isScaled() && alpha == 100 && mask == null;
+        return equals(DEFAULT_TRANSFORM);
     }
 
-    public void setRotation(int rotation) {
-        this.rotation = rotation % (rotation >= 0 ? 360 : -360);
+    public void setRotation(float degrees) {
+        this.rotation = degrees % (degrees >= 0f ? 360f : -360f);
+    }
+
+    public void addRotation(float degrees) {
+        setRotation(getRotation() + degrees);
     }
     
-    public int getRotation() {
+    public float getRotation() {
         return rotation;
     }
     
     public float getRotationInRadians() {
         return (float) Math.toRadians(rotation);
     }
-    
-    public boolean isRotated() {
-        return rotation != 0;
-    }
 
-    public void setScale(int scale) {
+    public void setScale(float scale) {
         setScaleX(scale);
         setScaleY(scale);
     }
 
-    public void setScale(int scaleX, int scaleY) {
+    public void setScale(float scaleX, float scaleY) {
         setScaleX(scaleX);
         setScaleY(scaleY);
     }
 
-    public void setScaleX(int scaleX) {
-        Preconditions.checkArgument(scaleX >= 1, "Invalid scale: " + scaleX);
-        this.scaleX = scaleX;
+    public void setScaleX(float scaleX) {
+        this.scaleX = Math.max(scaleX, 0f);
     }
     
-    public int getScaleX() {
+    public float getScaleX() {
         return scaleX;
     }
 
-    public void setScaleY(int scaleY) {
-        Preconditions.checkArgument(scaleY >= 1, "Invalid scale: " + scaleY);
-        this.scaleY = scaleY;
+    public void setScaleY(float scaleY) {
+        this.scaleY = Math.max(scaleY, 0f);
     }
 
-    public int getScaleY() {
+    public float getScaleY() {
         return scaleY;
     }
 
-    public boolean isScaled() {
-        return scaleX != 100 || scaleY != 100;
-    }
+    public void setAlpha(float alpha) {
+        Preconditions.checkArgument(alpha >= 0f && alpha <= 100f,
+            "Alpha value out of range 0-100: " + alpha);
 
-    public void setAlpha(int alpha) {
-        Preconditions.checkArgument(alpha >= 0 && alpha <= 100, "Invalid alpha: " + alpha);
         this.alpha = alpha;
     }
 
     @Override
-    public int getAlpha() {
+    public float getAlpha() {
         return alpha;
     }
 
@@ -113,14 +111,24 @@ public class Transform implements AlphaTransform {
         return mask;
     }
 
+    public Transform copy() {
+        Transform other = new Transform();
+        other.rotation = rotation;
+        other.scaleX = scaleX;
+        other.scaleY = scaleY;
+        other.alpha = alpha;
+        other.mask = mask;
+        return other;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o instanceof Transform) {
             Transform other = (Transform) o;
-            return rotation == other.rotation &&
-                scaleX == other.scaleX &&
-                scaleY == other.scaleY &&
-                alpha == other.alpha &&
+            return MathUtils.equals(rotation, other.rotation) &&
+                MathUtils.equals(scaleX, other.scaleX) &&
+                MathUtils.equals(scaleY, other.scaleY) &&
+                MathUtils.equals(alpha, other.alpha) &&
                 Objects.equal(mask, other.mask);
         } else {
             return false;
@@ -136,7 +144,7 @@ public class Transform implements AlphaTransform {
      * Convenience method that creates a new transform with the specified
      * rotation, but all other properties set to their default values.
      */
-    public static Transform withRotation(int rotation) {
+    public static Transform withRotation(float rotation) {
         Transform transform = new Transform();
         transform.setRotation(rotation);
         return transform;
@@ -146,7 +154,7 @@ public class Transform implements AlphaTransform {
      * Convenience method that creates a new transform with the specified scale,
      * but all other properties set to their default values.
      */
-    public static Transform withScale(int scaleX, int scaleY) {
+    public static Transform withScale(float scaleX, float scaleY) {
         Transform transform = new Transform();
         transform.setScaleX(scaleX);
         transform.setScaleY(scaleY);
@@ -154,19 +162,23 @@ public class Transform implements AlphaTransform {
     }
 
     /**
+     * Convenience method that creates a new transform with the specified scale,
+     * but all other properties set to their default values.
+     */
+    public static Transform withScale(float scale) {
+        return withScale(scale, scale);
+    }
+
+    /**
      * Convenience method that creates a new transform with the specified alpha
      * value, but all other properties set to their default values.
      */
-    public static Transform withAlpha(int alpha) {
+    public static Transform withAlpha(float alpha) {
         Transform transform = new Transform();
         transform.setAlpha(alpha);
         return transform;
     }
 
-    /**
-     * Convenience method that creates a new transform with the specified color
-     * mask, but all other properties set to their default values.
-     */
     public static Transform withMask(ColorRGB mask) {
         Transform transform = new Transform();
         transform.setMask(mask);
