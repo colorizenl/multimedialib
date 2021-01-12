@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Utility class to help with random numbers. This class should be used instead
@@ -89,6 +91,15 @@ public class RandomGenerator {
         Object[] buffer = elements.toArray(new Object[0]);
         int index = getInt(0, buffer.length);
         return (T) buffer[index];
+    }
+
+    /**
+     * Picks and returns a random element from the specified stream.
+     * @throws IllegalArgumentException if the provided stream is empty.
+     */
+    public static <T> T pick(Stream<T> elements) {
+        List<T> list = elements.collect(Collectors.toList());
+        return pick(list);
     }
 
     /**

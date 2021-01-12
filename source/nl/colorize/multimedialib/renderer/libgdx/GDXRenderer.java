@@ -1,25 +1,19 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.libgdx;
 
 import com.badlogic.gdx.ApplicationListener;
-import com.badlogic.gdx.Files;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
-import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
-import com.badlogic.gdx.graphics.glutils.HdpiMode;
 import com.badlogic.gdx.utils.ScreenUtils;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import nl.colorize.multimedialib.renderer.ApplicationData;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
@@ -42,7 +36,6 @@ import nl.colorize.util.swing.Utils2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 import java.util.zip.Deflater;
 
 /**
@@ -52,30 +45,30 @@ import java.util.zip.Deflater;
  */
 public class GDXRenderer implements Renderer, ApplicationListener {
 
-    private NestedRenderCallback callbacks;
+    private GDXBackend backend;
     private Canvas canvas;
+    private NestedRenderCallback callbacks;
+
     private GDXStage stage;
     private GDXInput input;
     private GDXMediaLoader mediaLoader;
-    private int framerate;
-    private WindowOptions windowOptions;
-    private boolean freeCamera;
 
     private GDXGraphics2D graphicsContext;
     private ModelBatch modelBatch;
+    private boolean freeCamera;
     private CameraInputController freeCameraController;
 
-    private static final List<Integer> SUPPORTED_FRAMERATES = ImmutableList.of(20, 25, 30, 60);
-
-    public GDXRenderer(Canvas canvas, int framerate, WindowOptions options) {
-        Preconditions.checkArgument(SUPPORTED_FRAMERATES.contains(framerate),
-            "Framerate is not supported: " + framerate);
-
-        this.callbacks = new NestedRenderCallback();
+    public GDXRenderer(Canvas canvas, GDXBackend backend) {
+        this.backend = backend;
         this.canvas = canvas;
-        this.framerate = framerate;
-        this.windowOptions = options;
+        this.callbacks = new NestedRenderCallback();
+
         this.freeCamera = false;
+    }
+
+    @Deprecated
+    public GDXRenderer(Canvas canvas, int framerate, WindowOptions options) {
+        this(canvas, new LWJGLBackend(framerate, options));
     }
 
     @Override
@@ -85,17 +78,7 @@ public class GDXRenderer implements Renderer, ApplicationListener {
 
     @Override
     public void start() {
-        Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
-        config.setWindowedMode(canvas.getWidth(), canvas.getHeight());
-        config.setDecorated(true);
-        config.setIdleFPS(framerate);
-        config.setHdpiMode(HdpiMode.Pixels);
-        config.setTitle(windowOptions.getTitle());
-        if (windowOptions.hasIcon()) {
-            config.setWindowIcon(Files.FileType.Internal, windowOptions.getIconFile().getPath());
-        }
-
-        new Lwjgl3Application(this, config);
+        backend.start(this, canvas);
     }
 
     @Override
@@ -142,7 +125,7 @@ public class GDXRenderer implements Renderer, ApplicationListener {
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
-        float frameTime = 1f / framerate;
+        float frameTime = 1f / backend.getFramerate();
         input.update(frameTime);
         callbacks.update(this, frameTime);
         stage.update(frameTime);

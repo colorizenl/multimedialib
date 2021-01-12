@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -11,7 +11,6 @@ let lastFrameTime = null;
 
 let imageContainer = null;
 let images = {};
-let imageDataURLs = {};
 let imageDataCache = {};
 let audioContainer = null;
 let audio = {};
@@ -23,7 +22,6 @@ let keyStates = {};
 
 const MIN_FRAME_TIME = 10;
 const MAX_FRAME_TIME = 40;
-const IMAGE_POLL_INTERVAL = 500;
 
 document.addEventListener("DOMContentLoaded", event => {
     imageContainer = document.getElementById("imageContainer");
@@ -207,21 +205,9 @@ function cancelEvent(event) {
 function loadImage(id, path) {
     let imageElement = document.createElement("img");
     imageElement.onload = () => renderer.onLoadImage(id, imageElement);
+    imageElement.src = "resources/" + path;
     imageContainer.appendChild(imageElement);
     images[id] = imageElement;
-
-    // The image is loaded as a data URL, which is in turn loaded
-    // using an AJAX request. This ensures that image data can be
-    // read even when running the application locally.
-    pollImageLoad(imageElement, path);
-}
-
-function pollImageLoad(imageElement, path) {
-    if (imageDataURLs[path] != null) {
-        imageElement.src = imageDataURLs[path];
-    } else {
-        setTimeout(() => pollImageLoad(imageElement, path), IMAGE_POLL_INTERVAL);
-    }
 }
 
 function tintImage(originalId, newId, color) {
@@ -237,7 +223,7 @@ function tintImage(originalId, newId, color) {
 }
 
 function loadAudio(id, path) {
-    audio[id] = new Audio(path);
+    audio[id] = new Audio("resources/" + path);
 }
 
 function loadFont(id, path, fontFamily) {
@@ -246,7 +232,7 @@ function loadFont(id, path, fontFamily) {
     css += "    font-family: '" + fontFamily + "'; ";
     css += "    font-style: normal; ";
     css += "    font-weight: 400; ";
-    css += "    src: url('" + path + "') format('truetype'); ";
+    css += "    src: url('resources/" + path + "') format('truetype'); ";
     css += "}; ";
 
     let style = document.createElement("style");

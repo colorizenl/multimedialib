@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -66,16 +66,32 @@ public class Rect implements Shape {
         return y + height / 2f;
     }
 
-    public Point2D getCenter() {
-        return new Point2D(getCenterX(), getCenterY());
-    }
-
     public float getEndX() {
         return x + width;
     }
 
     public float getEndY() {
         return y + height;
+    }
+
+    public Point2D getTopLeft() {
+        return new Point2D(x, y);
+    }
+
+    public Point2D getTopRight() {
+        return new Point2D(getEndX(), y);
+    }
+
+    public Point2D getBottomLeft() {
+        return new Point2D(x, getEndY());
+    }
+
+    public Point2D getBottomRight() {
+        return new Point2D(getEndX(), getEndY());
+    }
+
+    public Point2D getCenter() {
+        return new Point2D(getCenterX(), getCenterY());
     }
 
     public void set(float x, float y, float width, float height) {

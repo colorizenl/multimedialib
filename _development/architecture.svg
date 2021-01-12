@@ -2,7 +2,7 @@
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="650" height="190">
     <g>
         <path d="M20,10 h620 a10,10 0 0 1 10,10 v30 a10,10 0 0 1 -10,10 h-620 a10,10 0 0 1 -10,-10 v-30 a10,10 0 0 1 10,-10 z" fill="#e45d61" />
-        <text x="330" y="40" fill="#ffffff" text-anchor="middle" font-size="18" font-family="Helvetica">MultimediaLib</text>
+        <text x="330" y="40" fill="#ffffff" text-anchor="middle" font-size="16" font-family="Helvetica">MultimediaLib</text>
         
         <path d="M20,70 h100 a10,10 0 0 1 10,10 v30 a10,10 0 0 1 -10,10 h-100 a10,10 0 0 1 -10,-10 v-30 a10,10 0 0 1 10,-10 z" fill="#adadad" />
         <text x="70" y="100" fill="#ffffff" text-anchor="middle" font-size="16" font-family="Helvetica">Graphics</text>
@@ -20,12 +20,12 @@
         <text x="590" y="100" fill="#ffffff" text-anchor="middle" font-size="16" font-family="Helvetica">File system</text>
         
         <path d="M20,130 h180 a10,10 0 0 1 10,10 v30 a10,10 0 0 1 -10,10 h-180 a10,10 0 0 1 -10,-10 v-30 a10,10 0 0 1 10,-10 z" fill="#cbcbcb" />
-        <text x="110" y="160" fill="#ffffff" text-anchor="middle" font-size="18" font-family="Helvetica">Desktop</text>
+        <text x="110" y="160" fill="#ffffff" text-anchor="middle" font-size="16" font-family="Helvetica">Desktop</text>
         
         <path d="M240,130 h180 a10,10 0 0 1 10,10 v30 a10,10 0 0 1 -10,10 h-180 a10,10 0 0 1 -10,-10 v-30 a10,10 0 0 1 10,-10 z" fill="#cbcbcb" />
-        <text x="330" y="160" fill="#ffffff" text-anchor="middle" font-size="18" font-family="Helvetica">Mobile</text>
+        <text x="330" y="160" fill="#ffffff" text-anchor="middle" font-size="16" font-family="Helvetica">Mobile</text>
         
         <path d="M460,130 h180 a10,10 0 0 1 10,10 v30 a10,10 0 0 1 -10,10 h-180 a10,10 0 0 1 -10,-10 v-30 a10,10 0 0 1 10,-10 z" fill="#cbcbcb" />
-        <text x="550" y="160" fill="#ffffff" text-anchor="middle" font-size="18" font-family="Helvetica">Web</text>
+        <text x="550" y="160" fill="#ffffff" text-anchor="middle" font-size="16" font-family="Helvetica">Web</text>
     </g>
 </svg>

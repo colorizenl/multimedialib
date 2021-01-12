@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -26,13 +26,13 @@ public class CopyrightUpdateToolTest {
     public void testUpdateCopyrightMultiYearLeaveStart() {
         CopyrightUpdateTool tool = new CopyrightUpdateTool();
         tool.startCopyrightYear = "leave";
-        tool.newCopyrightYear = "2020";
+        tool.newCopyrightYear = "2021";
 
-        assertEquals("Copyright 2019-2020 Colorize", tool.processLine("Copyright 2019-2020 Colorize"));
-        assertEquals("Copyright 2008-2020 Colorize", tool.processLine("Copyright 2008-2020 Colorize"));
-        assertEquals("Copyright 2008-2020 Colorize", tool.processLine("Copyright 2008-2019 Colorize"));
-        assertEquals("Copyright 2007, 2020 Colorize", tool.processLine("Copyright 2007, 2020 Colorize"));
-        assertEquals("Copyright 2007, 2020 Colorize", tool.processLine("Copyright 2007, 2019 Colorize"));
+        assertEquals("Copyright 2019-2021 Colorize", tool.processLine("Copyright 2019-2020 Colorize"));
+        assertEquals("Copyright 2008-2021 Colorize", tool.processLine("Copyright 2008-2020 Colorize"));
+        assertEquals("Copyright 2008-2021 Colorize", tool.processLine("Copyright 2008-2019 Colorize"));
+        assertEquals("Copyright 2007, 2021 Colorize", tool.processLine("Copyright 2007, 2020 Colorize"));
+        assertEquals("Copyright 2007, 2021 Colorize", tool.processLine("Copyright 2007, 2019 Colorize"));
     }
 
     @Test

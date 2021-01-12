@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -12,9 +12,9 @@ import nl.colorize.multimedialib.renderer.ApplicationData;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.InputDevice;
-import nl.colorize.multimedialib.renderer.NetworkAccess;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.NestedRenderCallback;
+import nl.colorize.multimedialib.renderer.NetworkAccess;
 import nl.colorize.multimedialib.renderer.RenderCallback;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.Stage;
@@ -124,14 +124,20 @@ public class Java2DRenderer implements Renderer {
         window.pack();
         window.setLocationRelativeTo(null);
         window.setVisible(true);
-
-        if (Platform.isMac()) {
-            MacIntegration.setApplicationMenuListener(windowOptions.getAppMenuListener(), false);
-        }
-
         window.createBufferStrategy(2);
 
-        initializeInput();
+        inputDevice = new AWTInput(getCanvas());
+        window.addKeyListener(inputDevice);
+        window.addMouseListener(inputDevice);
+        window.addMouseMotionListener(inputDevice);
+
+        if (Platform.isMac()) {
+            MacIntegration.setApplicationMenuListener(windowOptions.getAppMenuListener());
+        }
+
+        if (windowOptions.isFullscreen()) {
+            SwingUtils.goFullScreen(window);
+        }
 
         return window;
     }
@@ -142,13 +148,6 @@ public class Java2DRenderer implements Renderer {
         } else {
             return null;
         }
-    }
-
-    private void initializeInput() {
-        inputDevice = new AWTInput(getCanvas());
-        window.addKeyListener(inputDevice);
-        window.addMouseListener(inputDevice);
-        window.addMouseMotionListener(inputDevice);
     }
 
     @Override

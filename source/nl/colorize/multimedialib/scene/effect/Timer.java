@@ -1,12 +1,14 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.scene.action;
+package nl.colorize.multimedialib.scene.effect;
 
+import nl.colorize.multimedialib.renderer.GraphicsContext2D;
 import nl.colorize.multimedialib.renderer.Updatable;
+import nl.colorize.multimedialib.scene.SubScene;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,16 +18,18 @@ import java.util.List;
  * the timer, and will then be automatically called once the timer has been
  * completed.
  */
-public class Timer implements Action, Updatable {
+public class Timer implements SubScene {
 
     private float position;
     private float duration;
-    private List<Runnable> actions;
+    private List<Updatable> frameUpdateActions;
+    private List<Runnable> completionActions;
 
     public Timer(float duration) {
         this.position = 0f;
         this.duration = duration;
-        this.actions = new ArrayList<>();
+        this.frameUpdateActions = new ArrayList<>();
+        this.completionActions = new ArrayList<>();
 
         reset();
     }
@@ -38,8 +42,12 @@ public class Timer implements Action, Updatable {
 
         position = Math.min(position + deltaTime, duration);
 
+        for (Updatable action : frameUpdateActions) {
+            action.update(deltaTime);
+        }
+
         if (isCompleted()) {
-            for (Runnable action : actions) {
+            for (Runnable action : completionActions) {
                 action.run();
             }
         }
@@ -71,24 +79,53 @@ public class Timer implements Action, Updatable {
     }
 
     /**
+     * Attaches a callback function that will be invoked during every frame
+     * update until this timer has completed.
+     */
+    public void attachFrameUpdate(Updatable action) {
+        frameUpdateActions.add(action);
+    }
+
+    /**
      * Attaches a callback function that will be invoked when this timer has
      * completed.
      */
-    public void attach(Runnable action) {
-        actions.add(action);
+    public void attachCompletion(Runnable action) {
+        completionActions.add(action);
     }
 
-    public void clearActions() {
-        actions.clear();
+    /**
+     * Attaches a callback function that will be invoked when this timer has
+     * completed.
+     * @deprecated Use {@link #attachCompletion(Runnable)} instead.
+     */
+    @Deprecated
+    public void attach(Runnable action) {
+        attachCompletion(action);
+    }
+
+    @Override
+    public void render(GraphicsContext2D graphics) {
     }
 
     /**
      * Factory method that creates a timer and immediately attaches the specified
      * action that will be performed once the time has elapsed.
      */
-    public static Timer create(float duration, Runnable action) {
+    public static Timer create(float duration, Runnable completion) {
         Timer timer = new Timer(duration);
-        timer.attach(action);
+        timer.attachCompletion(completion);
+        return timer;
+    }
+
+    /**
+     * Factory method that creates a timer and attached the specified actions
+     * to be performed during frame updates and upon completion.
+     */
+    public static Timer create(float duration, Updatable frameUpdate, Runnable completion) {
+        Timer timer = new Timer(duration);
+        timer.attachFrameUpdate(frameUpdate);
+        timer.attachCompletion(completion);
         return timer;
     }
 
@@ -97,5 +134,13 @@ public class Timer implements Action, Updatable {
      */
     public static Timer indefinite() {
         return new Timer(Float.MAX_VALUE);
+    }
+
+    /**
+     * Returns a timer that has a duration of zero and is therefore always and
+     * permanently considered completed.
+     */
+    public static Timer completed() {
+        return new Timer(0f);
     }
 }

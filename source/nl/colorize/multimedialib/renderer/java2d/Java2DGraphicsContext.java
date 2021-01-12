@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -10,9 +10,10 @@ import nl.colorize.multimedialib.graphics.Align;
 import nl.colorize.multimedialib.graphics.AlphaTransform;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.graphics.TTFont;
+import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Circle;
+import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
@@ -20,6 +21,7 @@ import nl.colorize.multimedialib.renderer.GraphicsContext2D;
 import nl.colorize.util.swing.Utils2D;
 
 import java.awt.AlphaComposite;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Composite;
 import java.awt.Font;
@@ -76,6 +78,18 @@ public class Java2DGraphicsContext implements GraphicsContext2D {
 
         g2.setColor(convertColor(backgroundColor));
         g2.fillRect(0, 0, Math.round(width), Math.round(height) + 30);
+    }
+
+    @Override
+    public void drawLine(Point2D from, Point2D to, ColorRGB color, float thickness) {
+        float x0 = canvas.toScreenX(from.getX());
+        float y0 = canvas.toScreenY(from.getY());
+        float x1 = canvas.toScreenX(to.getX());
+        float y1 = canvas.toScreenY(to.getY());
+
+        g2.setStroke(new BasicStroke(thickness));
+        g2.setColor(convertColor(color));
+        g2.drawLine(Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1));
     }
 
     @Override
@@ -179,8 +193,12 @@ public class Java2DGraphicsContext implements GraphicsContext2D {
     private AffineTransform applyTransform(int x, int y, int width, int height, Transform transform) {
         float screenX = canvas.toScreenX(x);
         float screenY = canvas.toScreenY(y);
-        float scaleX = canvas.getZoomLevel() * (transform.getScaleX() / 100f);
-        float scaleY = canvas.getZoomLevel() * (transform.getScaleY() / 100f);
+
+        float scaleX = canvas.getZoomLevel() * (transform.getScaleX() / 100f) *
+            (transform.isFlipHorizontal() ? -1f : 1f);
+        float scaleY = canvas.getZoomLevel() * (transform.getScaleY() / 100f) *
+            (transform.isFlipVertical() ? -1f : 1f);
+
         int screenWidth = (int) (width * scaleX);
         int screenHeight = (int) (height * scaleY);
 

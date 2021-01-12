@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -63,11 +63,11 @@ public class TextField extends Widget {
     }
 
     @Override
-    public void render(GraphicsContext2D graphics) {
-        Image backgroundImage = getStyle().getBackground();
+    public void render(GraphicsContext2D graphics, WidgetStyle style) {
+        Image backgroundImage = style.getBackground();
         graphics.drawImage(backgroundImage, getX(), getY());
 
-        graphics.drawText(value, getStyle().getFont(), getX() - backgroundImage.getWidth() * 0.4f,
+        graphics.drawText(value, style.getFont(), getX() - backgroundImage.getWidth() * 0.4f,
             getY() + backgroundImage.getHeight() * 0.2f);
     }
 

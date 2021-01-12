@@ -1,17 +1,12 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.java2d;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import com.google.common.annotations.VisibleForTesting;
-
 import nl.colorize.multimedialib.graphics.Align;
 import nl.colorize.multimedialib.graphics.AlphaTransform;
 import nl.colorize.multimedialib.graphics.ColorRGB;
@@ -27,14 +22,18 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsContext2D;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.InputDevice;
-import nl.colorize.multimedialib.renderer.NetworkAccess;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.MediaLoader;
+import nl.colorize.multimedialib.renderer.NetworkAccess;
 import nl.colorize.multimedialib.renderer.RenderCallback;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.Stage;
 import nl.colorize.util.Platform;
 import nl.colorize.util.PlatformFamily;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Headless renderer implementation that uses {@link Java2DRenderer} for platform
@@ -157,6 +156,10 @@ public class HeadlessRenderer implements Renderer {
 
         @Override
         public void drawBackground(ColorRGB backgroundColor) {
+        }
+
+        @Override
+        public void drawLine(Point2D from, Point2D to, ColorRGB color, float thickness) {
         }
 
         @Override

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -239,6 +239,12 @@ public class Browser {
     //-------------------------------------------------------------------------
     // 2D graphics
     //-------------------------------------------------------------------------
+
+    @JSBody(
+        params = {"x0", "y0", "x1", "y1", "color", "thickness"},
+        script = "renderer.drawLine(x0, y0, x1, y1, color, thickness);"
+    )
+    public static native void drawLine(float x0, float y0, float x1, float y1, String color, float thickness);
 
     @JSBody(
         params = {"x", "y", "width", "height", "color", "alpha"},

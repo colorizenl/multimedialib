@@ -1,10 +1,10 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.scene.action;
+package nl.colorize.multimedialib.scene.effect;
 
 import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.graphics.Align;
@@ -17,6 +17,7 @@ import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.renderer.Drawable;
 import nl.colorize.multimedialib.renderer.GraphicsContext2D;
 import nl.colorize.multimedialib.renderer.Updatable;
+import nl.colorize.multimedialib.scene.SubScene;
 import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
 
@@ -25,10 +26,10 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * An animated graphical effect that can be played as part of a scene. In
- * combination with the {@link ActionManager}, this allows declarative effects
- * that can be played without having to manually update their logic and
- * graphics every frame.
+ * An animated graphical effect that can be played as part of a scene. Effects
+ * implement the {@link SubScene} interface and can be attached to the currently
+ * active scene. This allows declarative effects that can be played without
+ * having to manually update their logic and graphics every frame.
  * <p>
  * The effect consists of the graphics that are animated according to the
  * timeline. A number of modifiers can be added to the effect, that will use
@@ -48,7 +49,7 @@ import java.util.function.Consumer;
  * has completed. This makes it easier to schedule follow-up events without
  * having to poll the status of the event every frame.
  */
-public abstract class Effect implements Action, Drawable {
+public abstract class Effect implements SubScene {
 
     private Timeline timeline;
     private List<Consumer<Float>> modifiers;
@@ -57,6 +58,7 @@ public abstract class Effect implements Action, Drawable {
 
     private Point2D position;
     private Transform transform;
+    private boolean background;
 
     protected Effect(Timeline timeline) {
         this.timeline = timeline;
@@ -66,6 +68,7 @@ public abstract class Effect implements Action, Drawable {
 
         this.position = new Point2D(0, 0);
         this.transform = new Transform();
+        this.background = false;
     }
 
     protected Effect(float duration) {
@@ -76,7 +79,7 @@ public abstract class Effect implements Action, Drawable {
      * Registers a callback function that will be called during every frame
      * update, with the effect's current timeline value as the argument. The
      * callback can then be used to update the effect's graphical appearance.
-     * @return This, for method chaining.
+     * Returns this effect to allow for method chaining.
      */
     public Effect modify(Consumer<Float> modifier) {
         modifiers.add(modifier);
@@ -86,8 +89,8 @@ public abstract class Effect implements Action, Drawable {
     /**
      * Registers a callback function that is updated every frame. Unlike
      * "regular" modifiers registered using {@link #modify(Consumer)}, these
-     * callbacks do not use the current timeline value.
-     * @return This, for method chaining.
+     * callbacks do not use the current timeline value. Returns this effect to
+     * allow for method chaining.
      */
     public Effect modifyFrameUpdate(Updatable modifier) {
         frameUpdateHandlers.add(modifier);
@@ -96,12 +99,15 @@ public abstract class Effect implements Action, Drawable {
 
     /**
      * Registers a callback function that will be notified once this effect
-     * has been completed.
-     * @return This, for method chaining.
+     * has been completed. Returns this effect to allow for method chaining.
      */
     public Effect onComplete(Runnable observer) {
         completeHandlers.add(observer);
         return this;
+    }
+
+    protected Timeline getTimeline() {
+        return timeline;
     }
 
     public void setPosition(Point2D position) {
@@ -124,6 +130,20 @@ public abstract class Effect implements Action, Drawable {
         return transform;
     }
 
+    /**
+     * Indicates that this effect should be rendered as part of the scene's
+     * background graphics. By default, effects are drawn in the foreground,
+     * in front of the scene's own graphics.
+     */
+    public void inBackground() {
+        background = true;
+    }
+
+    @Override
+    public boolean hasBackgroundGraphics() {
+        return background;
+    }
+
     @Override
     public void update(float deltaTime) {
         if (isCompleted()) {
@@ -140,12 +160,25 @@ public abstract class Effect implements Action, Drawable {
     }
 
     @Override
+    public abstract void render(GraphicsContext2D graphics);
+
+    @Override
     public boolean isCompleted() {
         return timeline.isCompleted() && !timeline.isLoop();
     }
 
-    @Override
-    public abstract void render(GraphicsContext2D graphics);
+    /**
+     * Shorthand for creating a graphical effect that will draw graphics using
+     * the provided callback function.
+     */
+    public static Effect forGraphics(float duration, Drawable callback) {
+        return new Effect(duration) {
+            @Override
+            public void render(GraphicsContext2D graphics) {
+                callback.render(graphics);
+            }
+        };
+    }
 
     /**
      * Shorthand for creating a graphical effect that will operate on the
@@ -171,7 +204,7 @@ public abstract class Effect implements Action, Drawable {
     public static Effect forSprite(Sprite sprite, float duration) {
         Timeline timeline = new Timeline();
         timeline.addKeyFrame(0f, 0f);
-        timeline.addKeyFrame(duration, 0f);
+        timeline.addKeyFrame(duration, 1f);
 
         return forSprite(sprite, timeline);
     }

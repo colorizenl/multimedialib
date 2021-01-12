@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -32,7 +32,7 @@ public class TextLabel extends Widget {
     }
 
     @Override
-    public void render(GraphicsContext2D graphics) {
-        graphics.drawText(text, getStyle().getFont(), getX(), getY(), align);
+    public void render(GraphicsContext2D graphics, WidgetStyle style) {
+        graphics.drawText(text, style.getFont(), getX(), getY(), align);
     }
 }

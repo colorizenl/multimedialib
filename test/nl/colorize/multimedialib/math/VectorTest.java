@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -43,5 +43,31 @@ public class VectorTest {
         assertTrue(new Vector(0f, 1f).equals(new Vector(0f, 1f)));
         assertTrue(new Vector(0f, 1f).equals(new Vector(0f, 1.00001f)));
         assertFalse(new Vector(0f, 1f).equals(new Vector(0f, 1.01f)));
+    }
+
+    @Test
+    void setToPoint() {
+        Vector vector = new Vector(0f, 0f);
+
+        vector.setToPoint(new Point2D(0f, 0f));
+        assertEquals("[ 0 0 ]", vector.toString());
+
+        vector.setToPoint(new Point2D(10f, 0f));
+        assertEquals("[ 0 10 ]", vector.toString());
+
+        vector.setToPoint(new Point2D(-10f, 0f));
+        assertEquals("[ 180 10 ]", vector.toString());
+
+        vector.setToPoint(new Point2D(0f, 10f));
+        assertEquals("[ 90 10 ]", vector.toString());
+
+        vector.setToPoint(new Point2D(0f, -10f));
+        assertEquals("[ -90 10 ]", vector.toString());
+
+        vector.setToPoint(new Point2D(10f, 10f));
+        assertEquals("[ 45 14 ]", vector.toString());
+
+        vector.setToPoint(new Point2D(-10f, -10f));
+        assertEquals("[ -135 14 ]", vector.toString());
     }
 }

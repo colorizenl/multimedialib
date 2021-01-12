@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -21,14 +21,15 @@ import nl.colorize.multimedialib.renderer.GraphicsContext2D;
  * <p>
  * Scenes contain methods that are similar to {@code Updatable} and
  * {@code Drawable}, for performing frame updates and drawing graphics
- * respectively. The main difference is that the scene gets full access to
- * the application. Larger scenes can divide their logic and graphics into
- * separate parts using the aforementioned interfaces.
+ * respectively. The main difference with those interfaces is that the scene
+ * gets full access to the application. Larger scenes can either use these
+ * interfaces (to have a hard split between logic and graphics), or use the
+ * {@link SubScene} interface.
  */
 public interface Scene {
 
     /**
-     * Initiallization logic that should be performed every time the scene is
+     * Initialization logic that should be performed every time the scene is
      * started. This method is called by the application that contains the
      * scene.
      */

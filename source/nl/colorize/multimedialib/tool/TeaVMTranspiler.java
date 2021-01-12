@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -11,10 +11,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.util.FileUtils;
+import nl.colorize.util.Formatting;
 import nl.colorize.util.LoadUtils;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.ResourceFile;
-import nl.colorize.util.swing.Utils2D;
 import nl.colorize.util.xml.XMLHelper;
 import org.jdom2.Element;
 import org.kohsuke.args4j.Option;
@@ -24,7 +24,6 @@ import org.teavm.tooling.TeaVMTargetType;
 import org.teavm.tooling.TeaVMTool;
 import org.teavm.tooling.TeaVMToolException;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -60,6 +59,9 @@ public class TeaVMTranspiler extends CommandLineTool {
     @Option(name = "-main", required = true, usage = "Main class that acts as application entry point")
     public String mainClassName;
 
+    @Option(name = "-minify", usage = "Minifies the generated JavaScript, off by default")
+    public boolean minify = false;
+
     private static final List<ResourceFile> WEB_RESOURCE_FILES = ImmutableList.of(
         new ResourceFile("browser/index.html"),
         new ResourceFile("browser/multimedialib.css"),
@@ -74,19 +76,27 @@ public class TeaVMTranspiler extends CommandLineTool {
         new ResourceFile("browser/loading.gif"),
         new ResourceFile("browser/OpenSans-Regular.ttf"),
         new ResourceFile("browser/lib/peerjs-1.2.0.min.js"),
-        new ResourceFile("browser/lib/three.js"),
-        new ResourceFile("browser/lib/FBXLoader.js"),
-        new ResourceFile("browser/lib/inflate.min.js"),
         new ResourceFile("colorize-logo.png"),
         new ResourceFile("orientation-lock.png"),
         new ResourceFile("ui-widget-background.png"),
-        new ResourceFile("transition-effect.png")
+        new ResourceFile("transition-effect.png"),
+        new ResourceFile("browser/lib/three.js"),
+        new ResourceFile("browser/lib/FBXLoader.js"),
+        new ResourceFile("browser/lib/inflate.min.js")
+    );
+
+    private static final List<ResourceFile> WEB_RESOURCE_FILES_3D = ImmutableList.of(
+        new ResourceFile("browser/lib/three.js"),
+        new ResourceFile("browser/lib/FBXLoader.js"),
+        new ResourceFile("browser/lib/inflate.min.js")
     );
     
     private static final List<String> TEXT_FILE_TYPES = ImmutableList.of(
         ".txt", ".md", ".json", ".yml", ".yaml", ".properties", ".fnt", ".csv", "-manifest");
 
-    private static final List<String> IMAGE_FILES_TYPES = ImmutableList.of(".png", ".jpg");
+    private static final List<String> RESOURCE_FILE_TYPES = ImmutableList.of(
+        ".png", ".jpg", ".svg", ".gif", ".ttf", ".wav", ".mp3", ".ogg");
+
     private static final List<String> SUPPORTED_RENDERS = ImmutableList.of("canvas", "webgl", "three");
     private static final List<String> KNOWN_MISSING_CLASSES = Collections.emptyList();
     private static final Logger LOGGER = LogHelper.getLogger(TeaVMTranspiler.class);
@@ -108,10 +118,19 @@ public class TeaVMTranspiler extends CommandLineTool {
         try {
             copyResources();
             transpile();
-            LOGGER.info("Results saved to " + outputDir.getAbsolutePath());
+            printSummary();
         } catch (TeaVMToolException e) {
             LOGGER.log(Level.SEVERE, "Transpiling failed", e);
         }
+    }
+
+    private void printSummary() {
+        long htmlSize = new File(outputDir, "index.html").length();
+        long jsSize = new File(outputDir, "classes.js").length();
+
+        LOGGER.info("HTML file size:          " + Formatting.memoryFormat(htmlSize, 1));
+        LOGGER.info("JavaScript file size:    " + Formatting.memoryFormat(jsSize, 1));
+        LOGGER.info("Results saved to " + outputDir.getAbsolutePath());
     }
 
     private void transpile() throws TeaVMToolException {
@@ -123,8 +142,8 @@ public class TeaVMTranspiler extends CommandLineTool {
         transpiler.setIncremental(false);
         transpiler.setLog(new ConsoleTeaVMToolLog(true));
         transpiler.setMainClass(mainClassName);
-        transpiler.setMinifying(false);
-        transpiler.setSourceMapsFileGenerated(true);
+        transpiler.setMinifying(minify);
+        transpiler.setSourceMapsFileGenerated(!minify);
         transpiler.setTargetDirectory(outputDir);
         transpiler.setTargetType(TeaVMTargetType.JAVASCRIPT);
         transpiler.generate();
@@ -155,30 +174,21 @@ public class TeaVMTranspiler extends CommandLineTool {
         resourceFiles.add(generateManifest(resourceFiles));
         
         List<ResourceFile> textFiles = new ArrayList<>();
-        List<ResourceFile> imageFiles = new ArrayList<>();
 
         for (ResourceFile file : resourceFiles) {
             if (isFileType(file, TEXT_FILE_TYPES)) {
                 LOGGER.info("Using text file " + file);
                 textFiles.add(file);
-            } else if (isFileType(file, IMAGE_FILES_TYPES)) {
-                LOGGER.info("Using image file " + file);
-                imageFiles.add(file);                
             } else {
                 LOGGER.info("Copying resource file " + file);
                 copyBinaryResourceFile(file);
             }
         }
 
-        List<File> imageDataFiles = imageFiles.stream()
-            .peek(imageFile -> LOGGER.info("Generating image data file for " + imageFile))
-            .map(imageFile -> generateImageDataFile(imageFile))
-            .collect(Collectors.toList());
-
         for (ResourceFile file : WEB_RESOURCE_FILES) {
             if (file.getName().endsWith(".html")) {
                 LOGGER.info("Generating HTML file " + file);
-                rewriteHTML(file, textFiles, imageDataFiles);
+                rewriteHTML(file, textFiles);
             } else {
                 LOGGER.info("Generating file " + file);
                 copyBinaryResourceFile(file);
@@ -191,7 +201,7 @@ public class TeaVMTranspiler extends CommandLineTool {
             .anyMatch(type -> needle.getName().toLowerCase().endsWith(type));
     }
 
-    private void rewriteHTML(ResourceFile file, List<ResourceFile> textResources, List<File> imageData) {
+    private void rewriteHTML(ResourceFile file, List<ResourceFile> textResources) {
         File outputFile = getOutputFile(file);
 
         try (PrintWriter writer = new PrintWriter(outputFile, Charsets.UTF_8.displayName())) {
@@ -200,8 +210,6 @@ public class TeaVMTranspiler extends CommandLineTool {
                 line = line.replace("@@@RENDERER", renderer);
                 if (line.trim().equals("@@@RESOURCES")) {
                     line = generateTextResourceFilesHTML(textResources);
-                } else if (line.trim().equals("@@@IMAGE_DATA")) {
-                    line = generateImageDataList(imageData) + "\n";
                 }
                 writer.println(line);
             }
@@ -226,16 +234,17 @@ public class TeaVMTranspiler extends CommandLineTool {
         return buffer.toString();
     }
 
-    private String generateImageDataList(List<File> imageDataFiles) {
-        return imageDataFiles.stream()
-            .map(file -> "        <script src=\"images/" + file.getName() + "\" async></script>")
-            .collect(Collectors.joining("\n"));
-    }
-
     private void copyBinaryResourceFile(ResourceFile file) {
+        File outputFile = getOutputFile(file);
+
         try (InputStream stream = file.openStream()) {
             byte[] contents = LoadUtils.readToByteArray(stream);
-            FileUtils.write(contents, getOutputFile(file));
+
+            if (WEB_RESOURCE_FILES_3D.contains(file) && !renderer.equals("three")) {
+                FileUtils.write("", Charsets.UTF_8, outputFile);
+            } else {
+                FileUtils.write(contents, outputFile);
+            }
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Cannot copy file " + file, e);
         }
@@ -270,26 +279,15 @@ public class TeaVMTranspiler extends CommandLineTool {
             throw new MediaException("Cannot generate resource file manifest", e);
         }
     }
-    
-    private File generateImageDataFile(ResourceFile imageFile) {
-        try {
-            File imagesDir = new File(outputDir, "images");
-            FileUtils.mkdir(imagesDir);
-
-            File imageDataFile = new File(imagesDir, "image-" + normalizeFileName(imageFile) + ".js");
-            BufferedImage image = Utils2D.loadImage(imageFile);
-            String contents = "imageDataURLs[\"" + normalizeFileName(imageFile) + "\"] = \"" +
-                Utils2D.toDataURL(image) + "\";";
-
-            Files.write(imageDataFile.toPath(), contents.getBytes(Charsets.UTF_8));
-            return imageDataFile;
-        } catch (IOException e) {
-            throw new MediaException("Unable to generate image data file", e);
-        }
-    }
 
     private File getOutputFile(ResourceFile file) {
-        return new File(outputDir, normalizeFileName(file));
+        if (isFileType(file, RESOURCE_FILE_TYPES)) {
+            File resourcesDir = new File(outputDir, "resources");
+            resourcesDir.mkdir();
+            return new File(resourcesDir, normalizeFileName(file));
+        } else {
+            return new File(outputDir, normalizeFileName(file));
+        }
     }
 
     private String normalizeFileName(ResourceFile file) {

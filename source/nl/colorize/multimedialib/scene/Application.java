@@ -1,12 +1,13 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.scene;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import nl.colorize.multimedialib.graphics.Image;
 import nl.colorize.multimedialib.math.RotatingBuffer;
 import nl.colorize.multimedialib.renderer.ApplicationData;
@@ -20,26 +21,32 @@ import nl.colorize.multimedialib.renderer.NetworkAccess;
 import nl.colorize.multimedialib.renderer.RenderCallback;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.Stage;
-import nl.colorize.multimedialib.scene.action.ActionManager;
-import nl.colorize.multimedialib.scene.action.Effect;
+import nl.colorize.multimedialib.scene.effect.Effect;
 import nl.colorize.util.PlatformFamily;
 import nl.colorize.util.Stopwatch;
 import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Provides a standard application structure that divides the application into
  * a number of scenes. One scene is marked as currently active, and will receive
- * frame updates and render graphics for as a long as it is active. Scenes will
- * also receive notifications whenever the active scene changes.
+ * frame updates and render graphics for as a long as it is active. Any number
+ * of sub-scenes can be attached to the active scene, which then receive frame
+ * updates from the application. Once the active "parent" scene ends, all
+ * attached sub-scenes are automatically stopped.
  */
 public final class Application implements RenderCallback {
 
     private Renderer renderer;
     private MediaManager media;
     private Scene activeScene;
+    private List<SubScene> activeSubScenes;
     private Scene requestedScene;
-    private ActionManager globalActionManager;
+    private List<SubScene> requestedSubScenes;
+    private List<SubScene> completedSubScenes;
 
     private Stopwatch fpsTimer;
     private RotatingBuffer fpsBuffer;
@@ -53,15 +60,20 @@ public final class Application implements RenderCallback {
     private static final FilePointer ORIENTATION_LOCK_IMAGE = new FilePointer("orientation-lock.png");
 
     private Application() {
-        fpsTimer = new Stopwatch();
-        fpsBuffer = new RotatingBuffer(FPS_MEASUREMENT_BUFFER_SIZE);
-        frameTimeBuffer = new RotatingBuffer(FPS_MEASUREMENT_BUFFER_SIZE);
-        upsBuffer = new RotatingBuffer(FPS_MEASUREMENT_BUFFER_SIZE);
+        this.activeScene = null;
+        this.activeSubScenes = new ArrayList<>();
+        this.requestedScene = null;
+        this.requestedSubScenes = new ArrayList<>();
+        this.completedSubScenes = new ArrayList<>();
+
+        this.fpsTimer = new Stopwatch();
+        this.fpsBuffer = new RotatingBuffer(FPS_MEASUREMENT_BUFFER_SIZE, 1000f);
+        this.frameTimeBuffer = new RotatingBuffer(FPS_MEASUREMENT_BUFFER_SIZE);
+        this.upsBuffer = new RotatingBuffer(FPS_MEASUREMENT_BUFFER_SIZE, 1000f);
     }
 
     private void init() {
         media = new MediaManager(renderer.getMediaLoader());
-        globalActionManager = new ActionManager();
 
         orientationLock = false;
         orientationLockAnim = initOrientationLockAnim();
@@ -100,26 +112,49 @@ public final class Application implements RenderCallback {
         upsBuffer.add(deltaTime);
         
         if (requestedScene != null) {
-            if (activeScene != null) {
-                activeScene.end(this);
-            }
-
-            if (renderer.getSupportedGraphicsMode() == GraphicsMode.ALL) {
-                Stage stage = renderer.getStage();
-                stage.clear();
-            }
-
-            activeScene = requestedScene;
-            requestedScene = null;
-            activeScene.start(this);
+            activateRequestedScene();
         }
 
+        activeSubScenes.addAll(requestedSubScenes);
+        requestedSubScenes.clear();
+
+        activeSubScenes.removeAll(completedSubScenes);
+        completedSubScenes.clear();
+
         if (activeScene != null && isScreenOrientationSupported()) {
-            activeScene.update(this, deltaTime);
-            globalActionManager.update(deltaTime);
+            updateActiveScene(deltaTime);
         } else {
             orientationLockAnim.update(deltaTime);
         }
+    }
+
+    private void updateActiveScene(float deltaTime) {
+        activeScene.update(this, deltaTime);
+
+        for (SubScene subScene : activeSubScenes) {
+            subScene.update(deltaTime);
+
+            if (subScene.isCompleted()) {
+                completedSubScenes.add(subScene);
+            }
+        }
+    }
+
+    private void activateRequestedScene() {
+        if (activeScene != null) {
+            activeScene.end(this);
+            activeSubScenes.clear();
+            completedSubScenes.clear();
+        }
+
+        if (renderer.getSupportedGraphicsMode() == GraphicsMode.ALL) {
+            Stage stage = renderer.getStage();
+            stage.clear();
+        }
+
+        activeScene = requestedScene;
+        requestedScene = null;
+        activeScene.start(this);
     }
 
     @Override
@@ -133,8 +168,23 @@ public final class Application implements RenderCallback {
         }
 
         if (activeScene != null) {
-            activeScene.render(this, graphics);
-            globalActionManager.render(graphics);
+            renderActiveScene(graphics);
+        }
+    }
+
+    private void renderActiveScene(GraphicsContext2D graphics) {
+        for (SubScene subScene : activeSubScenes) {
+            if (subScene.hasBackgroundGraphics()) {
+                subScene.render(graphics);
+            }
+        }
+
+        activeScene.render(this, graphics);
+
+        for (SubScene subScene : activeSubScenes) {
+            if (!subScene.hasBackgroundGraphics()) {
+                subScene.render(graphics);
+            }
         }
     }
 
@@ -154,6 +204,24 @@ public final class Application implements RenderCallback {
 
     public Scene getActiveScene() {
         return activeScene;
+    }
+
+    /**
+     * Attaches a sub-scene to the currently active scene. The sub-scene will
+     * play for as long as its parent scene. If the scene is changed, all
+     * attached sub-scenes will be stopped.
+     */
+    public void attach(SubScene subScene) {
+        requestedSubScenes.add(subScene);
+    }
+
+    public void detach(SubScene subScene) {
+        requestedSubScenes.remove(subScene);
+        activeSubScenes.remove(subScene);
+    }
+
+    public List<SubScene> getActiveSubScenes() {
+        return ImmutableList.copyOf(activeSubScenes);
     }
 
     /**
@@ -221,15 +289,6 @@ public final class Application implements RenderCallback {
 
     public PlatformFamily getPlatform() {
         return renderer.getPlatform();
-    }
-
-    /**
-     * Returns an {@link ActionManager} instance that is global to the entire
-     * application, and not limited to the currently playing scene. This is
-     * intended to be used for application-wide graphical effects and actions.
-     */
-    public ActionManager getGlobalActionManager() {
-        return globalActionManager;
     }
 
     /**

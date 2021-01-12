@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TeaVMTranspilerTest {
@@ -143,34 +142,6 @@ public class TeaVMTranspilerTest {
         assertTrue(generatedHTML.contains(expected), "Generated HTML:\n" + generatedHTML);
     }
     
-    @Test
-    public void testAccessImageContents() throws IOException {
-        File resourcesDir = Files.createTempDir();
-        File outputDir = Files.createTempDir();
-        
-        BufferedImage image = new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB);
-        image.setRGB(0, 0, Color.RED.getRGB());
-        image.setRGB(1, 0, Color.BLUE.getRGB());
-        Utils2D.savePNG(image, new File(resourcesDir, "image.png"));
-
-        TeaVMTranspiler tool = new TeaVMTranspiler();
-        tool.projectName = "test";
-        tool.resourceDir = resourcesDir;
-        tool.outputDir = outputDir;
-        tool.mainClassName = MockApp.class.getName();
-        tool.renderer = "webgl";
-        tool.run();
-
-        String generated = Files.toString(new File(outputDir, "image-data.js"), Charsets.UTF_8);
-
-        String expected = "let imageData = {\n    \"image.png\": \"" +
-            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAE" +
-            "ElEQVR4XmP4z8AAQkAMBQAz3gP9NSox0gAAAABJRU5ErkJggg==\"\n};\n";
-
-        assertTrue(new File(outputDir, "image-data.js").exists());
-        assertEquals(expected, generated, "Generated:\n" + generated);
-    }
-
     /**
      * This only exists so that the generated TeaVM code can have
      * an entry point during the tests.

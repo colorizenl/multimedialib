@@ -9,9 +9,9 @@ supported.
 
 MultimediaLib supports several different platforms:
 
-- **Desktop:** Windows, Mac OS, Linix
+- **Desktop:** Windows, Mac OS, Linux
 - **Mobile:** iOS, Android
-- **Web:** all modern browsers
+- **Web:** All modern browsers, PWA
 
 MultimediaLib acts as an abstraction layer between the application layer and the underlying 
 platform. This is a similar approach to other frameworks, but MultimediaLib differs in that it 
@@ -27,17 +27,17 @@ to the dependencies section in `pom.xml`:
     <dependency>
         <groupId>nl.colorize</groupId>
         <artifactId>multimedialib</artifactId>
-        <version>2020.4</version>
+        <version>2021.1</version>
     </dependency>  
     
 The library can also be used in Gradle projects:
 
     dependencies {
-        compile "nl.colorize:multimedialib:2020.4"
+        compile "nl.colorize:multimedialib:2021.1"
     }
     
-Concepts
---------
+Supported platforms
+-------------------
 
 The *renderer* is the central access point for all platform-specific functionality, as depicted
 in the picture above. Applications can access the renderer to display graphics, load media, check
@@ -50,16 +50,33 @@ different types of applications. Some renderers are implemented using the platfo
 graphics API, other renderers are implemented on top of other libraries or frameworks. 
 The following table shows an overview of the available renderer implementations:
 
-| Renderer                                            | Desktop | Mobile | Web | 2D | 3D | Hardware-accelerated |
-|-----------------------------------------------------|---------|--------|-----|----|----|----------------------|
-| Java2D renderer                                     | ✓       | ×      | ×   | ✓  | ×  | Partially (OpenGL)   |
-| [libGDX](https://libgdx.badlogicgames.com) renderer | ✓       | ✓      | ×   | ✓  | ✓  | Yes (OpenGL)         |
-| HTML5 canvas renderer                               | ✓       | ✓      | ✓   | ✓  | ×  | Partially            |
-| WebGL 2D renderer                                   | ✓       | ✓      | ✓   | ✓  | ×  | Yes (WebGL)          |
-| [three.js](https://threejs.org) renderer            | ✓       | ✓      | ✓   | ✓  | ✓  | Yes (WebGL)          |
+| Renderer                                                                             | Desktop | iOS | Android | Web | Graphics |
+|--------------------------------------------------------------------------------------|---------|-----|---------|-----|----------|
+| Java2D renderer                                                                      | ✓       | ×   | ×       | ×   | 2D       |
+| [libGDX](https://libgdx.badlogicgames.com) / [LWJGL](https://www.lwjgl.org) renderer | ✓       | ×   | ×       | ×   | 2D + 3D  |
+| libGDX / [RoboVM](http://robovm.mobidevelop.com) renderer                            | ×       | ✓   | ×       | ×   | 2D + 3D  |
+| HTML5 canvas renderer                                                                | ✓       | ✓   | ✓       | ✓   | 2D       |
+| WebGL 2D renderer                                                                    | ✓       | ✓   | ✓       | ✓   | 2D       |
+| [three.js](https://threejs.org) renderer                                             | ✓       | ✓   | ✓       | ✓   | 2D + 3D  |
 
+When using the TeaVM renderer, the application needs to be transpiled to JavaScript in order for
+it to run in the browser. MultimediaLib includes a command line tool for integrating this step
+into the build, refer to the section *Transpiling applications to HTML/JavaScript* below.
 
-For application structure, MultimediaLib uses the same terminology from the theather world that
+When using the libGDX renderer in combination with RoboVM, applications will need to add the
+following additional Maven or Gradle dependencies:
+
+  - `com.badlogicgames.gdx:gdx-backend-robovm:$gdxVersion`
+  - `com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-ios`
+  - `com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-ios`
+
+It is not possible use both "regular" Java and RoboVM in the same project, which is why 
+MultimediaLib does not include these dependencies by default.
+
+Concepts
+--------
+
+For application structure, MultimediaLib uses the same terminology from the theater world that
 is used by animation software. The application consists of a *stage* and a number of *scenes*.
 
 The stage contains everything that should be displayed. The stage can contain 2D graphics,
@@ -113,13 +130,14 @@ using [TeaVM](http://teavm.org) and therefore only supports a subset of the Java
 Transpilation is started using the `TeaVMTranspiler` that is included as part of the library.
 This command line tool takes the following arguments:
 
-| Name         | Required | Description                                                                |
-|--------------|----------|----------------------------------------------------------------------------|
-| -project     | yes      | Project name for the application.                                          |
-| -renderer    | yes      | One of 'canvas', 'webgl', 'three'.                                         |
-| -resources   | yes      | Directory containing the application's resource files.                     |
-| -out         | yes      | Output directory for the generated files.                                  |
-| -main        | yes      | Main class that acts as application entry point.                           |
+| Name         | Required | Description                                            |
+|--------------|----------|--------------------------------------------------------|
+| -project     | yes      | Project name for the application.                      |
+| -renderer    | yes      | One of 'canvas', 'webgl', 'three'.                     |
+| -resources   | yes      | Directory containing the application's resource files. |
+| -out         | yes      | Output directory for the generated files.              |
+| -main        | yes      | Main class that acts as application entry point.       |
+| -minify      | no       | Minifies the generated JavaScript, off by default.     |
 
 Loading image contents in JavaScript is not allowed unless when running on a remote host. This is
 not a problem for "true" web applications, but can be problematic if the JavaScript version of the
@@ -132,37 +150,21 @@ Distributing applications
 MultimediaLib does not include a distribution mechanism for applications, but it integrates with
 other tools for each supported platform.
 
-- **Windows:** Use [Launch4j](http://launch4j.sourceforge.net) to create a .exe file.
-- **Mac OS:** Create an [application bundle](https://plugins.gradle.org/plugin/nl.colorize.gradle.macapplicationbundle)
-  and installer, and distribute those via the Mac App Store.
+- **Windows:** Use [Launch4j](http://launch4j.sourceforge.net) to create a .exe file. 
+  Alternatively, the browser version can be submitted to the Windows Store as a PWA.
+- **Mac OS:** Create an application bundle and installer, and distribute those via the Mac App
+  Store. A [Gradle plugin](https://plugins.gradle.org/plugin/nl.colorize.gradle.macapplicationbundle)
+  is provided to generate the application bundle as part of the build.
 - **iOS:** Use [Cordova](https://cordova.apache.org) to wrap the transpiled version of the
-  application in a native app, and distribute that via the App Store.
+  application in a native app, and distribute that via the App Store. A
+  [Gradle Cordova plugin](https://plugins.gradle.org/plugin/nl.colorize.gradle.cordova) is provided
+  to generate the app as part of the build.
 - **Android:** Use [Cordova](https://cordova.apache.org) to wrap the transpiled version of the
-  application in a native app, and distribute that via the Play Store.
-- **Android:**
+  application in a native app, and distribute that via the Play Store. The same
+  [Gradle Cordova plugin](https://plugins.gradle.org/plugin/nl.colorize.gradle.cordova) can be
+  used to generate this app as part of the build.
 - **Web:** Upload the transpiled version of the application can be uploaded to a web server
   and distribute the corresponding URL.
-
-Transpiling the application to iOS and Android
-----------------------------------------------
-
-Web applications created using TeaVM (as described above), can be embedded in iOS and/or Android
-apps. The apps are created using [Cordova](https://cordova.apache.org). This means that the
-build environment requires Cordova, Xcode, and Android Studio in order to create these apps.
-Once the environment has been set up, `CordovaWrapper` can be added to the build. This command
-takes the following arguments:
-
-| Name       | Required | Description                                                     |
-|------------|----------|-----------------------------------------------------------------|
-| -webapp    | yes      | Directory containing the TeaVM version of the application.      |
-| -out       | yes      | Output directory for the generated apps.                        |
-| -platforms | no       | Comma-separated list of platforms, default is ios/android/osx.  |
-| -appid     | yes      | Application identifier, e.g. nl.colorize.test.                  |
-| -appname   | yes      | Application display name.                                       |
-| -version   | yes      | Application version in the format x.y.z.                        |
-| -icon      | yes      | Application icon, should be a 1024x1024 PNG image.              |
-| -buildjson | yes      | Location of the Cordova build.json file.                        |
-| -dist      | no       | Build distribution type, either 'release' (default) or 'debug'. |
 
 Packing images into a sprite sheet
 ----------------------------------
@@ -224,8 +226,16 @@ The following Gradle build tasks are available:
 License
 -------
 
-Copyright 2009-2020 Colorize
+Copyright 2009-2021 Colorize
 
-The source code is licensed under the Apache License. Refer to
-[http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0) for
-the full license text.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.

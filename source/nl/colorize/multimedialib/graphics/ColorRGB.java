@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -29,6 +29,8 @@ public final class ColorRGB {
     public static final ColorRGB GREEN = new ColorRGB(0, 255, 0);
     public static final ColorRGB BLUE = new ColorRGB(0, 0, 255);
     public static final ColorRGB YELLOW = new ColorRGB(255, 255, 0);
+    public static final ColorRGB ORANGE = new ColorRGB(255, 127, 0);
+    public static final ColorRGB PURPLE = new ColorRGB(127, 64, 255);
     
     /**
      * Creates a color from the specified red, green, and blue components.

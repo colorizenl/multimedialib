@@ -1,13 +1,11 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.graphics;
 
-import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.math.MathUtils;
 
 /**
@@ -15,9 +13,12 @@ import nl.colorize.multimedialib.math.MathUtils;
  * transform consists of the following aspects:
  * 
  * <ul>
- *   <li>Rotation (in degrees)
- *   <li>Scale (as a percentage, 100% being the original size)
- *   <li>Alpha (as a percentage, 100% is opaque, 0% is fully transparent)
+ *   <li>Rotation (in degrees)</li>
+ *   <li>Scale (as a percentage, 100% being the original size)</li>
+ *   <li>Alpha (as a percentage, 100% is opaque, 0% is fully transparent)</li>
+ *   <li>Flip horizontally</li>
+ *   <li>Flip vertically</li>
+ *   <li>Mask color</li>
  * </ul>
  */
 public class Transform implements AlphaTransform {
@@ -26,9 +27,9 @@ public class Transform implements AlphaTransform {
     private float scaleX;
     private float scaleY;
     private float alpha;
+    private boolean flipHorizontal;
+    private boolean flipVertical;
     private ColorRGB mask;
-
-    private static final Transform DEFAULT_TRANSFORM = new Transform();
 
     public Transform() {
         reset();
@@ -38,15 +39,21 @@ public class Transform implements AlphaTransform {
         rotation = 0f;
         scaleX = 100f;
         scaleY = 100f;
+        flipHorizontal = false;
+        flipVertical = false;
         alpha = 100f;
     }
-    
+
     /**
-     * Returns true if all of this transform's properties are set to their
-     * original/default values.
+     * Replaces all values within this transform, overwriting them with the
+     * values from the provided other transform.
      */
-    public boolean isDefaultTransform() {
-        return equals(DEFAULT_TRANSFORM);
+    public void set(Transform other) {
+        rotation = other.rotation;
+        scaleX = other.scaleX;
+        scaleY = other.scaleY;
+        alpha = other.alpha;
+        mask = other.mask;
     }
 
     public void setRotation(float degrees) {
@@ -92,15 +99,28 @@ public class Transform implements AlphaTransform {
     }
 
     public void setAlpha(float alpha) {
-        Preconditions.checkArgument(alpha >= 0f && alpha <= 100f,
-            "Alpha value out of range 0-100: " + alpha);
-
-        this.alpha = alpha;
+        this.alpha = MathUtils.clamp(alpha, 0f, 100f);
     }
 
     @Override
     public float getAlpha() {
         return alpha;
+    }
+
+    public void setFlipHorizontal(boolean flipHorizontal) {
+        this.flipHorizontal = flipHorizontal;
+    }
+
+    public boolean isFlipHorizontal() {
+        return flipHorizontal;
+    }
+
+    public void setFlipVertical(boolean flipVertical) {
+        this.flipVertical = flipVertical;
+    }
+
+    public boolean isFlipVertical() {
+        return flipVertical;
     }
 
     public void setMask(ColorRGB mask) {
@@ -117,27 +137,10 @@ public class Transform implements AlphaTransform {
         other.scaleX = scaleX;
         other.scaleY = scaleY;
         other.alpha = alpha;
+        other.flipHorizontal = flipHorizontal;
+        other.flipVertical = flipVertical;
         other.mask = mask;
         return other;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o instanceof Transform) {
-            Transform other = (Transform) o;
-            return MathUtils.equals(rotation, other.rotation) &&
-                MathUtils.equals(scaleX, other.scaleX) &&
-                MathUtils.equals(scaleY, other.scaleY) &&
-                MathUtils.equals(alpha, other.alpha) &&
-                Objects.equal(mask, other.mask);
-        } else {
-            return false;
-        }
-    }
-    
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(rotation, scaleX, scaleY, alpha, mask);
     }
 
     /**

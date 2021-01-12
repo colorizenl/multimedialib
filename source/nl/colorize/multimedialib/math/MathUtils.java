@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -44,7 +44,7 @@ public final class MathUtils {
     }
 
     public static int signum(boolean value) {
-        return value ? 1 : 0;
+        return value ? 1 : -1;
     }
     
     public static int sum(int[] values) {

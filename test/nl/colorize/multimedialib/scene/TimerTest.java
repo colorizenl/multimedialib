@@ -1,6 +1,6 @@
 package nl.colorize.multimedialib.scene;
 
-import nl.colorize.multimedialib.scene.action.Timer;
+import nl.colorize.multimedialib.scene.effect.Timer;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;

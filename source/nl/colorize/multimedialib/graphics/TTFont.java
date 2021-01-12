@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -47,6 +47,10 @@ public final class TTFont {
         return bold;
     }
 
+    public int getLineHeight() {
+        return Math.round(size * 1.5f);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o instanceof TTFont) {
@@ -67,6 +71,6 @@ public final class TTFont {
 
     @Override
     public String toString() {
-        return size + "px " + family + " (" + color + ")";
+        return size + "px " + family + " @ " + color;
     }
 }

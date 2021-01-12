@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -83,9 +83,9 @@ public class SelectBox extends Widget {
     }
 
     @Override
-    public void render(GraphicsContext2D graphics) {
-        Image backgroundImage = getStyle().getBackground();
-        TTFont font = getStyle().getFont();
+    public void render(GraphicsContext2D graphics, WidgetStyle style) {
+        Image backgroundImage = style.getBackground();
+        TTFont font = style.getFont();
 
         graphics.drawImage(backgroundImage, getX(), getY());
 

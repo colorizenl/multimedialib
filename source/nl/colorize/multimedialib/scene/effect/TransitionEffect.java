@@ -1,10 +1,10 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.scene.action;
+package nl.colorize.multimedialib.scene.effect;
 
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
@@ -14,10 +14,13 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GraphicsContext2D;
 import nl.colorize.multimedialib.renderer.MediaLoader;
+import nl.colorize.util.LogHelper;
+import nl.colorize.util.Platform;
 import nl.colorize.util.animation.Timeline;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * Uses a particle wipe effect that can be used for screen transitions. There
@@ -31,10 +34,12 @@ public class TransitionEffect extends Effect {
     private Canvas canvas;
     private Image particleImage;
     private float duration;
+    private ColorRGB fillColor;
 
     private List<List<Particle>> particles;
 
     private static final FilePointer PARTICLE_IMAGE = new FilePointer("transition-effect.png");
+    private static final Logger LOGGER = LogHelper.getLogger(TransitionEffect.class);
 
     private TransitionEffect(boolean reverse, Canvas canvas, Image particleImage, float duration) {
         super(duration);
@@ -50,6 +55,12 @@ public class TransitionEffect extends Effect {
 
     private void generateParticles() {
         particles = new ArrayList<>();
+
+        //TODO
+        if (Platform.isTeaVM()) {
+            LOGGER.warning("Particle effects are disabled on TeaVM due to performance issues");
+            return;
+        }
 
         for (int x = 0; x <= canvas.getWidth(); x += particleImage.getWidth()) {
             List<Particle> column = new ArrayList<>();
@@ -80,6 +91,10 @@ public class TransitionEffect extends Effect {
                 graphics.drawImage(particleImage, position.getX(), position.getY(), transform);
             }
         }
+
+        if (fillColor != null && getTimeline().getDelta() >= 0.8f) {
+            graphics.drawRect(graphics.getCanvas().getBounds(), fillColor);
+        }
     }
 
     private Transform getParticleTransform(Particle particle) {
@@ -95,7 +110,9 @@ public class TransitionEffect extends Effect {
     public static TransitionEffect obscure(Canvas canvas, MediaLoader mediaLoader, ColorRGB color,
             float duration) {
         Image particleImage = mediaLoader.loadImage(PARTICLE_IMAGE).tint(color);
-        return new TransitionEffect(false, canvas, particleImage, duration);
+        TransitionEffect effect = new TransitionEffect(false, canvas, particleImage, duration);
+        effect.fillColor = color;
+        return effect;
     }
 
     public static TransitionEffect obscure(Canvas canvas, Image particleImage, float duration) {

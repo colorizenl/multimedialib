@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -32,10 +32,9 @@ import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.Updatable;
 import nl.colorize.multimedialib.scene.Application;
 import nl.colorize.multimedialib.scene.Scene;
-import nl.colorize.multimedialib.scene.action.ActionManager;
-import nl.colorize.multimedialib.scene.action.Effect;
-import nl.colorize.multimedialib.scene.action.FireEffect;
-import nl.colorize.multimedialib.scene.action.TransitionEffect;
+import nl.colorize.multimedialib.scene.effect.Effect;
+import nl.colorize.multimedialib.scene.effect.FireEffect;
+import nl.colorize.multimedialib.scene.effect.TransitionEffect;
 import nl.colorize.multimedialib.scene.ui.Button;
 import nl.colorize.multimedialib.scene.ui.Location;
 import nl.colorize.multimedialib.scene.ui.SelectBox;
@@ -68,12 +67,13 @@ import java.util.logging.Logger;
 public class Demo2D implements Scene {
 
     private Renderer renderer;
+    private Application app;
 
     private SpriteSheet marioSpriteSheet;
     private TTFont font;
     private List<Mario> marios;
+    private Effect colorizeLogo;
     private Audio audioClip;
-    private ActionManager effectManager;
     private boolean canvasMask;
     private List<Widget> uiWidgets;
 
@@ -100,7 +100,9 @@ public class Demo2D implements Scene {
 
     @Override
     public void start(Application app) {
-        renderer = app.getRenderer();
+        this.renderer = app.getRenderer();
+        this.app = app;
+
         MediaLoader mediaLoader = renderer.getMediaLoader();
 
         initMarioSprites(mediaLoader);
@@ -109,10 +111,9 @@ public class Demo2D implements Scene {
 
         font = mediaLoader.loadDefaultFont(12, ColorRGB.WHITE);
         audioClip = mediaLoader.loadAudio(AUDIO_FILE);
-        effectManager = new ActionManager();
         uiWidgets = Collections.emptyList();
 
-        initEffects(app.getMediaLoader(), app.getCanvas());
+        initEffects();
     }
 
     private void initMarioSprites(MediaLoader mediaLoader) {
@@ -128,35 +129,45 @@ public class Demo2D implements Scene {
         }
     }
 
-    private void initEffects(MediaLoader mediaLoader, Canvas canvas) {
+    private void initEffects() {
         Timeline animationTimeline = new Timeline(Interpolation.LINEAR, true);
         animationTimeline.addKeyFrame(0f, 0f);
         animationTimeline.addKeyFrame(2f, 1f);
         animationTimeline.addKeyFrame(4f, 0f);
 
-        Image colorizeLogo = mediaLoader.loadImage(COLORIZE_LOGO);
-        Effect effect = Effect.forImage(colorizeLogo, animationTimeline);
-        Transform transform = effect.getTransform();
-        effect.modify(value -> effect.setPosition(50, canvas.getHeight() - 50));
-        effect.modify(value -> transform.setScale(80 + Math.round(value * 40f)));
-        effect.modifyFrameUpdate(dt -> transform.addRotation(Math.round(dt * 100f)));
-        effectManager.play(effect);
+        colorizeLogo = Effect.forImage(app.getMediaLoader().loadImage(COLORIZE_LOGO), animationTimeline);
+        Transform transform = colorizeLogo.getTransform();
+        colorizeLogo.modify(value -> colorizeLogo.setPosition(50, app.getCanvas().getHeight() - 50));
+        colorizeLogo.modify(value -> transform.setScale(80 + Math.round(value * 40f)));
+        colorizeLogo.modifyFrameUpdate(dt -> transform.addRotation(Math.round(dt * 100f)));
+        app.attach(colorizeLogo);
 
-        effectManager.play(TransitionEffect.reveal(canvas, mediaLoader, COLORIZE_COLOR, 1.5f));
+        TransitionEffect transition = TransitionEffect.reveal(app.getCanvas(),
+            app.getMediaLoader(), COLORIZE_COLOR, 1.5f);
+        app.attach(transition);
     }
 
     @Override
     public void update(Application app, float deltaTime) {
         InputDevice inputDevice = renderer.getInputDevice();
         handleClick(inputDevice, app.getCanvas());
+        checkLogoClick(inputDevice);
         handleSystemControls(inputDevice, app.getNetwork());
 
         for (Mario mario : marios) {
             mario.update(deltaTime);
         }
 
-        effectManager.update(deltaTime);
         uiWidgets.forEach(widget -> widget.update(deltaTime));
+    }
+
+    private void checkLogoClick(InputDevice input) {
+        Rect area = new Rect(0f, app.getCanvas().getHeight() - 80f, 80f, 80f);
+
+        if (input.isPointerReleased(area)) {
+            Transform transform = colorizeLogo.getTransform();
+            transform.setFlipHorizontal(!transform.isFlipHorizontal());
+        }
     }
 
     private void handleClick(InputDevice inputDevice, Canvas canvas) {
@@ -232,16 +243,16 @@ public class Demo2D implements Scene {
 
         Image widget = mediaLoader.loadImage(UI_WIDGET_FILE);
 
-        Button button = new Button(new WidgetStyle(widget, font), "Click");
+        Button button = new Button(new WidgetStyle(font, widget), "Click");
         button.setLocation(Location.fixed(200, 200));
         button.setClickHandler(input, () -> LOGGER.info("Button clicked"));
 
-        SelectBox select = new SelectBox(new WidgetStyle(widget, font),
+        SelectBox select = new SelectBox(new WidgetStyle(font, widget),
             ImmutableList.of("A", "B", "C"), "A");
         select.setLocation(Location.fixed(200, 240));
         select.setClickHandler(input, item -> LOGGER.info("Selected item " + item));
 
-        TextField textField = new TextField(new WidgetStyle(widget, font), "Enter text:");
+        TextField textField = new TextField(new WidgetStyle(font, widget), "Enter text:");
         textField.setLocation(Location.fixed(200, 280));
         textField.setChangeHandler(input, text -> LOGGER.info("Entered text: " + text));
 
@@ -259,7 +270,7 @@ public class Demo2D implements Scene {
 
             Effect effect = Effect.forTextAlpha(text, font, Align.LEFT, timeline);
             effect.setPosition(position);
-            effectManager.play(effect);
+            app.attach(effect);
         }
     }
 
@@ -278,7 +289,6 @@ public class Demo2D implements Scene {
         hexagon.move(-50f, 200f);
         graphics.drawPolygon(hexagon, COLORIZE_COLOR, 70f);
 
-        effectManager.render(graphics);
         uiWidgets.forEach(widget -> widget.render(graphics));
     }
 
@@ -352,7 +362,7 @@ public class Demo2D implements Scene {
     private void createFireEffect() {
         Canvas canvas = renderer.getCanvas();
         Rect bounds = new Rect(0, canvas.getHeight() / 2f, canvas.getWidth(), canvas.getHeight() / 2f);
-        effectManager.play(new FireEffect(10f, 4, bounds));
+        app.attach(new FireEffect(10f, 4, bounds));
     }
 
     /**

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -23,8 +23,12 @@ public class Vector {
     public static final float EPSILON = Shape.EPSILON;
 
     public Vector(float direction, float magnitude) {
-        this.direction = direction;
-        this.magnitude = magnitude;
+        set(direction, magnitude);
+    }
+
+    public void set(float direction, float magnitude) {
+        setDirection(direction);
+        setMagnitude(magnitude);
     }
 
     public void setDirection(float direction) {
@@ -63,6 +67,23 @@ public class Vector {
         return new Point2D(getX(), getY());
     }
 
+    /**
+     * Changes this vector's direction and magnitude so that {@link #getX()}
+     * and {@link #getY()} will refer to the specified point.
+     */
+    public void setToPoint(Point2D p) {
+        if (p.isOrigin()) {
+            magnitude = 0f;
+        } else {
+            direction = (float) Math.toDegrees(Math.atan2(p.getY(), p.getX()));
+            magnitude = new Point2D(0f, 0f).calculateDistance(p);
+        }
+    }
+
+    public boolean isOrigin() {
+        return magnitude < EPSILON;
+    }
+
     public Vector copy() {
         return new Vector(direction, magnitude);
     }
@@ -85,6 +106,6 @@ public class Vector {
 
     @Override
     public String toString() {
-        return String.format("Vector2D(direction=%.0f, magnitude=%.1f", direction, magnitude);
+        return "[ " + Math.round(direction) + " " + Math.round(magnitude) + " ]";
     }
 }

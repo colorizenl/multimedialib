@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -24,6 +24,7 @@ import nl.colorize.multimedialib.graphics.Image;
 import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Circle;
+import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
@@ -76,6 +77,18 @@ public class GDXGraphics2D implements GraphicsContext2D {
         Canvas canvas = getCanvas();
         Rect background = new Rect(0f, 0f, canvas.getWidth(), canvas.getHeight());
         drawRect(background, backgroundColor, null);
+    }
+
+    @Override
+    public void drawLine(Point2D from, Point2D to, ColorRGB color, float thickness) {
+        float x0 = toScreenX(from.getX());
+        float y0 = toScreenY(from.getY());
+        float x1 = toScreenX(to.getX());
+        float y1 = toScreenY(to.getY());
+
+        switchMode(false, true);
+        shapeBatch.setColor(convertColor(color));
+        shapeBatch.line(x0, y0, x1, y1);
     }
 
     @Override
@@ -135,6 +148,9 @@ public class GDXGraphics2D implements GraphicsContext2D {
         float screenWidth = textureRegion.getRegionWidth() * canvas.getZoomLevel();
         float screenHeight = textureRegion.getRegionHeight() * canvas.getZoomLevel();
 
+        float scaleX = transform.getScaleX() / 100f * (transform.isFlipHorizontal() ? -1f : 1f);
+        float scaleY = transform.getScaleY() / 100f * (transform.isFlipVertical() ? -1f : 1f);
+
         if (transform.getMask() != null) {
             textureRegion = getMask(textureRegion, transform.getMask());
         }
@@ -143,7 +159,7 @@ public class GDXGraphics2D implements GraphicsContext2D {
         spriteBatch.setColor(1f, 1f, 1f, transform.getAlpha() / 100f);
         spriteBatch.draw(textureRegion, screenX - screenWidth / 2f, screenY - screenHeight / 2f,
             screenWidth / 2f, screenHeight / 2f, screenWidth, screenHeight,
-            transform.getScaleX() / 100f, transform.getScaleY() / 100f, transform.getRotation());
+            scaleX, scaleY, transform.getRotation());
     }
 
     private TextureRegion getMask(TextureRegion textureRegion, ColorRGB color) {
@@ -213,6 +229,10 @@ public class GDXGraphics2D implements GraphicsContext2D {
     private Color convertColor(ColorRGB color, AlphaTransform alpha) {
         float alphaValue = alpha != null ? alpha.getAlpha() : 100f;
         return convertColor(color, alphaValue);
+    }
+
+    private Color convertColor(ColorRGB color) {
+        return convertColor(color, 100f);
     }
 
     /**

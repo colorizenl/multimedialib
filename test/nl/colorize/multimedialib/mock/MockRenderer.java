@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -14,6 +14,7 @@ import nl.colorize.multimedialib.graphics.PolygonMesh;
 import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Circle;
+import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.ApplicationData;
@@ -78,6 +79,10 @@ public class MockRenderer implements Renderer, GraphicsContext2D, MediaLoader, N
 
     @Override
     public void drawBackground(ColorRGB backgroundColor) {
+    }
+
+    @Override
+    public void drawLine(Point2D from, Point2D to, ColorRGB color, float thickness) {
     }
 
     @Override

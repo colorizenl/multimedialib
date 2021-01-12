@@ -1,11 +1,12 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
+import com.google.common.base.Splitter;
 import nl.colorize.multimedialib.graphics.Align;
 import nl.colorize.multimedialib.graphics.AlphaTransform;
 import nl.colorize.multimedialib.graphics.ColorRGB;
@@ -14,8 +15,11 @@ import nl.colorize.multimedialib.graphics.Sprite;
 import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Circle;
+import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
+
+import java.util.List;
 
 /**
  * Provides access to the renderer's 2D drawing operations. The renderer only
@@ -41,6 +45,18 @@ public interface GraphicsContext2D {
     }
 
     public void drawBackground(ColorRGB backgroundColor);
+
+    /**
+     * Draws a line between the specified two points.
+     *
+     * @deprecated Drawing lines is not supported by all renderers. Moreover,
+     *             some renderers do support drawing lines, but the operation
+     *             is not hardware-accelerated, meaning the performance behavior
+     *             cannot be guaranteed. Therefore, only use this method for
+     *             testing and debugging purposes.
+     */
+    @Deprecated
+    public void drawLine(Point2D from, Point2D to, ColorRGB color, float thickness);
 
     public void drawRect(Rect rect, ColorRGB color, AlphaTransform alpha);
 
@@ -103,5 +119,21 @@ public interface GraphicsContext2D {
 
     default void drawText(String text, TTFont font, float x, float y) {
         drawText(text, font, x, y, Align.LEFT, null);
+    }
+
+    /**
+     * Draws a text block that spans multiple lines, based on the occurrence of
+     * line breaks ({@code \n}) in the text. The line height is based on
+     * {@link TTFont#getLineHeight()}. This method is provided separately from
+     * the "normal" {@code drawText} because many platforms do not support
+     * multi-line text natively.
+     */
+    default void drawMultiLineText(String text, TTFont font, float x, float y, Align align) {
+        Splitter lineSplitter = Splitter.on("\n").trimResults();
+        List<String> lines = lineSplitter.splitToList(text);
+
+        for (int i = 0; i < lines.size(); i++) {
+            drawText(lines.get(i), font, x, y + i * font.getLineHeight(), align);
+        }
     }
 }

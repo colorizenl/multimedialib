@@ -2,7 +2,7 @@ apply plugin: "java-library"
 apply plugin: "jacoco"
 
 group = "nl.colorize"
-version = "2020.4"
+version = "2021.1"
 sourceCompatibility = "11"
 targetCompatibility = "11"
 compileJava.options.encoding = "UTF-8"
@@ -18,22 +18,31 @@ repositories {
 }
 
 dependencies {
-    api "nl.colorize:colorize-java-commons:2020.1.13"
+    api "nl.colorize:colorize-java-commons:2021.1.2"
     api "args4j:args4j:2.33"
-    implementation "com.badlogicgames.gdx:gdx:1.9.11"
-    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:1.9.11"
-    implementation "com.badlogicgames.gdx:gdx-platform:1.9.11:natives-desktop"
-    implementation "com.badlogicgames.gdx:gdx-freetype:1.9.11"
-    implementation "com.badlogicgames.gdx:gdx-freetype-platform:1.9.11:natives-desktop"
+    
+    implementation "javazoom:jlayer:1.0.1"
+    implementation "org.java-websocket:Java-WebSocket:1.5.1"
+    implementation "org.slf4j:slf4j-jdk14:1.7.30"
+
+    implementation "com.badlogicgames.gdx:gdx:1.9.13"
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:1.9.13"
+    implementation "com.badlogicgames.gdx:gdx-platform:1.9.13:natives-desktop"
+    implementation "com.badlogicgames.gdx:gdx-freetype:1.9.13"
+    implementation "com.badlogicgames.gdx:gdx-freetype-platform:1.9.13:natives-desktop"
+
     implementation "org.teavm:teavm:0.7.0-dev-988"
     implementation "org.teavm:teavm-jso:0.7.0-dev-988"
     implementation "org.teavm:teavm-jso-apis:0.7.0-dev-988"
     implementation "org.teavm:teavm-classlib:0.7.0-dev-988"
     implementation "org.teavm:teavm-tooling:0.7.0-dev-988"
-    implementation "javazoom:jlayer:1.0.1"
-    implementation "org.java-websocket:Java-WebSocket:1.5.1"
-    implementation "org.slf4j:slf4j-jdk14:1.7.30"
+
     testImplementation "org.junit.jupiter:junit-jupiter:5.6.2"
+}
+
+// Needed for compatibility with RoboVM.
+compileJava {
+    options.compilerArgs << "-XDstringConcat=inline"
 }
 
 test {

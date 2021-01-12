@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -28,6 +28,16 @@ class Html5CanvasRenderer {
     }
 
     onLoadImage(id, imageElement) {
+    }
+
+    drawLine(x0, y0, x1, y1, color, thickness) {
+        this.context.globalAlpha = 1.0;
+        this.context.fillStyle = color;
+        this.context.lineWidth = thickness || 1.0;
+        this.context.beginPath();
+        this.context.moveTo(0, 0);
+        this.context.lineTo(300, 150);
+        this.context.stroke();
     }
 
     drawRect(x, y, width, height, color, alpha) {

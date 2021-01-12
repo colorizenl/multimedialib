@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -33,7 +33,7 @@ public class Form extends Widget {
     private float labelOffset;
 
     public Form(Location location, WidgetStyle labelStyle, InputDevice input) {
-        super(null);
+        super(labelStyle);
         setLocation(location);
 
         this.widgets = new ArrayList<>();
@@ -57,6 +57,10 @@ public class Form extends Widget {
 
     public void add(TextLabel label) {
         addWidget("", label);
+    }
+
+    public void add(Widget widget) {
+        addWidget("", widget);
     }
 
     public Button add(String label, Button button, Runnable onClick) {
@@ -154,7 +158,7 @@ public class Form extends Widget {
     }
 
     @Override
-    public void render(GraphicsContext2D graphics) {
+    public void render(GraphicsContext2D graphics, WidgetStyle style) {
         for (WidgetInfo widgetInfo : widgets) {
             if (widgetInfo.visible) {
                 if (widgetInfo.label != null) {

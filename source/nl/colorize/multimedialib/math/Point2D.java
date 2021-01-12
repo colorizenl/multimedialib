@@ -1,16 +1,15 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.math;
 
-import java.util.Objects;
-
 import com.google.common.base.Preconditions;
-
 import nl.colorize.util.animation.Interpolation;
+
+import java.util.Objects;
 
 /**
  * Point with X and Y coordinates, defined with float precision.
@@ -61,21 +60,17 @@ public class Point2D {
         move(deltaX, deltaY);
     }
 
-    public void add(float delta) {
-        add(delta, delta);
-    }
-
     public void add(Point2D p) {
         add(p.getX(), p.getY());
+    }
+
+    public void add(Vector vector) {
+        add(vector.getX(), vector.getY());
     }
 
     public void multiply(float deltaX, float deltaY) {
         x *= deltaX;
         y *= deltaY;
-    }
-
-    public void multiply(float delta) {
-        multiply(delta, delta);
     }
 
     /**

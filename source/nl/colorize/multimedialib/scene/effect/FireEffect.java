@@ -1,10 +1,10 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.scene.action;
+package nl.colorize.multimedialib.scene.effect;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;

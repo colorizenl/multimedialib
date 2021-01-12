@@ -1,16 +1,16 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.tool;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import nl.colorize.util.FileUtils;
 import nl.colorize.util.LogHelper;
-import nl.colorize.util.Relation;
 import nl.colorize.util.Tuple;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.Option;
@@ -154,17 +154,18 @@ public class CopyrightUpdateTool extends CommandLineTool {
         return "// " + license;
     }
 
-    private Relation<String, String> calculateDiff(List<String> first, List<String> second) {
-        if (first.size() != second.size()) {
-            throw new IllegalArgumentException("File should have the same length before/after");
-        }
+    private List<Tuple<String, String>> calculateDiff(List<String> first, List<String> second) {
+        Preconditions.checkArgument(first.size() == second.size(),
+            "File should have the same length before/after");
 
-        Relation<String, String> diff = Relation.of();
+        List<Tuple<String, String>> diff = new ArrayList<>();
+
         for (int i = 0; i < first.size(); i++) {
             if (!first.get(i).equals(second.get(i))) {
                 diff.add(Tuple.of(first.get(i), second.get(i)));
             }
         }
+
         return diff;
     }
 }

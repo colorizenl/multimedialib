@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -17,16 +17,26 @@ public class RotatingBuffer {
     private float[] values;
     private int index;
     private int filled;
+    private float outlierThreshold;
 
-    public RotatingBuffer(int capacity) {
+    public RotatingBuffer(int capacity, float outlierThreshold) {
         Preconditions.checkArgument(capacity >= 1, "Invalid capacity: " + capacity);
 
         this.values = new float[capacity];
         this.index = 0;
         this.filled = 0;
+        this.outlierThreshold = outlierThreshold;
+    }
+
+    public RotatingBuffer(int capacity) {
+        this(capacity, Float.MAX_VALUE);
     }
 
     public void add(float value) {
+        if (value >= outlierThreshold) {
+            return;
+        }
+
         values[index] = value;
 
         index++;

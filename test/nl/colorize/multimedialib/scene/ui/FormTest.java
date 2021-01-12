@@ -1,12 +1,11 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.scene.ui;
 
-import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.mock.MockImage;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FormTest {
 
-    private static final WidgetStyle STYLE = new WidgetStyle(null, (TTFont) null);
+    private static final WidgetStyle STYLE = new WidgetStyle(null);
 
     @Test
     public void testAddLabel() {
@@ -84,7 +83,7 @@ public class FormTest {
     @Test
     public void testOffsetForWidth() {
         Form form = new Form(Location.fixed(100, 100), STYLE, null);
-        form.add("First", new Button(new WidgetStyle(new MockImage(100, 100), (TTFont) null)), null);
+        form.add("First", new Button(new WidgetStyle(null, new MockImage(100, 100))), null);
 
         assertEquals(2, form.getWidgets().size());
         assertEquals("LEFT 95, TOP 100", form.getWidgets().get(0).getLocation().toString());

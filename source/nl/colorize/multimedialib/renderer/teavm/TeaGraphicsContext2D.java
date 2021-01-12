@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2020 Colorize
+// Copyright 2009-2021 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -13,6 +13,7 @@ import nl.colorize.multimedialib.graphics.Image;
 import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Circle;
+import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
@@ -35,6 +36,16 @@ public class TeaGraphicsContext2D implements GraphicsContext2D {
     @Override
     public void drawBackground(ColorRGB backgroundColor) {
         drawRect(new Rect(0, 0, canvas.getWidth(), canvas.getHeight()), backgroundColor, null);
+    }
+
+    @Override
+    public void drawLine(Point2D from, Point2D to, ColorRGB color, float thickness) {
+        float x0 = canvas.toScreenX(from.getX());
+        float y0 = canvas.toScreenY(from.getY());
+        float x1 = canvas.toScreenX(to.getX());
+        float y1 = canvas.toScreenY(to.getY());
+
+        Browser.drawLine(x0, y1, x1, y1, color.toHex(), thickness);
     }
 
     @Override
@@ -87,10 +98,13 @@ public class TeaGraphicsContext2D implements GraphicsContext2D {
         float width = region.getWidth() * canvas.getZoomLevel();
         float height = region.getHeight() * canvas.getZoomLevel();
 
+        float scaleX = transform.getScaleX() / 100f * (transform.isFlipHorizontal() ? -1f : 1f);
+        float scaleY = transform.getScaleY() / 100f * (transform.isFlipVertical() ? -1f : 1f);
+
         Browser.drawImageRegion(pointer.getId(), region.getX(), region.getY(),
             region.getWidth(), region.getHeight(), canvasX, canvasY, width, height,
-            transform.getRotationInRadians(), transform.getScaleX() / 100f,
-            transform.getScaleY() / 100f, transform.getAlpha() / 100f, getMask(transform));
+            transform.getRotationInRadians(), scaleX, scaleY,
+            transform.getAlpha() / 100f, getMask(transform));
     }
 
     @Override
