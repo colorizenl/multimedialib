@@ -22,6 +22,7 @@ import nl.colorize.multimedialib.renderer.RenderCallback;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.Stage;
 import nl.colorize.multimedialib.scene.effect.Effect;
+import nl.colorize.util.Platform;
 import nl.colorize.util.PlatformFamily;
 import nl.colorize.util.Stopwatch;
 import nl.colorize.util.animation.Interpolation;
@@ -334,9 +335,31 @@ public final class Application implements RenderCallback {
     }
 
     /**
+     * Returns true if the current platform allows the application to quit. If true,
+     * actually quitting the application can be done using {@link #quit()}. This will
+     * return false on platforms like browsers that do not allow applications to
+     * control the platform itself.
+     */
+    public boolean canQuit() {
+        return Platform.isWindows() || Platform.isMac();
+    }
+
+    /**
+     * Quits the application. This will only work if the current platform allows the
+     * application to quit, i.e. {@link #canQuit()} returns true. If not, this method
+     * does nothing.
+     */
+    public void quit() {
+        if (canQuit()) {
+            System.exit(0);
+        }
+    }
+
+    /**
      * Creates an application and starts it by attaching it to the specified renderer.
      * Note that the application initially starts without an active scene, the initial
      * scene can be played by calling {@link #changeScene(Scene)}.
+     *
      * @deprecated Use {@link #start(Renderer, Scene)} instead.
      */
     @Deprecated

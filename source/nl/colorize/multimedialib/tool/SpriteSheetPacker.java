@@ -213,11 +213,11 @@ public class SpriteSheetPacker extends CommandLineTool {
 
         List<CSVRecord> records = regions.stream()
             .map(region -> getFields(spriteSheet, region))
-            .map(fields -> CSVRecord.create(fields, ";"))
+            .map(fields -> CSVRecord.create(fields))
             .collect(Collectors.toList());
 
         try (PrintWriter writer = new PrintWriter(outputDataFile, Charsets.UTF_8.displayName())) {
-            writer.write(CSVRecord.toCSV(records, headers));
+            writer.write(CSVRecord.toCSV(records, headers, ";"));
         }
     }
 

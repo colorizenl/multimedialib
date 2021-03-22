@@ -13,7 +13,8 @@ const LIGHT_COLOR = 0xc8c8c8;
 /**
  * Renderer that uses three.js to render 3D graphics. This requires WebGL
  * support, and this renderer is therefore only supported on browsers that
- * support WebGL.
+ * support WebGL. 2D graphics are drawn using a HTML canvas that is drawn
+ * on top of the WebGL content.
  */
 class ThreejsRenderer {
 
@@ -25,6 +26,10 @@ class ThreejsRenderer {
         this.animations = {};
 
         this.initRenderer(container);
+    }
+    
+    getName() {
+        return "Three.js renderer";
     }
     
     initRenderer(container) {
@@ -111,11 +116,26 @@ class ThreejsRenderer {
     }
 
     loadModel(meshId, path, callback) {
-        let loader = new THREE.FBXLoader();
-        loader.load(path, result => this.onModelLoad(meshId, result, callback));
+        let loader = new THREE.GLTFLoader();
+
+        if (path.endsWith(".fbx")) {
+            loader.load(path, result => this.onLoadFBX(meshId, result, callback));
+        } else {
+            loader.load(path, result => this.onLoadGLTF(meshId, result, callback));
+        }
     }
 
-    onModelLoad(meshId, result, callback) {
+    onLoadGLTF(meshId, result, callback) {
+        if (result.scene.children.length != 1) {
+            throw "GLTF file contains " + result.scene.children.length + " models";
+        }
+
+        let model = result.scene.children[0];
+        this.registerMeshData(meshId, model.geometry, model.material, model.animations);
+        this.registerAnimations(model, callback);
+    }
+
+    onLoadFBX(meshId, result, callback) {
         let meshes = result.children.filter(child => child.type == "Mesh");
 
         if (meshes.length != 1) {
@@ -203,6 +223,10 @@ class ThreejsRenderer {
     }
 
     getTexture(path) {
+        if (!path.startsWith("resources/")) {
+            path = "resources/" + path;
+        }
+
         if (this.textures[path]) {
             return this.textures[path];
         } else {
@@ -214,14 +238,13 @@ class ThreejsRenderer {
     }
 
     parseColor(hexColor) {
-        if (hexColor.length != 7) {
+        if (hexColor.length != 7 || !hexColor.startsWith("#")) {
             throw "Invalid hex color string: " + hexColor;
         }
         return parseInt("0x" + hexColor.substring(1));
     }
 
-    // 2D graphics are delegated to another renderer that will use the HTML5
-    // canvas drawing API, which is then drawn on top of the WebGL canvas.
+    // 2D graphics are delegated to Html5CanvasRenderer.
 
     drawRect(x, y, width, height, color, alpha) {
         this.delegate2D.drawRect(x, y, width, height, color, alpha);
@@ -247,9 +270,5 @@ class ThreejsRenderer {
 
     drawText(text, font, size, color, bold, x, y, align, alpha) {
         this.delegate2D.drawText(text, font, size, color, bold, x, y, align, alpha);
-    }
-    
-    getName() {
-        return "Three.js renderer";
     }
 }

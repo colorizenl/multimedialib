@@ -1,8 +1,19 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "com.craigburke.gradle:client-dependencies:1.4.1"
+    }
+}
+
 apply plugin: "java-library"
 apply plugin: "jacoco"
+apply plugin: "com.craigburke.client-dependencies"
 
 group = "nl.colorize"
-version = "2021.1"
+version = "2021.3"
 sourceCompatibility = "11"
 targetCompatibility = "11"
 compileJava.options.encoding = "UTF-8"
@@ -15,21 +26,25 @@ repositories {
     maven {
         url "https://dl.bintray.com/konsoletyper/teavm"
     }
+    maven {
+        url "https://jitpack.io"
+    }
 }
 
 dependencies {
-    api "nl.colorize:colorize-java-commons:2021.1.2"
+    api "nl.colorize:colorize-java-commons:2021.4"
     api "args4j:args4j:2.33"
     
     implementation "javazoom:jlayer:1.0.1"
     implementation "org.java-websocket:Java-WebSocket:1.5.1"
     implementation "org.slf4j:slf4j-jdk14:1.7.30"
+    implementation "com.github.mgsx-dev.gdx-gltf:gltf:1.0.0"
 
-    implementation "com.badlogicgames.gdx:gdx:1.9.13"
-    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:1.9.13"
-    implementation "com.badlogicgames.gdx:gdx-platform:1.9.13:natives-desktop"
-    implementation "com.badlogicgames.gdx:gdx-freetype:1.9.13"
-    implementation "com.badlogicgames.gdx:gdx-freetype-platform:1.9.13:natives-desktop"
+    implementation "com.badlogicgames.gdx:gdx:1.9.14"
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:1.9.14"
+    implementation "com.badlogicgames.gdx:gdx-platform:1.9.14:natives-desktop"
+    implementation "com.badlogicgames.gdx:gdx-freetype:1.9.14"
+    implementation "com.badlogicgames.gdx:gdx-freetype-platform:1.9.14:natives-desktop"
 
     implementation "org.teavm:teavm:0.7.0-dev-988"
     implementation "org.teavm:teavm-jso:0.7.0-dev-988"
@@ -40,9 +55,14 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter:5.6.2"
 }
 
-// Needed for compatibility with RoboVM.
-compileJava {
-    options.compilerArgs << "-XDstringConcat=inline"
+clientDependencies {
+    npm {
+        "peerjs"("1.3.2")
+        "three"("0.126.1")
+    }
+    
+    installDir = "resources/browser/lib"
+    copyExcludes = ["**/*.map", "source/**"]
 }
 
 test {
@@ -88,3 +108,5 @@ task generateCordovaDemoApplication2D(type: JavaExec, dependsOn: transpileDemoAp
          "-version", "${version}", "-icon", "resources/icon.png", "-dist", "debug",
          "-buildjson", System.getProperty("user.home") + "/Developer/cordova/build-multimedialib.json"
 }
+
+processResources.dependsOn clientInstall

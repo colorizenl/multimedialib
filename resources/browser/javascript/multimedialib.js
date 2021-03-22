@@ -9,6 +9,10 @@ let overlayCanvas = null;
 let renderer = null;
 let lastFrameTime = null;
 
+let httpConnection = null;
+let webSocketConnection = null;
+let peerConnection = null;
+
 let imageContainer = null;
 let images = {};
 let imageDataCache = {};
@@ -31,6 +35,7 @@ document.addEventListener("DOMContentLoaded", event => {
 
     let container = document.getElementById("multimediaLibContainer");
     initCanvas(container);
+    initNetwork();
     main();
 });
 
@@ -50,6 +55,12 @@ function initCanvas(container) {
 
     console.log("Starting renderer " + renderer.getName());
     document.getElementById("loading").style.display = "none";
+}
+
+function initNetwork() {
+    httpConnection = new HttpConnection();
+    webSocketConnection = new WebSocketConnection();
+    peerConnection = new PeerConnection();
 }
 
 function initEventHandlers(container) {

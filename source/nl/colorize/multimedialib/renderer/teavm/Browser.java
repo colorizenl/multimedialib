@@ -190,13 +190,13 @@ public class Browser {
 
     @JSBody(
         params = {"url", "headers", "callback"},
-        script = "sendGetRequest(url, headers, callback);"
+        script = "httpConnection.sendGetRequest(url, headers, callback);"
     )
     public static native void sendGetRequest(String url, String[] headers, AjaxCallback callback);
 
     @JSBody(
         params = {"url", "headers", "params", "callback"},
-        script = "sendPostRequest(url, headers, params, callback);"
+        script = "httpConnection.sendPostRequest(url, headers, params, callback);"
     )
     public static native void sendPostRequest(String url, String[] headers, String params,
                                               AjaxCallback callback);
@@ -206,32 +206,32 @@ public class Browser {
 
     @JSBody(
         params = {"uri", "callback"},
-        script = "connectWebSocket(uri, callback);"
+        script = "webSocketConnection.connectWebSocket(uri, callback);"
     )
     public static native void connectWebSocket(String uri, ConnectionCallback callback);
 
     @JSBody(
         params = {"message"},
-        script = "sendWebSocket(message);"
+        script = "webSocketConnection.sendWebSocket(message);"
     )
     public static native void sendWebSocket(String message);
 
-    @JSBody(script = "closeWebSocket();")
+    @JSBody(script = "webSocketConnection.closeWebSocket();")
     public static native void closeWebSocket();
 
     @JSBody(
         params = {"id", "receiveCallback"},
-        script = "openPeerConnection(id, receiveCallback);"
+        script = "peerConnection.openPeerConnection(id, receiveCallback);"
     )
     public static native void openPeerConnection(String id, ConnectionCallback receiveCallback);
 
     @JSBody(
         params = {"message"},
-        script = "sendPeerMessage(message);"
+        script = "peerConnection.sendPeerMessage(message);"
     )
     public static native void sendPeerMessage(String message);
 
-    @JSBody(script = "closePeerConnection();")
+    @JSBody(script = "peerConnection.closePeerConnection();")
     public static native void closePeerConnection();
 
 

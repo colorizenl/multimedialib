@@ -40,6 +40,7 @@ public class Sprite implements Updatable {
 
     /**
      * Adds a new animation state to this sprite.
+     *
      * @throws IllegalArgumentException if a state with the same name has
      *         already been registered with this sprite.
      */
@@ -51,6 +52,7 @@ public class Sprite implements Updatable {
     /**
      * Shorthand that adds a new state to this sprite that consists of a single
      * static image.
+     *
      * @throws IllegalArgumentException if a state with the same name has
      *         already been registered with this sprite.
      */

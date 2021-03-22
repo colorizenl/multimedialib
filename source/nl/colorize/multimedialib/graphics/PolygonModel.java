@@ -9,7 +9,9 @@ package nl.colorize.multimedialib.graphics;
 import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.math.Point3D;
 
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * An instance of a polygon mesh that can added to the stage and displayed.
@@ -57,6 +59,12 @@ public final class PolygonModel {
 
     public AnimationInfo getAnimation(String name) {
         return mesh.getAnimation(name);
+    }
+
+    public Set<String> getAnimations() {
+        return mesh.getAnimations().stream()
+            .map(AnimationInfo::getName)
+            .collect(Collectors.toSet());
     }
 
     public void setPosition(Point3D p) {

@@ -43,7 +43,7 @@ public class Demo3D implements Scene {
     public static final int CANVAS_WIDTH = 800;
     public static final int CANVAS_HEIGHT = 600;
 
-    private static final FilePointer MODEL_FILE = new FilePointer("model.fbx");
+    private static final FilePointer MODEL_FILE = new FilePointer("colorize-logo.gltf");
     private static final FilePointer LOGO_FILE = new FilePointer("colorize-logo.png");
     private static final float AREA_SIZE = 50f;
     private static final float MAX_WALK_SPEED = 0.1f;
@@ -142,7 +142,10 @@ public class Demo3D implements Scene {
             if (!areaBounds.contains(position.getX(), position.getZ())) {
                 Point2D walk = new Point2D(-walkVectors.get(i).getX(), -walkVectors.get(i).getY());
                 walkVectors.set(i, walk);
-                stage.playAnimation(model, model.getAnimation("Cube|Spin"), false);
+
+                if (model.getAnimations().contains("Cube|Spin")) {
+                    stage.playAnimation(model, model.getAnimation("Cube|Spin"), false);
+                }
             }
         }
     }

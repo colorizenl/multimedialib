@@ -27,13 +27,13 @@ to the dependencies section in `pom.xml`:
     <dependency>
         <groupId>nl.colorize</groupId>
         <artifactId>multimedialib</artifactId>
-        <version>2021.1</version>
+        <version>2021.3</version>
     </dependency>  
     
 The library can also be used in Gradle projects:
 
     dependencies {
-        compile "nl.colorize:multimedialib:2021.1"
+        compile "nl.colorize:multimedialib:2021.3"
     }
     
 Supported platforms
@@ -62,6 +62,8 @@ The following table shows an overview of the available renderer implementations:
 When using the TeaVM renderer, the application needs to be transpiled to JavaScript in order for
 it to run in the browser. MultimediaLib includes a command line tool for integrating this step
 into the build, refer to the section *Transpiling applications to HTML/JavaScript* below.
+
+### Additional instructions for building native iOS apps using RoboVM
 
 When using the libGDX renderer in combination with RoboVM, applications will need to add the
 following additional Maven or Gradle dependencies:
@@ -196,11 +198,16 @@ Creating an application icon
 MultimediaLib includes a command line tool for creating ICNS icons that can be used for Mac and/or
 iOS applications. The entry point for this tool is `nl.colorize.multimedialib.tool.AppleIconTool`.
 
-System requirements
--------------------
+Documentation
+-------------
 
-The library is cross-platform and supports Windows, macOS, and Linux, but requires the following 
-software to be available:
+- [JavaDoc](http://api.clrz.nl/multimedialib/)
+
+Build instructions
+------------------
+
+Building the library can be done on any platform. The following is mandatory for building the
+library itself:
 
 - [Java JDK](http://java.oracle.com) 11+
 - [Gradle](http://gradle.org)
@@ -208,12 +215,10 @@ software to be available:
 Note that creating application that *use* MultimediaLib will usually have additional dependencies,
 depending on which platforms are targeted.
 
+- [NodeJS](https://nodejs.org/en/) 14+
 - [Cordova](https://cordova.apache.org) 
 - [Xcode](https://developer.apple.com/xcode/) (for iOS apps)
 - [Android SDK](https://developer.android.com/sdk/index.html) (for Android apps)
-
-Build instructions
-------------------
 
 The following Gradle build tasks are available:
 

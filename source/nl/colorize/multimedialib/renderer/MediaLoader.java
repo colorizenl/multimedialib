@@ -105,8 +105,10 @@ public interface MediaLoader {
     }
 
     /**
-     * Loads a polygon mesh from the specified file. Only the FBX file format is
-     * supported by all renderer implementations.
+     * Loads a polygon mesh from the specified file. Only the GLTF format is
+     * guaranteed to be supported, other file formats are only supported by
+     * specific renderers.
+     *
      * @throws MediaException if the mesh cannot be loaded.
      */
     public PolygonMesh loadMesh(FilePointer file);

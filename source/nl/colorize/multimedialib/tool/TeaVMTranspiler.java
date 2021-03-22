@@ -31,7 +31,6 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -65,40 +64,40 @@ public class TeaVMTranspiler extends CommandLineTool {
     private static final List<ResourceFile> WEB_RESOURCE_FILES = ImmutableList.of(
         new ResourceFile("browser/index.html"),
         new ResourceFile("browser/multimedialib.css"),
-        new ResourceFile("browser/multimedialib.js"),
-        new ResourceFile("browser/canvas-renderer.js"),
-        new ResourceFile("browser/webgl2d-renderer.js"),
-        new ResourceFile("browser/threejs-renderer.js"),
-        new ResourceFile("browser/network.js"),
-        new ResourceFile("browser/favicon.png"),
-        new ResourceFile("browser/apple-icon.png"),
-        new ResourceFile("browser/orientation-lock.png"),
-        new ResourceFile("browser/loading.gif"),
-        new ResourceFile("browser/OpenSans-Regular.ttf"),
-        new ResourceFile("browser/lib/peerjs-1.2.0.min.js"),
+        new ResourceFile("browser/javascript/multimedialib.js"),
+        new ResourceFile("browser/javascript/canvas-renderer.js"),
+        new ResourceFile("browser/javascript/webgl2d-renderer.js"),
+        new ResourceFile("browser/javascript/threejs-renderer.js"),
+        new ResourceFile("browser/javascript/network.js"),
+        new ResourceFile("browser/assets/favicon.png"),
+        new ResourceFile("browser/assets/apple-icon.png"),
+        new ResourceFile("browser/assets/orientation-lock.png"),
+        new ResourceFile("browser/assets/loading.gif"),
+        new ResourceFile("browser/assets/OpenSans-Regular.ttf"),
         new ResourceFile("colorize-logo.png"),
         new ResourceFile("orientation-lock.png"),
         new ResourceFile("ui-widget-background.png"),
         new ResourceFile("transition-effect.png"),
-        new ResourceFile("browser/lib/three.js"),
-        new ResourceFile("browser/lib/FBXLoader.js"),
-        new ResourceFile("browser/lib/inflate.min.js")
+
+        // JavaScript libraries (downloaded during Gradle build)
+        new ResourceFile("browser/lib/three/build/three.min.js"),
+        new ResourceFile("browser/lib/three/examples/js/loaders/GLTFLoader.js"),
+        new ResourceFile("browser/lib/peerjs/peerjs.min.js")
     );
 
-    private static final List<ResourceFile> WEB_RESOURCE_FILES_3D = ImmutableList.of(
-        new ResourceFile("browser/lib/three.js"),
-        new ResourceFile("browser/lib/FBXLoader.js"),
-        new ResourceFile("browser/lib/inflate.min.js")
-    );
-    
     private static final List<String> TEXT_FILE_TYPES = ImmutableList.of(
         ".txt", ".md", ".json", ".yml", ".yaml", ".properties", ".fnt", ".csv", "-manifest");
 
     private static final List<String> RESOURCE_FILE_TYPES = ImmutableList.of(
-        ".png", ".jpg", ".svg", ".gif", ".ttf", ".wav", ".mp3", ".ogg");
+        ".png", ".jpg", ".svg", ".gif", ".ttf", ".wav", ".mp3", ".ogg", ".gltf");
+        
+    private static final List<String> KNOWN_MISSING_CLASSES = ImmutableList.of(
+        "[java.lang.System.exit(I)V]",
+        "[java.lang.reflect.TypeVariable]",
+        "[java.lang.Class.getGenericSuperclass()Ljava/lang/reflect/Type;]"
+    );
 
     private static final List<String> SUPPORTED_RENDERS = ImmutableList.of("canvas", "webgl", "three");
-    private static final List<String> KNOWN_MISSING_CLASSES = Collections.emptyList();
     private static final Logger LOGGER = LogHelper.getLogger(TeaVMTranspiler.class);
 
     public static void main(String[] args) {
@@ -240,7 +239,7 @@ public class TeaVMTranspiler extends CommandLineTool {
         try (InputStream stream = file.openStream()) {
             byte[] contents = LoadUtils.readToByteArray(stream);
 
-            if (WEB_RESOURCE_FILES_3D.contains(file) && !renderer.equals("three")) {
+            if (file.getName().contains("three") && !renderer.equals("three")) {
                 FileUtils.write("", Charsets.UTF_8, outputFile);
             } else {
                 FileUtils.write(contents, outputFile);
@@ -255,6 +254,7 @@ public class TeaVMTranspiler extends CommandLineTool {
             return Files.walk(resourceDir.toPath())
                 .map(path -> path.toFile())
                 .filter(file -> !file.isDirectory() && !file.getName().startsWith("."))
+                .filter(file -> !file.getAbsolutePath().contains("/lib/"))
                 .map(file -> new ResourceFile(file))
                 .collect(Collectors.toList());
         } catch (IOException e) {

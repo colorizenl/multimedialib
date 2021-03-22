@@ -20,6 +20,8 @@ import com.badlogic.gdx.graphics.g3d.model.Animation;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.UBJsonReader;
 import com.google.common.base.Preconditions;
+import net.mgsx.gltf.loaders.gltf.GLTFLoader;
+import net.mgsx.gltf.scene3d.scene.SceneAsset;
 import nl.colorize.multimedialib.graphics.AnimationInfo;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
@@ -27,6 +29,7 @@ import nl.colorize.multimedialib.graphics.PolygonMesh;
 import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
+import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.java2d.MP3;
 import nl.colorize.util.LogHelper;
@@ -49,7 +52,6 @@ import java.util.logging.Logger;
  */
 public class GDXMediaLoader implements MediaLoader, Disposable {
 
-    private G3dModelLoader modelLoader;
     private List<Disposable> loaded;
     private Map<PolygonMesh, Model> models;
     private Map<TTFont, BitmapFont> fonts;
@@ -60,7 +62,6 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
     private static final Logger LOGGER = LogHelper.getLogger(GDXMediaLoader.class);
 
     public GDXMediaLoader() {
-        this.modelLoader = new G3dModelLoader(new UBJsonReader(), new InternalFileHandleResolver());
         this.loaded = new ArrayList<>();
         this.models = new HashMap<>();
         this.fonts = new HashMap<>();
@@ -141,13 +142,13 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
 
     @Override
     public PolygonMesh loadMesh(FilePointer file) {
-        Preconditions.checkArgument(file.getPath().endsWith(".fbx"),
-            "Only .fbx files are sypported, they will be converted to .g3db during loading");
+        Model model = loadMesh(getFileHandle(file));
+        List<AnimationInfo> animations = new ArrayList<>();
 
-        String path = file.getPath().substring(0, file.getPath().length() - 4) + ".g3db";
+        for (Animation anim : model.animations) {
+            animations.add(new AnimationInfo(anim.id, anim.duration));
+        }
 
-        Model model = modelLoader.loadModel(getFileHandle(path));
-        List<AnimationInfo> animations = parseModelAnimations(model);
         PolygonMesh mesh = new PolygonMesh(file.getPath(), animations);
 
         loaded.add(model);
@@ -156,12 +157,18 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
         return mesh;
     }
 
-    private List<AnimationInfo> parseModelAnimations(Model model) {
-        List<AnimationInfo> animations = new ArrayList<>();
-        for (Animation anim : model.animations) {
-            animations.add(new AnimationInfo(anim.id, anim.duration));
+    private Model loadMesh(FileHandle file) {
+        if (file.toString().endsWith(".g3db")) {
+            G3dModelLoader g3dLoader = new G3dModelLoader(new UBJsonReader(),
+                new InternalFileHandleResolver());
+            return g3dLoader.loadModel(file);
+        } else if (file.toString().endsWith(".gltf")) {
+            GLTFLoader gltfLoader = new GLTFLoader();
+            SceneAsset sceneAsset = gltfLoader.load(file, true);
+            return sceneAsset.scene.model;
+        } else {
+            throw new MediaException("Unsupported model file format: " + file);
         }
-        return animations;
     }
 
     protected PolygonMesh registerMesh(String name, Model modelData) {
