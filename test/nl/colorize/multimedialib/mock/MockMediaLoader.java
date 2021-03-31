@@ -8,11 +8,13 @@ package nl.colorize.multimedialib.mock;
 
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.graphics.PolygonMesh;
+import nl.colorize.multimedialib.graphics.PolygonModel;
 import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
+import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaLoader;
+import nl.colorize.util.ApplicationData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,13 +50,28 @@ public class MockMediaLoader implements MediaLoader {
     }
 
     @Override
-    public PolygonMesh loadMesh(FilePointer file) {
+    public PolygonModel loadModel(FilePointer file) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean containsResourceFile(FilePointer file) {
         return true;
+    }
+
+    @Override
+    public ApplicationData loadApplicationData(String appName, String fileName) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void saveApplicationData(ApplicationData data, String appName, String fileName) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public GeometryBuilder getGeometryBuilder() {
+        throw new UnsupportedOperationException();
     }
 
     public List<FilePointer> getLoaded() {

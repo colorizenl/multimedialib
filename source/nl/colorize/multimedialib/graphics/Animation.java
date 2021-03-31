@@ -15,9 +15,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Shows a number of images in sequence. Every frame in the animation is shown
- * for a certain amount of time, indicated in seconds. After all images have
- * been shown, the animation will either loop or keep showing the last image.
+ * 2D sprite animation that shows a number of images in sequence. Every frame
+ * in the animation is shown for a certain amount of time, indicated in seconds.
+ * After all images have been shown, the animation will either loop or keep
+ * showing the last image.
  * <p>
  * Note that this class *describes* the animation, it does not contain any
  * state that relates to *showing* the animation. This allows for using the
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
  * but it does mean the animation's playback state needs to be managed by the
  * user of this class.
  */
-public class Animation {
+public class Animation implements AnimationInfo {
     
     private List<FrameInfo> frames;
     private boolean loop;
@@ -93,6 +94,7 @@ public class Animation {
         return frames.get(frames.size() - 1).image;
     }
 
+    @Override
     public float getDuration() {
         if (frames.size() <= 1) {
             return 0f;
@@ -124,6 +126,7 @@ public class Animation {
         return frames.get(index).frameTime;
     }
 
+    @Override
     public boolean isLoop() {
         return loop;
     }

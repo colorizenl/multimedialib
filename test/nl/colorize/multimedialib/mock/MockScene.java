@@ -6,9 +6,8 @@
 
 package nl.colorize.multimedialib.mock;
 
-import nl.colorize.multimedialib.renderer.GraphicsContext2D;
-import nl.colorize.multimedialib.scene.Application;
 import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.multimedialib.scene.SceneContext;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -17,33 +16,26 @@ public class MockScene implements Scene {
     private AtomicInteger startCount;
     private AtomicInteger endCount;
     private AtomicInteger frameUpdateCount;
-    private AtomicInteger renderCount;
-    
+
     public MockScene() {
         this.startCount = new AtomicInteger(0);
         this.endCount = new AtomicInteger(0);
         this.frameUpdateCount = new AtomicInteger(0);
-        this.renderCount = new AtomicInteger(0);
     }
 
     @Override
-    public void start(Application app) {
+    public void start(SceneContext context) {
         startCount.incrementAndGet();
     }
 
     @Override
-    public void end(Application app) {
+    public void end(SceneContext context) {
         endCount.incrementAndGet();
     }
 
     @Override
-    public void update(Application app, float deltaTime) {
+    public void update(SceneContext context, float deltaTime) {
         frameUpdateCount.incrementAndGet();
-    }
-
-    @Override
-    public void render(Application app, GraphicsContext2D graphics) {
-        renderCount.incrementAndGet();
     }
 
     public int getStartCount() {
@@ -56,9 +48,5 @@ public class MockScene implements Scene {
 
     public int getFrameUpdateCount() {
         return frameUpdateCount.get();
-    }
-
-    public int getRenderCount() {
-        return renderCount.get();
     }
 }

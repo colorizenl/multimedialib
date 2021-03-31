@@ -14,7 +14,7 @@
         <text x="330" y="100" fill="#ffffff" text-anchor="middle" font-size="16" font-family="Helvetica">Input devices</text>
         
         <path d="M410,70 h100 a10,10 0 0 1 10,10 v30 a10,10 0 0 1 -10,10 h-100 a10,10 0 0 1 -10,-10 v-30 a10,10 0 0 1 10,-10 z" fill="#adadad" />
-        <text x="460" y="100" fill="#ffffff" text-anchor="middle" font-size="16" font-family="Helvetica">Internet access</text>
+        <text x="460" y="100" fill="#ffffff" text-anchor="middle" font-size="16" font-family="Helvetica">Network access</text>
         
         <path d="M540,70 h100 a10,10 0 0 1 10,10 v30 a10,10 0 0 1 -10,10 h-100 a10,10 0 0 1 -10,-10 v-30 a10,10 0 0 1 10,-10 z" fill="#adadad" />
         <text x="590" y="100" fill="#ffffff" text-anchor="middle" font-size="16" font-family="Helvetica">File system</text>

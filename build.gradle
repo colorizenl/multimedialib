@@ -13,7 +13,7 @@ apply plugin: "jacoco"
 apply plugin: "com.craigburke.client-dependencies"
 
 group = "nl.colorize"
-version = "2021.3"
+version = "2021.5"
 sourceCompatibility = "11"
 targetCompatibility = "11"
 compileJava.options.encoding = "UTF-8"
@@ -32,7 +32,7 @@ repositories {
 }
 
 dependencies {
-    api "nl.colorize:colorize-java-commons:2021.4"
+    api "nl.colorize:colorize-java-commons:2021.5"
     api "args4j:args4j:2.33"
     
     implementation "javazoom:jlayer:1.0.1"

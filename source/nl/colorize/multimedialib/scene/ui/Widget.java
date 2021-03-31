@@ -7,8 +7,9 @@
 package nl.colorize.multimedialib.scene.ui;
 
 import com.google.common.base.Preconditions;
+import nl.colorize.multimedialib.graphics.GraphicsLayer2D;
 import nl.colorize.multimedialib.renderer.GraphicsContext2D;
-import nl.colorize.multimedialib.scene.SubScene;
+import nl.colorize.multimedialib.scene.Agent;
 
 /**
  * Base class for all subsystems that emulate user interface widgets
@@ -16,7 +17,7 @@ import nl.colorize.multimedialib.scene.SubScene;
  * platform's native user interface, but implements graphics and interaction
  * entirely in MultimediaLib so that the widgets works across all platforms.
  */
-public abstract class Widget implements SubScene {
+public abstract class Widget implements Agent, GraphicsLayer2D {
 
     private boolean visible;
     private Location location;

@@ -8,7 +8,7 @@ package nl.colorize.multimedialib.graphics;
 
 import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.renderer.Updatable;
+import nl.colorize.multimedialib.scene.Updatable;
 import nl.colorize.multimedialib.scene.SimpleState;
 import nl.colorize.multimedialib.scene.StateMachine;
 

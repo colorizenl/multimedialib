@@ -6,145 +6,44 @@
 
 package nl.colorize.multimedialib.graphics;
 
-import com.google.common.base.Preconditions;
-import nl.colorize.multimedialib.math.Point3D;
+import nl.colorize.multimedialib.scene.Updatable;
 
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 /**
- * An instance of a polygon mesh that can added to the stage and displayed.
- * Multiple models can share the same underlying mesh.
+ * An instance of a 3D polygon model that can added to the stage. Multiple
+ * instances of the model can be created, so that multiple instances can share
+ * the same geometry and textures. Models can be created programmatically,
+ * typically when using simple primitives, or loaded from external files.
  */
-public final class PolygonModel {
+public interface PolygonModel extends Updatable {
 
-    private UUID id;
-    private PolygonMesh mesh;
+    /**
+     * Adds this model to the stage. This is called automatically when using
+     * {@link nl.colorize.multimedialib.scene.Stage#add(PolygonModel)}.
+     */
+    public void attach();
 
-    private Point3D position;
-    private float rotationX;
-    private float rotationY;
-    private float rotationZ;
-    private float rotationAmount;
-    private float scaleX;
-    private float scaleY;
-    private float scaleZ;
+    /**
+     * Removes this model from the stage. This is called automatically when using
+     * {@link nl.colorize.multimedialib.scene.Stage#remove(PolygonModel)}.
+     */
+    public void detach();
 
-    protected PolygonModel(UUID id, PolygonMesh mesh) {
-        this.id = id;
-        this.mesh = mesh;
+    public Transform3D getTransform();
 
-        this.position = new Point3D(0f, 0f, 0f);
-        this.rotationX = 0f;
-        this.rotationY = 0f;
-        this.rotationZ = 0f;
-        this.rotationAmount = 0f;
-        this.scaleX = 1f;
-        this.scaleY = 1f;
-        this.scaleZ = 1f;
+    public Map<String, AnimationInfo> getAnimations();
+
+    public void playAnimation(String animation, boolean loop);
+
+    default void playAnimation(String animation) {
+        playAnimation(animation, false);
     }
 
-    protected PolygonModel(PolygonMesh mesh) {
-        this(UUID.randomUUID(), mesh);
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public PolygonMesh getMesh() {
-        return mesh;
-    }
-
-    public AnimationInfo getAnimation(String name) {
-        return mesh.getAnimation(name);
-    }
-
-    public Set<String> getAnimations() {
-        return mesh.getAnimations().stream()
-            .map(AnimationInfo::getName)
-            .collect(Collectors.toSet());
-    }
-
-    public void setPosition(Point3D p) {
-        position.set(p);
-    }
-
-    public void setPosition(float x, float y, float z) {
-        position.set(x, y, z);
-    }
-
-    public Point3D getPosition() {
-        return position;
-    }
-
-    public void setRotation(float x, float y, float z, float amount) {
-        rotationX = x;
-        rotationY = y;
-        rotationZ = z;
-        rotationAmount = amount;
-    }
-
-    public float getRotationX() {
-        return rotationX;
-    }
-
-    public float getRotationY() {
-        return rotationY;
-    }
-
-    public float getRotationZ() {
-        return rotationZ;
-    }
-
-    public float getRotationAmount() {
-        return rotationAmount;
-    }
-
-    public void setScale(float scaleX, float scaleY, float scaleZ) {
-        Preconditions.checkArgument(scaleX > 0f, "Invalid X scale: " + scaleX);
-        Preconditions.checkArgument(scaleY > 0f, "Invalid Y scale: " + scaleY);
-        Preconditions.checkArgument(scaleZ > 0f, "Invalid Z scale: " + scaleZ);
-
-        this.scaleX = scaleX;
-        this.scaleY = scaleY;
-        this.scaleZ = scaleZ;
-    }
-
-    public void setScale(float scale) {
-        setScale(scale, scale, scale);
-    }
-
-    public float getScaleX() {
-        return scaleX;
-    }
-
-    public float getScaleY() {
-        return scaleY;
-    }
-
-    public float getScaleZ() {
-        return scaleZ;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o instanceof PolygonModel) {
-            PolygonModel other = (PolygonModel) o;
-            return id.equals(other.id);
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public int hashCode() {
-        return id.hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return mesh.getName() + " (" + id + ")";
-    }
+    /**
+     * Creates a copy of this model. The copy will share the same geometry and
+     * textures, but will have its own transform. Note that creating the copy
+     * does *not* automatically add the copy to the stage.
+     */
+    public PolygonModel copy();
 }

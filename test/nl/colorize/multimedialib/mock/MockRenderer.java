@@ -10,66 +10,51 @@ import nl.colorize.multimedialib.graphics.Align;
 import nl.colorize.multimedialib.graphics.AlphaTransform;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.graphics.PolygonMesh;
+import nl.colorize.multimedialib.graphics.PolygonModel;
 import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.multimedialib.renderer.ApplicationData;
 import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.FilePointer;
+import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.GraphicsContext2D;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
-import nl.colorize.multimedialib.renderer.InputDevice;
-import nl.colorize.multimedialib.renderer.NetworkAccess;
 import nl.colorize.multimedialib.renderer.MediaLoader;
+import nl.colorize.multimedialib.renderer.NetworkAccess;
 import nl.colorize.multimedialib.renderer.NetworkConnection;
-import nl.colorize.multimedialib.renderer.RenderCallback;
 import nl.colorize.multimedialib.renderer.Renderer;
-import nl.colorize.multimedialib.renderer.Stage;
-import nl.colorize.util.PlatformFamily;
+import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.util.ApplicationData;
 import nl.colorize.util.Task;
 import nl.colorize.util.http.Headers;
 import nl.colorize.util.http.PostData;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Mock implementation of the {@code Renderer} interface plus all nested objects.
  */
 public class MockRenderer implements Renderer, GraphicsContext2D, MediaLoader, NetworkAccess {
 
-    private List<RenderCallback> callbacks;
     private Canvas canvas;
-    private InputDevice inputDevice;
+    private SceneContext context;
 
     public MockRenderer() {
-        this.callbacks = new ArrayList<>();
         this.canvas = Canvas.flexible(800, 600);
-        this.inputDevice = new MockInputDevice();
+        this.context = new SceneContext(canvas, new MockInputDevice(), this, this);
     }
 
     @Override
-    public void attach(RenderCallback callback) {
-        callbacks.add(callback);
+    public void start(Scene initialScene) {
+        context.changeScene(initialScene);
     }
 
     @Override
-    public void start() {
-    }
-
-    @Override
-    public GraphicsMode getSupportedGraphicsMode() {
+    public GraphicsMode getGraphicsMode() {
         return GraphicsMode.HEADLESS;
-    }
-
-    @Override
-    public Stage getStage() {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -106,26 +91,6 @@ public class MockRenderer implements Renderer, GraphicsContext2D, MediaLoader, N
     }
 
     @Override
-    public InputDevice getInputDevice() {
-        return inputDevice;
-    }
-
-    @Override
-    public MediaLoader getMediaLoader() {
-        return this;
-    }
-
-    @Override
-    public ApplicationData getApplicationData(String appName) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public NetworkAccess getNetwork() {
-        return this;
-    }
-
-    @Override
     public Image loadImage(FilePointer source) {
         return new MockImage();
     }
@@ -146,13 +111,28 @@ public class MockRenderer implements Renderer, GraphicsContext2D, MediaLoader, N
     }
 
     @Override
-    public PolygonMesh loadMesh(FilePointer file) {
+    public PolygonModel loadModel(FilePointer file) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean containsResourceFile(FilePointer file) {
         return true;
+    }
+
+    @Override
+    public ApplicationData loadApplicationData(String appName, String fileName) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void saveApplicationData(ApplicationData data, String appName, String fileName) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public GeometryBuilder getGeometryBuilder() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -187,11 +167,6 @@ public class MockRenderer implements Renderer, GraphicsContext2D, MediaLoader, N
 
     @Override
     public String takeScreenshot() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public PlatformFamily getPlatform() {
         throw new UnsupportedOperationException();
     }
 }

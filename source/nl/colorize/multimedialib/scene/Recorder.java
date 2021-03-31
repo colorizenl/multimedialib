@@ -10,7 +10,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
-import nl.colorize.multimedialib.renderer.Updatable;
 
 import java.util.HashMap;
 import java.util.List;

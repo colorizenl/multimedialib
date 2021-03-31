@@ -6,43 +6,39 @@
 
 package nl.colorize.multimedialib.scene;
 
-import nl.colorize.multimedialib.renderer.GraphicsContext2D;
-
 /**
- * Represents a discrete part or phase of an application, that is active for
- * some period of time. Simple applications might consist of a single scene,
- * complex applications can have dozens. Scenes can contain logic, rendering,
- * though they will typically do both.
+ * MultimediaLib applications are divided into a number of *scenes*. Each
+ * scene represents a discrete part or phase of an application that is active
+ * for some period of time. Only one scene can be active at any point in time.
+ * Simple applications may consist of a single scene, while larger applications
+ * will typically have many. The currently active scene will receive frame
+ * updates for as long as it is active.
  * <p>
- * Scenes will receive updates at various points throughout their life cycle:
- * when the scene is started (which can occur multiple times depending on the
- * application flow), and then frame updates and rendering when the scene is
- * active.
- * <p>
- * Scenes contain methods that are similar to {@code Updatable} and
- * {@code Drawable}, for performing frame updates and drawing graphics
- * respectively. The main difference with those interfaces is that the scene
- * gets full access to the application. Larger scenes can either use these
- * interfaces (to have a hard split between logic and graphics), or use the
- * {@link SubScene} interface.
+ * The {@link Scene} interface is similar to {@link Agent}. The main difference
+ * is that only one scene can be active at the same time, while the scene can
+ * include many agents. Moreover, {@code Scene}s are considered the central
+ * construct and receive access to the entire {@link SceneContext}, while
+ * {@link Agent}s tend to have a smaller scope and do not have full access.
  */
 public interface Scene {
 
     /**
-     * Initialization logic that should be performed every time the scene is
-     * started. This method is called by the application that contains the
-     * scene.
+     * Initialization logic that should be performed when the scene is
+     * started. Note that this method is called *every* time the scene is
+     * started, not only the first time.
      */
-    public void start(Application app);
+    public void start(SceneContext context);
 
-    public void update(Application app, float deltaTime);
-
-    public void render(Application app, GraphicsContext2D graphics);
+    /**
+     * Called during every frame update for as long as the scene is active.
+     * @param deltaTime Elapsed time since the last frame, in seconds.
+     */
+    public void update(SceneContext context, float deltaTime);
 
     /**
      * Clean-up logic that is performed every time the scene ends. Implementing
      * this method is optional, the default implementation does nothing.
      */
-    default void end(Application app) {
+    default void end(SceneContext context) {
     }
 }

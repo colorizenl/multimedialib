@@ -9,15 +9,15 @@ package nl.colorize.multimedialib.scene.effect;
 import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.graphics.Align;
 import nl.colorize.multimedialib.graphics.Animation;
+import nl.colorize.multimedialib.graphics.GraphicsLayer2D;
 import nl.colorize.multimedialib.graphics.Image;
 import nl.colorize.multimedialib.graphics.Sprite;
 import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.renderer.Drawable;
 import nl.colorize.multimedialib.renderer.GraphicsContext2D;
-import nl.colorize.multimedialib.renderer.Updatable;
-import nl.colorize.multimedialib.scene.SubScene;
+import nl.colorize.multimedialib.scene.Agent;
+import nl.colorize.multimedialib.scene.Updatable;
 import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
 
@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 
 /**
  * An animated graphical effect that can be played as part of a scene. Effects
- * implement the {@link SubScene} interface and can be attached to the currently
+ * implement the {@link Agent} interface and can be attached to the currently
  * active scene. This allows declarative effects that can be played without
  * having to manually update their logic and graphics every frame.
  * <p>
@@ -49,7 +49,7 @@ import java.util.function.Consumer;
  * has completed. This makes it easier to schedule follow-up events without
  * having to poll the status of the event every frame.
  */
-public abstract class Effect implements SubScene {
+public abstract class Effect implements Agent, GraphicsLayer2D {
 
     private Timeline timeline;
     private List<Consumer<Float>> modifiers;
@@ -58,7 +58,6 @@ public abstract class Effect implements SubScene {
 
     private Point2D position;
     private Transform transform;
-    private boolean background;
 
     protected Effect(Timeline timeline) {
         this.timeline = timeline;
@@ -68,7 +67,6 @@ public abstract class Effect implements SubScene {
 
         this.position = new Point2D(0, 0);
         this.transform = new Transform();
-        this.background = false;
     }
 
     protected Effect(float duration) {
@@ -130,20 +128,6 @@ public abstract class Effect implements SubScene {
         return transform;
     }
 
-    /**
-     * Indicates that this effect should be rendered as part of the scene's
-     * background graphics. By default, effects are drawn in the foreground,
-     * in front of the scene's own graphics.
-     */
-    public void inBackground() {
-        background = true;
-    }
-
-    @Override
-    public boolean hasBackgroundGraphics() {
-        return background;
-    }
-
     @Override
     public void update(float deltaTime) {
         if (isCompleted()) {
@@ -171,7 +155,7 @@ public abstract class Effect implements SubScene {
      * Shorthand for creating a graphical effect that will draw graphics using
      * the provided callback function.
      */
-    public static Effect forGraphics(float duration, Drawable callback) {
+    public static Effect forGraphics(float duration, GraphicsLayer2D callback) {
         return new Effect(duration) {
             @Override
             public void render(GraphicsContext2D graphics) {

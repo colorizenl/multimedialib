@@ -84,7 +84,7 @@ class ThreejsRenderer {
 
         if (model != null) {
             model.position.set(x, y, z);
-            model.rotation.set(rotX, rotY - 0.5 * Math.PI, rotZ);
+            model.rotation.set(rotX, rotY, rotZ);
             model.scale.set(scaleX, scaleY, scaleZ);
         }
     }

@@ -17,7 +17,9 @@ import java.util.List;
 public final class MathUtils {
 
     public static final float EPSILON = 0.001f;
-    
+    public static final float PI = (float) Math.PI;
+    public static final float HALF_PI = 0.5f * PI;
+
     private MathUtils() {
     }
 

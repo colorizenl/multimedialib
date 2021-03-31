@@ -4,12 +4,14 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.renderer.java2d;
+package nl.colorize.multimedialib.renderer.headless;
 
+import com.google.common.annotations.VisibleForTesting;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.FilePointer;
+import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
 
 /**
  * Media loader implementation that can be used in headless environments,
@@ -17,6 +19,7 @@ import nl.colorize.multimedialib.renderer.FilePointer;
  * media files using {@link StandardMediaLoader}. However, image loading can
  * be disabled for situations in which no graphics environment is available.
  */
+@VisibleForTesting
 public class HeadlessMediaLoader extends StandardMediaLoader {
 
     private boolean graphicsEnvironmentEnabled;

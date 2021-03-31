@@ -14,7 +14,7 @@ import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
-import nl.colorize.multimedialib.renderer.Updatable;
+import nl.colorize.multimedialib.scene.Updatable;
 import nl.colorize.util.CSVRecord;
 import nl.colorize.util.PlatformFamily;
 

@@ -4,7 +4,7 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.renderer.java2d;
+package nl.colorize.multimedialib.renderer.headless;
 
 import com.google.common.annotations.VisibleForTesting;
 import nl.colorize.multimedialib.graphics.Align;
@@ -17,21 +17,17 @@ import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.multimedialib.renderer.ApplicationData;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsContext2D;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
-import nl.colorize.multimedialib.renderer.MediaLoader;
-import nl.colorize.multimedialib.renderer.NetworkAccess;
-import nl.colorize.multimedialib.renderer.RenderCallback;
 import nl.colorize.multimedialib.renderer.Renderer;
-import nl.colorize.multimedialib.renderer.Stage;
-import nl.colorize.util.Platform;
-import nl.colorize.util.PlatformFamily;
+import nl.colorize.multimedialib.renderer.java2d.Java2DRenderer;
+import nl.colorize.multimedialib.renderer.java2d.StandardNetworkAccess;
+import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.multimedialib.scene.SceneContext;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -51,8 +47,8 @@ public class HeadlessRenderer implements Renderer {
 
     private Canvas canvas;
     private int framerate;
-    private List<RenderCallback> callbacks;
     private boolean graphicsEnvironmentEnabled;
+    private SceneContext context;
     
     public static final int DEFAULT_WIDTH = 800;
     public static final int DEFAULT_HEIGHT = 600;
@@ -61,7 +57,6 @@ public class HeadlessRenderer implements Renderer {
     public HeadlessRenderer(Canvas canvas, int framerate) {
         this.canvas = canvas;
         this.framerate = framerate;
-        this.callbacks = new ArrayList<>();
         this.graphicsEnvironmentEnabled = true;
     }
     
@@ -70,67 +65,28 @@ public class HeadlessRenderer implements Renderer {
     }
 
     @Override
-    public GraphicsMode getSupportedGraphicsMode() {
+    public GraphicsMode getGraphicsMode() {
         return GraphicsMode.HEADLESS;
-    }
-    
-    @Override
-    public void attach(RenderCallback callback) {
-        callbacks.add(callback);
     }
 
     @Override
-    public void start() {
+    public void start(Scene initialScene) {
+        HeadlessMediaLoader mediaLoader = new HeadlessMediaLoader(graphicsEnvironmentEnabled);
+        StandardNetworkAccess network = new StandardNetworkAccess();
+        context = new SceneContext(canvas, new NullInputDevice(), mediaLoader, network);
+        context.changeScene(initialScene);
+
         doFrame();
     }
     
     public void doFrame() {
-        NullGraphicsContext graphics = new NullGraphicsContext(canvas);
-        
-        for (RenderCallback callback : callbacks) {
-            callback.update(this, 1f / framerate);
-            callback.render(this, graphics);
-        }
-    }
-
-    @Override
-    public Canvas getCanvas() {
-        return canvas;
-    }
-
-    @Override
-    public Stage getStage() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public InputDevice getInputDevice() {
-        return new NullInputDevice();
-    }
-
-    @Override
-    public MediaLoader getMediaLoader() {
-        return new HeadlessMediaLoader(graphicsEnvironmentEnabled);
-    }
-
-    @Override
-    public ApplicationData getApplicationData(String appName) {
-        return new StandardApplicationData(appName);
-    }
-
-    @Override
-    public NetworkAccess getNetwork() {
-        return new StandardNetworkAccess();
+        context.update(1f / framerate);
+        context.getStage().render2D(new NullGraphicsContext(canvas));
     }
 
     @Override
     public String takeScreenshot() {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public PlatformFamily getPlatform() {
-        return Platform.getPlatformFamily();
     }
 
     public void setGraphicsEnvironmentEnabled(boolean graphicsEnvironmentEnabled) {

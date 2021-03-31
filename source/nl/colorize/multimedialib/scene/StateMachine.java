@@ -8,18 +8,18 @@ package nl.colorize.multimedialib.scene;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import nl.colorize.multimedialib.renderer.Updatable;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * Represents a finite state machine. States can be identified by name or by
- * the actual state object. States can have characteristics such as timed
- * versus infinite, and interruptable versus permanent. The behavior of the
- * state machine will depend on those characteristics, of both the current
- * state and the requested new state.
+ * Finite state machine that is in one of a number of possible states at any
+ * given time. States can be identified by name or by the actual state object.
+ * States can have characteristics such as timed versus infinite, and
+ * interruptable versus permanent. The behavior of the state machine will
+ * depend on those characteristics, of both the current state and the
+ * requested new state.
  *
  * @param <T> The type of state which is being controlled by this state
  *            machine.
@@ -119,11 +119,7 @@ public class StateMachine<T extends State> implements Updatable {
     }
 
     private boolean canChangeState() {
-        if (activeState == null) {
-            return true;
-        }
-
-        return activeState.isInterruptable() || isActiveStateCompleted();
+        return activeState == null || activeState.isInterruptable() || isActiveStateCompleted();
     }
 
     @Override

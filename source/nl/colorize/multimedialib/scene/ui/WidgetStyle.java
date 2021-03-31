@@ -7,9 +7,9 @@
 package nl.colorize.multimedialib.scene.ui;
 
 import nl.colorize.multimedialib.graphics.ColorRGB;
+import nl.colorize.multimedialib.graphics.GraphicsLayer2D;
 import nl.colorize.multimedialib.graphics.Image;
 import nl.colorize.multimedialib.graphics.TTFont;
-import nl.colorize.multimedialib.renderer.Drawable;
 
 /**
  * Describes the style with which a user interface widget should be displayed.
@@ -22,7 +22,7 @@ public class WidgetStyle {
     private TTFont font;
     private Image background;
     private ColorRGB backgroundColor;
-    private Drawable backgroundGraphics;
+    private GraphicsLayer2D backgroundGraphics;
     private ColorRGB borderColor;
     private int borderSize;
 
@@ -59,11 +59,11 @@ public class WidgetStyle {
         this.backgroundColor = backgroundColor;
     }
 
-    public Drawable getBackgroundGraphics() {
+    public GraphicsLayer2D getBackgroundGraphics() {
         return backgroundGraphics;
     }
 
-    public void setBackgroundGraphics(Drawable backgroundGraphics) {
+    public void setBackgroundGraphics(GraphicsLayer2D backgroundGraphics) {
         this.backgroundGraphics = backgroundGraphics;
     }
 

@@ -6,9 +6,8 @@
 
 package nl.colorize.multimedialib.scene.effect;
 
-import nl.colorize.multimedialib.renderer.GraphicsContext2D;
-import nl.colorize.multimedialib.renderer.Updatable;
-import nl.colorize.multimedialib.scene.SubScene;
+import nl.colorize.multimedialib.scene.Agent;
+import nl.colorize.multimedialib.scene.Updatable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +17,7 @@ import java.util.List;
  * the timer, and will then be automatically called once the timer has been
  * completed.
  */
-public class Timer implements SubScene {
+public class Timer implements Agent {
 
     private float position;
     private float duration;
@@ -97,15 +96,12 @@ public class Timer implements SubScene {
     /**
      * Attaches a callback function that will be invoked when this timer has
      * completed.
+     *
      * @deprecated Use {@link #attachCompletion(Runnable)} instead.
      */
     @Deprecated
     public void attach(Runnable action) {
         attachCompletion(action);
-    }
-
-    @Override
-    public void render(GraphicsContext2D graphics) {
     }
 
     /**

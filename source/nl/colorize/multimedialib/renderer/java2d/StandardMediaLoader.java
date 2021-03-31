@@ -10,12 +10,16 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.graphics.PolygonMesh;
+import nl.colorize.multimedialib.graphics.PolygonModel;
 import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
+import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
+import nl.colorize.multimedialib.renderer.UnsupportedGraphicsModeException;
+import nl.colorize.util.ApplicationData;
+import nl.colorize.util.Platform;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.swing.Utils2D;
 
@@ -23,10 +27,12 @@ import java.awt.Font;
 import java.awt.FontFormatException;
 import java.awt.GraphicsEnvironment;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Uses APIs from the Java standard library to load media files: Java2D and ImageIO
@@ -93,12 +99,42 @@ public class StandardMediaLoader implements MediaLoader {
     }
 
     @Override
-    public PolygonMesh loadMesh(FilePointer file) {
-        throw new UnsupportedOperationException();
+    public PolygonModel loadModel(FilePointer file) {
+        throw new UnsupportedGraphicsModeException();
     }
 
     @Override
     public boolean containsResourceFile(FilePointer file) {
         return new ResourceFile(file.getPath()).exists();
+    }
+
+    @Override
+    public ApplicationData loadApplicationData(String appName, String fileName) {
+        File file = Platform.getApplicationData(appName, fileName);
+
+        if (!file.exists()) {
+            return new ApplicationData(new Properties());
+        }
+
+        try {
+            return new ApplicationData(file);
+        } catch (IOException e) {
+            throw new MediaException("Unable to load application data", e);
+        }
+    }
+
+    @Override
+    public void saveApplicationData(ApplicationData data, String appName, String fileName) {
+        try {
+            File file = Platform.getApplicationData(appName, fileName);
+            data.save(file);
+        } catch (IOException e) {
+            throw new MediaException("Unable to save application data", e);
+        }
+    }
+
+    @Override
+    public GeometryBuilder getGeometryBuilder() {
+        throw new UnsupportedGraphicsModeException();
     }
 }

@@ -6,24 +6,27 @@
 
 package nl.colorize.multimedialib.scene;
 
+import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.graphics.Animation;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.graphics.PolygonMesh;
+import nl.colorize.multimedialib.graphics.PolygonModel;
 import nl.colorize.multimedialib.graphics.Sprite;
 import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
-import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Centralized loading and access for media assets. This is mainly useful for
  * larger applications, where the same assets are used across multiple scenes.
- * All assets are identified by string keys, which are assumed to be unique.
+ * Though all media assets still identified by their source file, they are
+ * only loaded the first time, and additional attempts to load the asset will
+ * return a cached version instead of reloading it.
  */
 public class MediaManager {
 
@@ -35,86 +38,64 @@ public class MediaManager {
         this.assets = new HashMap<>();
     }
 
-    private <T> T store(String key, T asset) {
+    private <T> T access(String key, Supplier<T> loader) {
         if (assets.containsKey(key)) {
-            throw new MediaException("Multiple media assets with the same key: " + key);
+            return (T) assets.get(key);
+        } else {
+            T asset = loader.get();
+            assets.put(key, asset);
+            return asset;
         }
-
-        assets.put(key, asset);
-        return asset;
     }
 
-    public Image loadImage(String key, FilePointer file) {
-        return store(key, mediaLoader.loadImage(file));
+    private <T> T access(FilePointer key, Supplier<T> loader) {
+        return access(key.getPath(), loader);
     }
 
-    public Audio loadAudio(String key, FilePointer file) {
-        return store(key, mediaLoader.loadAudio(file));
+    public Image getImage(FilePointer file) {
+        return access(file, () -> mediaLoader.loadImage(file));
     }
 
-    public TTFont loadFont(String key, FilePointer file, String family, int size,
-            ColorRGB color, boolean bold) {
-        return store(key, mediaLoader.loadFont(file, family, size, color, bold));
+    public Audio getAudio(FilePointer file) {
+        return access(file, () -> mediaLoader.loadAudio(file));
     }
 
-    public PolygonMesh loadMesh(String key, FilePointer file) {
-        return store(key, mediaLoader.loadMesh(file));
+    public TTFont loadFont(FilePointer file, String family, int size, ColorRGB color, boolean bold) {
+        String key = file.getPath() + "@" + size + "@" + color + "@" + bold;
+        return access(key, () -> mediaLoader.loadFont(file, family, size, color, bold));
     }
 
-    public String loadText(String key, FilePointer file) {
-        return store(key, mediaLoader.loadText(file));
+    public PolygonModel getModel(FilePointer file) {
+        return access(file, () -> mediaLoader.loadModel(file));
+    }
+
+    public String getText(FilePointer file) {
+        return access(file, () -> mediaLoader.loadText(file));
     }
 
     public void storeAnimation(String key, Animation anim) {
-        store(key, anim);
-    }
-
-    public void storeSprite(String key, Sprite sprite) {
-        store(key, sprite);
-    }
-
-    private Object get(String key) {
-        Object asset = assets.get(key);
-        if (asset == null) {
-            throw new MediaException("Unknown media asset: " + key);
-        }
-        return asset;
-    }
-
-    public Image getImage(String key) {
-        return (Image) get(key);
+        assets.put(key, anim);
     }
 
     public Animation getAnimation(String key) {
-        return (Animation) get(key);
+        Preconditions.checkArgument(assets.containsKey(key), "No such animation: " + key);
+        return (Animation) assets.get(key);
+    }
+
+    public void storeSprite(String key, Sprite sprite) {
+        assets.put(key, sprite);
     }
 
     public Sprite getSprite(String key) {
-        Sprite sprite = (Sprite) get(key);
-        return sprite.copy();
+        Preconditions.checkArgument(assets.containsKey(key), "No such sprite: " + key);
+        return (Sprite) assets.get(key);
     }
 
-    public Audio getAudio(String key) {
-        return (Audio) get(key);
+    public void unload(FilePointer file) {
+        assets.remove(file.getPath());
     }
 
-    public TTFont getFont(String key) {
-        return (TTFont) get(key);
-    }
-
-    public PolygonMesh getMesh(String key) {
-        return (PolygonMesh) get(key);
-    }
-
-    public String getText(String key) {
-        return (String) get(key);
-    }
-
-    public void unload(String key) {
-        assets.remove(key);
-    }
-
-    public void unloadAll(String key) {
+    public void unloadAll() {
         assets.clear();
     }
 }

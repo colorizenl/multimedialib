@@ -8,19 +8,16 @@ package nl.colorize.multimedialib.renderer.java2d;
 
 import com.badlogic.gdx.math.MathUtils;
 import com.google.common.base.Preconditions;
-import nl.colorize.multimedialib.renderer.ApplicationData;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
-import nl.colorize.multimedialib.renderer.InputDevice;
-import nl.colorize.multimedialib.renderer.MediaLoader;
-import nl.colorize.multimedialib.renderer.NestedRenderCallback;
 import nl.colorize.multimedialib.renderer.NetworkAccess;
-import nl.colorize.multimedialib.renderer.RenderCallback;
 import nl.colorize.multimedialib.renderer.Renderer;
-import nl.colorize.multimedialib.renderer.Stage;
+import nl.colorize.multimedialib.renderer.WindowOptions;
+import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
-import nl.colorize.util.PlatformFamily;
+import nl.colorize.util.ResourceFile;
 import nl.colorize.util.Stopwatch;
 import nl.colorize.util.swing.MacIntegration;
 import nl.colorize.util.swing.SwingUtils;
@@ -50,12 +47,12 @@ import java.util.logging.Logger;
  */
 public class Java2DRenderer implements Renderer {
 
-    private NestedRenderCallback callbacks;
     private Canvas canvas;
     private int framerate;
     private Stopwatch syncTimer;
     private long oversleep;
 
+    private SceneContext context;
     private StandardMediaLoader mediaLoader;
     private AWTInput inputDevice;
     private WindowOptions options;
@@ -77,7 +74,6 @@ public class Java2DRenderer implements Renderer {
 
         SwingUtils.initializeSwing();
 
-        this.callbacks = new NestedRenderCallback();
         this.canvas = canvas;
         this.framerate = framerate;
         this.syncTimer = new Stopwatch();
@@ -92,22 +88,19 @@ public class Java2DRenderer implements Renderer {
     }
 
     @Override
-    public void attach(RenderCallback callback) {
-        callbacks.add(callback);
-    }
-
-    @Override
-    public void start() {
+    public void start(Scene initialScene) {
         window = initializeWindow(options);
         graphicsContext = new Java2DGraphicsContext(canvas, mediaLoader);
+
+        NetworkAccess network = new StandardNetworkAccess();
+        context = new SceneContext(canvas, inputDevice, mediaLoader, network);
+        context.changeScene(initialScene);
 
         Thread renderingThread = new Thread(this::runAnimationLoop, "MultimediaLib-RenderingThread");
         renderingThread.start();
     }
 
     private JFrame initializeWindow(WindowOptions windowOptions) {
-        Canvas canvas = getCanvas();
-
         window = new JFrame();
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         window.setResizable(true);
@@ -126,7 +119,7 @@ public class Java2DRenderer implements Renderer {
         window.setVisible(true);
         window.createBufferStrategy(2);
 
-        inputDevice = new AWTInput(getCanvas());
+        inputDevice = new AWTInput(canvas);
         window.addKeyListener(inputDevice);
         window.addMouseListener(inputDevice);
         window.addMouseMotionListener(inputDevice);
@@ -144,25 +137,16 @@ public class Java2DRenderer implements Renderer {
 
     private Image loadIcon(WindowOptions windowOptions) {
         if (windowOptions.hasIcon()) {
-            return SwingUtils.loadIcon(windowOptions.getIconFile()).getImage();
+            ResourceFile iconFile = new ResourceFile(windowOptions.getIconFile().getPath());
+            return SwingUtils.loadIcon(iconFile).getImage();
         } else {
             return null;
         }
     }
 
     @Override
-    public GraphicsMode getSupportedGraphicsMode() {
-        return GraphicsMode.G2D;
-    }
-
-    @Override
-    public Canvas getCanvas() {
-        return canvas;
-    }
-
-    @Override
-    public Stage getStage() {
-        throw new UnsupportedOperationException();
+    public GraphicsMode getGraphicsMode() {
+        return GraphicsMode.MODE_2D;
     }
 
     /**
@@ -180,7 +164,7 @@ public class Java2DRenderer implements Renderer {
 
             float frameTime = 1f / framerate;
             inputDevice.update(frameTime);
-            callbacks.update(this, frameTime);
+            context.update(frameTime);
             drawFrame();
 
             Thread.yield();
@@ -201,7 +185,7 @@ public class Java2DRenderer implements Renderer {
     private void drawFrame(Graphics2D g2) {
         graphicsContext.bind(g2);
         prepareGraphics(g2);
-        callbacks.render(this, graphicsContext);
+        context.getStage().render2D(graphicsContext);
     }
 
     private void prepareCanvas() {
@@ -209,7 +193,6 @@ public class Java2DRenderer implements Renderer {
         int windowWidth = window.getWidth() - windowInsets.left - windowInsets.right;
         int windowHeight = window.getHeight() - windowInsets.top - windowInsets.bottom;
 
-        Canvas canvas = getCanvas();
         canvas.resizeScreen(windowWidth, windowHeight);
         canvas.offsetScreen(windowInsets.left, windowInsets.top);
     }
@@ -268,44 +251,19 @@ public class Java2DRenderer implements Renderer {
     }
 
     @Override
-    public InputDevice getInputDevice() {
-        return inputDevice;
-    }
-
-    @Override
-    public MediaLoader getMediaLoader() {
-        return mediaLoader;
-    }
-
-    @Override
-    public ApplicationData getApplicationData(String appName) {
-        return new StandardApplicationData(appName);
-    }
-
-    @Override
-    public NetworkAccess getNetwork() {
-        return new StandardNetworkAccess();
-    }
-
-    @Override
     public String takeScreenshot() {
-        BufferedImage screenshot = new BufferedImage(getCanvas().getWidth(), getCanvas().getHeight(),
+        BufferedImage screenshot = new BufferedImage(canvas.getWidth(), canvas.getHeight(),
             BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = Utils2D.createGraphics(screenshot, true, true);
         graphicsContext.bind(g2);
         prepareGraphics(g2);
-        callbacks.render(this, graphicsContext);
+        context.getStage().render2D(graphicsContext);
         g2.dispose();
 
         return Utils2D.toDataURL(screenshot);
     }
 
-    @Override
-    public PlatformFamily getPlatform() {
-        return Platform.getPlatformFamily();
-    }
-
-    public void terminate() {
+    public void quit() {
         terminated.set(true);
         if (window != null) {
             window.dispose();

@@ -9,10 +9,9 @@ package nl.colorize.multimedialib.tool;
 import com.google.common.base.Charsets;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.Renderer;
+import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.multimedialib.renderer.java2d.Java2DRenderer;
-import nl.colorize.multimedialib.renderer.java2d.WindowOptions;
 import nl.colorize.multimedialib.renderer.libgdx.GDXRenderer;
-import nl.colorize.multimedialib.scene.Application;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.ResourceFile;
@@ -43,9 +42,6 @@ public class DemoLauncher extends CommandLineTool implements ApplicationMenuList
     @Option(name = "-canvas", required = false, usage = "Uses a fixed canvas size to display graphics")
     public boolean canvas = false;
 
-    @Option(name = "-orientationlock", required = false, usage = "Restricts the demo to landscape orientation")
-    public boolean orientationLock = false;
-
     @Option(name = "-verification", required = false, usage = "Prints instructions for verification")
     public boolean verification = false;
 
@@ -68,7 +64,7 @@ public class DemoLauncher extends CommandLineTool implements ApplicationMenuList
 
     private void start() {
         Renderer renderer = createRenderer();
-        Application.start(renderer, createDemoScene());
+        renderer.start(createDemoScene());
     }
 
     private Renderer createRenderer() {

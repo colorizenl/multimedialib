@@ -9,8 +9,7 @@ package nl.colorize.multimedialib.tool;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.teavm.Browser;
-import nl.colorize.multimedialib.renderer.teavm.TeaRenderer;
-import nl.colorize.multimedialib.scene.Application;
+import nl.colorize.multimedialib.scene.MultimediaAppLauncher;
 import nl.colorize.util.Platform;
 
 /**
@@ -29,12 +28,8 @@ public class TeaDemo2D {
         Browser.log("Page size: " + Math.round(Browser.getPageWidth()) + "x" +
             Math.round(Browser.getPageHeight()));
 
-        Canvas canvas = Canvas.flexible(Demo2D.DEFAULT_CANVAS_WIDTH,
-            Demo2D.DEFAULT_CANVAS_HEIGHT);
-        TeaRenderer renderer = new TeaRenderer(canvas);
-        Application.start(renderer, new Demo2D());
+        Canvas canvas = Canvas.flexible(Demo2D.DEFAULT_CANVAS_WIDTH, Demo2D.DEFAULT_CANVAS_HEIGHT);
 
-        String verificationInstructions = renderer.getMediaLoader().loadText(VERIFICATION_FILE);
-        Browser.log(verificationInstructions);
+        MultimediaAppLauncher.create(canvas).startTea(new Demo2D());
     }
 }

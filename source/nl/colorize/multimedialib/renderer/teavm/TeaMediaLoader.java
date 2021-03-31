@@ -10,17 +10,23 @@ import com.google.common.base.Splitter;
 import nl.colorize.multimedialib.graphics.AnimationInfo;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.graphics.PolygonMesh;
+import nl.colorize.multimedialib.graphics.PolygonModel;
 import nl.colorize.multimedialib.graphics.TTFont;
+import nl.colorize.multimedialib.math.Point2D;
+import nl.colorize.multimedialib.math.Point3D;
 import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
+import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaLoader;
+import nl.colorize.util.ApplicationData;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -29,7 +35,7 @@ import java.util.stream.Collectors;
  * using the conventional browser APIs. Text files are embedded into the HTML
  * during the build, and can therefore be loaded immediately.
  */
-public class TeaMediaLoader implements MediaLoader {
+public class TeaMediaLoader implements MediaLoader, GeometryBuilder {
 
     private Map<FilePointer, ProgressTracker> progressTrackers;
 
@@ -99,20 +105,35 @@ public class TeaMediaLoader implements MediaLoader {
     }
 
     @Override
-    public PolygonMesh loadMesh(FilePointer file) {
+    public PolygonModel loadModel(FilePointer file) {
         UUID id = UUID.randomUUID();
-        PolygonMesh mesh = new PolygonMesh(id, file.getPath(), Collections.emptyList());
+        Map<String, AnimationInfo> animations = new HashMap<>();
         List<String> loadCount = new ArrayList<>();
 
         Browser.loadModel(id.toString(), file.getPath(), (names, durations) -> {
             for (int i = 0; i < names.length; i++) {
-                mesh.addAnimation(new AnimationInfo(names[i], durations[i]));
+                AnimationInfo animation = toAnimationInfo(durations[i]);
+                animations.put(names[i], animation);
             }
             loadCount.add(String.valueOf(loadCount.size() + 1));
         });
 
         progressTrackers.put(file, () -> loadCount.size() > 0);
-        return mesh;
+        return new TeaModel(UUID.randomUUID(), id, animations, false);
+    }
+
+    private AnimationInfo toAnimationInfo(float duration) {
+        return new AnimationInfo() {
+            @Override
+            public float getDuration() {
+                return duration;
+            }
+
+            @Override
+            public boolean isLoop() {
+                return false;
+            }
+        };
     }
 
     @Override
@@ -153,6 +174,68 @@ public class TeaMediaLoader implements MediaLoader {
             normalized = normalized.replace(".", "_");
         }
         return normalized;
+    }
+
+    @Override
+    public ApplicationData loadApplicationData(String appName, String fileName) {
+        String value = Browser.getLocalStorage(fileName);
+
+        if (value == null || value.isEmpty()) {
+            return new ApplicationData(new Properties());
+        } else {
+            return new ApplicationData(value);
+        }
+    }
+
+    @Override
+    public void saveApplicationData(ApplicationData data, String appName, String fileName) {
+        Browser.setLocalStorage(fileName, data.serialize());
+    }
+
+    @Override
+    public GeometryBuilder getGeometryBuilder() {
+        return this;
+    }
+
+    @Override
+    public PolygonModel createQuad(Point2D size, ColorRGB color) {
+        return createBox(new Point3D(size.getX(), 0.001f, size.getY()), color);
+    }
+
+    @Override
+    public PolygonModel createQuad(Point2D size, Image image) {
+        return createBox(new Point3D(size.getX(), 0.001f, size.getY()), image);
+    }
+
+    @Override
+    public PolygonModel createBox(Point3D size, ColorRGB color) {
+        UUID id = UUID.randomUUID();
+        Browser.createBox(id.toString(), size.getX(), size.getY(), size.getZ(), color.toHex(), null);
+        return new TeaModel(UUID.randomUUID(), id, Collections.emptyMap(), true);
+    }
+
+    @Override
+    public PolygonModel createBox(Point3D size, Image image) {
+        UUID id = UUID.randomUUID();
+        TeaImage texture = (TeaImage) image;
+        Browser.createBox(id.toString(), size.getX(), size.getY(), size.getZ(),
+            null, texture.getOrigin().getPath());
+        return new TeaModel(UUID.randomUUID(), id, Collections.emptyMap(), true);
+    }
+
+    @Override
+    public PolygonModel createSphere(float diameter, ColorRGB color) {
+        UUID id = UUID.randomUUID();
+        Browser.createSphere(id.toString(), diameter, color.toHex(), null);
+        return new TeaModel(UUID.randomUUID(), id, Collections.emptyMap(), true);
+    }
+
+    @Override
+    public PolygonModel createSphere(float diameter, Image image) {
+        UUID id = UUID.randomUUID();
+        TeaImage texture = (TeaImage) image;
+        Browser.createSphere(id.toString(), diameter, null, texture.getOrigin().getPath());
+        return new TeaModel(UUID.randomUUID(), id, Collections.emptyMap(), true);
     }
 
     /**

@@ -4,9 +4,8 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.renderer.java2d;
+package nl.colorize.multimedialib.renderer;
 
-import nl.colorize.util.ResourceFile;
 import nl.colorize.util.swing.ApplicationMenuListener;
 
 /**
@@ -16,15 +15,19 @@ import nl.colorize.util.swing.ApplicationMenuListener;
 public class WindowOptions {
 
     private String title;
-    private ResourceFile iconFile;
+    private FilePointer iconFile;
     private boolean fullscreen;
     private ApplicationMenuListener appMenuListener;
 
-    public WindowOptions(String title) {
+    public WindowOptions(String title, FilePointer iconFile) {
         this.title = title;
-        this.iconFile = null;
+        this.iconFile = iconFile;
         this.fullscreen = false;
         this.appMenuListener = null;
+    }
+
+    public WindowOptions(String title) {
+        this(title, null);
     }
 
     public String getTitle() {
@@ -35,11 +38,11 @@ public class WindowOptions {
         this.title = title;
     }
 
-    public ResourceFile getIconFile() {
+    public FilePointer getIconFile() {
         return iconFile;
     }
 
-    public void setIconFile(ResourceFile iconFile) {
+    public void setIconFile(FilePointer iconFile) {
         this.iconFile = iconFile;
     }
 

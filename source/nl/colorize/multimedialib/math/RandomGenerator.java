@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.math;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -94,12 +95,19 @@ public class RandomGenerator {
     }
 
     /**
+     * Picks and returns a random element from the specified iterator.
+     * @throws IllegalArgumentException if the provided iterator is empty.
+     */
+    public static <T> T pick(Iterable<T> elements) {
+        return pick(ImmutableList.copyOf(elements));
+    }
+
+    /**
      * Picks and returns a random element from the specified stream.
      * @throws IllegalArgumentException if the provided stream is empty.
      */
     public static <T> T pick(Stream<T> elements) {
-        List<T> list = elements.collect(Collectors.toList());
-        return pick(list);
+        return pick(elements.collect(Collectors.toList()));
     }
 
     /**

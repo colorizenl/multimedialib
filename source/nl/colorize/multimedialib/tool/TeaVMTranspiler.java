@@ -239,7 +239,7 @@ public class TeaVMTranspiler extends CommandLineTool {
         try (InputStream stream = file.openStream()) {
             byte[] contents = LoadUtils.readToByteArray(stream);
 
-            if (file.getName().contains("three") && !renderer.equals("three")) {
+            if (file.getPath().contains("/three/") && !renderer.equals("three")) {
                 FileUtils.write("", Charsets.UTF_8, outputFile);
             } else {
                 FileUtils.write(contents, outputFile);

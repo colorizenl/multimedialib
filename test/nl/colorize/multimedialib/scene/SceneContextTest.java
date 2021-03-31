@@ -7,7 +7,6 @@
 package nl.colorize.multimedialib.scene;
 
 import com.google.common.collect.ImmutableList;
-import nl.colorize.multimedialib.mock.MockRenderer;
 import nl.colorize.multimedialib.mock.MockScene;
 import org.junit.jupiter.api.Test;
 
@@ -16,17 +15,17 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ApplicationTest {
+public class SceneContextTest {
 
     @Test
     public void testInitialScene() {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        Application app = Application.start(new MockRenderer());
+        SceneContext app = new SceneContext(null, null, null, null);
         app.changeScene(sceneA);
-        app.update(new MockRenderer(), 1f);
-        app.update(new MockRenderer(), 1f);
+        app.update(1f);
+        app.update(1f);
 
         assertEquals(1, sceneA.getStartCount());
         assertEquals(2, sceneA.getFrameUpdateCount());
@@ -40,12 +39,12 @@ public class ApplicationTest {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        Application app = Application.start(new MockRenderer());
+        SceneContext app = new SceneContext(null, null, null, null);
         app.changeScene(sceneA);
-        app.update(new MockRenderer(), 1f);
+        app.update(1f);
         app.changeScene(sceneB);
-        app.update(new MockRenderer(), 1f);
-        app.update(new MockRenderer(), 1f);
+        app.update(1f);
+        app.update(1f);
 
         assertEquals(1, sceneA.getStartCount());
         assertEquals(1, sceneA.getFrameUpdateCount());
@@ -59,11 +58,11 @@ public class ApplicationTest {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        Application app = Application.start(new MockRenderer());
+        SceneContext app = new SceneContext(null, null, null, null);
         app.changeScene(sceneA);
-        app.update(new MockRenderer(), 1f);
+        app.update(1f);
         app.changeScene(sceneB);
-        app.update(new MockRenderer(), 1f);
+        app.update(1f);
 
         assertEquals(1, sceneA.getStartCount());
         assertEquals(1, sceneA.getEndCount());
@@ -76,11 +75,11 @@ public class ApplicationTest {
         MockScene sceneA = new MockScene();
         List<String> tracker = new ArrayList<>();
 
-        Application app = Application.start(new MockRenderer());
+        SceneContext app = new SceneContext(null, null, null, null);
         app.changeScene(sceneA);
-        app.attach(SubScene.fromLogic(deltaTime -> tracker.add("a")));
-        app.attach(SubScene.fromLogic(deltaTime -> tracker.add("b")));
-        app.update(new MockRenderer(), 1f);
+        app.attachAgent(deltaTime -> tracker.add("a"));
+        app.attachAgent(deltaTime -> tracker.add("b"));
+        app.update(1f);
 
         assertEquals(ImmutableList.of("a", "b"), tracker);
     }
@@ -91,33 +90,33 @@ public class ApplicationTest {
         MockScene sceneB = new MockScene();
         List<String> tracker = new ArrayList<>();
 
-        Application app = Application.start(new MockRenderer());
+        SceneContext app = new SceneContext(null, null, null, null);
         app.changeScene(sceneA);
-        app.attach(SubScene.fromLogic(deltaTime -> tracker.add("a")));
-        app.attach(SubScene.fromLogic(deltaTime -> tracker.add("b")));
-        app.update(new MockRenderer(), 1f);
-        app.update(new MockRenderer(), 1f);
+        app.attachAgent(deltaTime -> tracker.add("a"));
+        app.attachAgent(deltaTime -> tracker.add("b"));
+        app.update(1f);
+        app.update(1f);
         app.changeScene(sceneB);
-        app.attach(SubScene.fromLogic(deltaTime -> tracker.add("c")));
-        app.update(new MockRenderer(), 1f);
+        app.attachAgent(deltaTime -> tracker.add("c"));
+        app.update(1f);
 
         assertEquals(ImmutableList.of("a", "b", "a", "b", "c"), tracker);
     }
 
     @Test
-    void detachSubScene() {
+    void cancelAgent() {
         MockScene sceneA = new MockScene();
         List<String> tracker = new ArrayList<>();
-        SubScene subSceneA = SubScene.fromLogic(deltaTime -> tracker.add("a"));
-        SubScene subSceneB = SubScene.fromLogic(deltaTime -> tracker.add("b"));
+        Agent subSceneA = deltaTime -> tracker.add("a");
+        Agent subSceneB = deltaTime -> tracker.add("b");
 
-        Application app = Application.start(new MockRenderer());
+        SceneContext app = new SceneContext(null, null, null, null);
         app.changeScene(sceneA);
-        app.attach(subSceneA);
-        app.attach(subSceneB);
-        app.update(new MockRenderer(), 1f);
-        app.detach(subSceneB);
-        app.update(new MockRenderer(), 1f);
+        app.attachAgent(subSceneA);
+        app.attachAgent(subSceneB);
+        app.update(1f);
+        app.cancelAgent(subSceneB);
+        app.update(1f);
 
         assertEquals(ImmutableList.of("a", "b", "a"), tracker);
     }

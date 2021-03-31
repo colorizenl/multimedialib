@@ -11,6 +11,7 @@ import com.google.common.net.HttpHeaders;
 import nl.colorize.multimedialib.graphics.Align;
 import nl.colorize.multimedialib.graphics.Animation;
 import nl.colorize.multimedialib.graphics.ColorRGB;
+import nl.colorize.multimedialib.graphics.GraphicsLayer2D;
 import nl.colorize.multimedialib.graphics.Image;
 import nl.colorize.multimedialib.graphics.Sprite;
 import nl.colorize.multimedialib.graphics.SpriteSheet;
@@ -28,10 +29,9 @@ import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.NetworkAccess;
-import nl.colorize.multimedialib.renderer.Renderer;
-import nl.colorize.multimedialib.renderer.Updatable;
-import nl.colorize.multimedialib.scene.Application;
 import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.scene.Updatable;
 import nl.colorize.multimedialib.scene.effect.Effect;
 import nl.colorize.multimedialib.scene.effect.FireEffect;
 import nl.colorize.multimedialib.scene.effect.TransitionEffect;
@@ -64,10 +64,9 @@ import java.util.logging.Logger;
  * {@link DemoLauncher}. It can also be embedded in applications by creating an
  * instance of this class from the application code.
  */
-public class Demo2D implements Scene {
+public class Demo2D implements Scene, GraphicsLayer2D {
 
-    private Renderer renderer;
-    private Application app;
+    private SceneContext context;
 
     private SpriteSheet marioSpriteSheet;
     private TTFont font;
@@ -99,11 +98,9 @@ public class Demo2D implements Scene {
     private static final Logger LOGGER = LogHelper.getLogger(Demo2D.class);
 
     @Override
-    public void start(Application app) {
-        this.renderer = app.getRenderer();
-        this.app = app;
-
-        MediaLoader mediaLoader = renderer.getMediaLoader();
+    public void start(SceneContext context) {
+        this.context = context;
+        MediaLoader mediaLoader = context.getMediaLoader();
 
         initMarioSprites(mediaLoader);
         marios = new ArrayList<>();
@@ -135,24 +132,25 @@ public class Demo2D implements Scene {
         animationTimeline.addKeyFrame(2f, 1f);
         animationTimeline.addKeyFrame(4f, 0f);
 
-        colorizeLogo = Effect.forImage(app.getMediaLoader().loadImage(COLORIZE_LOGO), animationTimeline);
+        colorizeLogo = Effect.forImage(context.getMediaLoader().loadImage(COLORIZE_LOGO),
+            animationTimeline);
         Transform transform = colorizeLogo.getTransform();
-        colorizeLogo.modify(value -> colorizeLogo.setPosition(50, app.getCanvas().getHeight() - 50));
+        colorizeLogo.modify(value -> colorizeLogo.setPosition(50, context.getCanvas().getHeight() - 50));
         colorizeLogo.modify(value -> transform.setScale(80 + Math.round(value * 40f)));
         colorizeLogo.modifyFrameUpdate(dt -> transform.addRotation(Math.round(dt * 100f)));
-        app.attach(colorizeLogo);
+        context.attachAgent(colorizeLogo);
 
-        TransitionEffect transition = TransitionEffect.reveal(app.getCanvas(),
-            app.getMediaLoader(), COLORIZE_COLOR, 1.5f);
-        app.attach(transition);
+        TransitionEffect transition = TransitionEffect.reveal(context.getCanvas(),
+            context.getMediaLoader(), COLORIZE_COLOR, 1.5f);
+        context.attachAgent(transition);
     }
 
     @Override
-    public void update(Application app, float deltaTime) {
-        InputDevice inputDevice = renderer.getInputDevice();
-        handleClick(inputDevice, app.getCanvas());
+    public void update(SceneContext context, float deltaTime) {
+        InputDevice inputDevice = context.getInputDevice();
+        handleClick(inputDevice, context.getCanvas());
         checkLogoClick(inputDevice);
-        handleSystemControls(inputDevice, app.getNetwork());
+        handleSystemControls(inputDevice, context.getNetworkAccess());
 
         for (Mario mario : marios) {
             mario.update(deltaTime);
@@ -162,7 +160,7 @@ public class Demo2D implements Scene {
     }
 
     private void checkLogoClick(InputDevice input) {
-        Rect area = new Rect(0f, app.getCanvas().getHeight() - 80f, 80f, 80f);
+        Rect area = new Rect(0f, context.getCanvas().getHeight() - 80f, 80f, 80f);
 
         if (input.isPointerReleased(area)) {
             Transform transform = colorizeLogo.getTransform();
@@ -198,7 +196,7 @@ public class Demo2D implements Scene {
     }
 
     private boolean isButtonClicked(InputDevice input, int buttonIndex) {
-        Rect buttonBounds = new Rect(renderer.getCanvas().getWidth() - BUTTON_WIDTH,
+        Rect buttonBounds = new Rect(context.getCanvas().getWidth() - BUTTON_WIDTH,
             buttonIndex * 30, BUTTON_WIDTH, BUTTON_HEIGHT);
         return input.isPointerReleased(buttonBounds);
     }
@@ -209,7 +207,7 @@ public class Demo2D implements Scene {
             case 1 : removeMarios(10); break;
             case 2 : audioClip.play(); break;
             case 3 : canvasMask = !canvasMask; break;
-            case 4 : initUIWidgets(renderer.getMediaLoader(), renderer.getInputDevice()); break;
+            case 4 : initUIWidgets(context.getMediaLoader(), context.getInputDevice()); break;
             case 5 : createFireEffect(); break;
             default : break;
         }
@@ -232,7 +230,7 @@ public class Demo2D implements Scene {
     private void changeCanvasStrategy(int index) {
         Canvas.ZoomStrategy strategy = Canvas.ZoomStrategy.values()[index];
         LOGGER.info("Changing canvas zoom strategy to " + strategy);
-        renderer.getCanvas().changeStrategy(strategy);
+        context.getCanvas().changeStrategy(strategy);
     }
 
     private void initUIWidgets(MediaLoader mediaLoader, InputDevice input) {
@@ -270,15 +268,15 @@ public class Demo2D implements Scene {
 
             Effect effect = Effect.forTextAlpha(text, font, Align.LEFT, timeline);
             effect.setPosition(position);
-            app.attach(effect);
+            context.attachAgent(effect);
         }
     }
 
     @Override
-    public void render(Application app, GraphicsContext2D graphics) {
+    public void render(GraphicsContext2D graphics) {
         graphics.drawBackground(BACKGROUND_COLOR);
         drawSprites(graphics);
-        drawHUD(app, graphics);
+        drawHUD(graphics);
 
         if (canvasMask) {
             graphics.drawRect(new Rect(10f, 10f, DEFAULT_CANVAS_WIDTH - 20f, DEFAULT_CANVAS_HEIGHT - 20f),
@@ -300,7 +298,7 @@ public class Demo2D implements Scene {
         }
     }
 
-    private void drawHUD(Application app, GraphicsContext2D graphics) {
+    private void drawHUD(GraphicsContext2D graphics) {
         drawButton(graphics, "Add sprites", RED_BUTTON, 0);
         drawButton(graphics, "Remove sprites", RED_BUTTON, 30);
         drawButton(graphics, "Play sound", GREEN_BUTTON, 60);
@@ -308,19 +306,19 @@ public class Demo2D implements Scene {
         drawButton(graphics, "UI widgets", GREEN_BUTTON, 120);
         drawButton(graphics, "Fire effect", GREEN_BUTTON, 150);
 
-        Canvas canvas = renderer.getCanvas();
+        Canvas canvas = context.getCanvas();
 
         graphics.drawText("Canvas:  " + canvas, font, 20, 20);
-        graphics.drawText("Framerate:  " + Math.round(app.getAverageFramerate()), font, 20, 40);
-        graphics.drawText("Frame time:  " + Math.round(app.getAverageFrameTime()) + "ms",
+        graphics.drawText("Framerate:  " + Math.round(context.getAverageFramerate()), font, 20, 40);
+        graphics.drawText("Frame time:  " + Math.round(context.getAverageFrameTime()) + "ms",
             font, 20, 60);
         graphics.drawText("Sprites:  " + marios.size(), font, 20, 80);
     }
 
     private void drawButton(GraphicsContext2D graphics, String label, ColorRGB background, int y) {
-        graphics.drawRect(new Rect(renderer.getCanvas().getWidth() - BUTTON_WIDTH - 2, y + 2,
+        graphics.drawRect(new Rect(context.getCanvas().getWidth() - BUTTON_WIDTH - 2, y + 2,
             BUTTON_WIDTH, BUTTON_HEIGHT), background, null);
-        graphics.drawText(label, font, renderer.getCanvas().getWidth() - BUTTON_WIDTH / 2f, y + 17,
+        graphics.drawText(label, font, context.getCanvas().getWidth() - BUTTON_WIDTH / 2f, y + 17,
             Align.CENTER);
     }
 
@@ -328,7 +326,7 @@ public class Demo2D implements Scene {
         for (int i = 0; i < amount; i++) {
             Sprite marioSprite = createMarioSprite();
             marios.add(new Mario(marioSprite,
-                new Rect(0, 0, renderer.getCanvas().getWidth(), renderer.getCanvas().getHeight())));
+                new Rect(0, 0, context.getCanvas().getWidth(), context.getCanvas().getHeight())));
         }
     }
 
@@ -360,9 +358,9 @@ public class Demo2D implements Scene {
     }
 
     private void createFireEffect() {
-        Canvas canvas = renderer.getCanvas();
+        Canvas canvas = context.getCanvas();
         Rect bounds = new Rect(0, canvas.getHeight() / 2f, canvas.getWidth(), canvas.getHeight() / 2f);
-        app.attach(new FireEffect(10f, 4, bounds));
+        context.attachAgent(new FireEffect(10f, 4, bounds));
     }
 
     /**

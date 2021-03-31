@@ -4,7 +4,7 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.renderer;
+package nl.colorize.multimedialib.scene;
 
 /**
  * Defines a standardized interface for all objects that should be updated

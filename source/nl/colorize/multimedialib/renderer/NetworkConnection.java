@@ -6,8 +6,10 @@
 
 package nl.colorize.multimedialib.renderer;
 
-import nl.colorize.util.MessageBuffer;
+import com.google.common.collect.ImmutableList;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -29,8 +31,8 @@ public final class NetworkConnection {
 
     private AtomicBoolean connected;
     private String id;
-    private MessageBuffer<String> sendBuffer;
-    private MessageBuffer<String> receiveBuffer;
+    private MessageBuffer sendBuffer;
+    private MessageBuffer receiveBuffer;
     private Consumer<String> sender;
 
     /**
@@ -42,8 +44,8 @@ public final class NetworkConnection {
     public NetworkConnection(Consumer<String> sender) {
         this.connected = new AtomicBoolean(false);
         this.id = null;
-        this.sendBuffer = new MessageBuffer<>();
-        this.receiveBuffer = new MessageBuffer<>();
+        this.sendBuffer = new MessageBuffer();
+        this.receiveBuffer = new MessageBuffer();
         this.sender = sender;
     }
 
@@ -104,5 +106,53 @@ public final class NetworkConnection {
      */
     public List<String> receive() {
         return receiveBuffer.flush();
+    }
+
+    /**
+     * Data structure that acts as a communication channel between a message producer
+     * and consumer that operate at different intervals. The producer adds messages
+     * to the buffer as they come in. The consumer then periodically flushes the
+     * message buffer to process the received messages.
+     * <p>
+     * This class is thread safe, the producer and consumer can access the message
+     * buffer when operating from different threads.
+     */
+    private static class MessageBuffer {
+
+        private List<String> messages;
+
+        public MessageBuffer() {
+            this.messages = new ArrayList<>();
+        }
+
+        public synchronized void add(String message) {
+            messages.add(message);
+        }
+
+        /**
+         * Clears the message buffer and returns all messages that have been added
+         * since the last time this method was called.
+         */
+        public synchronized List<String> flush() {
+            if (messages.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            List<String> contents = ImmutableList.copyOf(messages);
+            messages.clear();
+            return contents;
+        }
+
+        /**
+         * Calls {@link #flush()} and operates the provided callback on every
+         * received message.
+         */
+        public void flush(Consumer<String> callback) {
+            flush().forEach(callback);
+        }
+
+        public synchronized void reset() {
+            messages.clear();
+        }
     }
 }

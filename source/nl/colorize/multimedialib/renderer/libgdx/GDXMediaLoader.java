@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.renderer.libgdx;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.assets.loaders.resolvers.InternalFileHandleResolver;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
@@ -14,34 +15,46 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
+import com.badlogic.gdx.graphics.g3d.ModelInstance;
+import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.loader.G3dModelLoader;
-import com.badlogic.gdx.graphics.g3d.model.Animation;
+import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.UBJsonReader;
 import com.google.common.base.Preconditions;
 import net.mgsx.gltf.loaders.gltf.GLTFLoader;
 import net.mgsx.gltf.scene3d.scene.SceneAsset;
-import nl.colorize.multimedialib.graphics.AnimationInfo;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.graphics.PolygonMesh;
+import nl.colorize.multimedialib.graphics.PolygonModel;
 import nl.colorize.multimedialib.graphics.TTFont;
+import nl.colorize.multimedialib.math.Point2D;
+import nl.colorize.multimedialib.math.Point3D;
 import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
+import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.java2d.MP3;
+import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
+import nl.colorize.util.ApplicationData;
 import nl.colorize.util.LogHelper;
+import nl.colorize.util.Platform;
 import nl.colorize.util.ResourceFile;
 import org.teavm.apachecommons.io.Charsets;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+
+import static com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal;
+import static com.badlogic.gdx.graphics.VertexAttributes.Usage.Position;
+import static com.badlogic.gdx.graphics.VertexAttributes.Usage.TextureCoordinates;
 
 /**
  * Loads media assets using the libGDX framework.
@@ -50,10 +63,9 @@ import java.util.logging.Logger;
  * and release the associated resources. This can be done globally for all
  * media files by calling {@link #dispose()}.
  */
-public class GDXMediaLoader implements MediaLoader, Disposable {
+public class GDXMediaLoader implements MediaLoader, GeometryBuilder, Disposable {
 
     private List<Disposable> loaded;
-    private Map<PolygonMesh, Model> models;
     private Map<TTFont, BitmapFont> fonts;
     private Map<String, FileHandle> fontLocations;
     private Map<ColorRGB, Texture> colorTextureCache;
@@ -63,7 +75,6 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
 
     public GDXMediaLoader() {
         this.loaded = new ArrayList<>();
-        this.models = new HashMap<>();
         this.fonts = new HashMap<>();
         this.fontLocations = new HashMap<>();
         this.colorTextureCache = new HashMap<>();
@@ -141,23 +152,12 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
     }
 
     @Override
-    public PolygonMesh loadMesh(FilePointer file) {
-        Model model = loadMesh(getFileHandle(file));
-        List<AnimationInfo> animations = new ArrayList<>();
-
-        for (Animation anim : model.animations) {
-            animations.add(new AnimationInfo(anim.id, anim.duration));
-        }
-
-        PolygonMesh mesh = new PolygonMesh(file.getPath(), animations);
-
-        loaded.add(model);
-        models.put(mesh, model);
-
-        return mesh;
+    public PolygonModel loadModel(FilePointer file) {
+        Model model = loadModel(getFileHandle(file));
+        return createInstance(model);
     }
 
-    private Model loadMesh(FileHandle file) {
+    private Model loadModel(FileHandle file) {
         if (file.toString().endsWith(".g3db")) {
             G3dModelLoader g3dLoader = new G3dModelLoader(new UBJsonReader(),
                 new InternalFileHandleResolver());
@@ -171,22 +171,39 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
         }
     }
 
-    protected PolygonMesh registerMesh(String name, Model modelData) {
-        PolygonMesh mesh = new PolygonMesh(name, Collections.emptyList());
-        loaded.add(modelData);
-        models.put(mesh, modelData);
-        return mesh;
-    }
-
-    protected Model getModelData(PolygonMesh mesh) {
-        Model modelData = models.get(mesh);
-        Preconditions.checkState(modelData != null, "Model data not loaded: " + mesh);
-        return modelData;
+    private PolygonModel createInstance(Model model) {
+        ModelInstance instance = new ModelInstance(model);
+        loaded.add(model);
+        return new GDXModel(instance);
     }
 
     @Override
     public boolean containsResourceFile(FilePointer file) {
-        return new ResourceFile(file.getPath()).exists();
+        return getFileHandle(file).exists();
+    }
+
+    @Override
+    public ApplicationData loadApplicationData(String appName, String fileName) {
+        if (Platform.isWindows() || Platform.isMac()) {
+            StandardMediaLoader delegate = new StandardMediaLoader();
+            return delegate.loadApplicationData(appName, fileName);
+        } else {
+            Preferences preferences = Gdx.app.getPreferences(appName);
+            String data = preferences.getString("data", "");
+            return new ApplicationData(data);
+        }
+    }
+
+    @Override
+    public void saveApplicationData(ApplicationData data, String appName, String fileName) {
+        if (Platform.isWindows() || Platform.isMac()) {
+            StandardMediaLoader delegate = new StandardMediaLoader();
+            delegate.saveApplicationData(data, appName, fileName);
+        } else {
+            Preferences preferences = Gdx.app.getPreferences(appName);
+            preferences.putString("data", data.serialize());
+            preferences.flush();
+        }
     }
 
     private FileHandle getFileHandle(FilePointer file) {
@@ -202,13 +219,66 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
     }
 
     @Override
-    public void dispose() {
-        for (Disposable disposable : loaded) {
-            disposable.dispose();
-        }
+    public GeometryBuilder getGeometryBuilder() {
+        return this;
+    }
 
+    @Override
+    public PolygonModel createQuad(Point2D size, ColorRGB color) {
+        return createBox(new Point3D(size.getX(), 0.001f, size.getY()), color);
+    }
+
+    @Override
+    public PolygonModel createQuad(Point2D size, Image texture) {
+        return createBox(new Point3D(size.getX(), 0.001f, size.getY()), texture);
+    }
+
+    @Override
+    public PolygonModel createBox(Point3D size, ColorRGB color) {
+        ModelBuilder modelBuilder = new ModelBuilder();
+        Model model = modelBuilder.createBox(size.getX(), size.getY(), size.getZ(),
+            createMaterial(color), Position | Normal);
+        return createInstance(model);
+    }
+
+    @Override
+    public PolygonModel createBox(Point3D size, Image texture) {
+        ModelBuilder modelBuilder = new ModelBuilder();
+        Model model = modelBuilder.createBox(size.getX(), size.getY(), size.getZ(),
+            createMaterial((GDXImage) texture), Position | Normal | TextureCoordinates);
+        return createInstance(model);
+    }
+
+    @Override
+    public PolygonModel createSphere(float diameter, ColorRGB color) {
+        ModelBuilder modelBuilder = new ModelBuilder();
+        Model model = modelBuilder.createSphere(diameter, diameter, diameter, 32, 32,
+            createMaterial(color), Position | Normal);
+        return createInstance(model);
+    }
+
+    @Override
+    public PolygonModel createSphere(float diameter, Image texture) {
+        ModelBuilder modelBuilder = new ModelBuilder();
+        Model model = modelBuilder.createSphere(diameter, diameter, diameter, 32, 32,
+            createMaterial((GDXImage) texture), Position | Normal | TextureCoordinates);
+        return createInstance(model);
+    }
+
+    private Material createMaterial(ColorRGB color) {
+        ColorAttribute colorAttr = ColorAttribute.createDiffuse(toColor(color));
+        return new Material(colorAttr);
+    }
+
+    private Material createMaterial(GDXImage texture) {
+        TextureAttribute colorAttr = TextureAttribute.createDiffuse(texture.getTextureRegion());
+        return new Material(colorAttr);
+    }
+
+    @Override
+    public void dispose() {
+        loaded.forEach(Disposable::dispose);
         loaded.clear();
-        models.clear();
         fonts.clear();
         colorTextureCache.clear();
     }

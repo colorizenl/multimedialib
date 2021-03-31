@@ -43,7 +43,7 @@ The *renderer* is the central access point for all platform-specific functionali
 in the picture above. Applications can access the renderer to display graphics, load media, check
 for user input, or internet access.
 
-![MultimediaLib architecture](_development/architecture.svg)
+![MultimediaLib platform architecture](_development/platform-architecture.svg)
 
 MultimediaLib contains a number of renderer implementations, for different platforms and for
 different types of applications. Some renderers are implemented using the platforms' native 
@@ -63,34 +63,34 @@ When using the TeaVM renderer, the application needs to be transpiled to JavaScr
 it to run in the browser. MultimediaLib includes a command line tool for integrating this step
 into the build, refer to the section *Transpiling applications to HTML/JavaScript* below.
 
-### Additional instructions for building native iOS apps using RoboVM
+Application architecture
+------------------------
 
-When using the libGDX renderer in combination with RoboVM, applications will need to add the
-following additional Maven or Gradle dependencies:
+MultimediaLib uses a number of concepts similar to [Adobe Flash](https://en.wikipedia.org/wiki/Adobe_Flash),
+both in terms of terminology and in how they behave.
 
-  - `com.badlogicgames.gdx:gdx-backend-robovm:$gdxVersion`
-  - `com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-ios`
-  - `com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-ios`
+MultimediaLib applications are divided into a number of *scenes*. Each scene represents a 
+discrete part or phase of an application that is active for some period of time. Only one scene 
+can be active at any point in time. Simple applications may consist of a single scene, while 
+larger applications will typically have many. The currently active scene will receive frame 
+updates for as long as it is active. 
 
-It is not possible use both "regular" Java and RoboVM in the same project, which is why 
-MultimediaLib does not include these dependencies by default.
+![MultimediaLib application architecture](_development/application-architecture.svg)
 
-Concepts
---------
+Scenes can update the *stage*, which displays the graphics and sound for the current scene. The 
+stage consists of a single 3D graphics layer, plus a number of layers with 2D graphics. In 2D 
+applications, the 3D graphics layer is disabled. The stage is linked to the current scene, once 
+the scene ends the stage is cleared and all graphics are removed.
 
-For application structure, MultimediaLib uses the same terminology from the theater world that
-is used by animation software. The application consists of a *stage* and a number of *scenes*.
+During frame updates, scenes have access to the *scene context*, which in turn provides access to
+both the stage and the underlying platform.
 
-The stage contains everything that should be displayed. The stage can contain 2D graphics,
-3D graphics, or a combination of the two.
+In addition to modifying the stage, the scene can also contain logic which is executed during
+frame updates. This logic can be placed in either the scene itself, or (in larger scenes) divided
+among a number of *agents*. These agents can be active for a certain period of time, or until the
+end of the scene, but they cannot outlive the current scene. Unlike scenes, agents have a smaller
+scope and can therefore not access the entire scene context.
 
-Scenes are used to structure the application logic. Only one scene can be active at the same
-time, but the application can return to the same scene multiple times, for example when accessing
-a menu. When a scene ends, the stage is cleared. When the new scene is started, it can fill the
-stage with everything that should be displayed during the scene. The scene will then update every
-frame for as long as it is active. More complex scenes can be split into sub-scenes, with each
-sub-scene responsible for one functional area. 
-    
 Starting the demo applications
 ------------------------------
 
@@ -122,6 +122,18 @@ The browser version of the demo applications can be created by running
 `gradle transpileDemoApplication2D` and `gradle transpileDemoApplication3D` respectively.
 The build output is then saved to the directories `build/browserdemo2d` and `browserdemo3d`, and 
 can be started by opening the corresponding `index.html` in a browser.
+
+### Additional instructions for building native iOS apps using RoboVM
+
+When using the libGDX renderer in combination with RoboVM, applications will need to add the
+following additional Maven or Gradle dependencies:
+
+  - `com.badlogicgames.gdx:gdx-backend-robovm:$gdxVersion`
+  - `com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-ios`
+  - `com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-ios`
+  
+It is not possible use both "regular" Java and RoboVM in the same project, which is why 
+MultimediaLib does not include these dependencies by default.
 
 Transpiling applications to HTML/JavaScript
 -------------------------------------------

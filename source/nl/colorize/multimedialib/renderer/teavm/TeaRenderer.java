@@ -6,17 +6,14 @@
 
 package nl.colorize.multimedialib.renderer.teavm;
 
-import com.google.common.base.Preconditions;
-import nl.colorize.multimedialib.renderer.ApplicationData;
+import nl.colorize.multimedialib.graphics.PolygonModel;
+import nl.colorize.multimedialib.math.Point3D;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
-import nl.colorize.multimedialib.renderer.InputDevice;
-import nl.colorize.multimedialib.renderer.NetworkAccess;
-import nl.colorize.multimedialib.renderer.MediaLoader;
-import nl.colorize.multimedialib.renderer.NestedRenderCallback;
-import nl.colorize.multimedialib.renderer.RenderCallback;
 import nl.colorize.multimedialib.renderer.Renderer;
-import nl.colorize.multimedialib.renderer.Stage;
+import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.scene.Stage;
 import nl.colorize.util.PlatformFamily;
 
 /**
@@ -25,89 +22,65 @@ import nl.colorize.util.PlatformFamily;
  */
 public class TeaRenderer implements Renderer {
 
-    private NestedRenderCallback callbacks;
     private Canvas canvas;
     private TeaGraphicsContext2D graphics;
-    private TeaStage stage;
     private TeaInputDevice inputDevice;
     private TeaMediaLoader mediaLoader;
+    private SceneContext context;
 
     public TeaRenderer(Canvas canvas) {
-        this.callbacks = new NestedRenderCallback();
         this.canvas = canvas;
         this.graphics = new TeaGraphicsContext2D(canvas);
         this.inputDevice = new TeaInputDevice(canvas, getPlatform());
         this.mediaLoader = new TeaMediaLoader();
-
-        if (getSupportedGraphicsMode() == GraphicsMode.ALL) {
-            stage = new TeaStage();
-        }
+        TeaNetworkAccess network = new TeaNetworkAccess();
+        context = new SceneContext(canvas, inputDevice, mediaLoader, network);
     }
 
     @Override
-    public void attach(RenderCallback callback) {
-        callbacks.add(callback);
-    }
-
-    @Override
-    public void start() {
+    public void start(Scene initialScene) {
+        context.changeScene(initialScene);
         Browser.startAnimationLoop(this::onFrame);
     }
 
     @Override
-    public GraphicsMode getSupportedGraphicsMode() {
+    public GraphicsMode getGraphicsMode() {
         if (Browser.getRendererType().equals("three")) {
-            return GraphicsMode.ALL;
+            return GraphicsMode.MODE_3D;
         } else {
-            return GraphicsMode.G2D;
+            return GraphicsMode.MODE_2D;
         }
-    }
-
-    @Override
-    public Canvas getCanvas() {
-        return canvas;
-    }
-
-    @Override
-    public Stage getStage() {
-        Preconditions.checkState(stage != null, "Support for 3D graphics is not enabled");
-        return stage;
-    }
-
-    @Override
-    public InputDevice getInputDevice() {
-        return inputDevice;
-    }
-
-    @Override
-    public MediaLoader getMediaLoader() {
-        return mediaLoader;
-    }
-
-    @Override
-    public ApplicationData getApplicationData(String appName) {
-        return new TeaLocalStorage();
-    }
-
-    @Override
-    public NetworkAccess getNetwork() {
-        return new TeaNetworkAccess();
     }
 
     private void onFrame(float deltaTime, boolean render) {
         updateCanvas();
         inputDevice.update(deltaTime);
-        if (stage != null) {
-            stage.update(deltaTime);
-        }
 
         if (isReady()) {
-            callbacks.update(this, deltaTime);
+            context.update(deltaTime);
 
             if (render) {
-                callbacks.render(this, graphics);
+                renderStage(context.getStage(), deltaTime);
             }
         }
+    }
+
+    private void renderStage(Stage stage, float deltaTime) {
+        if (getGraphicsMode() == GraphicsMode.MODE_3D) {
+            Point3D camera = stage.getCameraPosition();
+            Point3D cameraDirection = stage.getCameraTarget();
+            Browser.moveCamera(camera.getX(), camera.getY(), camera.getZ(),
+                cameraDirection.getX(), cameraDirection.getY(), cameraDirection.getZ());
+
+            Browser.changeAmbientLight(stage.getAmbientLight().toHex());
+            Browser.changeLight(stage.getAmbientLight().toHex());
+
+            for (PolygonModel model : stage.getModels()) {
+                model.update(deltaTime);
+            }
+        }
+
+        stage.render2D(graphics);
     }
 
     private boolean isReady() {
@@ -126,14 +99,18 @@ public class TeaRenderer implements Renderer {
         }
     }
 
-    /**
-     * Returns the display name of the current platform. This method is similar
-     * to {@code Platform.getPlatformName()}, but detects the platform based on
-     * the browser's {@code User-Agent} header rather than from the system
-     * properties.
-     */
     @Override
-    public PlatformFamily getPlatform() {
+    public String takeScreenshot() {
+        return Browser.takeScreenshot();
+    }
+
+    /**
+     * Returns the underlying platform. This will not return a generic
+     * "browser" or "web" value, but instead return the platform that is
+     * running the browser. The detection is based on the browser's User-Agent
+     * header.
+     */
+    public static PlatformFamily getPlatform() {
         String userAgent = Browser.getUserAgent().toLowerCase();
 
         if (userAgent.contains("iphone") || userAgent.contains("ipad")) {
@@ -145,10 +122,5 @@ public class TeaRenderer implements Renderer {
         } else {
             return PlatformFamily.WINDOWS;
         }
-    }
-
-    @Override
-    public String takeScreenshot() {
-        return Browser.takeScreenshot();
     }
 }

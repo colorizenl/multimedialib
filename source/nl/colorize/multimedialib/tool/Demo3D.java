@@ -7,8 +7,8 @@
 package nl.colorize.multimedialib.tool;
 
 import nl.colorize.multimedialib.graphics.ColorRGB;
+import nl.colorize.multimedialib.graphics.GraphicsLayer2D;
 import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.graphics.PolygonMesh;
 import nl.colorize.multimedialib.graphics.PolygonModel;
 import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.math.Point2D;
@@ -17,12 +17,13 @@ import nl.colorize.multimedialib.math.RandomGenerator;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.FilePointer;
+import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.GraphicsContext2D;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.MediaLoader;
-import nl.colorize.multimedialib.renderer.Stage;
-import nl.colorize.multimedialib.scene.Application;
 import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.scene.Stage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,8 +33,9 @@ import java.util.List;
  * a number of models randomly walking around. Using this demo application
  * requires a renderer that supports 3D graphics.
  */
-public class Demo3D implements Scene {
+public class Demo3D implements Scene, GraphicsLayer2D {
 
+    private SceneContext context;
     private TTFont font;
     private Image logo;
     private List<PolygonModel> models;
@@ -53,15 +55,15 @@ public class Demo3D implements Scene {
     }
 
     @Override
-    public void start(Application app) {
-        MediaLoader mediaLoader = app.getMediaLoader();
+    public void start(SceneContext context) {
+        this.context = context;
+        MediaLoader mediaLoader = context.getMediaLoader();
         font = mediaLoader.loadDefaultFont(12, ColorRGB.WHITE);
         logo = mediaLoader.loadImage(LOGO_FILE);
 
-        createFloor(app.getStage());
-        createModels(app.getStage(), mediaLoader);
-
-        Stage stage = app.getStage();
+        Stage stage = context.getStage();
+        createFloor(stage);
+        createModels(stage, mediaLoader);
         stage.moveCamera(new Point3D(0f, 30f, AREA_SIZE * 0.6f), new Point3D(0f, 0f, 0f));
     }
 
@@ -73,7 +75,7 @@ public class Demo3D implements Scene {
                 float tileSize = AREA_SIZE / 11f;
                 ColorRGB color = white ? ColorRGB.WHITE : new ColorRGB(50, 50, 50);
                 PolygonModel tile = createTile(stage, tileSize, color, i == 0 && j == 0);
-                tile.setPosition(i * tileSize, 0f, j * tileSize);
+                tile.getTransform().setPosition(i * tileSize, 0f, j * tileSize);
                 stage.add(tile);
 
                 white = !white;
@@ -82,26 +84,26 @@ public class Demo3D implements Scene {
     }
 
     private PolygonModel createTile(Stage stage, float tileSize, ColorRGB color, boolean center) {
+        GeometryBuilder geometryBuilder = context.getMediaLoader().getGeometryBuilder();
+
         if (center) {
-            PolygonMesh tileMesh = stage.createQuad(new Point2D(tileSize, tileSize), logo);
-            PolygonModel model = tileMesh.createModel();
-            model.setRotation(0f, 1f, 0f, 90f);
-            return model;
+            PolygonModel quad = geometryBuilder.createQuad(new Point2D(tileSize, tileSize), logo);
+            quad.getTransform().setRotation(0f, 1f, 0f, 90f);
+            return quad;
         } else {
-            PolygonMesh tileMesh = stage.createQuad(new Point2D(tileSize, tileSize), color);
-            return tileMesh.createModel();
+            return geometryBuilder.createQuad(new Point2D(tileSize, tileSize), color);
         }
     }
 
     private void createModels(Stage stage, MediaLoader mediaLoader) {
         models = new ArrayList<>();
         walkVectors = new ArrayList<>();
-        PolygonMesh mesh = mediaLoader.loadMesh(MODEL_FILE);
+        PolygonModel template = mediaLoader.loadModel(MODEL_FILE);
 
         for (int i = 0; i < 100; i++) {
-            PolygonModel model = mesh.createModel();
-            model.setPosition(generateRandomModelPosition());
-            model.setRotation(0f, 1f, 0f, -90f);
+            PolygonModel model = template.copy();
+            model.getTransform().setPosition(generateRandomModelPosition());
+            model.getTransform().setRotation(0f, 1f, 0f, -90f);
             stage.add(model);
             models.add(model);
             walkVectors.add(generateRandomWalkVector());
@@ -121,13 +123,14 @@ public class Demo3D implements Scene {
     }
 
     @Override
-    public void update(Application app, float deltaTime) {
-        InputDevice inputDevice = app.getInputDevice();
-        if (inputDevice.isPointerReleased(app.getCanvas().getBounds())) {
+    public void update(SceneContext context, float deltaTime) {
+        InputDevice inputDevice = context.getInputDevice();
+
+        if (inputDevice.isPointerReleased(context.getCanvas().getBounds())) {
             pointer = inputDevice.getPointers().get(0);
         }
 
-        updateModels(app.getStage());
+        updateModels(context.getStage());
     }
 
     private void updateModels(Stage stage) {
@@ -136,27 +139,27 @@ public class Demo3D implements Scene {
         for (int i = 0; i < models.size(); i++) {
             PolygonModel model = models.get(i);
             Point2D walkVector = walkVectors.get(i);
-            Point3D position = model.getPosition();
+            Point3D position = model.getTransform().getPosition();
             position.add(walkVector.getX(), 0f, walkVector.getY());
 
             if (!areaBounds.contains(position.getX(), position.getZ())) {
                 Point2D walk = new Point2D(-walkVectors.get(i).getX(), -walkVectors.get(i).getY());
                 walkVectors.set(i, walk);
 
-                if (model.getAnimations().contains("Cube|Spin")) {
-                    stage.playAnimation(model, model.getAnimation("Cube|Spin"), false);
+                if (model.getAnimations().containsKey("Cube|Spin")) {
+                    model.playAnimation("Cube|Spin", false);
                 }
             }
         }
     }
 
     @Override
-    public void render(Application app, GraphicsContext2D graphics) {
+    public void render(GraphicsContext2D graphics) {
         Canvas canvas = graphics.getCanvas();
 
         graphics.drawText("Canvas:  " + canvas, font, 20, 20);
-        graphics.drawText("Framerate:  " + Math.round(app.getAverageFramerate()), font, 20, 40);
-        graphics.drawText("Frame time:  " + Math.round(app.getAverageFrameTime()) + "ms",
+        graphics.drawText("Framerate:  " + Math.round(context.getAverageFramerate()), font, 20, 40);
+        graphics.drawText("Frame time:  " + Math.round(context.getAverageFrameTime()) + "ms",
             font, 20, 60);
         graphics.drawText("Models:  " + models.size(), font, 20, 80);
         graphics.drawText("Pointer:  " + pointer, font, 20, 100);
