@@ -1,14 +1,16 @@
 name: Build
 on: [push, pull_request]
-build:
-  runs-on: colorize-ci
-  steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Compile
-      run: gradle compileJava
-    - name: Unit tests
-      run: gradle -Djava.awt.headless=true coverage
-    - name: Transpile TeaVM demo applications
-      run: gradle transpileDemoApplication2D transpileDemoApplication3D
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: colorize-ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Compile
+        run: gradle compileJava
+      - name: Unit tests
+        run: gradle -Djava.awt.headless=true coverage
+      - name: Transpile TeaVM demo applications
+        run: gradle transpileDemoApplication2D transpileDemoApplication3D
       
