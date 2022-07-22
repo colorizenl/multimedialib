@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -72,5 +72,19 @@ public class RectTest {
     public void testAround() {
         assertEquals(new Rect(-150, -200, 300, 400), Rect.around(new Point2D(0, 0), 300, 400));
         assertEquals(new Rect(-50, 0, 300, 400), Rect.around(new Point2D(100, 200), 300, 400));
+    }
+
+    @Test
+    void reposition() {
+        Rect original = new Rect(10, 20, 30, 40);
+        Rect result = original.reposition(new Point2D(10, 20));
+
+        assertEquals("10, 20, 30, 40", original.toString());
+        assertEquals("20, 40, 30, 40", result.toString());
+    }
+
+    @Test
+    void fromPoints() {
+        assertEquals("10, 20, 20, 30", Rect.fromPoints(10, 20, 30, 50).toString());
     }
 }

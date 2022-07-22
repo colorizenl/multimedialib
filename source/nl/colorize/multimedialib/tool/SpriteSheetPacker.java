@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -15,8 +15,8 @@ import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.java2d.AWTImage;
 import nl.colorize.util.CSVRecord;
 import nl.colorize.util.LogHelper;
+import nl.colorize.util.cli.CommandLineArgumentParser;
 import nl.colorize.util.swing.Utils2D;
-import org.kohsuke.args4j.Option;
 
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -37,37 +37,41 @@ import java.util.stream.Collectors;
  * Creates a new sprite sheet by taking all images located within a direcory,
  * and packing them into a single sprite sheet.
  */
-public class SpriteSheetPacker extends CommandLineTool {
+public class SpriteSheetPacker {
 
-    @Option(name = "-input", required = true, usage = "Directory containing source images")
-    public File inputDir;
-
-    @Option(name = "-outimage", required = true, usage = "Generated image file location")
-    public File outputImageFile;
-
-    @Option(name = "-outdata", required = true, usage = "Generated metadata file location")
-    public File outputDataFile;
-
-    @Option(name = "-metadata", required = true, usage = "Metadata file format, either 'yaml' or 'csv'")
-    public String metadataFormat;
-
-    @Option(name = "-size", required = true, usage = "Width/height of the sprite sheet")
-    public int size;
-
-    @Option(name = "-exclude", required = false, usage = "Excludes all images beyond a certain size")
-    public int excludeSize;
+    protected File inputDir;
+    protected File outputImageFile;
+    protected File outputDataFile;
+    protected String metadataFormat;
+    protected int size;
+    protected int excludeSize;
 
     private static final List<Integer> VALID_SIZES = ImmutableList.of(32, 64, 128, 256, 512, 1024, 2048);
     private static final int PADDING = 1;
     private static final Logger LOGGER = LogHelper.getLogger(SpriteSheetPacker.class);
 
     public static void main(String[] args) {
+        CommandLineArgumentParser argParser = new CommandLineArgumentParser("SpriteSheetPacker")
+            .add("-input", "Directory containing source images")
+            .add("-outimage", "Generated image file location")
+            .add("-outdata", "Generated metadata file location")
+            .add("-size", "Width/height of the sprite sheet")
+            .addOptional("-metadata", "yaml", "Metadata file format, either 'yaml' or 'csv'")
+            .addOptional("-exclude", "-1", "Excludes all images beyond a certain size");
+
+        argParser.parseArgs(args);
+
         SpriteSheetPacker tool = new SpriteSheetPacker();
-        tool.start(args);
+        tool.inputDir = argParser.getDir("input");
+        tool.outputImageFile = argParser.getFile("outimage");
+        tool.outputDataFile = argParser.getFile("outdata");
+        tool.size = argParser.getInt("size");
+        tool.metadataFormat = argParser.get("metadata");
+        tool.excludeSize = argParser.getInt("exclude");
+        tool.run();
     }
 
-    @Override
-    public void run() {
+    protected void run() {
         Preconditions.checkArgument(VALID_SIZES.contains(size), "Invalid argument: " + size);
 
         LOGGER.info("Gathering images from directory " + inputDir.getAbsolutePath());

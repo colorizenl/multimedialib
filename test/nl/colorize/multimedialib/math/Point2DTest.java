@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -35,17 +35,17 @@ public class Point2DTest {
 
     @Test
     public void testCalculateDistance() {
-        assertEquals(0f, new Point2D(1f, 1f).calculateDistance(new Point2D(1f, 1f)), EPSILON);
-        assertEquals(1f, new Point2D(1f, 1f).calculateDistance(new Point2D(2f, 1f)), EPSILON);
-        assertEquals(1.414f, new Point2D(1f, 1f).calculateDistance(new Point2D(2f, 2f)), EPSILON);
+        assertEquals(0f, new Point2D(1f, 1f).distanceTo(new Point2D(1f, 1f)), EPSILON);
+        assertEquals(1f, new Point2D(1f, 1f).distanceTo(new Point2D(2f, 1f)), EPSILON);
+        assertEquals(1.414f, new Point2D(1f, 1f).distanceTo(new Point2D(2f, 2f)), EPSILON);
     }
 
     @Test
     public void testCalculateAngle() {
-        assertEquals(0f, new Point2D(1f, 1f).calculateAngle(new Point2D(1f, 1f)), EPSILON);
-        assertEquals(0f, new Point2D(1f, 1f).calculateAngle(new Point2D(2f, 1f)), EPSILON);
-        assertEquals(180f, new Point2D(1f, 1f).calculateAngle(new Point2D(-2f, 1f)), EPSILON);
-        assertEquals(45f, new Point2D(1f, 1f).calculateAngle(new Point2D(2f, 2f)), EPSILON);
+        assertEquals(0f, new Point2D(1f, 1f).angleTo(new Point2D(1f, 1f)), EPSILON);
+        assertEquals(0f, new Point2D(1f, 1f).angleTo(new Point2D(2f, 1f)), EPSILON);
+        assertEquals(180f, new Point2D(1f, 1f).angleTo(new Point2D(-2f, 1f)), EPSILON);
+        assertEquals(45f, new Point2D(1f, 1f).angleTo(new Point2D(2f, 2f)), EPSILON);
     }
 
     @Test
@@ -63,15 +63,15 @@ public class Point2DTest {
     void calculateCenter() {
         Point2D origin = new Point2D(10, 20);
         
-        Point2D center = origin.calculateCenter(new Point2D(10, 20));
+        Point2D center = origin.findCenter(new Point2D(10, 20));
         assertEquals(10f, center.getX(), EPSILON);
         assertEquals(20f, center.getY(), EPSILON);
         
-        center = origin.calculateCenter(new Point2D(40, 20));
+        center = origin.findCenter(new Point2D(40, 20));
         assertEquals(25f, center.getX(), EPSILON);
         assertEquals(20f, center.getY(), EPSILON);
         
-        center = origin.calculateCenter(new Point2D(-20, -20));
+        center = origin.findCenter(new Point2D(-20, -20));
         assertEquals(-5f, center.getX(), EPSILON);
         assertEquals(0f, center.getY(), EPSILON);
     }

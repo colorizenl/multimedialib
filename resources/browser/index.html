@@ -2,23 +2,22 @@
 <html>
 	<head>
 		<meta charset="UTF-8" />
-		<title>@@@PROJECT</title>
+		<title>{project}</title>
 		<meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no" />
-		<meta name="renderer" content="@@@RENDERER" />
+		<meta name="renderer" content="{renderer}" />
 		<link rel="shortcut icon" type="image/x-icon" href="resources/favicon.png" />
-		<link rel="apple-touch-icon" href="apple-icon.png" />
-		<link rel="stylesheet" type="text/css" href="multimedialib.css" />
+		<link rel="apple-touch-icon" href="resources/apple-icon.png" />
+		<link rel="stylesheet" type="text/css" href="resources/multimedialib.css" />
+		{manifest}
 
-		<script src="three.min.js"></script>
-		<script src="GLTFLoader.js"></script>
-		<script src="peerjs.min.js"></script>
+		<script src="libraries/pixi.min.js"></script>
+		<script src="libraries/pixi-heaven.umd.min.js"></script>
+		<script src="libraries/three.min.js"></script>
+		<script src="libraries/GLTFLoader.js"></script>
+		<script src="libraries/peerjs.min.js"></script>
 		
 		<script src="multimedialib.js"></script>
-		<script src="canvas-renderer.js"></script>
-		<script src="webgl2d-renderer.js"></script>
-		<script src="threejs-renderer.js"></script>
-		<script src="network.js"></script>
-
+		<script src="pixi-renderer.js"></script>
         <script src="classes.js"></script>
 	</head>
 	
@@ -33,7 +32,7 @@
 		<div id="audioContainer"></div>
 		<div id="fontContainer"></div>
 		<div id="resourceContainer">
-			@@@RESOURCES
+			{resources}
 		</div>
 	</body>
 </html>

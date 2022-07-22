@@ -1,13 +1,12 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.graphics;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,7 +31,7 @@ public class Animation implements AnimationInfo {
     private boolean loop;
     
     private Animation(List<FrameInfo> frames, boolean loop) {
-        this.frames = ImmutableList.copyOf(frames);
+        this.frames = new ArrayList<>(frames);
         this.loop = loop;
     }
 
@@ -110,7 +109,8 @@ public class Animation implements AnimationInfo {
     public void setFrameTime(int index, float frameTime) {
         Preconditions.checkArgument(frameTime >= 0f, "Invalid frame time: " + frameTime);
 
-        frames.get(index).frameTime = frameTime;
+        FrameInfo frame = frames.get(index);
+        frames.set(index, new FrameInfo(frame.image, frameTime));
     }
     
     public void setFrameTimes(List<Float> frameTimes) {
@@ -118,7 +118,8 @@ public class Animation implements AnimationInfo {
             "Animation has " + frames.size() + " frame, but provided " + frameTimes.size());
         
         for (int i = 0; i < frameTimes.size(); i++) {
-            frames.get(i).frameTime = frameTimes.get(i);
+            FrameInfo frame = frames.get(i);
+            frames.set(i, new FrameInfo(frame.image, frameTimes.get(i)));
         }
     }
 

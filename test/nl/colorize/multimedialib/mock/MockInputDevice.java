@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -9,6 +9,7 @@ package nl.colorize.multimedialib.mock;
 import com.google.common.collect.ImmutableList;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 
@@ -81,5 +82,10 @@ public class MockInputDevice implements InputDevice {
     @Override
     public String requestTextInput(String label, String initialValue) {
         return null;
+    }
+
+    @Override
+    public Canvas getCanvas() {
+        return new Canvas(800, 600, Canvas.ZoomStrategy.FLEXIBLE);
     }
 }

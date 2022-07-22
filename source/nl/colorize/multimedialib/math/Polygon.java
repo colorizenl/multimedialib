@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -113,7 +113,8 @@ public class Polygon implements Shape {
 
     @Override
     public boolean contains(Point2D p) {
-        return isPointInPolygon(p.getX(), p.getY()) || isPointOnLineSegment(p.getX(), p.getY());
+        return isPointInPolygon(p.getX(), p.getY()) ||
+            isPointOnLineSegment(p.getX(), p.getY());
     }
 
     /**
@@ -171,7 +172,7 @@ public class Polygon implements Shape {
 
     /**
      * Returns true if this polygon intersects with the specified other polygon.
-     * Implementation based on http://slick.cokeandcode.com.
+     * Implementation based on <a href="http://slick.cokeandcode.com">Slick</a>.
      */
     public boolean intersects(Polygon p) {
         float[] pPoints = p.getPoints();
@@ -213,7 +214,8 @@ public class Polygon implements Shape {
      * Returns the smallest possible axis-aligned rectangle that contains this
      * polygon.
      */
-    public Rect getBounds() {
+    @Override
+    public Rect getBoundingBox() {
         float minX = points[0];
         float minY = points[1];
         float maxX = points[0];
@@ -230,7 +232,7 @@ public class Polygon implements Shape {
     }
 
     public Point2D getCenter() {
-        return getBounds().getCenter();
+        return getBoundingBox().getCenter();
     }
 
     /**
@@ -273,12 +275,23 @@ public class Polygon implements Shape {
         return vertices;
     }
 
+    @Override
     public Polygon copy() {
         float[] pointsCopy = new float[points.length];
         for (int i = 0; i < points.length; i++) {
             pointsCopy[i] = points[i];
         }
         return new Polygon(pointsCopy);
+    }
+
+    @Override
+    public Polygon reposition(Point2D offset) {
+        Polygon result = copy();
+        for (int i = 0; i < result.points.length; i += 2) {
+            result.points[i] += offset.getX();
+            result.points[i + 1] += offset.getY();
+        }
+        return result;
     }
 
     @Override
@@ -339,12 +352,12 @@ public class Polygon implements Shape {
      * specified properties. The cone's start angle and arc are specified in
      * degrees.
      */
-    public static Polygon createCone(Point2D origin, float startAngle, float arc, float length) {
+    public static Polygon createCone(Point2D origin, float angle, float arc, float length) {
         Preconditions.checkArgument(arc > 0f && arc <= 180f, "Invalid arc: " + arc);
         Preconditions.checkArgument(length > 0f, "Invalid length: " + length);
 
-        Vector left = new Vector((startAngle % 360) - arc / 2f, length);
-        Vector right = new Vector((startAngle % 360) + arc / 2f, length);
+        Vector left = new Vector((angle % 360) - arc / 2f, length);
+        Vector right = new Vector((angle % 360) + arc / 2f, length);
 
         return new Polygon(origin.getX(), origin.getY(),
             origin.getX() + left.getX(), origin.getY() + left.getY(),

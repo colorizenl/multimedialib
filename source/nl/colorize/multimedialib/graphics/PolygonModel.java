@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -17,18 +17,6 @@ import java.util.Map;
  * typically when using simple primitives, or loaded from external files.
  */
 public interface PolygonModel extends Updatable {
-
-    /**
-     * Adds this model to the stage. This is called automatically when using
-     * {@link nl.colorize.multimedialib.scene.Stage#add(PolygonModel)}.
-     */
-    public void attach();
-
-    /**
-     * Removes this model from the stage. This is called automatically when using
-     * {@link nl.colorize.multimedialib.scene.Stage#remove(PolygonModel)}.
-     */
-    public void detach();
 
     public Transform3D getTransform();
 

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>MultimediaLib | PixiJS experiments</title>
+    <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no" />
+    <script src="https://pixijs.download/v6.4.2/pixi.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pixi-heaven@0.3.1/dist/pixi-heaven.umd.min.js"></script>
+</head>
+
+<body>
+    <div onclick="setTint(0x00ff00)">Add color tint</div>
+    <div onclick="clearTint()">Remove color tint</div>
+
+    <script>
+        let sprite = null;
+
+        function setTint(tint) {
+            sprite.tint = tint;
+            sprite.color.dark[0] = sprite.color.light[0];
+            sprite.color.dark[1] = sprite.color.light[1];
+            sprite.color.dark[2] = sprite.color.light[2];
+            sprite.color.invalidate();
+        }
+
+        function clearTint() {
+            sprite.tint = null;
+            sprite.color.clear();
+            sprite.color.invalidate();
+        }
+
+        document.addEventListener("DOMContentLoaded", event => {
+            const app = new PIXI.Application({width: 800, height: 600});
+            document.body.appendChild(app.view);
+
+            sprite = PIXI.Sprite.from("../colorize.png");
+            app.stage.addChild(sprite);
+            sprite.convertToHeaven();
+
+            // Add a ticker callback to move the sprite back and forth
+            let elapsed = 0.0;
+            app.ticker.add(delta => {
+                elapsed += delta;
+                sprite.x = 100.0 + Math.cos(elapsed/50.0) * 100.0;
+            });
+        });
+    </script>
+</body>
+</html>

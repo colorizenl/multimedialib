@@ -1,15 +1,14 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.java2d;
 
-import com.badlogic.gdx.math.MathUtils;
-import com.google.common.base.Preconditions;
+import nl.colorize.multimedialib.math.MathUtils;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.GraphicsMode;
+import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.NetworkAccess;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.WindowOptions;
@@ -24,7 +23,6 @@ import nl.colorize.util.swing.SwingUtils;
 import nl.colorize.util.swing.Utils2D;
 
 import javax.swing.JFrame;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -32,6 +30,10 @@ import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -55,7 +57,7 @@ public class Java2DRenderer implements Renderer {
     private SceneContext context;
     private StandardMediaLoader mediaLoader;
     private AWTInput inputDevice;
-    private WindowOptions options;
+    private WindowOptions windowOptions;
 
     private JFrame window;
     private Java2DGraphicsContext graphicsContext;
@@ -68,18 +70,15 @@ public class Java2DRenderer implements Renderer {
     private static final long MAX_SLEEP_TIME = 50L;
     private static final Logger LOGGER = LogHelper.getLogger(Java2DRenderer.class);
 
-    public Java2DRenderer(Canvas canvas, int framerate, WindowOptions options) {
-        Preconditions.checkArgument(framerate >= 1 && framerate <= 120,
-            "Invalid framerate: " + framerate);
-
+    public Java2DRenderer(DisplayMode displayMode, WindowOptions windowOptions) {
         SwingUtils.initializeSwing();
 
-        this.canvas = canvas;
-        this.framerate = framerate;
+        this.canvas = displayMode.getCanvas();
+        this.framerate = displayMode.getFramerate();
         this.syncTimer = new Stopwatch();
 
         this.mediaLoader = new StandardMediaLoader();
-        this.options = options;
+        this.windowOptions = windowOptions;
 
         // Makes sure the canvas and graphics context are initialized during
         // the first frame after the rendering thread starts.
@@ -89,11 +88,11 @@ public class Java2DRenderer implements Renderer {
 
     @Override
     public void start(Scene initialScene) {
-        window = initializeWindow(options);
+        window = initializeWindow(windowOptions);
         graphicsContext = new Java2DGraphicsContext(canvas, mediaLoader);
 
         NetworkAccess network = new StandardNetworkAccess();
-        context = new SceneContext(canvas, inputDevice, mediaLoader, network);
+        context = new SceneContext(getDisplayMode(), inputDevice, mediaLoader, network);
         context.changeScene(initialScene);
 
         Thread renderingThread = new Thread(this::runAnimationLoop, "MultimediaLib-RenderingThread");
@@ -102,15 +101,12 @@ public class Java2DRenderer implements Renderer {
 
     private JFrame initializeWindow(WindowOptions windowOptions) {
         window = new JFrame();
-        window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         window.setResizable(true);
         window.setIgnoreRepaint(true);
         window.setFocusTraversalKeysEnabled(false);
-        window.addComponentListener(new ComponentAdapter() {
-            public void componentResized(ComponentEvent e) {
-                canvasDirty.set(true);
-            }
-        });
+        window.addWindowListener(createWindowCloseListener());
+        window.addComponentListener(createResizeListener());
         window.setTitle(windowOptions.getTitle());
         window.setIconImage(loadIcon(windowOptions));
         window.getContentPane().setPreferredSize(new Dimension(canvas.getWidth(), canvas.getHeight()));
@@ -135,6 +131,28 @@ public class Java2DRenderer implements Renderer {
         return window;
     }
 
+    private ComponentListener createResizeListener() {
+        return new ComponentAdapter() {
+            public void componentResized(ComponentEvent e) {
+                canvasDirty.set(true);
+            }
+        };
+    }
+
+    private WindowListener createWindowCloseListener() {
+        return new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                LOGGER.info("Closing window");
+                terminated.set(true);
+
+                if (!windowOptions.isEmbedded()) {
+                    System.exit(0);
+                }
+            }
+        };
+    }
+
     private Image loadIcon(WindowOptions windowOptions) {
         if (windowOptions.hasIcon()) {
             ResourceFile iconFile = new ResourceFile(windowOptions.getIconFile().getPath());
@@ -142,11 +160,6 @@ public class Java2DRenderer implements Renderer {
         } else {
             return null;
         }
-    }
-
-    @Override
-    public GraphicsMode getGraphicsMode() {
-        return GraphicsMode.MODE_2D;
     }
 
     /**
@@ -162,10 +175,13 @@ public class Java2DRenderer implements Renderer {
                 prepareCanvas();
             }
 
+            context.getFrameStats().markFrameStart();
             float frameTime = 1f / framerate;
             inputDevice.update(frameTime);
             context.update(frameTime);
+            context.getFrameStats().markFrameUpdate();
             drawFrame();
+            context.getFrameStats().markFrameRender();
 
             Thread.yield();
             long elapsedTime = syncTimer.tock();
@@ -175,17 +191,29 @@ public class Java2DRenderer implements Renderer {
 
     private void drawFrame() {
         BufferStrategy windowBuffer = prepareWindowBuffer();
-        Graphics bufferGraphics = windowBuffer.getDrawGraphics();
-        Graphics2D g2 = Utils2D.createGraphics(bufferGraphics, ANTI_ALIASING, BILINEAR_SCALING);
-        drawFrame(g2);
-        blitGraphicsContext(windowBuffer);
-        graphicsContext.dispose();
+        Graphics bufferGraphics = accessWindowGraphics(windowBuffer);
+
+        if (bufferGraphics != null) {
+            Graphics2D g2 = Utils2D.createGraphics(bufferGraphics, ANTI_ALIASING, BILINEAR_SCALING);
+            drawFrame(g2);
+            blitGraphicsContext(windowBuffer);
+            graphicsContext.dispose();
+        }
+    }
+
+    private Graphics accessWindowGraphics(BufferStrategy windowBuffer) {
+        try {
+            return windowBuffer.getDrawGraphics();
+        } catch (IllegalStateException e) {
+            LOGGER.warning("Window buffer graphics not available: " + e.getMessage());
+            return null;
+        }
     }
 
     private void drawFrame(Graphics2D g2) {
         graphicsContext.bind(g2);
-        prepareGraphics(g2);
-        context.getStage().render2D(graphicsContext);
+        graphicsContext.clear(window.getWidth(), window.getHeight() + 50);
+        context.getStage().visit(graphicsContext);
     }
 
     private void prepareCanvas() {
@@ -195,11 +223,6 @@ public class Java2DRenderer implements Renderer {
 
         canvas.resizeScreen(windowWidth, windowHeight);
         canvas.offsetScreen(windowInsets.left, windowInsets.top);
-    }
-
-    private void prepareGraphics(Graphics2D g2) {
-        g2.setColor(Color.BLACK);
-        g2.fillRect(0, 0, window.getWidth(), window.getHeight() + 50);
     }
 
     /**
@@ -251,15 +274,17 @@ public class Java2DRenderer implements Renderer {
     }
 
     @Override
+    public DisplayMode getDisplayMode() {
+        return new DisplayMode(canvas, framerate);
+    }
+
+    @Override
     public String takeScreenshot() {
         BufferedImage screenshot = new BufferedImage(canvas.getWidth(), canvas.getHeight(),
             BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = Utils2D.createGraphics(screenshot, true, true);
-        graphicsContext.bind(g2);
-        prepareGraphics(g2);
-        context.getStage().render2D(graphicsContext);
+        window.getContentPane().print(g2);
         g2.dispose();
-
         return Utils2D.toDataURL(screenshot);
     }
 

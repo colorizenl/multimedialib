@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,7 +8,7 @@ package nl.colorize.multimedialib.graphics;
 
 import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.scene.Updatable;
+import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.SimpleState;
 import nl.colorize.multimedialib.scene.StateMachine;
 
@@ -26,16 +26,34 @@ import java.util.stream.Collectors;
  * represented by either a static image or by an animation. States are
  * identified by name, and are based around an internal {@link StateMachine}.
  */
-public class Sprite implements Updatable {
+public class Sprite implements Graphic2D {
 
     private StateMachine<SpriteState> stateMachine;
     private Point2D position;
     private Transform transform;
+    private boolean visible;
+
+    private Rect cachedBounds;
+
+    private static final String DEFAULT_STATE = "$$default";
 
     public Sprite() {
         this.stateMachine = new StateMachine<>();
         this.position = new Point2D(0, 0);
         this.transform = new Transform();
+        this.visible = true;
+
+        this.cachedBounds = new Rect(0f, 0f, 0f, 0f);
+    }
+
+    public Sprite(Animation anim) {
+        this();
+        addState(DEFAULT_STATE, anim);
+    }
+
+    public Sprite(Image image) {
+        this();
+        addState(DEFAULT_STATE, image);
     }
 
     /**
@@ -134,16 +152,52 @@ public class Sprite implements Updatable {
         position.set(x, y);
     }
 
+    @Override
     public Point2D getPosition() {
         return position;
     }
 
     public void setTransform(Transform transform) {
+        if (transform == null) {
+            transform = new Transform();
+        }
         this.transform = transform;
     }
 
     public Transform getTransform() {
         return transform;
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible = visible;
+    }
+
+    @Override
+    public boolean isVisible() {
+        return visible;
+    }
+
+    @Override
+    public Rect getBounds() {
+        float width = Math.max(getCurrentWidth() * (transform.getScaleX() / 100f), 1f);
+        float height = Math.max(getCurrentHeight() * (transform.getScaleY() / 100f), 1f);
+        cachedBounds.set(position.getX() - width / 2f, position.getY() - height / 2f, width, height);
+        return cachedBounds;
+    }
+
+    /**
+     * Scales this sprite to the specified dimensions, based on the sprite's
+     * current graphics.
+     */
+    public void scaleTo(float width, float height) {
+        float scaleX = width / (float) getCurrentWidth() * 100f;
+        float scaleY = height / (float) getCurrentHeight() * 100f;
+        transform.setScale(scaleX, scaleY);
+    }
+
+    @Override
+    public boolean hitTest(Point2D point) {
+        return getBounds().contains(point);
     }
 
     /**

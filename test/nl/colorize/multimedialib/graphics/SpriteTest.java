@@ -1,12 +1,13 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.graphics;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import nl.colorize.multimedialib.mock.MockImage;
 import org.junit.jupiter.api.Test;
 
@@ -69,5 +70,50 @@ public class SpriteTest {
     public void testCannotAnimateSpriteWithoutStates() {
         Sprite sprite = new Sprite();
         assertThrows(IllegalStateException.class, () -> sprite.update(1f));
+    }
+
+    @Test
+    void getStateNames() {
+        Sprite sprite = new Sprite();
+        sprite.addState("a", new MockImage());
+        sprite.addState("b", new MockImage());
+
+        assertEquals(ImmutableSet.of("a", "b"), sprite.getPossibleStates());
+    }
+
+    @Test
+    void copyShouldCreateDeepCopy() {
+        Sprite sprite = new Sprite();
+        sprite.addState("a", new MockImage());
+        sprite.addState("b", new MockImage());
+        sprite.changeState("a");
+
+        Sprite copy = sprite.copy();
+        copy.changeState("b");
+
+        assertEquals("a", sprite.getActiveState());
+        assertEquals("b", copy.getActiveState());
+    }
+
+    @Test
+    void spriteBoundsShouldConsiderCurrentGraphicsAndTransform() {
+        Sprite sprite = new Sprite();
+        sprite.addState("a", new MockImage(100, 100));
+        sprite.addState("b", new MockImage(200, 200));
+        sprite.changeState("a");
+
+        assertEquals("-50, -50, 100, 100", sprite.getBounds().toString());
+
+        sprite.getPosition().set(10, 20);
+
+        assertEquals("-40, -30, 100, 100", sprite.getBounds().toString());
+
+        sprite.changeState("b");
+
+        assertEquals("-90, -80, 200, 200", sprite.getBounds().toString());
+
+        sprite.getTransform().setScale(200f);
+
+        assertEquals("-190, -180, 400, 400", sprite.getBounds().toString());
     }
 }

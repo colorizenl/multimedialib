@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -21,7 +21,7 @@ import nl.colorize.multimedialib.math.MathUtils;
  *   <li>Mask color</li>
  * </ul>
  */
-public class Transform implements AlphaTransform {
+public class Transform {
 
     private float rotation;
     private float scaleX;
@@ -87,7 +87,7 @@ public class Transform implements AlphaTransform {
     }
     
     public float getScaleX() {
-        return scaleX;
+        return flipHorizontal ? -scaleX : scaleX;
     }
 
     public void setScaleY(float scaleY) {
@@ -95,14 +95,13 @@ public class Transform implements AlphaTransform {
     }
 
     public float getScaleY() {
-        return scaleY;
+        return flipVertical ? -scaleY : scaleY;
     }
 
     public void setAlpha(float alpha) {
         this.alpha = MathUtils.clamp(alpha, 0f, 100f);
     }
 
-    @Override
     public float getAlpha() {
         return alpha;
     }

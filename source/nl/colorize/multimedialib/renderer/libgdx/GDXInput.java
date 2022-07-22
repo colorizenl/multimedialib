@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -50,6 +50,7 @@ public class GDXInput implements InputDevice, Updatable {
         .put(KeyCode.ESCAPE, Input.Keys.ESCAPE)
         .put(KeyCode.SHIFT, Input.Keys.SHIFT_LEFT)
         .put(KeyCode.BACKSPACE, Input.Keys.BACKSPACE)
+        .put(KeyCode.TAB, Input.Keys.TAB)
         .put(KeyCode.A, Input.Keys.A)
         .put(KeyCode.B, Input.Keys.B)
         .put(KeyCode.C, Input.Keys.C)
@@ -197,5 +198,10 @@ public class GDXInput implements InputDevice, Updatable {
         Popups.message(null, "", panel);
 
         return field.getText();
+    }
+
+    @Override
+    public Canvas getCanvas() {
+        return canvas;
     }
 }

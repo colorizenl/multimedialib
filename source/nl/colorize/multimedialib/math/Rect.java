@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -45,7 +45,7 @@ public class Rect implements Shape {
     }
 
     public void setWidth(float width) {
-        Preconditions.checkArgument(width >= 0f, "Invalid width: " + width);
+        Preconditions.checkArgument(width >= 0f, "Invalid width: %s", width);
         this.width = width;
     }
 
@@ -54,7 +54,7 @@ public class Rect implements Shape {
     }
 
     public void setHeight(float height) {
-        Preconditions.checkArgument(height >= 0f, "Invalid height: " + height);
+        Preconditions.checkArgument(height >= 0f, "Invalid height: %s", height);
         this.height = height;
     }
 
@@ -105,6 +105,11 @@ public class Rect implements Shape {
         set(r.getX(), r.getY(), r.getWidth(), r.getHeight());
     }
 
+    public void move(Point2D delta) {
+        x += delta.getX();
+        y += delta.getY();
+    }
+
     @Override
     public boolean contains(Point2D p) {
         return contains(p.getX(), p.getY());
@@ -122,8 +127,22 @@ public class Rect implements Shape {
         return !(r.x + r.width < x || r.x > x + width || r.y + r.height < y || r.y > y + height);
     }
 
+    @Override
+    public Rect getBoundingBox() {
+        return copy();
+    }
+
+    @Override
     public Rect copy() {
         return new Rect(x, y, width, height);
+    }
+
+    @Override
+    public Rect reposition(Point2D offset) {
+        Rect result = copy();
+        result.x += offset.getX();
+        result.y += offset.getY();
+        return result;
     }
 
     public Polygon toPolygon() {
@@ -137,8 +156,7 @@ public class Rect implements Shape {
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof Rect) {
-            Rect other = (Rect) o;
+        if (o instanceof Rect other) {
             return Math.abs(x - other.x) < EPSILON &&
                 Math.abs(y - other.y) < EPSILON &&
                 Math.abs(width - other.width) < EPSILON &&
@@ -157,6 +175,14 @@ public class Rect implements Shape {
     public String toString() {
         return Math.round(x) + ", " + Math.round(y) + ", " +
             Math.round(width) + ", " + Math.round(height);
+    }
+
+    /**
+     * Created a rectangle from 4 points (x0, y0, x1, y1) instead of requiring
+     * its width and height.
+     */
+    public static Rect fromPoints(float x0, float y0, float x1, float y1) {
+        return new Rect(x0, y0, x1 - x0, y1 - y0);
     }
 
     /**

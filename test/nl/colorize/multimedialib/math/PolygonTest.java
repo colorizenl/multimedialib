@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -109,7 +109,7 @@ public class PolygonTest {
     void getBounds() {
         Polygon polygon = new Polygon(10, 10, 20, 10, 20, 20);
 
-        assertEquals("10, 10, 10, 10", polygon.getBounds().toString());
+        assertEquals("10, 10, 10, 10", polygon.getBoundingBox().toString());
     }
 
     @Test

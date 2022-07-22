@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -14,13 +14,10 @@ package nl.colorize.multimedialib.scene;
  * will typically have many. The currently active scene will receive frame
  * updates for as long as it is active.
  * <p>
- * The {@link Scene} interface is similar to {@link Agent}. The main difference
- * is that only one scene can be active at the same time, while the scene can
- * include many agents. Moreover, {@code Scene}s are considered the central
- * construct and receive access to the entire {@link SceneContext}, while
- * {@link Agent}s tend to have a smaller scope and do not have full access.
+ * Scene logic can be implemented directly into the scene itself. However,
+ * complex scenes should be split up into a number of {@link ActorSystem}s.
  */
-public interface Scene {
+public interface Scene extends ActorSystem {
 
     /**
      * Initialization logic that should be performed when the scene is
@@ -33,6 +30,7 @@ public interface Scene {
      * Called during every frame update for as long as the scene is active.
      * @param deltaTime Elapsed time since the last frame, in seconds.
      */
+    @Override
     public void update(SceneContext context, float deltaTime);
 
     /**

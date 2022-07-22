@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,6 +8,7 @@ package nl.colorize.multimedialib.scene;
 
 import com.google.common.collect.ImmutableList;
 import nl.colorize.multimedialib.mock.MockScene;
+import nl.colorize.multimedialib.mock.MockSceneContext;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -22,7 +23,7 @@ public class SceneContextTest {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        SceneContext app = new SceneContext(null, null, null, null);
+        SceneContext app = new MockSceneContext();
         app.changeScene(sceneA);
         app.update(1f);
         app.update(1f);
@@ -39,7 +40,7 @@ public class SceneContextTest {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        SceneContext app = new SceneContext(null, null, null, null);
+        SceneContext app = new MockSceneContext();
         app.changeScene(sceneA);
         app.update(1f);
         app.changeScene(sceneB);
@@ -58,7 +59,7 @@ public class SceneContextTest {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        SceneContext app = new SceneContext(null, null, null, null);
+        SceneContext app = new MockSceneContext();
         app.changeScene(sceneA);
         app.update(1f);
         app.changeScene(sceneB);
@@ -71,53 +72,85 @@ public class SceneContextTest {
     }
 
     @Test
-    void subScenesShouldBeAttachedToParent() {
+    void systemsShouldBeAttachedToParent() {
         MockScene sceneA = new MockScene();
         List<String> tracker = new ArrayList<>();
 
-        SceneContext app = new SceneContext(null, null, null, null);
+        SceneContext app = new MockSceneContext();
         app.changeScene(sceneA);
-        app.attachAgent(deltaTime -> tracker.add("a"));
-        app.attachAgent(deltaTime -> tracker.add("b"));
+        app.attach((context, deltaTime) -> tracker.add("a"));
+        app.attach((context, deltaTime) -> tracker.add("b"));
         app.update(1f);
 
         assertEquals(ImmutableList.of("a", "b"), tracker);
     }
 
     @Test
-    void subScenesShouldEndWhenSceneIsChanged() {
+    void systemsShouldEndWhenSceneIsChanged() {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
         List<String> tracker = new ArrayList<>();
 
-        SceneContext app = new SceneContext(null, null, null, null);
+        SceneContext app = new MockSceneContext();
         app.changeScene(sceneA);
-        app.attachAgent(deltaTime -> tracker.add("a"));
-        app.attachAgent(deltaTime -> tracker.add("b"));
+        app.attach((context, deltaTime) -> tracker.add("a"));
+        app.attach((context, deltaTime) -> tracker.add("b"));
         app.update(1f);
         app.update(1f);
         app.changeScene(sceneB);
-        app.attachAgent(deltaTime -> tracker.add("c"));
+        app.attach((context, deltaTime) -> tracker.add("c"));
         app.update(1f);
 
         assertEquals(ImmutableList.of("a", "b", "a", "b", "c"), tracker);
     }
 
     @Test
-    void cancelAgent() {
-        MockScene sceneA = new MockScene();
-        List<String> tracker = new ArrayList<>();
-        Agent subSceneA = deltaTime -> tracker.add("a");
-        Agent subSceneB = deltaTime -> tracker.add("b");
+    void systemActiveForDuration() {
+        SceneContext context = new MockSceneContext();
+        context.changeScene(new MockScene());
 
-        SceneContext app = new SceneContext(null, null, null, null);
-        app.changeScene(sceneA);
-        app.attachAgent(subSceneA);
-        app.attachAgent(subSceneB);
-        app.update(1f);
-        app.cancelAgent(subSceneB);
-        app.update(1f);
+        List<String> buffer = new ArrayList<>();
+        context.attach(ActorSystem.timed(2f, () -> buffer.add("a")));
+        context.update(1f);
+        context.update(1f);
+        context.update(1f);
 
-        assertEquals(ImmutableList.of("a", "b", "a"), tracker);
+        assertEquals(ImmutableList.of("a", "a"), buffer);
+    }
+
+    @Test
+    void addSystemDuringIteration() {
+        SceneContext context = new MockSceneContext();
+        context.changeScene(new MockScene());
+
+        List<String> buffer = new ArrayList<>();
+        context.attach((ctx, dt) -> {
+            buffer.add("a");
+            if (buffer.size() == 2) {
+                context.attach((ctx2, dt2) -> buffer.add("b"));
+            }
+        });
+        context.update(1f);
+        context.update(1f);
+        context.update(1f);
+        context.update(1f);
+
+        assertEquals(ImmutableList.of("a", "a", "a", "b", "a", "b"), buffer);
+    }
+
+    @Test
+    void delayedAction() {
+        SceneContext context = new MockSceneContext();
+        context.changeScene(new MockScene());
+
+        List<String> buffer = new ArrayList<>();
+        context.attach(deltaTime -> buffer.add("a"));
+        context.delay(2f, () -> buffer.add("z"));
+        context.update(1f);
+        context.update(1f);
+        context.update(1f);
+        context.update(1f);
+
+        assertEquals(ImmutableList.of("a", "a", "z", "a", "a"), buffer);
     }
 }

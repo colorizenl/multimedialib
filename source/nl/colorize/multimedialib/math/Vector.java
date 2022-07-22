@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -76,7 +76,7 @@ public class Vector {
             magnitude = 0f;
         } else {
             direction = (float) Math.toDegrees(Math.atan2(p.getY(), p.getX()));
-            magnitude = new Point2D(0f, 0f).calculateDistance(p);
+            magnitude = new Point2D(0f, 0f).distanceTo(p);
         }
     }
 

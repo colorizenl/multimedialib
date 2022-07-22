@@ -1,11 +1,12 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.java2d;
 
+import nl.colorize.util.Callback;
 import nl.colorize.util.http.Headers;
 import org.junit.jupiter.api.Test;
 
@@ -20,10 +21,11 @@ public class StandardNetworkAccessTest {
     @Test
     public void testSendGetRequest() throws InterruptedException {
         List<String> responses = new ArrayList<>();
-        List<Exception> errors = new ArrayList<>();
+        List<Throwable> errors = new ArrayList<>();
 
         StandardNetworkAccess internetAccess = new StandardNetworkAccess();
-        internetAccess.get("http://www.colorize.nl", new Headers()).then(responses::add, errors::add);
+        internetAccess.get("http://www.colorize.nl", new Headers(),
+            Callback.from(responses::add, errors::add));
 
         Thread.sleep(3000);
 

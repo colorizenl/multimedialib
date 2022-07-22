@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -11,6 +11,10 @@ import nl.colorize.util.swing.ApplicationMenuListener;
 /**
  * Configuration options for when the renderer is displayed in a window when
  * running on a desktop platform.
+ * <p>
+ * When the window is set to "embedded mode", it is assumes the multimedia
+ * application is embedded within a regular desktop application. Note that not
+ * all renderers might support this mode.
  */
 public class WindowOptions {
 
@@ -18,12 +22,14 @@ public class WindowOptions {
     private FilePointer iconFile;
     private boolean fullscreen;
     private ApplicationMenuListener appMenuListener;
+    private boolean embedded;
 
     public WindowOptions(String title, FilePointer iconFile) {
         this.title = title;
         this.iconFile = iconFile;
         this.fullscreen = false;
         this.appMenuListener = null;
+        this.embedded = false;
     }
 
     public WindowOptions(String title) {
@@ -64,5 +70,13 @@ public class WindowOptions {
 
     public void setAppMenuListener(ApplicationMenuListener appMenuListener) {
         this.appMenuListener = appMenuListener;
+    }
+
+    public boolean isEmbedded() {
+        return embedded;
+    }
+
+    public void setEmbedded(boolean embedded) {
+        this.embedded = embedded;
     }
 }

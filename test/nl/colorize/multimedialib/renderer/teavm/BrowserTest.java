@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,6 +8,7 @@ package nl.colorize.multimedialib.renderer.teavm;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.jupiter.api.Test;
+import org.teavm.jso.JSObject;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -28,18 +29,15 @@ public class BrowserTest {
         double[].class,
         String.class,
         String[].class,
-        AnimationFrameCallback.class,
-        AjaxCallback.class,
-        ConnectionCallback.class,
-        ModelLoadCallback.class
+        JSObject.class
     );
 
     @Test
     public void testAllParametersHaveCompatibleTypes() {
         for (Method method : Browser.class.getDeclaredMethods()) {
-            for (Class<?> type : method.getParameterTypes()) {
-                assertTrue(ALLOWED_TYPES.contains(type) || type.getName().startsWith("java.lang"),
-                    "Parameter types is not allowed by TeaVM: " + type);
+            for (Class<?> parameterType : method.getParameterTypes()) {
+                assertTrue(isAllowedType(parameterType),
+                    "Parameter types is not allowed by TeaVM: " + parameterType);
             }
         }
     }
@@ -48,8 +46,17 @@ public class BrowserTest {
     public void testAllReturnTypesAreCompatible() {
         for (Method method : Browser.class.getDeclaredMethods()) {
             Class<?> returnType = method.getReturnType();
-            assertTrue(ALLOWED_TYPES.contains(returnType),
+            assertTrue(isAllowedType(returnType),
                 "Return type is not allowed by TeaVM: " + returnType);
         }
+    }
+
+    private boolean isAllowedType(Class<?> type) {
+        if (type.getName().startsWith("java.lang.")) {
+            return true;
+        }
+
+        return ALLOWED_TYPES.stream()
+            .anyMatch(allowed -> allowed.isAssignableFrom(type));
     }
 }

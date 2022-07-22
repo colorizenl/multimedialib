@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -12,9 +12,8 @@ import nl.colorize.multimedialib.graphics.PolygonModel;
 import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
-import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaLoader;
-import nl.colorize.util.ApplicationData;
+import nl.colorize.util.Configuration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,18 +59,13 @@ public class MockMediaLoader implements MediaLoader {
     }
 
     @Override
-    public ApplicationData loadApplicationData(String appName, String fileName) {
-        throw new UnsupportedOperationException();
+    public Configuration loadApplicationData(String appName, String fileName) {
+        return Configuration.fromProperties();
     }
 
     @Override
-    public void saveApplicationData(ApplicationData data, String appName, String fileName) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public GeometryBuilder getGeometryBuilder() {
-        throw new UnsupportedOperationException();
+    public void saveApplicationData(Configuration data, String appName, String fileName) {
+        // Do nothing
     }
 
     public List<FilePointer> getLoaded() {

@@ -1,6 +1,5 @@
 package nl.colorize.multimedialib.scene;
 
-import nl.colorize.multimedialib.scene.effect.Timer;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,7 +23,7 @@ public class TimerTest {
         AtomicInteger count = new AtomicInteger();
 
         Timer timer = new Timer(2f);
-        timer.attach(() -> count.addAndGet(1));
+        timer.attachCompletion(() -> count.addAndGet(1));
         timer.update(1f);
         timer.update(1f);
         timer.update(1f);

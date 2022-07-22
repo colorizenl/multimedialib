@@ -1,16 +1,16 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.scene;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.FilePointer;
+import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
 import nl.colorize.multimedialib.renderer.java2d.Java2DRenderer;
@@ -29,24 +29,25 @@ import nl.colorize.util.swing.ApplicationMenuListener;
  */
 public final class MultimediaAppLauncher {
 
-    private Canvas canvas;
-    private int framerate;
+    private DisplayMode displayMode;
     private WindowOptions windowOptions;
 
     private static final String DEFAULT_WINDOW_TITLE = "MultimediaLib";
     private static final FilePointer DEFAULT_ICON = new FilePointer("colorize-icon-32.png");
 
     private MultimediaAppLauncher(Canvas canvas) {
-        this.canvas = canvas;
-        this.framerate = 60;
+        this.displayMode = new DisplayMode(canvas, 60);
         this.windowOptions = new WindowOptions(DEFAULT_WINDOW_TITLE, DEFAULT_ICON);
     }
 
     public MultimediaAppLauncher withFramerate(int framerate) {
-        Preconditions.checkArgument(ImmutableList.of(20, 25, 30, 60, 120).contains(framerate),
-            "Framerate not supported: " + framerate);
-        this.framerate = framerate;
+        this.displayMode = new DisplayMode(displayMode.getCanvas(), framerate);
         return this;
+    }
+
+    public MultimediaAppLauncher withDisplayMode(DisplayMode displayMode) {
+        this.displayMode = displayMode;
+        return withFramerate(displayMode.getFramerate());
     }
 
     public MultimediaAppLauncher withWindowTitle(String title) {
@@ -59,8 +60,17 @@ public final class MultimediaAppLauncher {
         return this;
     }
 
+    public MultimediaAppLauncher withFullscreen(boolean fullscreen) {
+        windowOptions.setFullscreen(fullscreen);
+        return this;
+    }
+
     public MultimediaAppLauncher withFullscreen() {
-        windowOptions.setFullscreen(true);
+        return withFullscreen(true);
+    }
+
+    public MultimediaAppLauncher withEmbedded(boolean embedded) {
+        windowOptions.setEmbedded(embedded);
         return this;
     }
 
@@ -76,32 +86,38 @@ public final class MultimediaAppLauncher {
 
     /**
      * Starts a MultimediaLib application using the {@link Java2DRenderer}. This
-     * is guaranteed to work on all desktop environments.
+     * is guaranteed to work on all desktop environments. Returns the renderer
+     * that was created and used to start the application.
      */
-    public void startJava2D(Scene initialScene) {
-        Java2DRenderer renderer = new Java2DRenderer(canvas, framerate, windowOptions);
+    public Renderer startJava2D(Scene initialScene) {
+        Java2DRenderer renderer = new Java2DRenderer(displayMode, windowOptions);
         renderer.start(initialScene);
+        return renderer;
     }
 
     /**
      * Starts a MultimediaLib application using the {@link GDXRenderer} that
      * will use the LWJGL back-end to render graphics, suitable for all desktop
-     * platforms.
+     * platforms. Returns the renderer that was created and used to start the
+     * application.
      */
-    public void startGDX(Scene initialScene) {
-        GDXRenderer renderer = new GDXRenderer(canvas, framerate, windowOptions);
+    public Renderer startGDX(Scene initialScene) {
+        GDXRenderer renderer = new GDXRenderer(displayMode, windowOptions);
         renderer.start(initialScene);
+        return renderer;
     }
 
     /**
      * Starts a MultimediaLib application using the {@link TeaRenderer}. Graphics
      * can be 2D (via HTML5 canvas or WebGL) or 3D (via three.js), depending on
-     * which transpile options were used in {@code TeaVMTranspiler}.
+     * which transpile options were used in {@code TeaVMTranspiler}. Returns the
+     * renderer that was created and used to start the application.
      */
-    public void startTea(Scene initialScene) {
+    public Renderer startTea(Scene initialScene) {
         Platform.enableTeaVM();
-        TeaRenderer renderer = new TeaRenderer(canvas);
+        TeaRenderer renderer = new TeaRenderer(displayMode);
         renderer.start(initialScene);
+        return renderer;
     }
 
     /**

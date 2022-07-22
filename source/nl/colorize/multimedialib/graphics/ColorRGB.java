@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -31,9 +31,11 @@ public final class ColorRGB {
     public static final ColorRGB YELLOW = new ColorRGB(255, 255, 0);
     public static final ColorRGB ORANGE = new ColorRGB(255, 127, 0);
     public static final ColorRGB PURPLE = new ColorRGB(127, 64, 255);
+    public static final ColorRGB PINK = new ColorRGB(255, 192, 203);
     
     /**
      * Creates a color from the specified red, green, and blue components.
+     *
      * @throws IllegalArgumentException if one of the color components is outside
      *         the range 0-255.
      */
@@ -138,6 +140,7 @@ public final class ColorRGB {
     /**
      * Parses a color from hexadecimal notation. For example, parsing the string
      * "#FF0000" will return red (255, 0, 0).
+     *
      * @throws IllegalArgumentException if {@code hex} is not a valid color.
      */
     public static ColorRGB parseHex(String hex) {

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -12,8 +12,7 @@ import com.google.common.collect.ImmutableList;
 import nl.colorize.util.FileUtils;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Tuple;
-import org.kohsuke.args4j.Argument;
-import org.kohsuke.args4j.Option;
+import nl.colorize.util.cli.CommandLineArgumentParser;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,24 +33,17 @@ import java.util.stream.Collectors;
  * UTF-8 character encoding and the Unix line separator (\n). Different
  * character encodings or line endings will be replaced.
  */
-public class CopyrightUpdateTool extends CommandLineTool {
+public class CopyrightUpdateTool {
 
-    @Argument(index = 0, required = true, usage = "Source code directory")
-    public File dir;
-
-    @Argument(index = 1, required = true, usage = "Copyright start year or 'leave' for existing")
-    public String startCopyrightYear;
-
-    @Argument(index = 2, required = true, usage = "Current year for copyright statement")
-    public String newCopyrightYear;
-
-    @Option(name = "-license", usage = "Override copyright license type")
-    public String license;
+    protected File dir;
+    protected String startCopyrightYear;
+    protected String newCopyrightYear;
+    protected String license;
 
     private static final Pattern COPYRIGHT_PATTERN = Pattern.compile(
         "Copyright\\s+(20\\d+)(\\s*[-,]\\s*)?(20\\d+)?");
     private static final List<String> SUPPORTED_FILE_EXTENSIONS = ImmutableList.of(
-        ".java", ".js", ".ts", ".php", ".swift", ".gradle", ".md", ".properties", ".json", ".yaml");
+        ".java", ".js", ".ts", ".php", ".py", ".swift", ".gradle", ".md", ".properties", ".json", ".yaml");
     private static final List<String> EXCLUDE_DIRS = ImmutableList.of(
         "/build/", "/lib/", "/node_modules/", "/.git/", "/.gradle/", "/.idea/", "/out/");
     private static final Charset FILE_CHARSET = Charsets.UTF_8;
@@ -59,12 +51,23 @@ public class CopyrightUpdateTool extends CommandLineTool {
     private static final Logger LOGGER = LogHelper.getLogger(CopyrightUpdateTool.class);
 
     public static void main(String[] args) {
+        CommandLineArgumentParser argParser = new CommandLineArgumentParser("CopyrightUpdateTool")
+            .add("-source", "Source code directory")
+            .add("-startyear", "Copyright start year or 'leave' for existing")
+            .add("-currentyear", "Current year for copyright statement")
+            .addOptional("-license", null, "Override copyright license type");
+
+        argParser.parseArgs(args);
+
         CopyrightUpdateTool tool = new CopyrightUpdateTool();
-        tool.start(args);
+        tool.dir = argParser.getDir("source");
+        tool.startCopyrightYear = argParser.get("startyear");
+        tool.newCopyrightYear = argParser.get("currentyear");
+        tool.license = argParser.get("license");
+        tool.run();
     }
 
-    @Override
-    public void run() {
+    protected void run() {
         List<File> files = findFiles(dir);
         LOGGER.info("Updating copyright statements");
         LOGGER.info("Found " + files.size() + " files");

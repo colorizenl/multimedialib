@@ -1,11 +1,12 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.tool;
 
+import nl.colorize.multimedialib.demo.Demo3D;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.scene.MultimediaAppLauncher;
 

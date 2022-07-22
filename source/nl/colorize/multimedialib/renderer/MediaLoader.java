@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -14,8 +14,10 @@ import nl.colorize.multimedialib.graphics.PolygonModel;
 import nl.colorize.multimedialib.graphics.SpriteSheet;
 import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.util.ApplicationData;
+import nl.colorize.util.Configuration;
 import nl.colorize.util.CSVRecord;
+import nl.colorize.util.Platform;
+import nl.colorize.util.PlatformFamily;
 
 import java.util.List;
 
@@ -145,22 +147,19 @@ public interface MediaLoader {
      *
      * @throws MediaException if the file cannot be loaded.
      */
-    public ApplicationData loadApplicationData(String appName, String fileName);
+    public Configuration loadApplicationData(String appName, String fileName);
 
     /**
-     * Saves application data back to the file with the specified name. The file
-     * will be stored to the platform's standard location for application data.
+     * Saves application data for the application with the specified name. The
+     * file will be stored to the platform's standard location for application
+     * data.
      *
      * @throws MediaException if the file could not be saved.
      */
-    public void saveApplicationData(ApplicationData data, String appName, String fileName);
+    public void saveApplicationData(Configuration data, String appName, String fileName);
 
-    /**
-     * Access to a {@link GeometryBuilder} that can be used to create 3D models
-     * programatically.
-     *
-     * @throws UnsupportedGraphicsModeException if the renderer does not support
-     *         3D graphics.
-     */
-    public GeometryBuilder getGeometryBuilder();
+    @Deprecated
+    default PlatformFamily getPlatformFamily() {
+        return Platform.getPlatformFamily();
+    }
 }

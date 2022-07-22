@@ -1,13 +1,13 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.tool;
 
+import nl.colorize.multimedialib.demo.Demo2D;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.teavm.Browser;
 import nl.colorize.multimedialib.scene.MultimediaAppLauncher;
 import nl.colorize.util.Platform;
@@ -18,8 +18,6 @@ import nl.colorize.util.Platform;
  */
 public class TeaDemo2D {
 
-    private static final FilePointer VERIFICATION_FILE = new FilePointer("verification-instructions.txt");
-
     public static void main(String[] args) {
         Platform.enableTeaVM();
 
@@ -28,8 +26,10 @@ public class TeaDemo2D {
         Browser.log("Page size: " + Math.round(Browser.getPageWidth()) + "x" +
             Math.round(Browser.getPageHeight()));
 
-        Canvas canvas = Canvas.flexible(Demo2D.DEFAULT_CANVAS_WIDTH, Demo2D.DEFAULT_CANVAS_HEIGHT);
+        Canvas canvas = Canvas.zoomBalanced(Demo2D.DEFAULT_CANVAS_WIDTH, Demo2D.DEFAULT_CANVAS_HEIGHT);
 
-        MultimediaAppLauncher.create(canvas).startTea(new Demo2D());
+        MultimediaAppLauncher.create(canvas)
+            .withFramerate(60)
+            .startTea(new Demo2D());
     }
 }

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -25,7 +25,7 @@ public class Transform3D {
 
     public Transform3D() {
         this.position = new Point3D(0f, 0f, 0f);
-        this.rotation = new float[] {0f, 0f, 0f, 0f};
+        this.rotation = new float[] {0f, 0f, 0f};
         this.scale = new float[] {1f, 1f, 1f};
     }
 
@@ -41,11 +41,10 @@ public class Transform3D {
         return position;
     }
 
-    public void setRotation(float x, float y, float z, float amount) {
+    public void setRotation(float x, float y, float z) {
         rotation[0] = x;
         rotation[1] = y;
         rotation[2] = z;
-        rotation[3] = amount % (amount >= 0f ? 360f : -360f);
     }
 
     public float getRotationX() {
@@ -58,10 +57,6 @@ public class Transform3D {
 
     public float getRotationZ() {
         return rotation[2];
-    }
-
-    public float getRotationAmount() {
-        return rotation[3];
     }
 
     public void setScale(float scaleX, float scaleY, float scaleZ) {
@@ -93,7 +88,7 @@ public class Transform3D {
     public Transform3D copy() {
         Transform3D copy = new Transform3D();
         copy.setPosition(position);
-        copy.setRotation(rotation[0], rotation[1], rotation[2], rotation[3]);
+        copy.setRotation(rotation[0], rotation[1], rotation[2]);
         copy.setScale(scale[0], scale[1], scale[2]);
         return copy;
     }

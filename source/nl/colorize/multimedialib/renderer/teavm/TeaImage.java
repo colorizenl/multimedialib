@@ -1,11 +1,12 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.teavm;
 
+import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
 import nl.colorize.multimedialib.math.Rect;
@@ -19,7 +20,13 @@ public class TeaImage implements Image {
     private FilePointer origin;
     private Rect region;
 
+    private int cachedWidth;
+    private int cachedHeight;
+
     protected TeaImage(String id, FilePointer origin, Rect region) {
+        Preconditions.checkArgument(region == null || (region.getWidth() > 0 && region.getHeight() > 0),
+            "Invalid region for image " + origin + ": " + region);
+
         this.id = id;
         this.origin = origin;
         this.region = region;
@@ -33,27 +40,33 @@ public class TeaImage implements Image {
         return origin;
     }
 
+    private void cacheImageSize() {
+        if (region == null || region.getWidth() == 0 || region.getHeight() == 0) {
+            region = new Rect(0f, 0f, Browser.getImageWidth(id), Browser.getImageHeight(id));
+        }
+
+        if (cachedWidth == 0 || cachedHeight == 0) {
+            cachedWidth = Math.round(region.getWidth());
+            cachedHeight = Math.round(region.getHeight());
+        }
+    }
+
     @Override
     public Rect getRegion() {
+        cacheImageSize();
         return region;
     }
 
     @Override
     public int getWidth() {
-        if (region != null) {
-            return Math.round(region.getWidth());
-        } else {
-            return Math.round(Browser.getImageWidth(id));
-        }
+        cacheImageSize();
+        return cachedWidth;
     }
 
     @Override
     public int getHeight() {
-        if (region != null) {
-            return Math.round(region.getHeight());
-        } else {
-            return Math.round(Browser.getImageHeight(id));
-        }
+        cacheImageSize();
+        return cachedHeight;
     }
 
     @Override

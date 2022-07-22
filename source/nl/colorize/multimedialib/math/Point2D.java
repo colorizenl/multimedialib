@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -76,7 +76,7 @@ public class Point2D {
     /**
      * Returns the distance between this point and the specified other point.
      */
-    public float calculateDistance(Point2D other) {
+    public float distanceTo(Point2D other) {
         if (equals(other)) {
             return 0f;
         }
@@ -91,7 +91,7 @@ public class Point2D {
      * Returns the angle in degrees from this point towards the specified other
      * point. If the points are identical this will return an angle of 0.
      */
-    public float calculateAngle(Point2D other) {
+    public float angleTo(Point2D other) {
         if (equals(other)) {
             return 0f;
         }
@@ -110,7 +110,7 @@ public class Point2D {
      * Returns a new point that is positioned in the center between this point
      * and the specified other point.
      */
-    public Point2D calculateCenter(Point2D other) {
+    public Point2D findCenter(Point2D other) {
         float averageX = (x + other.x) / 2f;
         float averageY = (y + other.y) / 2f;
         

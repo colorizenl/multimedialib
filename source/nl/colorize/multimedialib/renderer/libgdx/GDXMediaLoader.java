@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -11,6 +11,7 @@ import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.assets.loaders.resolvers.InternalFileHandleResolver;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -18,12 +19,14 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
+import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.loader.G3dModelLoader;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.UBJsonReader;
+import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import net.mgsx.gltf.loaders.gltf.GLTFLoader;
 import net.mgsx.gltf.scene3d.scene.SceneAsset;
@@ -40,14 +43,14 @@ import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.java2d.MP3;
 import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
-import nl.colorize.util.ApplicationData;
+import nl.colorize.util.Configuration;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.ResourceFile;
-import org.teavm.apachecommons.io.Charsets;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -117,7 +120,7 @@ public class GDXMediaLoader implements MediaLoader, GeometryBuilder, Disposable 
     }
 
     protected BitmapFont getBitmapFont(TTFont font, int actualSize) {
-        TTFont cacheKey = new TTFont(font.getFamily(), actualSize, font.getColor(), font.isBold());
+        TTFont cacheKey = new TTFont(font.family(), actualSize, font.color(), font.bold());
         BitmapFont bitmapFont = fonts.get(cacheKey);
 
         if (bitmapFont == null) {
@@ -130,13 +133,13 @@ public class GDXMediaLoader implements MediaLoader, GeometryBuilder, Disposable 
     }
 
     private BitmapFont loadBitmapFont(TTFont font, int actualSize) {
-        FileHandle fontLocation = fontLocations.get(font.getFamily());
+        FileHandle fontLocation = fontLocations.get(font.family());
         Preconditions.checkArgument(fontLocation != null, "Unknown font location: " + font);
 
         FreeTypeFontGenerator.FreeTypeFontParameter config =
             new FreeTypeFontGenerator.FreeTypeFontParameter();
         config.size = actualSize;
-        config.color = toColor(font.getColor());
+        config.color = toColor(font.color());
 
         FreeTypeFontGenerator fontGenerator = new FreeTypeFontGenerator(fontLocation);
         BitmapFont bitmapFont = fontGenerator.generateFont(config);
@@ -173,6 +176,8 @@ public class GDXMediaLoader implements MediaLoader, GeometryBuilder, Disposable 
 
     private PolygonModel createInstance(Model model) {
         ModelInstance instance = new ModelInstance(model);
+        instance.materials.get(0).set(
+            new BlendingAttribute(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA));
         loaded.add(model);
         return new GDXModel(instance);
     }
@@ -183,25 +188,32 @@ public class GDXMediaLoader implements MediaLoader, GeometryBuilder, Disposable 
     }
 
     @Override
-    public ApplicationData loadApplicationData(String appName, String fileName) {
+    public Configuration loadApplicationData(String appName, String fileName) {
         if (Platform.isWindows() || Platform.isMac()) {
             StandardMediaLoader delegate = new StandardMediaLoader();
             return delegate.loadApplicationData(appName, fileName);
         } else {
-            Preferences preferences = Gdx.app.getPreferences(appName);
-            String data = preferences.getString("data", "");
-            return new ApplicationData(data);
+            Preferences preferences = Gdx.app.getPreferences(appName + "." + fileName);
+            Map<String, String> data = new LinkedHashMap<>();
+
+            for (String key : preferences.get().keySet()) {
+                data.put(key, preferences.getString(key));
+            }
+
+            return Configuration.fromProperties(data);
         }
     }
 
     @Override
-    public void saveApplicationData(ApplicationData data, String appName, String fileName) {
+    public void saveApplicationData(Configuration data, String appName, String fileName) {
         if (Platform.isWindows() || Platform.isMac()) {
             StandardMediaLoader delegate = new StandardMediaLoader();
             delegate.saveApplicationData(data, appName, fileName);
         } else {
             Preferences preferences = Gdx.app.getPreferences(appName);
-            preferences.putString("data", data.serialize());
+            for (String property : data.getPropertyNames()) {
+                preferences.putString(property, data.get(property));
+            }
             preferences.flush();
         }
     }
@@ -216,11 +228,6 @@ public class GDXMediaLoader implements MediaLoader, GeometryBuilder, Disposable 
 
     public Color toColor(ColorRGB color) {
         return new Color(color.getR() / 255f, color.getG() / 255f, color.getB() / 255f, 1f);
-    }
-
-    @Override
-    public GeometryBuilder getGeometryBuilder() {
-        return this;
     }
 
     @Override

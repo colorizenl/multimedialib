@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -39,5 +39,12 @@ class ColorRGBTest {
         assertEquals("#3264C8", colors.get(0).toHex());
         assertEquals("#4B4BE3", colors.get(1).toHex());
         assertEquals("#6432FF", colors.get(2).toHex());
+    }
+
+    @Test
+    void getRGB() {
+        assertEquals(0x000000, ColorRGB.BLACK.getRGB());
+        assertEquals(0xFFFFFF, ColorRGB.WHITE.getRGB());
+        assertEquals(0xFF0000, ColorRGB.RED.getRGB());
     }
 }

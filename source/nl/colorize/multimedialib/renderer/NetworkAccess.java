@@ -1,12 +1,12 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
-import nl.colorize.util.Task;
+import nl.colorize.util.Callback;
 import nl.colorize.util.http.Headers;
 import nl.colorize.util.http.PostData;
 
@@ -35,31 +35,24 @@ public interface NetworkAccess {
     /**
      * Sends an asynchronous HTTP GET request to the specified URL.
      */
-    public Task<String> get(String url, Headers headers);
+    public void get(String url, Headers headers, Callback<String> callback);
 
     /**
      * Sends am asynchronous HTTP POST request to the specified URL. The request
      * body will be encoded using the {@code application/x-www-form-urlencoded}
      * content type.
      */
-    public Task<String> post(String url, Headers headers, PostData body);
-
-    public boolean isWebSocketSupported();
+    public void post(String url, Headers headers, PostData body, Callback<String> callback);
 
     /**
      * Connects to the web socket located at the specified URI. Note that some
      * platforms may only allow the secure web socket protocol
      * (i.e. {@code "wss://"}).
-     *
-     * @throws UnsupportedOperationException if the platform does not support
-     *         web sockets.
      */
     public NetworkConnection connectWebSocket(String uri);
 
-    public boolean isWebRtcSupported();
-
     /**
-     * Opens a peer-to-peer connection using WebRT. The connection will be created
+     * Opens a peer-to-peer connection using WebRTC. The connection will be created
      * to the peer with the specified ID. This ID must be provided by a broker
      * service, it is not possible to discover peers directly.
      *

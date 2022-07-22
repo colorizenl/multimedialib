@@ -1,12 +1,16 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.teavm;
 
+import nl.colorize.multimedialib.renderer.teavm.pixi.PixiInterface;
 import org.teavm.jso.JSBody;
+import org.teavm.jso.canvas.CanvasImageSource;
+import org.teavm.jso.dom.html.HTMLCanvasElement;
+import org.teavm.jso.dom.html.HTMLImageElement;
 
 /**
  * Contains the API for calling JavaScript functions using TeaVM. This consists
@@ -68,14 +72,14 @@ public class Browser {
     )
     public static native String getLocalStorage(String key);
 
+    @JSBody(script = "return Object.keys(window.localStorage);")
+    public static native String[] getLocalStorageKeys();
+
     @JSBody(script = "window.localStorage.clear();")
     public static native void clearLocalStorage();
 
-    @JSBody(
-        params = {"callback"},
-        script = "startAnimationLoop(callback);"
-    )
-    public static native void startAnimationLoop(AnimationFrameCallback callback);
+    @JSBody(script = "return canvas;")
+    public static native HTMLCanvasElement getCanvas();
 
     @JSBody(script = "return canvas.width;")
     public static native float getCanvasWidth();
@@ -84,7 +88,13 @@ public class Browser {
     public static native float getCanvasHeight();
 
     @JSBody(script = "return getRequestedRenderer();")
-    public static native String getRendererType();
+    public static native String getRequestedRenderer();
+
+    @JSBody(
+        params = {"id"},
+        script = "return images[id];"
+    )
+    public static native HTMLImageElement getImage(String id);
 
     @JSBody(
         params = {"id"},
@@ -97,6 +107,18 @@ public class Browser {
         script = "return images[id].height;"
     )
     public static native float getImageHeight(String id);
+
+    @JSBody(
+        params = {"imageId", "mask"},
+        script = "return prepareImage(imageId, mask);"
+    )
+    public static native CanvasImageSource prepareImage(String imageId, String mask);
+
+    @JSBody(
+        params = {"originalId", "newId", "color"},
+        script = "tintImage(originalId, newId, color);"
+    )
+    public static native void tintImage(String originalId, String newId, String color);
 
     @JSBody(
         params = {"id", "x", "y"},
@@ -116,10 +138,8 @@ public class Browser {
     )
     public static native void stopAudio(String id, boolean reset);
 
-    @JSBody(script = "return takeScreenshot();")
+    @JSBody(script = "return canvas.toDataURL();")
     public static native String takeScreenshot();
-
-
 
     //-------------------------------------------------------------------------
     // Input devices
@@ -139,8 +159,6 @@ public class Browser {
         script = "return window.prompt(label, initialValue);"
     )
     public static native String prompt(String label, String initialValue);
-
-
 
     //-------------------------------------------------------------------------
     // Media loader
@@ -170,198 +188,10 @@ public class Browser {
     )
     public static native String loadTextResourceFile(String id);
 
-    @JSBody(
-        params = {"meshId", "path", "callback"},
-        script = "renderer.loadModel(meshId, path, callback);"
-    )
-    public static native void loadModel(String meshId, String path, ModelLoadCallback callback);
-
-    @JSBody(
-        params = {"path"},
-        script = "renderer.getTexture(path);"
-    )
-    public static native void loadTexture(String path);
-
-
-
     //-------------------------------------------------------------------------
-    // Network
+    // Pixi.js
     //-------------------------------------------------------------------------
 
-    @JSBody(
-        params = {"url", "headers", "callback"},
-        script = "httpConnection.sendGetRequest(url, headers, callback);"
-    )
-    public static native void sendGetRequest(String url, String[] headers, AjaxCallback callback);
-
-    @JSBody(
-        params = {"url", "headers", "params", "callback"},
-        script = "httpConnection.sendPostRequest(url, headers, params, callback);"
-    )
-    public static native void sendPostRequest(String url, String[] headers, String params,
-                                              AjaxCallback callback);
-
-    @JSBody(script = "return \"WebSocket\" in window;")
-    public static native boolean isWebSocketSupported();
-
-    @JSBody(
-        params = {"uri", "callback"},
-        script = "webSocketConnection.connectWebSocket(uri, callback);"
-    )
-    public static native void connectWebSocket(String uri, ConnectionCallback callback);
-
-    @JSBody(
-        params = {"message"},
-        script = "webSocketConnection.sendWebSocket(message);"
-    )
-    public static native void sendWebSocket(String message);
-
-    @JSBody(script = "webSocketConnection.closeWebSocket();")
-    public static native void closeWebSocket();
-
-    @JSBody(
-        params = {"id", "receiveCallback"},
-        script = "peerConnection.openPeerConnection(id, receiveCallback);"
-    )
-    public static native void openPeerConnection(String id, ConnectionCallback receiveCallback);
-
-    @JSBody(
-        params = {"message"},
-        script = "peerConnection.sendPeerMessage(message);"
-    )
-    public static native void sendPeerMessage(String message);
-
-    @JSBody(script = "peerConnection.closePeerConnection();")
-    public static native void closePeerConnection();
-
-
-
-    //-------------------------------------------------------------------------
-    // 2D graphics
-    //-------------------------------------------------------------------------
-
-    @JSBody(
-        params = {"x0", "y0", "x1", "y1", "color", "thickness"},
-        script = "renderer.drawLine(x0, y0, x1, y1, color, thickness);"
-    )
-    public static native void drawLine(float x0, float y0, float x1, float y1, String color, float thickness);
-
-    @JSBody(
-        params = {"x", "y", "width", "height", "color", "alpha"},
-        script = "renderer.drawRect(x, y, width, height, color, alpha);"
-    )
-    public static native void drawRect(float x, float y, float width, float height,
-                                       String color, float alpha);
-
-    @JSBody(
-        params = {"x", "y", "radius", "color", "alpha"},
-        script = "renderer.drawCircle(x, y, radius, color, alpha);"
-    )
-    public static native void drawCircle(float x, float y, float radius, String color, float alpha);
-
-    @JSBody(
-        params = {"points", "color", "alpha"},
-        script = "renderer.drawPolygon(points, color, alpha);"
-    )
-    public static native void drawPolygon(float[] points, String color, float alpha);
-
-    @JSBody(
-        params = {"id", "x", "y", "width", "height", "alpha", "mask"},
-        script = "renderer.drawImage(id, x, y, width, height, alpha, mask);"
-    )
-    public static native void drawImage(String id, float x, float y, float width, float height,
-                                        float alpha, String mask);
-
-    @JSBody(
-        params = {"id", "regionX", "regionY", "regionWidth", "regionHeight", "x", "y",
-            "width", "height", "rotation", "scaleX", "scaleY", "alpha", "mask"},
-        script = "renderer.drawImageRegion(id, regionX, regionY, regionWidth, regionHeight, " +
-            "                         x, y, width, height, rotation, scaleX, scaleY, alpha, mask);"
-    )
-    public static native void drawImageRegion(String id, float regionX, float regionY,
-                                              float regionWidth, float regionHeight,
-                                              float x, float y, float width, float height,
-                                              float rotation, float scaleX, float scaleY,
-                                              float alpha, String mask);
-
-    @JSBody(
-        params = {"text", "font", "size", "color", "bold", "x", "y", "align", "alpha"},
-        script = "renderer.drawText(text, font, size, color, bold, x, y, align, alpha);"
-    )
-    public static native void drawText(String text, String font, int size, String color, boolean bold,
-                                       float x, float y, String align, float alpha);
-
-    @JSBody(
-        params = {"originalId", "newId", "color"},
-        script = "tintImage(originalId, newId, color);"
-    )
-    public static native void tintImage(String originalId, String newId, String color);
-
-
-
-    //-------------------------------------------------------------------------
-    // 3D graphics
-    //-------------------------------------------------------------------------
-
-    @JSBody(
-        params = {"color"},
-        script = "renderer.changeAmbientLight(color);"
-    )
-    public static native void changeAmbientLight(String color);
-
-    @JSBody(
-        params = {"color"},
-        script = "renderer.changeLight(color);"
-    )
-    public static native void changeLight(String color);
-
-    @JSBody(
-        params = {"x", "y", "z", "targetX", "targetY", "targetZ"},
-        script = "renderer.moveCamera(x, y, z, targetX, targetY, targetZ);"
-    )
-    public static native void moveCamera(float x, float y, float z,
-                                         float targetX, float targetY, float targetZ);
-
-    @JSBody(
-        params = {"meshId", "sizeX", "sizeY", "sizeZ", "color", "texturePath"},
-        script = "renderer.createBox(meshId, sizeX, sizeY, sizeZ, color, texturePath);"
-    )
-    public static native void createBox(String meshId, float sizeX, float sizeY, float sizeZ,
-                                        String color, String texturePath);
-
-    @JSBody(
-        params = {"meshId", "diameter", "color", "texturePath"},
-        script = "renderer.createSphere(meshId, diameter, color, texturePath);"
-    )
-    public static native void createSphere(String meshId, float diameter,
-                                           String color, String texturePath);
-
-    @JSBody(
-        params = {"modelId", "meshId"},
-        script = "renderer.addModel(modelId, meshId);"
-    )
-    public static native void addModel(String modelId, String meshId);
-
-    @JSBody(
-        params = {"modelId"},
-        script = "renderer.removeModel(modelId);"
-    )
-    public static native void removeModel(String modelId);
-
-    @JSBody(script = "renderer.clearModels();")
-    public static native void clearModels();
-
-    @JSBody(
-        params = {"modelId", "x", "y", "z", "rotX", "rotY", "rotZ", "scaleX", "scaleY", "scaleZ"},
-        script = "renderer.syncModel(modelId, x, y, z, rotX, rotY, rotZ, scaleX, scaleY, scaleZ);"
-    )
-    public static native void syncModel(String modelId, float x, float y, float z,
-                                        float rotX, float rotY, float rotZ,
-                                        float scaleX, float scaleY, float scaleZ);
-
-    @JSBody(
-        params = {"modelId", "meshId", "name", "loop"},
-        script = "renderer.playAnimation(modelId, meshId, name, loop);"
-    )
-    public static native void playAnimation(String modelId, String meshId, String name, boolean loop);
+    @JSBody(script = "return new PixiInterface();")
+    public static native PixiInterface initPixiInterface();
 }

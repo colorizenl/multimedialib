@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -38,19 +38,14 @@ public class GDXModel implements PolygonModel {
     }
 
     @Override
-    public void attach() {
-    }
-
-    @Override
-    public void detach() {
-    }
-
-    @Override
     public void update(float deltaTime) {
         instance.transform.setToTranslation(transform.getPosition().getX(),
             transform.getPosition().getY(), transform.getPosition().getZ());
-        instance.transform.rotate(transform.getRotationX(), transform.getRotationY(),
-            transform.getRotationZ(), transform.getRotationAmount());
+
+        instance.transform.rotate(1f, 0f, 0f, transform.getRotationX());
+        instance.transform.rotate(0f, 1f, 0f, transform.getRotationY());
+        instance.transform.rotate(0f, 0f, 1f, transform.getRotationZ());
+
         instance.transform.scale(transform.getScaleX(), transform.getScaleY(), transform.getScaleZ());
 
         if (animationController != null) {

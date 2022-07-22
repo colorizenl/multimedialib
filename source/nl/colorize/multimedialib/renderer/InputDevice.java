@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -46,6 +46,14 @@ public interface InputDevice {
     public boolean isPointerReleased(Rect area);
 
     /**
+     * Returns true if any of the currently active pointers were released,
+     * regardless of their location.
+     */
+    default boolean isPointerReleased() {
+        return isPointerReleased(getCanvas().getBounds());
+    }
+
+    /**
      * Returns if the current device supports touch input. If true, the values
      * returned by {@link #getPointers()}, {@link #isPointerPressed(Rect)}, and
      * {@link #isPointerReleased(Rect)} will be based on touch input. If false,
@@ -84,4 +92,6 @@ public interface InputDevice {
      */
     @Deprecated
     public String requestTextInput(String label, String initialValue);
+
+    public Canvas getCanvas();
 }

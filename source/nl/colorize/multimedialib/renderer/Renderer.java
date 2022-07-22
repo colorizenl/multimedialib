@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -20,8 +20,7 @@ import nl.colorize.multimedialib.scene.Scene;
  * <p>
  * For 3D graphics, the renderer will draw all objects that are part of the
  * <em>stage</em>. Note that some renderer implementations may be limited to 2D
- * graphics and do not support 3D graphics. The capabilities of the renderer and
- * platform can be checked using {@link #getGraphicsMode()}.
+ * graphics and do not support 3D graphics.
  * <p>
  * For 2D graphics, the renderer will draw a number of layers. If 2D and 3D
  * graphicd are mixed, all 2D graphics are drawn on top of the 3D graphics.
@@ -35,11 +34,11 @@ public interface Renderer {
 
     public void start(Scene initialScene);
 
-    public GraphicsMode getGraphicsMode();
+    public DisplayMode getDisplayMode();
 
     /**
-     * Takes a screenshots of the renderer's current graphics, and saves it to an
-     * image. The image is returned as a data URL for a PNG image.
+     * Takes a screenshots of the renderer's current graphics, and saves it to
+     * an image. The image is returned as a data URL for a PNG image.
      */
     public String takeScreenshot();
 }

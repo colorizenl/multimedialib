@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -100,7 +100,7 @@ public class StateMachine<T extends State> implements Updatable {
      */
     public boolean changeState(T requestedState, float duration) {
         Preconditions.checkArgument(!hasDuration(requestedState) || requestedState.getNext() != null,
-            "State with duration does not indicate next state: " + requestedState);
+            "State with duration does not indicate next state: %s", requestedState);
 
         if (requestedState.equals(activeState) || !canChangeState()) {
             return false;

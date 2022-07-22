@@ -1,23 +1,27 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.java2d;
 
 import nl.colorize.multimedialib.graphics.Align;
-import nl.colorize.multimedialib.graphics.AlphaTransform;
 import nl.colorize.multimedialib.graphics.ColorRGB;
-import nl.colorize.multimedialib.graphics.Image;
+import nl.colorize.multimedialib.graphics.Primitive;
+import nl.colorize.multimedialib.graphics.Sprite;
 import nl.colorize.multimedialib.graphics.TTFont;
+import nl.colorize.multimedialib.graphics.Text;
 import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Circle;
+import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.math.Shape;
+import nl.colorize.multimedialib.math.SimpleCache;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.GraphicsContext2D;
+import nl.colorize.multimedialib.scene.StageVisitor;
 import nl.colorize.util.swing.Utils2D;
 
 import java.awt.AlphaComposite;
@@ -29,14 +33,16 @@ import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Uses Java 2D to render graphics. Because of Java 2D's flexibility this class
  * supports several graphics contexts: drawing can be either directly to a
  * window using active rendering, but also to a Swing component, or to an image.
  */
-public class Java2DGraphicsContext implements GraphicsContext2D {
+public class Java2DGraphicsContext implements StageVisitor {
 
     private Canvas canvas;
     private Graphics2D g2;
@@ -44,8 +50,10 @@ public class Java2DGraphicsContext implements GraphicsContext2D {
 
     private Map<ColorRGB, Color> colorCache;
     private Map<String, BufferedImage> maskCache;
+    private SimpleCache<RenderedCircle, BufferedImage> circleCache;
 
     private static final Transform NULL_TRANSFORM = new Transform();
+    private static final int SHAPE_CACHE_CAPACITY = 1000;
 
     public Java2DGraphicsContext(Canvas canvas, StandardMediaLoader mediaLoader) {
         this.canvas = canvas;
@@ -53,9 +61,9 @@ public class Java2DGraphicsContext implements GraphicsContext2D {
 
         this.colorCache = new HashMap<>();
         this.maskCache = new HashMap<>();
+        this.circleCache = SimpleCache.create(RenderedCircle::render, SHAPE_CACHE_CAPACITY);
     }
 
-    @Override
     public Canvas getCanvas() {
         return canvas;
     }
@@ -71,6 +79,11 @@ public class Java2DGraphicsContext implements GraphicsContext2D {
         }
     }
 
+    public void clear(int windowWidth, int windowHeight) {
+        g2.setColor(Color.BLACK);
+        g2.fillRect(0, 0, windowWidth, windowHeight);
+    }
+
     @Override
     public void drawBackground(ColorRGB backgroundColor) {
         float width = canvas.toScreenX(canvas.getWidth());
@@ -81,49 +94,45 @@ public class Java2DGraphicsContext implements GraphicsContext2D {
     }
 
     @Override
-    public void drawLine(Point2D from, Point2D to, ColorRGB color, float thickness) {
-        float x0 = canvas.toScreenX(from.getX());
-        float y0 = canvas.toScreenY(from.getY());
-        float x1 = canvas.toScreenX(to.getX());
-        float y1 = canvas.toScreenY(to.getY());
+    public void drawLine(Primitive graphic, Line line) {
+        float x0 = canvas.toScreenX(line.getStart().getX());
+        float y0 = canvas.toScreenY(line.getStart().getY());
+        float x1 = canvas.toScreenX(line.getEnd().getX());
+        float y1 = canvas.toScreenY(line.getEnd().getY());
 
-        g2.setStroke(new BasicStroke(thickness));
-        g2.setColor(convertColor(color));
+        g2.setStroke(new BasicStroke(line.getThickness()));
+        g2.setColor(convertColor(graphic.getColor()));
         g2.drawLine(Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1));
     }
 
     @Override
-    public void drawRect(Rect rect, ColorRGB color, AlphaTransform alpha) {
+    public void drawRect(Primitive graphic, Rect rect) {
         float screenX = canvas.toScreenX(rect.getX());
         float screenY = canvas.toScreenY(rect.getY());
         float screenWidth = canvas.toScreenX(rect.getEndX()) - screenX;
         float screenHeight = canvas.toScreenY(rect.getEndY()) - screenY;
 
         Composite originalComposite = g2.getComposite();
-        applyAlphaComposite(alpha);
-        g2.setColor(convertColor(color));
+        applyAlphaComposite(graphic.getAlpha());
+        g2.setColor(convertColor(graphic.getColor()));
         g2.fillRect(Math.round(screenX), Math.round(screenY), Math.round(screenWidth),
             Math.round(screenHeight));
         g2.setComposite(originalComposite);
     }
 
     @Override
-    public void drawCircle(Circle circle, ColorRGB color, AlphaTransform alpha) {
-        float screenX = canvas.toScreenX(circle.getCenterX() - circle.getRadius());
-        float screenY = canvas.toScreenY(circle.getCenterY() - circle.getRadius());
-        float screenWidth = canvas.toScreenX(circle.getCenterX() + circle.getRadius()) - screenX;
-        float screenHeight = canvas.toScreenY(circle.getCenterY() + circle.getRadius()) - screenY;
+    public void drawCircle(Primitive graphic, Circle circle) {
+        RenderedCircle key = new RenderedCircle(circle.getRadius(), graphic.getColor());
+        BufferedImage image = circleCache.get(key);
 
-        Composite originalComposite = g2.getComposite();
-        applyAlphaComposite(alpha);
-        g2.setColor(convertColor(color));
-        g2.fillOval(Math.round(screenX), Math.round(screenY), Math.round(screenWidth),
-            Math.round(screenHeight));
-        g2.setComposite(originalComposite);
+        Transform transform = new Transform();
+        transform.setAlpha(graphic.getAlpha());
+
+        drawImage(image, circle.getCenter(), transform);
     }
 
     @Override
-    public void drawPolygon(Polygon polygon, ColorRGB color, AlphaTransform alpha) {
+    public void drawPolygon(Primitive graphic, Polygon polygon) {
         int[] px = new int[polygon.getNumPoints()];
         int[] py = new int[polygon.getNumPoints()];
 
@@ -133,26 +142,28 @@ public class Java2DGraphicsContext implements GraphicsContext2D {
         }
 
         Composite originalComposite = g2.getComposite();
-        applyAlphaComposite(alpha);
-        g2.setColor(convertColor(color));
+        applyAlphaComposite(graphic.getAlpha());
+        g2.setColor(convertColor(graphic.getColor()));
         g2.fillPolygon(px, py, polygon.getNumPoints());
         g2.setComposite(originalComposite);
     }
 
     @Override
-    public void drawImage(Image image, float x, float y, Transform transform) {
-        drawImage(((AWTImage) image).getImage(), Math.round(x), Math.round(y), transform);
+    public void drawSprite(Sprite sprite) {
+        BufferedImage image = ((AWTImage) sprite.getCurrentGraphics()).getImage();
+        drawImage(image, sprite.getPosition(), sprite.getTransform());
     }
 
-    private void drawImage(BufferedImage image, int x, int y, Transform transform) {
+    private void drawImage(BufferedImage image, Point2D position, Transform transform) {
         if (transform == null) {
             transform = NULL_TRANSFORM;
         }
 
         Composite originalComposite = g2.getComposite();
-        applyAlphaComposite(transform);
+        applyAlphaComposite(transform.getAlpha());
 
-        AffineTransform transform2D = applyTransform(x, y, image.getWidth(), image.getHeight(), transform);
+        AffineTransform transform2D = applyTransform(position, image.getWidth(),
+            image.getHeight(), transform);
         g2.drawImage(image, transform2D, null);
 
         if (transform.getMask() != null) {
@@ -164,40 +175,44 @@ public class Java2DGraphicsContext implements GraphicsContext2D {
     }
 
     @Override
-    public void drawText(String text, TTFont font, float x, float y, Align align, AlphaTransform alpha) {
-        float screenX = canvas.toScreenX(x);
-        float screenY = canvas.toScreenY(y);
+    public void drawText(Text text) {
+        TTFont font = text.getFont();
 
-        float normalizedFontSize = Math.round(canvas.getZoomLevel() * font.getSize());
-        Font awtFont = mediaLoader.getFont(font).deriveFont(font.isBold() ? Font.BOLD : Font.PLAIN,
+        float normalizedFontSize = Math.round(canvas.getZoomLevel() * font.size());
+        Font awtFont = mediaLoader.getFont(font).deriveFont(font.bold() ? Font.BOLD : Font.PLAIN,
             normalizedFontSize);
-        int estimatedWidth = g2.getFontMetrics(awtFont).stringWidth(text);
 
         Composite originalComposite = g2.getComposite();
-        applyAlphaComposite(alpha);
+        applyAlphaComposite(text.getAlpha());
 
-        g2.setColor(convertColor(font.getColor()));
+        g2.setColor(convertColor(font.color()));
         g2.setFont(awtFont);
-
-        if (align == Align.CENTER) {
-            g2.drawString(text, screenX - estimatedWidth / 2f, screenY);
-        } else if (align == Align.RIGHT) {
-            g2.drawString(text, screenX - estimatedWidth, screenY);
-        } else {
-            g2.drawString(text, screenX, screenY);
-        }
-
+        drawLines(text.getLines(), text.getPosition(), text.getAlign(), font.getLineHeight());
         g2.setComposite(originalComposite);
     }
 
-    private AffineTransform applyTransform(int x, int y, int width, int height, Transform transform) {
-        float screenX = canvas.toScreenX(x);
-        float screenY = canvas.toScreenY(y);
+    private void drawLines(List<String> lines, Point2D position, Align align, int lineHeight) {
+        for (int i = 0; i < lines.size(); i++) {
+            float screenX = canvas.toScreenX(position.getX());
+            float screenY = canvas.toScreenY(position.getY() + i * lineHeight);
+            int estimatedWidth = g2.getFontMetrics().stringWidth(lines.get(i));
 
-        float scaleX = canvas.getZoomLevel() * (transform.getScaleX() / 100f) *
-            (transform.isFlipHorizontal() ? -1f : 1f);
-        float scaleY = canvas.getZoomLevel() * (transform.getScaleY() / 100f) *
-            (transform.isFlipVertical() ? -1f : 1f);
+            if (align == Align.CENTER) {
+                g2.drawString(lines.get(i), screenX - estimatedWidth / 2f, screenY);
+            } else if (align == Align.RIGHT) {
+                g2.drawString(lines.get(i), screenX - estimatedWidth, screenY);
+            } else {
+                g2.drawString(lines.get(i), screenX, screenY);
+            }
+        }
+    }
+
+    private AffineTransform applyTransform(Point2D position, int width, int height, Transform transform) {
+        float screenX = canvas.toScreenX(position.getX());
+        float screenY = canvas.toScreenY(position.getY());
+
+        float scaleX = canvas.getZoomLevel() * (transform.getScaleX() / 100f);
+        float scaleY = canvas.getZoomLevel() * (transform.getScaleY() / 100f);
 
         int screenWidth = (int) (width * scaleX);
         int screenHeight = (int) (height * scaleY);
@@ -210,9 +225,9 @@ public class Java2DGraphicsContext implements GraphicsContext2D {
         return transform2D;
     }
 
-    private void applyAlphaComposite(AlphaTransform transform) {
-        if (transform != null && transform.getAlpha() != 100) {
-            Composite alphaComposite = AlphaComposite.SrcOver.derive(transform.getAlpha() / 100f);
+    private void applyAlphaComposite(float alpha) {
+        if (alpha != 100) {
+            Composite alphaComposite = AlphaComposite.SrcOver.derive(alpha / 100f);
             g2.setComposite(alphaComposite);
         }
     }
@@ -247,5 +262,48 @@ public class Java2DGraphicsContext implements GraphicsContext2D {
         g2.dispose();
 
         return maskImage;
+    }
+
+    /**
+     * Java2D does not use hardware acceleration for certain drawing operations.
+     * This can have a significant performance impact, so shapes are rendered
+     * to an image, then that image is drawn by the renderer.
+     */
+    private static class RenderedCircle {
+
+        private float radius;
+        private ColorRGB color;
+
+        public RenderedCircle(float radius, ColorRGB color) {
+            this.radius = radius;
+            this.color = color;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o instanceof RenderedCircle) {
+                RenderedCircle other = (RenderedCircle) o;
+                return Math.abs(radius - other.radius) < Shape.EPSILON && color.equals(other.color);
+            } else {
+                return false;
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(radius, color);
+        }
+
+        public BufferedImage render() {
+            int size = Math.round(radius * 2f);
+            Color rgba = new Color(color.getR(), color.getG(), color.getB());
+
+            BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2 = Utils2D.createGraphics(image, true, false);
+            g2.setColor(rgba);
+            g2.fillOval(0, 0, size, size);
+            g2.dispose();
+            return image;
+        }
     }
 }

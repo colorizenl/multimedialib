@@ -1,15 +1,14 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.tool;
 
-import nl.colorize.multimedialib.math.MathUtils;
 import nl.colorize.util.LogHelper;
+import nl.colorize.util.cli.CommandLineArgumentParser;
 import nl.colorize.util.swing.Utils2D;
-import org.kohsuke.args4j.Option;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
@@ -29,33 +28,35 @@ import java.util.stream.Collectors;
  *
  * <ul>
  *   <li>Introduce an alpha channel based on a certain color in the image</li>
- *   <li>Fade the image's edges</li>
  * </ul>
  */
-public class ImageManipulationTool extends CommandLineTool {
+public class ImageManipulationTool {
 
-    @Option(name = "-input", required = true, usage = "Input directory containing the source images")
-    public File inputDir;
-
-    @Option(name = "-output", required = true, usage = "Output directory for generated results")
-    public File outputDir;
-
-    @Option(name = "-alpha", usage = "Introduce alpha channel (color in the format #000000)")
-    public String alphaChannel = null;
-
-    @Option(name = "-fade", usage = "Fade image edge alpha using the specified edge size")
-    public int fade = 0;
+    protected File inputDir;
+    protected File outputDir;
+    protected String alphaChannel;
+    protected int fade;
 
     private static final Color REAL_ALPHA = new Color(0, 0, 0, 0);
     private static final Logger LOGGER = LogHelper.getLogger(ImageManipulationTool.class);
 
     public static void main(String[] args) {
+        CommandLineArgumentParser argParser = new CommandLineArgumentParser("ImageManipulationTool")
+            .add("-input", "Input directory containing the source images")
+            .add("-output", "Output directory for generated results")
+            .addOptional("-alpha", null, "Introduce alpha channel (color in the format #000000)");
+
+        argParser.parseArgs(args);
+
         ImageManipulationTool tool = new ImageManipulationTool();
-        tool.start(args);
+        tool.inputDir = argParser.getFile("input");
+        tool.outputDir = argParser.getFile("output");
+        tool.alphaChannel = argParser.get("alpha");
+        tool.fade = argParser.getInt("fade");
+        tool.run();
     }
 
-    @Override
-    public void run() {
+    protected void run() {
         outputDir.mkdir();
 
         try {
@@ -90,10 +91,6 @@ public class ImageManipulationTool extends CommandLineTool {
             image = introduceAlphaChannel(image);
         }
 
-        if (fade > 0) {
-            image = fadeEdges(image);
-        }
-
         return image;
     }
 
@@ -114,29 +111,5 @@ public class ImageManipulationTool extends CommandLineTool {
         }
 
         return result;
-    }
-
-    private BufferedImage fadeEdges(BufferedImage image) {
-        BufferedImage result = new BufferedImage(image.getWidth(), image.getHeight(),
-            BufferedImage.TYPE_INT_ARGB);
-
-        for (int x = 0; x < image.getWidth(); x++) {
-            for (int y = 0; y < image.getHeight(); y++) {
-                Color oldColor = new Color(image.getRGB(x, y));
-                int edgeDistance = getEdgeDistance(image, x, y);
-                int alpha = MathUtils.clamp(Math.round(edgeDistance * (255f / fade)), 0, 255);
-                Color newColor = new Color(oldColor.getRed(), oldColor.getGreen(),
-                    oldColor.getBlue(), alpha);
-                result.setRGB(x, y, newColor.getRGB());
-            }
-        }
-
-        return result;
-    }
-
-    private int getEdgeDistance(BufferedImage image, int x, int y) {
-        int right = image.getWidth() - 1 - x;
-        int bottom = image.getHeight() - 1 - y;
-        return Math.min(Math.min(Math.min(x, y), right), bottom);
     }
 }

@@ -1,24 +1,25 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.java2d;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Preconditions;
+import com.google.common.reflect.ClassPath;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
 import nl.colorize.multimedialib.graphics.PolygonModel;
 import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
-import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.UnsupportedGraphicsModeException;
-import nl.colorize.util.ApplicationData;
+import nl.colorize.util.Configuration;
+import nl.colorize.util.LoadUtils;
+import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.swing.Utils2D;
@@ -30,9 +31,15 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * Uses APIs from the Java standard library to load media files: Java2D and ImageIO
@@ -43,9 +50,23 @@ import java.util.Properties;
 public class StandardMediaLoader implements MediaLoader {
 
     private Map<TTFont, Font> loadedFonts;
+    private Set<String> classPathResources;
+
+    private static final Logger LOGGER = LogHelper.getLogger(StandardMediaLoader.class);
 
     public StandardMediaLoader() {
         this.loadedFonts = new HashMap<>();
+        this.classPathResources = Collections.emptySet();
+
+        try {
+            ClassLoader classLoader = StandardMediaLoader.class.getClassLoader();
+
+            classPathResources = ClassPath.from(classLoader).getResources().stream()
+                .map(resource -> resource.getResourceName())
+                .collect(Collectors.toSet());;
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Failed to preload classpath resources", e);
+        }
     }
 
     @Override
@@ -88,7 +109,12 @@ public class StandardMediaLoader implements MediaLoader {
 
     protected Font getFont(TTFont font) {
         Font awtFont = loadedFonts.get(font);
-        Preconditions.checkArgument(awtFont != null, "Unknown font: " + font);
+        if (awtFont == null) {
+            LOGGER.warning("Unknown font: " + font);
+            int style = font.bold() ? Font.BOLD : Font.PLAIN;
+            awtFont = new Font(Font.SANS_SERIF, style, font.size());
+            loadedFonts.put(font, awtFont);
+        }
         return awtFont;
     }
 
@@ -105,36 +131,36 @@ public class StandardMediaLoader implements MediaLoader {
 
     @Override
     public boolean containsResourceFile(FilePointer file) {
-        return new ResourceFile(file.getPath()).exists();
+        if (classPathResources.isEmpty()) {
+            return new ResourceFile(file.getPath()).exists();
+        } else {
+            return classPathResources.contains(file.getPath());
+        }
     }
 
     @Override
-    public ApplicationData loadApplicationData(String appName, String fileName) {
+    public Configuration loadApplicationData(String appName, String fileName) {
         File file = Platform.getApplicationData(appName, fileName);
 
         if (!file.exists()) {
-            return new ApplicationData(new Properties());
+            return Configuration.fromProperties();
         }
 
         try {
-            return new ApplicationData(file);
+            Properties properties = LoadUtils.loadProperties(file, Charsets.UTF_8);
+            return Configuration.fromProperties(properties);
         } catch (IOException e) {
             throw new MediaException("Unable to load application data", e);
         }
     }
 
     @Override
-    public void saveApplicationData(ApplicationData data, String appName, String fileName) {
+    public void saveApplicationData(Configuration data, String appName, String fileName) {
         try {
             File file = Platform.getApplicationData(appName, fileName);
-            data.save(file);
+            Files.writeString(file.toPath(), data.serialize(), Charsets.UTF_8);
         } catch (IOException e) {
             throw new MediaException("Unable to save application data", e);
         }
-    }
-
-    @Override
-    public GeometryBuilder getGeometryBuilder() {
-        throw new UnsupportedGraphicsModeException();
     }
 }

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -14,7 +14,11 @@ import nl.colorize.multimedialib.renderer.MediaLoader;
  * from {@code .ttf} using the {@link MediaLoader}, which will convert the font
  * into a format that can be used by the renderer.
  */
-public final class TTFont {
+public class TTFont {
+
+    //TODO this class uses the naming convention for Java records, but
+    //     is unable to actually use records until they are supported
+    //     by TeaVM.
 
     private String family;
     private int size;
@@ -31,46 +35,23 @@ public final class TTFont {
         this.bold = bold;
     }
 
-    public String getFamily() {
+    public String family() {
         return family;
     }
 
-    public int getSize() {
+    public int size() {
         return size;
     }
 
-    public ColorRGB getColor() {
+    public ColorRGB color() {
         return color;
     }
 
-    public boolean isBold() {
+    public boolean bold() {
         return bold;
     }
 
     public int getLineHeight() {
-        return Math.round(size * 1.5f);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o instanceof TTFont) {
-            TTFont other = (TTFont) o;
-            return family.equals(other.family) &&
-                size == other.size &&
-                color.equals(other.color) &&
-                bold == other.bold;
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public int hashCode() {
-        return family.hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return size + "px " + family + " @ " + color;
+        return Math.round(size * 1.8f);
     }
 }

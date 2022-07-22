@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -10,9 +10,8 @@ import com.google.common.base.Charsets;
 import com.google.common.net.HttpHeaders;
 import nl.colorize.multimedialib.renderer.NetworkAccess;
 import nl.colorize.multimedialib.renderer.NetworkConnection;
+import nl.colorize.util.Callback;
 import nl.colorize.util.LogHelper;
-import nl.colorize.util.Platform;
-import nl.colorize.util.Task;
 import nl.colorize.util.http.Headers;
 import nl.colorize.util.http.Method;
 import nl.colorize.util.http.PostData;
@@ -21,6 +20,7 @@ import nl.colorize.util.http.URLResponse;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -38,32 +38,41 @@ public class StandardNetworkAccess implements NetworkAccess {
     private static final Logger LOGGER = LogHelper.getLogger(StandardNetworkAccess.class);
 
     @Override
-    public Task<String> get(String url, Headers headers) {
-        return send(Method.GET, url, headers, null);
+    public void get(String url, Headers headers, Callback<String> callback) {
+        URLLoader request = createRequest(Method.GET, url, headers, null);
+        send(request, callback);
     }
 
     @Override
-    public Task<String> post(String url, Headers headers, PostData body) {
-        return send(Method.POST, url, headers, body);
+    public void post(String url, Headers headers, PostData body, Callback<String> callback) {
+        URLLoader request = createRequest(Method.POST, url, headers, body);
+        send(request, callback);
     }
 
-    public Task<String> send(Method method, String url, Headers headers, PostData body) {
+    private URLLoader createRequest(Method method, String url, Headers headers, PostData body) {
         URLLoader request = URLLoader.create(method, url, StandardCharsets.UTF_8);
         request.addHeader(HttpHeaders.X_REQUESTED_WITH, "MultimediaLib");
         if (headers != null) {
             request.addHeaders(headers);
         }
-
         if (body != null) {
             request.setBody(body);
         }
-
-        return request.sendBackgroundRequest().pipe(URLResponse::getBody);
+        return request;
     }
 
-    @Override
-    public boolean isWebSocketSupported() {
-        return true;
+    private void send(URLLoader request, Callback<String> callback) {
+        Runnable task = () -> {
+            try {
+                URLResponse response = request.sendRequest();
+                callback.onResponse(response.getBody());
+            } catch (IOException e) {
+                callback.onError(e);
+            }
+        };
+
+        Thread backgroundThread = new Thread(task, "MultimediaLib-StandardNetworkAccess");
+        backgroundThread.start();
     }
 
     @Override
@@ -74,14 +83,8 @@ public class StandardNetworkAccess implements NetworkAccess {
     }
 
     @Override
-    public boolean isWebRtcSupported() {
-        return false;
-    }
-
-    @Override
     public NetworkConnection connectWebRTC(String id) {
-        throw new UnsupportedOperationException("WebRTC not supported by platform " +
-            Platform.getPlatformName());
+        throw new UnsupportedOperationException("WebRTC not supported");
     }
 
     /**

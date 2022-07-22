@@ -1,12 +1,13 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
 import com.google.common.base.Preconditions;
+import nl.colorize.multimedialib.graphics.Graphic2D;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 
@@ -134,16 +135,41 @@ public class Canvas {
         return (screenX - offsetX) / getZoomLevel();
     }
 
+    public float toCanvasX(Point2D point) {
+        return toCanvasX(Math.round(point.getX()));
+    }
+
     public float toCanvasY(int screenY) {
         return (screenY - offsetY) / getZoomLevel();
+    }
+
+    public float toCanvasY(Point2D point) {
+        return toCanvasY(Math.round(point.getY()));
     }
 
     public float toScreenX(float canvasX) {
         return canvasX * getZoomLevel() + offsetX;
     }
 
+    public float toScreenX(Point2D point) {
+        return toScreenX(point.getX());
+    }
+
     public float toScreenY(float canvasY) {
         return canvasY * getZoomLevel() + offsetY;
+    }
+
+    public float toScreenY(Point2D point) {
+        return toScreenY(point.getY());
+    }
+
+    /**
+     * Convenience method that returns true if the graphic is entirely or
+     * partially contained within this canvas.
+     */
+    public boolean isVisible(Graphic2D graphic) {
+        Rect canvasBounds = getBounds();
+        return graphic.isVisible() && graphic.getBounds().intersects(canvasBounds);
     }
 
     @Override

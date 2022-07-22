@@ -1,25 +1,16 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.headless;
 
 import com.google.common.annotations.VisibleForTesting;
-import nl.colorize.multimedialib.graphics.Align;
-import nl.colorize.multimedialib.graphics.AlphaTransform;
-import nl.colorize.multimedialib.graphics.ColorRGB;
-import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.graphics.TTFont;
-import nl.colorize.multimedialib.graphics.Transform;
-import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.GraphicsContext2D;
-import nl.colorize.multimedialib.renderer.GraphicsMode;
+import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Renderer;
@@ -45,8 +36,7 @@ import java.util.List;
 @VisibleForTesting
 public class HeadlessRenderer implements Renderer {
 
-    private Canvas canvas;
-    private int framerate;
+    private DisplayMode displayMode;
     private boolean graphicsEnvironmentEnabled;
     private SceneContext context;
     
@@ -54,10 +44,18 @@ public class HeadlessRenderer implements Renderer {
     public static final int DEFAULT_HEIGHT = 600;
     public static final int DEFAULT_FRAMERATE = 30;
 
-    public HeadlessRenderer(Canvas canvas, int framerate) {
-        this.canvas = canvas;
-        this.framerate = framerate;
+    public HeadlessRenderer(DisplayMode displayMode) {
+        this.displayMode = displayMode;
         this.graphicsEnvironmentEnabled = true;
+
+        HeadlessMediaLoader mediaLoader = new HeadlessMediaLoader(graphicsEnvironmentEnabled);
+        StandardNetworkAccess network = new StandardNetworkAccess();
+        NullInputDevice input = new NullInputDevice(displayMode.getCanvas());
+        context = new SceneContext(displayMode, input, mediaLoader, network);
+    }
+
+    public HeadlessRenderer(Canvas canvas, int framerate) {
+        this(new DisplayMode(canvas, framerate));
     }
     
     public HeadlessRenderer() {
@@ -65,23 +63,18 @@ public class HeadlessRenderer implements Renderer {
     }
 
     @Override
-    public GraphicsMode getGraphicsMode() {
-        return GraphicsMode.HEADLESS;
-    }
-
-    @Override
     public void start(Scene initialScene) {
-        HeadlessMediaLoader mediaLoader = new HeadlessMediaLoader(graphicsEnvironmentEnabled);
-        StandardNetworkAccess network = new StandardNetworkAccess();
-        context = new SceneContext(canvas, new NullInputDevice(), mediaLoader, network);
         context.changeScene(initialScene);
-
         doFrame();
     }
     
     public void doFrame() {
-        context.update(1f / framerate);
-        context.getStage().render2D(new NullGraphicsContext(canvas));
+        context.update(1f / displayMode.getFramerate());
+    }
+
+    @Override
+    public DisplayMode getDisplayMode() {
+        return displayMode;
     }
 
     @Override
@@ -97,49 +90,17 @@ public class HeadlessRenderer implements Renderer {
         return graphicsEnvironmentEnabled;
     }
 
-    private static class NullGraphicsContext implements GraphicsContext2D {
-        
+    public SceneContext getContext() {
+        return context;
+    }
+
+    private static class NullInputDevice implements InputDevice {
+
         private Canvas canvas;
-        
-        public NullGraphicsContext(Canvas canvas) {
+
+        public NullInputDevice(Canvas canvas) {
             this.canvas = canvas;
         }
-
-        @Override
-        public Canvas getCanvas() {
-            return canvas;
-        }
-
-        @Override
-        public void drawBackground(ColorRGB backgroundColor) {
-        }
-
-        @Override
-        public void drawLine(Point2D from, Point2D to, ColorRGB color, float thickness) {
-        }
-
-        @Override
-        public void drawRect(Rect rect, ColorRGB color, AlphaTransform alpha) {
-        }
-
-        @Override
-        public void drawCircle(Circle circle, ColorRGB color, AlphaTransform alpha) {
-        }
-
-        @Override
-        public void drawPolygon(Polygon polygon, ColorRGB color, AlphaTransform alpha) {
-        }
-
-        @Override
-        public void drawImage(Image image, float x, float y, Transform transform) {
-        }
-
-        @Override
-        public void drawText(String text, TTFont font, float x, float y, Align align, AlphaTransform alpha) {
-        }
-    }
-    
-    private static class NullInputDevice implements InputDevice {
 
         @Override
         public List<Point2D> getPointers() {
@@ -179,6 +140,11 @@ public class HeadlessRenderer implements Renderer {
         @Override
         public String requestTextInput(String label, String initialValue) {
             return null;
+        }
+
+        @Override
+        public Canvas getCanvas() {
+            return canvas;
         }
     }
 }

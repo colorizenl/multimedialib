@@ -1,25 +1,23 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.tool;
 
-import com.google.common.base.Charsets;
+import nl.colorize.multimedialib.demo.Demo2D;
+import nl.colorize.multimedialib.demo.Demo3D;
 import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.multimedialib.renderer.java2d.Java2DRenderer;
 import nl.colorize.multimedialib.renderer.libgdx.GDXRenderer;
 import nl.colorize.multimedialib.scene.Scene;
-import nl.colorize.util.LogHelper;
-import nl.colorize.util.ResourceFile;
+import nl.colorize.util.cli.CommandLineArgumentParser;
 import nl.colorize.util.swing.ApplicationMenuListener;
 import nl.colorize.util.swing.Popups;
-import org.kohsuke.args4j.Option;
-
-import java.util.logging.Logger;
 
 /**
  * Launches one of the demo applications from the command line. The behavior of
@@ -28,38 +26,28 @@ import java.util.logging.Logger;
  * Refer to the documentation for {@link Demo2D} for more information
  * on the demo application itself.
  */
-public class DemoLauncher extends CommandLineTool implements ApplicationMenuListener {
+public class DemoLauncher implements ApplicationMenuListener {
 
-    @Option(name = "-renderer", required = true, usage = "Renderer to use for the demo (java2d, gdx)")
-    public String rendererName;
-
-    @Option(name = "-graphics", required = true, usage = "Either '2d' or '3d'")
-    public String graphics;
-
-    @Option(name = "-framerate", required = false, usage = "Demo framerate, default is 60 fps")
-    public int framerate = Demo2D.DEFAULT_FRAMERATE;
-
-    @Option(name = "-canvas", required = false, usage = "Uses a fixed canvas size to display graphics")
-    public boolean canvas = false;
-
-    @Option(name = "-verification", required = false, usage = "Prints instructions for verification")
-    public boolean verification = false;
-
-    private static final ResourceFile VERIFICATION_FILE = new ResourceFile("verification-instructions.txt");
-    private static final Logger LOGGER = LogHelper.getLogger(DemoLauncher.class);
+    private String rendererName;
+    private String graphics;
+    private int framerate;
+    private boolean canvas;
 
     public static void main(String[] args) {
+        CommandLineArgumentParser argParser = new CommandLineArgumentParser("DemoLauncher")
+            .add("-renderer", "Renderer to use for the demo (java2d, gdx)")
+            .add("-graphics", "Either '2d' or '3d'")
+            .addOptional("-framerate", "60", "Demo framerate, default is 60 fps")
+            .addFlag("-canvas", "Uses a fixed canvas size to display graphics");
+
+        argParser.parseArgs(args);
+
         DemoLauncher demo = new DemoLauncher();
-        demo.start(args);
-    }
-
-    @Override
-    public void run() {
-        start();
-
-        if (verification) {
-            printVerificationInstructions();
-        }
+        demo.rendererName = argParser.get("renderer");
+        demo.graphics = argParser.get("graphics");
+        demo.framerate = argParser.getInt("framerate");
+        demo.canvas = argParser.getBool("canvas");
+        demo.start();
     }
 
     private void start() {
@@ -76,11 +64,11 @@ public class DemoLauncher extends CommandLineTool implements ApplicationMenuList
     }
 
     private Java2DRenderer createJava2DRenderer() {
-        return new Java2DRenderer(getCanvas(), framerate, getWindowOptions());
+        return new Java2DRenderer(getDisplayMode(), getWindowOptions());
     }
 
     private GDXRenderer createGDXRenderer() {
-        GDXRenderer renderer = new GDXRenderer(getCanvas(), framerate, getWindowOptions());
+        GDXRenderer renderer = new GDXRenderer(getDisplayMode(), getWindowOptions());
         if (graphics.equals("3d")) {
             renderer.enableFreeCamera();
         }
@@ -95,6 +83,10 @@ public class DemoLauncher extends CommandLineTool implements ApplicationMenuList
         }
     }
 
+    private DisplayMode getDisplayMode() {
+        return new DisplayMode(getCanvas(), framerate);
+    }
+
     private Canvas getCanvas() {
         if (canvas) {
             return Canvas.zoomOut(Demo2D.DEFAULT_CANVAS_WIDTH, Demo2D.DEFAULT_CANVAS_HEIGHT);
@@ -107,11 +99,6 @@ public class DemoLauncher extends CommandLineTool implements ApplicationMenuList
         WindowOptions windowOptions = new WindowOptions("MultimediaLib - Demo");
         windowOptions.setAppMenuListener(this);
         return windowOptions;
-    }
-
-    private void printVerificationInstructions() {
-        String instructions = VERIFICATION_FILE.read(Charsets.UTF_8);
-        LOGGER.info("\n\n" + instructions);
     }
 
     @Override

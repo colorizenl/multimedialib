@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -35,6 +35,7 @@ public class TeaInputDevice implements InputDevice, Updatable {
 
     private Canvas canvas;
     private PlatformFamily platform;
+    private float pixelRatio;
 
     private Map<String, Pointer> pointers;
     private Set<Integer> keysDown;
@@ -62,6 +63,7 @@ public class TeaInputDevice implements InputDevice, Updatable {
             .put(KeyCode.ESCAPE, 27)
             .put(KeyCode.SHIFT, 16)
             .put(KeyCode.BACKSPACE, 8)
+            .put(KeyCode.TAB, 9)
             .put(KeyCode.A, 65)
             .put(KeyCode.B, 66)
             .put(KeyCode.C, 67)
@@ -115,6 +117,7 @@ public class TeaInputDevice implements InputDevice, Updatable {
     public TeaInputDevice(Canvas canvas, PlatformFamily platform) {
         this.canvas = canvas;
         this.platform = platform;
+        this.pixelRatio = Browser.getDevicePixelRatio();
 
         this.pointers = new HashMap<>();
         this.keysDown = new HashSet<>();
@@ -184,7 +187,7 @@ public class TeaInputDevice implements InputDevice, Updatable {
     @Override
     public List<Point2D> getPointers() {
         return pointers.values().stream()
-            .map(pointer -> pointer.getCanvasPosition(canvas))
+            .map(pointer -> pointer.getCanvasPosition(canvas, pixelRatio))
             .collect(Collectors.toList());
     }
 
@@ -192,14 +195,14 @@ public class TeaInputDevice implements InputDevice, Updatable {
     public boolean isPointerPressed(Rect area) {
         return pointers.values().stream()
             .filter(pointer -> pointer.state == 1)
-            .anyMatch(pointer -> area.contains(pointer.getCanvasPosition(canvas)));
+            .anyMatch(pointer -> area.contains(pointer.getCanvasPosition(canvas, pixelRatio)));
     }
 
     @Override
     public boolean isPointerReleased(Rect area) {
         return pointers.values().stream()
             .filter(pointer -> pointer.state == 2)
-            .anyMatch(pointer -> area.contains(pointer.getCanvasPosition(canvas)));
+            .anyMatch(pointer -> area.contains(pointer.getCanvasPosition(canvas, pixelRatio)));
     }
 
     @Override
@@ -227,6 +230,15 @@ public class TeaInputDevice implements InputDevice, Updatable {
         return Browser.prompt(label, initialValue);
     }
 
+    @Override
+    public Canvas getCanvas() {
+        return canvas;
+    }
+
+    public void setPixelRatio(float pixelRatio) {
+        this.pixelRatio = pixelRatio;
+    }
+
     /**
      * Groups information relates to the state of a pointer. There can be multiple
      * pointers actively simultaneously in the case of multi-touch events.
@@ -243,10 +255,9 @@ public class TeaInputDevice implements InputDevice, Updatable {
             this.state = 0;
         }
 
-        public Point2D getCanvasPosition(Canvas canvas) {
-            float devicePixelRatio = Browser.getDevicePixelRatio();
-            float canvasX = canvas.toCanvasX(Math.round(location.getX() * devicePixelRatio));
-            float canvasY = canvas.toCanvasY(Math.round(location.getY() * devicePixelRatio));
+        public Point2D getCanvasPosition(Canvas canvas, float pixelRatio) {
+            float canvasX = canvas.toCanvasX(Math.round(location.getX() * pixelRatio));
+            float canvasY = canvas.toCanvasY(Math.round(location.getY() * pixelRatio));
             return new Point2D(canvasX, canvasY);
         }
     }

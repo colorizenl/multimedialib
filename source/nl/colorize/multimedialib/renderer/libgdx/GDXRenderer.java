@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -24,19 +24,18 @@ import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.graphics.glutils.HdpiMode;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.utils.ScreenUtils;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.PolygonModel;
 import nl.colorize.multimedialib.math.Point3D;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.GraphicsMode;
+import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.multimedialib.renderer.java2d.StandardNetworkAccess;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.multimedialib.scene.Stage;
+import nl.colorize.multimedialib.scene.Stage3D;
 import nl.colorize.util.LoadUtils;
 import nl.colorize.util.swing.Utils2D;
 
@@ -77,9 +76,9 @@ public class GDXRenderer implements Renderer, ApplicationListener {
     private static final float NEAR_PLANE = 1f;
     private static final float FAR_PLANE = 300f;
 
-    public GDXRenderer(Canvas canvas, int framerate, WindowOptions window) {
-        this.canvas = canvas;
-        this.framerate = framerate;
+    public GDXRenderer(DisplayMode displayMode, WindowOptions window) {
+        this.canvas = displayMode.getCanvas();
+        this.framerate = displayMode.getFramerate();
         this.window = window;
 
         this.freeCamera = false;
@@ -106,7 +105,8 @@ public class GDXRenderer implements Renderer, ApplicationListener {
     public void create() {
         mediaLoader = new GDXMediaLoader();
         input = new GDXInput(canvas);
-        context = new SceneContext(canvas, input, mediaLoader, new StandardNetworkAccess());
+        StandardNetworkAccess network = new StandardNetworkAccess();
+        context = new SceneContext(getDisplayMode(), input, mediaLoader, network);
         context.changeScene(initialScene);
 
         resize(canvas.getWidth(), canvas.getHeight());
@@ -157,6 +157,8 @@ public class GDXRenderer implements Renderer, ApplicationListener {
 
     @Override
     public void render() {
+        context.getFrameStats().markFrameStart();
+
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
@@ -168,11 +170,14 @@ public class GDXRenderer implements Renderer, ApplicationListener {
         }
 
         context.update(frameTime);
-        renderStage(context.getStage(), frameTime);
+        context.getFrameStats().markFrameUpdate();
+
+        renderStage((Stage3D) context.getStage());
         graphicsContext.switchMode(false, false);
+        context.getFrameStats().markFrameRender();
     }
 
-    private void renderStage(Stage stage, float deltaTime) {
+    private void renderStage(Stage3D stage) {
         camera.position.set(toVector(stage.getCameraPosition()));
         camera.up.set(0f, 1f, 0f);
         camera.lookAt(toVector(stage.getCameraTarget()));
@@ -181,23 +186,19 @@ public class GDXRenderer implements Renderer, ApplicationListener {
         environment.set(new ColorAttribute(ColorAttribute.AmbientLight, toColor(stage.getAmbientLight())));
         light.set(toColor(stage.getLightColor()), toVector(stage.getLightPosition()));
 
-        for (PolygonModel model : stage.getModels()) {
-            model.update(deltaTime);
-        }
-
         updateDisplayList();
 
         modelBatch.begin(camera);
         modelBatch.render(displayList, environment);
         modelBatch.end();
 
-        stage.render2D(graphicsContext);
+        stage.visit(graphicsContext);
     }
 
     private void updateDisplayList() {
         displayList.clear();
 
-        for (PolygonModel model : context.getStage().getModels()) {
+        for (PolygonModel model : ((Stage3D) context.getStage()).getModels()) {
             GDXModel gdxModel = (GDXModel) model;
             displayList.add(gdxModel.getInstance());
         }
@@ -212,13 +213,13 @@ public class GDXRenderer implements Renderer, ApplicationListener {
     }
 
     @Override
-    public GraphicsMode getGraphicsMode() {
-        return GraphicsMode.MODE_3D;
+    public DisplayMode getDisplayMode() {
+        return new DisplayMode(canvas, framerate);
     }
 
     @Override
     public String takeScreenshot() {
-        Pixmap screenshot = ScreenUtils.getFrameBufferPixmap(0, 0, Gdx.graphics.getWidth(),
+        Pixmap screenshot = Pixmap.createFromFrameBuffer(0, 0, Gdx.graphics.getWidth(),
             Gdx.graphics.getHeight());
         File tempFile = LoadUtils.getTempFile(".png");
         PixmapIO.writePNG(Gdx.files.external(tempFile.getAbsolutePath()), screenshot,

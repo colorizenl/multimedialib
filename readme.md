@@ -27,13 +27,13 @@ to the dependencies section in `pom.xml`:
     <dependency>
         <groupId>nl.colorize</groupId>
         <artifactId>multimedialib</artifactId>
-        <version>2021.3</version>
+        <version>2022.1</version>
     </dependency>  
     
 The library can also be used in Gradle projects:
 
     dependencies {
-        compile "nl.colorize:multimedialib:2021.3"
+        implementation "nl.colorize:multimedialib:2022.1"
     }
     
 Supported platforms
@@ -54,42 +54,46 @@ The following table shows an overview of the available renderer implementations:
 |--------------------------------------------------------------------------------------|---------|-----|---------|-----|----------|
 | Java2D renderer                                                                      | ✓       | ×   | ×       | ×   | 2D       |
 | [libGDX](https://libgdx.badlogicgames.com) / [LWJGL](https://www.lwjgl.org) renderer | ✓       | ×   | ×       | ×   | 2D + 3D  |
-| libGDX / [RoboVM](http://robovm.mobidevelop.com) renderer                            | ×       | ✓   | ×       | ×   | 2D + 3D  |
 | HTML5 canvas renderer                                                                | ✓       | ✓   | ✓       | ✓   | 2D       |
-| WebGL 2D renderer                                                                    | ✓       | ✓   | ✓       | ✓   | 2D       |
+| [PixiJS](https://www.pixijs.com) renderer                                            | ✓       | ✓   | ✓       | ✓   | 2D       |
 | [three.js](https://threejs.org) renderer                                             | ✓       | ✓   | ✓       | ✓   | 2D + 3D  |
 
-When using the TeaVM renderer, the application needs to be transpiled to JavaScript in order for
-it to run in the browser. MultimediaLib includes a command line tool for integrating this step
+When using a browser-based renderer, the application needs to be transpiled to JavaScript in order
+for it to run in the browser. MultimediaLib includes a command line tool for integrating this step
 into the build, refer to the section *Transpiling applications to HTML/JavaScript* below.
 
-Application architecture
-------------------------
+Not all platforms and renderers will support all features. Refer to the
+[platform/renderer compatibility table](compatibility.md) for a full overview of supported features.
 
-MultimediaLib uses a number of concepts similar to [Adobe Flash](https://en.wikipedia.org/wiki/Adobe_Flash),
-both in terms of terminology and in how they behave.
+Application structure
+---------------------
 
-MultimediaLib applications are divided into a number of *scenes*. Each scene represents a 
-discrete part or phase of an application that is active for some period of time. Only one scene 
-can be active at any point in time. Simple applications may consist of a single scene, while 
-larger applications will typically have many. The currently active scene will receive frame 
-updates for as long as it is active. 
+MultimediaLib uses a number of concepts similar to
+[Adobe Flash](https://en.wikipedia.org/wiki/Adobe_Flash), both in terms of its theatre-inspired
+terminology and in terms of how applications are split into multiple scenes.
 
 ![MultimediaLib application architecture](_development/application-architecture.svg)
 
-Scenes can update the *stage*, which displays the graphics and sound for the current scene. The 
-stage consists of a single 3D graphics layer, plus a number of layers with 2D graphics. In 2D 
-applications, the 3D graphics layer is disabled. The stage is linked to the current scene, once 
-the scene ends the stage is cleared and all graphics are removed.
+Each scene represents a discrete part or phase of an application that is active for some period 
+of time. Only one scene can be active at any point in time. Simple applications may consist of a 
+single scene, while larger applications will typically have many. The currently active scene will 
+receive frame updates for as long as it is active.
 
-During frame updates, scenes have access to the *scene context*, which in turn provides access to
-both the stage and the underlying platform.
+Scenes update the *stage*, which displays the graphics and sound for the current scene. The stage
+consists of multiple layers of 2D graphics, 3D graphics, or a combination thereof. The stage is 
+linked to the current scene, once the scene ends the stage is cleared and all contents are removed.
+During frame updates, scenes use the *scene context* to access both the stage and the underlying 
+platform.
 
-In addition to modifying the stage, the scene can also contain logic which is executed during
-frame updates. This logic can be placed in either the scene itself, or (in larger scenes) divided
-among a number of *agents*. These agents can be active for a certain period of time, or until the
-end of the scene, but they cannot outlive the current scene. Unlike scenes, agents have a smaller
-scope and can therefore not access the entire scene context.
+Scene logic is based on the
+[Entity Component System](https://en.wikipedia.org/wiki/Entity_component_system) architecture
+pattern. The scene is split into a number of *actors* (also known as "entities"). Actors do not
+contain data themselves. Instead, all data associated with an actor is located in *components*.
+The actual logic is implemented in a number of *systems*. These systems update both the scene's
+data (located in actors and their components) and the scene's stage. Simple scenes may consist of
+a single system, while more complex scenes will consist of many. Most systems will be active for
+the entire duration of the scene, but some systems may only be active for a limited period of time
+or until a certain condition is reached.
 
 Starting the demo applications
 ------------------------------
@@ -123,31 +127,19 @@ The browser version of the demo applications can be created by running
 The build output is then saved to the directories `build/browserdemo2d` and `browserdemo3d`, and 
 can be started by opening the corresponding `index.html` in a browser.
 
-### Additional instructions for building native iOS apps using RoboVM
-
-When using the libGDX renderer in combination with RoboVM, applications will need to add the
-following additional Maven or Gradle dependencies:
-
-  - `com.badlogicgames.gdx:gdx-backend-robovm:$gdxVersion`
-  - `com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-ios`
-  - `com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-ios`
-  
-It is not possible use both "regular" Java and RoboVM in the same project, which is why 
-MultimediaLib does not include these dependencies by default.
-
 Transpiling applications to HTML/JavaScript
 -------------------------------------------
 
 Applications using MultimediaLib are written in Java. However, these applications can be transpiled
 to a combination of HTML and JavaScript so that they can be distributed via the web. This is done
-using [TeaVM](http://teavm.org) and therefore only supports a subset of the Java language. 
-Transpilation is started using the `TeaVMTranspiler` that is included as part of the library.
-This command line tool takes the following arguments:
+using [TeaVM](http://teavm.org). Transpilation is started using the `TeaVMTranspilerTool` that is 
+included as part of the library. The tool provides a command line interface, and supports the 
+following arguments:
 
 | Name         | Required | Description                                            |
 |--------------|----------|--------------------------------------------------------|
 | -project     | yes      | Project name for the application.                      |
-| -renderer    | yes      | One of 'canvas', 'webgl', 'three'.                     |
+| -renderer    | yes      | One of 'canvas', 'pixi', 'three'.                      |
 | -resources   | yes      | Directory containing the application's resource files. |
 | -out         | yes      | Output directory for the generated files.              |
 | -main        | yes      | Main class that acts as application entry point.       |
@@ -192,23 +184,17 @@ MultimediaLib includes a tool to create a sprite sheet from all images within a 
 tool is started using `SpriteSheetPacker` that is part of the library. The tool takes the 
 following arguments.
 
-| Name      | Required | Description                                   |
-|-----------|----------|-----------------------------------------------|
-| -input    | yes      | Directory containing source images.           |
-| -outimage | yes      | Generated image file location.                |
-| -outdata  | yes      | Generated metadata file location.             |
-| -metadata | yes      | Metadata file format, either 'yaml' or 'csv'. |
-| -size     | yes      | Width/height of the sprite sheet.             |
-| -exclude  | no       | Excludes all images beyond a certain size.    |
+| Name            | Required | Description                                   |
+|-----------------|----------|-----------------------------------------------|
+| -input          | yes      | Directory containing source images.           |
+| -outimage       | yes      | Generated image file location.                |
+| -outdata        | yes      | Generated metadata file location.             |
+| -metadata       | yes      | Metadata file format, either 'yaml' or 'csv'. |
+| -size <size>    | yes      | Width/height of the sprite sheet.             |
+| -exclude <size> | no       | Excludes all images beyond a certain size.    |
 
 This will generate the PNG file containing the sprite sheet graphics and the YAML file with
 metadata in the specified locations. Sprite sheets can then be loaded back as media assets.
-
-Creating an application icon
-----------------------------
-
-MultimediaLib includes a command line tool for creating ICNS icons that can be used for Mac and/or
-iOS applications. The entry point for this tool is `nl.colorize.multimedialib.tool.AppleIconTool`.
 
 Documentation
 -------------
@@ -221,7 +207,7 @@ Build instructions
 Building the library can be done on any platform. The following is mandatory for building the
 library itself:
 
-- [Java JDK](http://java.oracle.com) 11+
+- [Java JDK](http://java.oracle.com) 17+
 - [Gradle](http://gradle.org)
 
 Note that creating application that *use* MultimediaLib will usually have additional dependencies,
@@ -239,11 +225,13 @@ The following Gradle build tasks are available:
 - `gradle test` runs all unit tests
 - `gradle coverage` runs all unit tests and reports on test coverage
 - `gradle javadoc` generates the JavaDoc API documentation
+- `gradle dependencyUpdates` checks for and reports on library updates.
+- `gradle -b build-mavencentral.gradle publish` publishes to Maven central (requires account)
   
 License
 -------
 
-Copyright 2009-2021 Colorize
+Copyright 2009-2022 Colorize
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

@@ -1,22 +1,25 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.scene.effect;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.graphics.Align;
 import nl.colorize.multimedialib.graphics.Animation;
-import nl.colorize.multimedialib.graphics.GraphicsLayer2D;
 import nl.colorize.multimedialib.graphics.Image;
+import nl.colorize.multimedialib.graphics.Primitive;
 import nl.colorize.multimedialib.graphics.Sprite;
 import nl.colorize.multimedialib.graphics.TTFont;
+import nl.colorize.multimedialib.graphics.Text;
 import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.renderer.GraphicsContext2D;
-import nl.colorize.multimedialib.scene.Agent;
+import nl.colorize.multimedialib.scene.DisplayObject;
+import nl.colorize.multimedialib.scene.Layer;
+import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.Updatable;
 import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
@@ -26,51 +29,48 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * An animated graphical effect that can be played as part of a scene. Effects
- * implement the {@link Agent} interface and can be attached to the currently
- * active scene. This allows declarative effects that can be played without
- * having to manually update their logic and graphics every frame.
+ * Animated graphical effects that can be played as part of a scene. Effects
+ * are considered systems because they contain logic. This allows declarative
+ * effects that can be played without having to manually update their logic
+ * and graphics every frame.
  * <p>
- * The effect consists of the graphics that are animated according to the
- * timeline. A number of modifiers can be added to the effect, that will use
- * the timeline's current value to update how the effect should be displayed.
- * These modifiers are represented by callback functions, that are called every
- * frame based on the timeline's current value. The effect's graphics are then
- * rendered based on its updated state.
+ * This class is effectively a builder for {@link DisplayObject}s.
  * <p>
- * There are two types of effects that can be created using the factory methods
- * in this class. The first are "plain" effects that do not define any behavior.
- * The second are shorthand versions, for example to move a sprite or to change
- * text's alpha value. Note that these shorthand effects can still be extended
- * by adding additional modifiers, so that more complex effects can be created
- * from these starting points.
- * <p>
- * Observers can be added to the effect, and will be notified when the effect
- * has completed. This makes it easier to schedule follow-up events without
- * having to poll the status of the event every frame.
+ * Older versions of this class actually extended {@link DisplayObject}, but
+ * this is no longer needed since {@link DisplayObject} is now considerably
+ * more flexible in terms of defining custom behavior. The old methods remain
+ * for backward compatibility, though are now deprecated.
  */
-public abstract class Effect implements Agent, GraphicsLayer2D {
+public class Effect {
 
-    private Timeline timeline;
-    private List<Consumer<Float>> modifiers;
-    private List<Updatable> frameUpdateHandlers;
-    private List<Runnable> completeHandlers;
-
+    protected DisplayObject displayObject;
+    protected Timeline timeline;
     private Point2D position;
     private Transform transform;
+    private List<Consumer<Float>> timelineCallbacks;
 
     protected Effect(Timeline timeline) {
+        this.displayObject = new DisplayObject();
         this.timeline = timeline;
-        this.modifiers = new ArrayList<>();
-        this.frameUpdateHandlers = new ArrayList<>();
-        this.completeHandlers = new ArrayList<>();
-
         this.position = new Point2D(0, 0);
         this.transform = new Transform();
+        this.timelineCallbacks = new ArrayList<>();
+
+        displayObject.withTimelineHandler(timeline, value -> {
+            for (Consumer<Float> timelineCallback : timelineCallbacks) {
+                timelineCallback.accept(value);
+            }
+        });
     }
 
-    protected Effect(float duration) {
-        this(new Timeline().addKeyFrame(0f, 0f).addKeyFrame(duration, 1f));
+    public Effect withLayer(Layer layer) {
+        displayObject.withLayer(layer);
+        return this;
+    }
+
+    public Effect withLayer(String layerName) {
+        displayObject.withLayer(layerName);
+        return this;
     }
 
     /**
@@ -78,9 +78,12 @@ public abstract class Effect implements Agent, GraphicsLayer2D {
      * update, with the effect's current timeline value as the argument. The
      * callback can then be used to update the effect's graphical appearance.
      * Returns this effect to allow for method chaining.
+     *
+     * @deprecated Prefer {@link DisplayObject#withTimelineHandler(Timeline, Consumer)}.
      */
+    @Deprecated
     public Effect modify(Consumer<Float> modifier) {
-        modifiers.add(modifier);
+        timelineCallbacks.add(modifier);
         return this;
     }
 
@@ -89,79 +92,65 @@ public abstract class Effect implements Agent, GraphicsLayer2D {
      * "regular" modifiers registered using {@link #modify(Consumer)}, these
      * callbacks do not use the current timeline value. Returns this effect to
      * allow for method chaining.
+     *
+     * @deprecated Prefer {@link DisplayObject#withFrameHandler(Updatable)}.
      */
     public Effect modifyFrameUpdate(Updatable modifier) {
-        frameUpdateHandlers.add(modifier);
+        displayObject.withFrameHandler(modifier);
         return this;
     }
 
     /**
      * Registers a callback function that will be notified once this effect
      * has been completed. Returns this effect to allow for method chaining.
+     *
+     * @deprecated Prefer {@link DisplayObject#withTerminationHandler(Runnable)}.
      */
+    @Deprecated
     public Effect onComplete(Runnable observer) {
-        completeHandlers.add(observer);
+        displayObject.withTerminationHandler(observer);
         return this;
     }
 
-    protected Timeline getTimeline() {
-        return timeline;
-    }
-
-    public void setPosition(Point2D position) {
+    @Deprecated
+    public Effect setPosition(Point2D position) {
         this.position = position;
+        return this;
     }
 
-    public void setPosition(float x, float y) {
+    @Deprecated
+    public Effect setPosition(float x, float y) {
         this.position.set(x, y);
+        return this;
     }
 
+    @Deprecated
     public Point2D getPosition() {
         return position;
     }
 
-    public void setTransform(Transform transform) {
+    @Deprecated
+    public Effect setTransform(Transform transform) {
         this.transform = transform;
+        return this;
     }
 
+    @Deprecated
     public Transform getTransform() {
         return transform;
     }
 
-    @Override
-    public void update(float deltaTime) {
-        if (isCompleted()) {
-            return;
-        }
-
-        timeline.onFrame(deltaTime);
-        modifiers.forEach(modifier -> modifier.accept(timeline.getValue()));
-        frameUpdateHandlers.forEach(callback -> callback.update(deltaTime));
-
-        if (isCompleted()) {
-            completeHandlers.forEach(Runnable::run);
-        }
-    }
-
-    @Override
-    public abstract void render(GraphicsContext2D graphics);
-
-    @Override
-    public boolean isCompleted() {
-        return timeline.isCompleted() && !timeline.isLoop();
+    public void attachTo(SceneContext context) {
+        displayObject.attachTo(context);
     }
 
     /**
-     * Shorthand for creating a graphical effect that will draw graphics using
-     * the provided callback function.
+     * Forwards to {@link DisplayObject#update(SceneContext, float)}.
      */
-    public static Effect forGraphics(float duration, GraphicsLayer2D callback) {
-        return new Effect(duration) {
-            @Override
-            public void render(GraphicsContext2D graphics) {
-                callback.render(graphics);
-            }
-        };
+    @Deprecated
+    @VisibleForTesting
+    protected void update(SceneContext context, float deltaTime) {
+        displayObject.update(context, deltaTime);
     }
 
     /**
@@ -169,28 +158,14 @@ public abstract class Effect implements Agent, GraphicsLayer2D {
      * specified sprite.
      */
     public static Effect forSprite(Sprite sprite, Timeline timeline) {
-        return new Effect(timeline) {
-            @Override
-            public void update(float deltaTime) {
-                super.update(deltaTime);
-                sprite.update(deltaTime);
-            }
-
-            @Override
-            public void render(GraphicsContext2D graphics) {
-                sprite.setPosition(getPosition());
-                sprite.setTransform(getTransform());
-                graphics.drawSprite(sprite);
-            }
-        };
-    }
-    
-    public static Effect forSprite(Sprite sprite, float duration) {
-        Timeline timeline = new Timeline();
-        timeline.addKeyFrame(0f, 0f);
-        timeline.addKeyFrame(duration, 1f);
-
-        return forSprite(sprite, timeline);
+        Effect effect = new Effect(timeline);
+        effect.displayObject.withGraphics(sprite);
+        effect.modifyFrameUpdate(deltaTime -> {
+            sprite.update(deltaTime);
+            sprite.setPosition(effect.getPosition());
+            sprite.setTransform(effect.getTransform());
+        });
+        return effect;
     }
 
     /**
@@ -276,22 +251,25 @@ public abstract class Effect implements Agent, GraphicsLayer2D {
         return forAnimation(new Animation(image), duration);
     }
 
-    public static Effect forText(String text, TTFont font, Align align, Timeline timeline) {
-        return new Effect(timeline) {
-            @Override
-            public void render(GraphicsContext2D graphics) {
-                graphics.drawText(text, font, getPosition().getX(), getPosition().getY(),
-                    align, getTransform());
-            }
-        };
+    public static Effect forPrimitive(Primitive primitive, Timeline timeline) {
+        Effect effect = new Effect(timeline);
+        effect.displayObject.withGraphics(primitive);
+        effect.modifyFrameUpdate(deltaTime -> {
+            primitive.update(deltaTime);
+            primitive.getPosition().set(effect.getPosition());
+        });
+        return effect;
     }
 
-    public static Effect forText(String text, TTFont font, Align align, float duration) {
-        Timeline timeline = new Timeline()
-            .addKeyFrame(0f, 0f)
-            .addKeyFrame(duration, 1f);
-
-        return forText(text, font, align, timeline);
+    public static Effect forText(String text, TTFont font, Align align, Timeline timeline) {
+        Text textObject = new Text(text, font, align);
+        Effect effect = new Effect(timeline);
+        effect.displayObject.withGraphics(textObject);
+        effect.modifyFrameUpdate(deltaTime -> {
+            textObject.getPosition().set(effect.getPosition());
+            textObject.setAlpha(effect.getTransform().getAlpha());
+        });
+        return effect;
     }
 
     /**
@@ -307,14 +285,16 @@ public abstract class Effect implements Agent, GraphicsLayer2D {
         timeline.addKeyFrame(0f, 0f);
         timeline.addKeyFrame(duration, text.length());
 
-        return new Effect(timeline) {
-            @Override
-            public void render(GraphicsContext2D graphics) {
-                String visibleText = text.substring(0, (int) timeline.getValue());
-                graphics.drawText(visibleText, font, getPosition().getX(), getPosition().getY(),
-                    align, getTransform());
-            }
-        };
+        Text textObject = new Text(text, font, align);
+
+        Effect effect = new Effect(timeline);
+        effect.displayObject.withGraphics(textObject);
+        effect.modifyFrameUpdate(deltaTime -> {
+            textObject.setText(text.substring(0, (int) timeline.getValue()));
+            textObject.getPosition().set(effect.getPosition());
+            textObject.setAlpha(effect.getTransform().getAlpha());
+        });
+        return effect;
     }
 
     /**

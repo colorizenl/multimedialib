@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -18,31 +18,32 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.graphics.Align;
-import nl.colorize.multimedialib.graphics.AlphaTransform;
 import nl.colorize.multimedialib.graphics.ColorRGB;
-import nl.colorize.multimedialib.graphics.Image;
+import nl.colorize.multimedialib.graphics.Primitive;
+import nl.colorize.multimedialib.graphics.Sprite;
 import nl.colorize.multimedialib.graphics.TTFont;
+import nl.colorize.multimedialib.graphics.Text;
 import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Circle;
+import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.GraphicsContext2D;
+import nl.colorize.multimedialib.scene.StageVisitor;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888;
 
-public class GDXGraphics2D implements GraphicsContext2D {
+public class GDXGraphics2D implements StageVisitor {
 
     private Canvas canvas;
     private GDXMediaLoader mediaLoader;
 
     private SpriteBatch spriteBatch;
     private ShapeRenderer shapeBatch;
-    private Texture nullTexture;
     private Map<TextureRegion, TextureRegion> maskCache;
 
     private static final Transform DEFAULT_TRANSFORM = new Transform();
@@ -54,78 +55,64 @@ public class GDXGraphics2D implements GraphicsContext2D {
 
         spriteBatch = new SpriteBatch();
         shapeBatch = new ShapeRenderer();
-        nullTexture = generateNullTexture();
         maskCache = new HashMap<>();
-    }
-
-    private Texture generateNullTexture() {
-        Pixmap pixmap = new Pixmap(16, 16, RGBA8888);
-        pixmap.setColor(0f, 1f, 0f, 1f);
-        pixmap.fill();
-        Texture texture = new Texture(pixmap);
-        pixmap.dispose();
-        return texture;
-    }
-
-    @Override
-    public Canvas getCanvas() {
-        return canvas;
     }
 
     @Override
     public void drawBackground(ColorRGB backgroundColor) {
-        Canvas canvas = getCanvas();
-        Rect background = new Rect(0f, 0f, canvas.getWidth(), canvas.getHeight());
-        drawRect(background, backgroundColor, null);
+        switchMode(false, true);
+        shapeBatch.setColor(convertColor(backgroundColor, 100f));
+        shapeBatch.rect(toScreenX(0f), toScreenY(0f),
+            toScreenX(canvas.getWidth()), toScreenY(canvas.getHeight()));
     }
 
     @Override
-    public void drawLine(Point2D from, Point2D to, ColorRGB color, float thickness) {
-        float x0 = toScreenX(from.getX());
-        float y0 = toScreenY(from.getY());
-        float x1 = toScreenX(to.getX());
-        float y1 = toScreenY(to.getY());
+    public void drawLine(Primitive graphic, Line line) {
+        float x0 = toScreenX(line.getStart().getX());
+        float y0 = toScreenY(line.getStart().getY());
+        float x1 = toScreenX(line.getEnd().getX());
+        float y1 = toScreenY(line.getEnd().getY());
 
         switchMode(false, true);
-        shapeBatch.setColor(convertColor(color));
+        shapeBatch.setColor(convertColor(graphic.getColor()));
         shapeBatch.line(x0, y0, x1, y1);
     }
 
     @Override
-    public void drawRect(Rect rect, ColorRGB color, AlphaTransform alpha) {
+    public void drawRect(Primitive graphic, Rect rect) {
         float x = toScreenX(rect.getX());
         float y = toScreenY(rect.getEndY());
         float width = rect.getWidth() * canvas.getZoomLevel();
         float height = rect.getHeight() * canvas.getZoomLevel();
 
         switchMode(false, true);
-        shapeBatch.setColor(convertColor(color, alpha));
+        shapeBatch.setColor(convertColor(graphic.getColor(), graphic.getAlpha()));
         shapeBatch.rect(x, y, width, height);
     }
 
     @Override
-    public void drawCircle(Circle circle, ColorRGB color, AlphaTransform alpha) {
+    public void drawCircle(Primitive graphic, Circle circle) {
         float x = toScreenX(circle.getCenterX());
         float y = toScreenY(circle.getCenterY());
         float radius = circle.getRadius() * canvas.getZoomLevel();
 
         switchMode(false, true);
-        shapeBatch.setColor(convertColor(color, alpha));
+        shapeBatch.setColor(convertColor(graphic.getColor(), graphic.getAlpha()));
         shapeBatch.circle(x, y, radius, CIRCLE_SEGMENTS);
     }
 
     @Override
-    public void drawPolygon(Polygon polygon, ColorRGB color, AlphaTransform alpha) {
+    public void drawPolygon(Primitive graphic, Polygon polygon) {
         if (polygon.getNumPoints() == 3) {
-            drawTriangle(polygon.getVertices(), color, alpha);
+            drawTriangle(polygon.getVertices(), graphic.getColor(), graphic.getAlpha());
         } else {
             for (Polygon triangle : polygon.subdivide()) {
-                drawTriangle(triangle.getVertices(), color, alpha);
+                drawTriangle(triangle.getVertices(), graphic.getColor(), graphic.getAlpha());
             }
         }
     }
 
-    private void drawTriangle(float[] vertices, ColorRGB color, AlphaTransform alpha) {
+    private void drawTriangle(float[] vertices, ColorRGB color, float alpha) {
         switchMode(false, true);
         shapeBatch.setColor(convertColor(color, alpha));
         shapeBatch.triangle(toScreenX(vertices[0]), toScreenY(vertices[1]),
@@ -134,22 +121,20 @@ public class GDXGraphics2D implements GraphicsContext2D {
     }
 
     @Override
-    public void drawImage(Image image, float x, float y, Transform transform) {
-        TextureRegion textureRegion = ((GDXImage) image).getTextureRegion();
+    public void drawSprite(Sprite sprite) {
+        TextureRegion textureRegion = ((GDXImage) sprite.getCurrentGraphics()).getTextureRegion();
+        Transform transform = sprite.getTransform();
         if (transform == null) {
             transform = DEFAULT_TRANSFORM;
         }
-        drawSprite(textureRegion, x, y, transform);
+        drawSprite(textureRegion, sprite.getPosition(), transform);
     }
 
-    private void drawSprite(TextureRegion textureRegion, float x, float y, Transform transform) {
-        float screenX = toScreenX(x);
-        float screenY = toScreenY(y);
+    private void drawSprite(TextureRegion textureRegion, Point2D position, Transform transform) {
+        float screenX = toScreenX(position.getX());
+        float screenY = toScreenY(position.getY());
         float screenWidth = textureRegion.getRegionWidth() * canvas.getZoomLevel();
         float screenHeight = textureRegion.getRegionHeight() * canvas.getZoomLevel();
-
-        float scaleX = transform.getScaleX() / 100f * (transform.isFlipHorizontal() ? -1f : 1f);
-        float scaleY = transform.getScaleY() / 100f * (transform.isFlipVertical() ? -1f : 1f);
 
         if (transform.getMask() != null) {
             textureRegion = getMask(textureRegion, transform.getMask());
@@ -159,7 +144,7 @@ public class GDXGraphics2D implements GraphicsContext2D {
         spriteBatch.setColor(1f, 1f, 1f, transform.getAlpha() / 100f);
         spriteBatch.draw(textureRegion, screenX - screenWidth / 2f, screenY - screenHeight / 2f,
             screenWidth / 2f, screenHeight / 2f, screenWidth, screenHeight,
-            scaleX, scaleY, transform.getRotation());
+            transform.getScaleX() / 100f, transform.getScaleY() / 100f, transform.getRotation());
     }
 
     private TextureRegion getMask(TextureRegion textureRegion, ColorRGB color) {
@@ -195,14 +180,20 @@ public class GDXGraphics2D implements GraphicsContext2D {
     }
 
     @Override
-    public void drawText(String text, TTFont font, float x, float y, Align align, AlphaTransform alpha) {
-        int actualSize = Math.round(font.getSize() * canvas.getZoomLevel());
+    public void drawText(Text text) {
+        TTFont font = text.getFont();
+        int actualSize = Math.round(font.size() * canvas.getZoomLevel());
         BitmapFont bitmapFont = mediaLoader.getBitmapFont(font, actualSize);
-        float screenX = toScreenX(x);
-        float screenY = toScreenY(y - 0.5f * actualSize);
+        float screenX = toScreenX(text.getPosition().getX());
+        int align = getTextAlign(text.getAlign());
 
         switchMode(true, false);
-        bitmapFont.draw(spriteBatch, text, screenX, screenY, 0, getTextAlign(align), false);
+
+        text.forLines((i, line) -> {
+            float lineY = text.getPosition().getY() + i * font.getLineHeight();
+            float screenY = toScreenY(lineY - 0.4f * actualSize);
+            bitmapFont.draw(spriteBatch, line, screenX, screenY, 0, align, false);
+        });
     }
 
     private int getTextAlign(Align align) {
@@ -224,11 +215,6 @@ public class GDXGraphics2D implements GraphicsContext2D {
 
     private Color convertColor(ColorRGB color, float alpha) {
         return new Color(color.getR() / 255f, color.getG() / 255f, color.getB() / 255f, alpha / 100f);
-    }
-
-    private Color convertColor(ColorRGB color, AlphaTransform alpha) {
-        float alphaValue = alpha != null ? alpha.getAlpha() : 100f;
-        return convertColor(color, alphaValue);
     }
 
     private Color convertColor(ColorRGB color) {

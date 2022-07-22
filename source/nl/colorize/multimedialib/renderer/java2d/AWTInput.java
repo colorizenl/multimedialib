@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -65,6 +65,7 @@ public class AWTInput implements InputDevice, Updatable, KeyListener, MouseListe
         .put(KeyCode.ESCAPE, KeyEvent.VK_ESCAPE)
         .put(KeyCode.SHIFT, KeyEvent.VK_SHIFT)
         .put(KeyCode.BACKSPACE, KeyEvent.VK_BACK_SPACE)
+        .put(KeyCode.TAB, KeyEvent.VK_TAB)
         .put(KeyCode.A, KeyEvent.VK_A)
         .put(KeyCode.B, KeyEvent.VK_B)
         .put(KeyCode.C, KeyEvent.VK_C)
@@ -304,5 +305,10 @@ public class AWTInput implements InputDevice, Updatable, KeyListener, MouseListe
         Popups.message(null, "", panel);
 
         return field.getText();
+    }
+
+    @Override
+    public Canvas getCanvas() {
+        return canvas;
     }
 }

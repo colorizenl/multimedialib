@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,17 +8,19 @@ package nl.colorize.multimedialib.scene.effect;
 
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
+import nl.colorize.multimedialib.graphics.Primitive;
+import nl.colorize.multimedialib.graphics.Sprite;
 import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.FilePointer;
-import nl.colorize.multimedialib.renderer.GraphicsContext2D;
-import nl.colorize.multimedialib.renderer.MediaLoader;
+import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.animation.Timeline;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -42,24 +44,24 @@ public class TransitionEffect extends Effect {
     private static final Logger LOGGER = LogHelper.getLogger(TransitionEffect.class);
 
     private TransitionEffect(boolean reverse, Canvas canvas, Image particleImage, float duration) {
-        super(duration);
+        super(new Timeline().addKeyFrame(0f, 0f).addKeyFrame(duration, 1f));
 
         this.reverse = reverse;
         this.canvas = canvas;
         this.particleImage = particleImage;
         this.duration = duration;
 
-        generateParticles();
+        particles = generateParticles();
         modifyFrameUpdate(this::updateParticles);
     }
 
-    private void generateParticles() {
-        particles = new ArrayList<>();
+    private List<List<Particle>> generateParticles() {
+        List<List<Particle>> particles = new ArrayList<>();
 
         //TODO
         if (Platform.isTeaVM()) {
             LOGGER.warning("Particle effects are disabled on TeaVM due to performance issues");
-            return;
+            return Collections.emptyList();
         }
 
         for (int x = 0; x <= canvas.getWidth(); x += particleImage.getWidth()) {
@@ -69,31 +71,26 @@ public class TransitionEffect extends Effect {
             for (int y = 0; y <= canvas.getHeight(); y += particleImage.getHeight()) {
                 float pDelay = (column.size() + 1) * 0.04f;
                 Particle particle = new Particle(x, y, pDelay, duration * 0.5f);
+                particle.sprite = new Sprite(particleImage);
                 column.add(particle);
+                displayObject.withGraphics(particle.sprite);
             }
         }
+
+        return particles;
     }
 
     private void updateParticles(float deltaTime) {
         for (List<Particle> column : particles) {
             for (Particle particle : column) {
                 particle.timeline.movePlayhead(deltaTime);
-            }
-        }
-    }
-
-    @Override
-    public void render(GraphicsContext2D graphics) {
-        for (List<Particle> column : particles) {
-            for (Particle particle : column) {
-                Point2D position = particle.position;
-                Transform transform = getParticleTransform(particle);
-                graphics.drawImage(particleImage, position.getX(), position.getY(), transform);
+                particle.sprite.setPosition(particle.position);
+                particle.sprite.setTransform(getParticleTransform(particle));
             }
         }
 
-        if (fillColor != null && getTimeline().getDelta() >= 0.8f) {
-            graphics.drawRect(graphics.getCanvas().getBounds(), fillColor);
+        if (fillColor != null && timeline.getDelta() >= 0.8f) {
+            displayObject.extendGraphics(Primitive.of(canvas.getBounds(), fillColor));
         }
     }
 
@@ -107,9 +104,9 @@ public class TransitionEffect extends Effect {
         return Transform.withScale(scale);
     }
 
-    public static TransitionEffect obscure(Canvas canvas, MediaLoader mediaLoader, ColorRGB color,
-            float duration) {
-        Image particleImage = mediaLoader.loadImage(PARTICLE_IMAGE).tint(color);
+    public static TransitionEffect obscure(SceneContext context, ColorRGB color, float duration) {
+        Image particleImage = context.getMediaLoader().loadImage(PARTICLE_IMAGE).tint(color);
+        Canvas canvas = context.getCanvas();
         TransitionEffect effect = new TransitionEffect(false, canvas, particleImage, duration);
         effect.fillColor = color;
         return effect;
@@ -119,9 +116,9 @@ public class TransitionEffect extends Effect {
         return new TransitionEffect(false, canvas, particleImage, duration);
     }
 
-    public static TransitionEffect reveal(Canvas canvas, MediaLoader mediaLoader, ColorRGB color,
-            float duration) {
-        Image particleImage = mediaLoader.loadImage(PARTICLE_IMAGE).tint(color);
+    public static TransitionEffect reveal(SceneContext context, ColorRGB color, float duration) {
+        Image particleImage = context.getMediaLoader().loadImage(PARTICLE_IMAGE).tint(color);
+        Canvas canvas = context.getCanvas();
         return new TransitionEffect(true, canvas, particleImage, duration);
     }
 
@@ -136,6 +133,7 @@ public class TransitionEffect extends Effect {
 
         private Point2D position;
         private Timeline timeline;
+        private Sprite sprite;
 
         public Particle(float x, float y, float delay, float duration) {
             this.position = new Point2D(x, y);

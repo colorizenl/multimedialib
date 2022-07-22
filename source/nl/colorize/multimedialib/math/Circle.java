@@ -1,12 +1,14 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.math;
 
 import com.google.common.base.Preconditions;
+
+import java.util.Objects;
 
 /**
  * Circle that is defined by its center point and a radius, defined with float
@@ -62,7 +64,7 @@ public class Circle implements Shape {
      * point.
      */
     public float calculateDistance(Point2D p) {
-        return center.calculateDistance(p);
+        return center.distanceTo(p);
     }
 
     /**
@@ -70,6 +72,39 @@ public class Circle implements Shape {
      * the specified other circle.
      */
     public float calculateDistance(Circle other) {
-        return center.calculateDistance(other.center);
+        return center.distanceTo(other.center);
+    }
+
+    @Override
+    public Rect getBoundingBox() {
+        return new Rect(center.getX() - radius, center.getY() - radius, 2f * radius, 2f * radius);
+    }
+
+    @Override
+    public Circle copy() {
+        return new Circle(center.copy(), radius);
+    }
+
+    @Override
+    public Circle reposition(Point2D offset) {
+        Circle result = copy();
+        result.center.add(offset);
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof Circle other) {
+            return Math.abs(center.getX() - other.center.getX()) < EPSILON &&
+                Math.abs(center.getY() - other.center.getY()) < EPSILON &&
+                Math.abs(radius - other.radius) < EPSILON;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(center.getX(), center.getY(), radius);
     }
 }

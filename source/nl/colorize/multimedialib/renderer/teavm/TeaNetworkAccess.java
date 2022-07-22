@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2021 Colorize
+// Copyright 2009-2022 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,13 +8,17 @@ package nl.colorize.multimedialib.renderer.teavm;
 
 import nl.colorize.multimedialib.renderer.NetworkAccess;
 import nl.colorize.multimedialib.renderer.NetworkConnection;
-import nl.colorize.util.Task;
+import nl.colorize.util.Callback;
+import nl.colorize.util.LogHelper;
+import nl.colorize.util.Tuple;
 import nl.colorize.util.http.Headers;
 import nl.colorize.util.http.PostData;
+import org.teavm.jso.ajax.XMLHttpRequest;
+import org.teavm.jso.websocket.WebSocket;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * Sends HTTP requests by delegating them to JavaScript and sending them as
@@ -27,78 +31,61 @@ import java.util.List;
  */
 public class TeaNetworkAccess implements NetworkAccess {
 
+    private static final Logger LOGGER = LogHelper.getLogger(TeaNetworkAccess.class);
+
     @Override
-    public Task<String> get(String url, Headers headers) {
-        String[] headersArray = serializeHeaders(headers);
-        Task<String> promise = new Task<>();
-        Browser.sendGetRequest(url, headersArray, promise::complete);
-        return promise;
+    public void get(String url, Headers headers, Callback<String> callback) {
+        XMLHttpRequest request = XMLHttpRequest.create();
+        request.setOnReadyStateChange(() -> handleResponse(request, callback));
+        request.open("GET", url, true);
+        addRequestHeaders(request, headers);
+        request.send();
     }
 
     @Override
-    public Task<String> post(String url, Headers headers, PostData data) {
-        String[] headersArray = serializeHeaders(headers);
-        String body = data.encode(StandardCharsets.UTF_8);
-        Task<String> promise = new Task<>();
-        Browser.sendPostRequest(url, headersArray, body, promise::complete);
-        return promise;
+    public void post(String url, Headers headers, PostData data, Callback<String> callback) {
+        XMLHttpRequest request = XMLHttpRequest.create();
+        request.setOnReadyStateChange(() -> handleResponse(request, callback));
+        request.open("POST", url, true);
+        addRequestHeaders(request, headers);
+        request.send(data.encode(StandardCharsets.UTF_8));
     }
 
-    private String[] serializeHeaders(Headers headers) {
-        List<String> entries = new ArrayList<>();
+    private void addRequestHeaders(XMLHttpRequest request, Headers headers) {
+        request.setRequestHeader("X-Requested-With", "MultimediaLib");
+        for (Tuple<String, String> header : headers.getEntries()) {
+            request.setRequestHeader(header.getKey(), header.getValue());
+        }
+    }
 
-        if (headers != null) {
-            for (String name : headers.getNames()) {
-                for (String value : headers.getValues(name)) {
-                    entries.add(name);
-                    entries.add(value);
-                }
+    private void handleResponse(XMLHttpRequest request, Callback<String> callback) {
+        if (request.getReadyState() == XMLHttpRequest.DONE) {
+            if (request.getStatus() >= 200 && request.getStatus() <= 204) {
+                String response = request.getResponseText();
+                callback.onResponse(response);
+            } else {
+                callback.onError(new IOException("AJAX request failed: " + request.getStatusText()));
             }
         }
-
-        return entries.toArray(new String[0]);
-    }
-
-    @Override
-    public boolean isWebSocketSupported() {
-        return Browser.isWebSocketSupported();
     }
 
     @Override
     public NetworkConnection connectWebSocket(String uri) {
-        NetworkConnection connection = new NetworkConnection(Browser::sendWebSocket);
+        WebSocket webSocket = WebSocket.create(uri);
+        NetworkConnection connection = new NetworkConnection(message -> webSocket.send(message));
 
-        Browser.connectWebSocket(uri, message -> {
-            if (message.equals("__open")) {
-                connection.receiveID(uri);
-                connection.connect();
-            } else {
-                connection.queueReceivedMessage(message);
-            }
+        webSocket.onOpen(message -> {
+            connection.receiveID(uri);
+            connection.connect();
         });
+        webSocket.onMessage(message -> connection.queueReceivedMessage(message.getDataAsString()));
+        webSocket.onError(event -> LOGGER.warning("Web socket error"));
 
         return connection;
-    }
-
-    @Override
-    public boolean isWebRtcSupported() {
-        return false;
     }
 
     @Override
     public NetworkConnection connectWebRTC(String id) {
-        NetworkConnection connection = new NetworkConnection(Browser::sendPeerMessage);
-
-        Browser.openPeerConnection(id, message -> {
-            if (message.startsWith("__peer:")) {
-                connection.receiveID(message.substring(7));
-            } else if (message.equals("__open")) {
-                connection.connect();
-            } else {
-                connection.queueReceivedMessage(message);
-            }
-        });
-
-        return connection;
+        throw new UnsupportedOperationException();
     }
 }
