@@ -8,10 +8,10 @@ package nl.colorize.multimedialib.renderer.java2d;
 
 import com.google.common.base.Charsets;
 import com.google.common.reflect.ClassPath;
-import nl.colorize.multimedialib.graphics.ColorRGB;
+import nl.colorize.multimedialib.graphics.FontStyle;
 import nl.colorize.multimedialib.graphics.Image;
+import nl.colorize.multimedialib.graphics.OutlineFont;
 import nl.colorize.multimedialib.graphics.PolygonModel;
-import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.MediaException;
@@ -33,8 +33,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
@@ -49,13 +47,11 @@ import java.util.stream.Collectors;
  */
 public class StandardMediaLoader implements MediaLoader {
 
-    private Map<TTFont, Font> loadedFonts;
     private Set<String> classPathResources;
 
     private static final Logger LOGGER = LogHelper.getLogger(StandardMediaLoader.class);
 
     public StandardMediaLoader() {
-        this.loadedFonts = new HashMap<>();
         this.classPathResources = Collections.emptySet();
 
         try {
@@ -86,36 +82,21 @@ public class StandardMediaLoader implements MediaLoader {
     }
 
     @Override
-    public TTFont loadFont(FilePointer file, String family, int size, ColorRGB color, boolean bold) {
+    public OutlineFont loadFont(FilePointer file, FontStyle style) {
         ResourceFile source = new ResourceFile(file.getPath());
-        int style = bold ? Font.BOLD : Font.PLAIN;
 
         try (InputStream stream = source.openStream()) {
-            Font awtFont = Font.createFont(Font.TRUETYPE_FONT, stream).deriveFont(style, size);
+            Font font = Font.createFont(Font.TRUETYPE_FONT, stream);
 
             GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
-            env.registerFont(awtFont);
+            env.registerFont(font);
 
-            // This ignores the value of the fontFamily parameter and
-            // will use whatever font family name defined in the file
-            // itself, since this is considered more reliable.
-            TTFont font = new TTFont(awtFont.getFamily(), size, color, bold);
-            loadedFonts.put(font, awtFont);
-            return font;
+            // Immediately derive a version of the font with the correct
+            // style, since we have no idea what size the loaded font has.
+            return new AWTFont(font, style).derive(style);
         } catch (IOException | FontFormatException e) {
             throw new MediaException("Cannot load font from " + file.getPath(), e);
         }
-    }
-
-    protected Font getFont(TTFont font) {
-        Font awtFont = loadedFonts.get(font);
-        if (awtFont == null) {
-            LOGGER.warning("Unknown font: " + font);
-            int style = font.bold() ? Font.BOLD : Font.PLAIN;
-            awtFont = new Font(Font.SANS_SERIF, style, font.size());
-            loadedFonts.put(font, awtFont);
-        }
-        return awtFont;
     }
 
     @Override

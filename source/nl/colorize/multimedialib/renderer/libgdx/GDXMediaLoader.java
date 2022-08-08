@@ -12,7 +12,6 @@ import com.badlogic.gdx.assets.loaders.resolvers.InternalFileHandleResolver;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
@@ -27,13 +26,14 @@ import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.UBJsonReader;
 import com.google.common.base.Charsets;
-import com.google.common.base.Preconditions;
 import net.mgsx.gltf.loaders.gltf.GLTFLoader;
 import net.mgsx.gltf.scene3d.scene.SceneAsset;
 import nl.colorize.multimedialib.graphics.ColorRGB;
+import nl.colorize.multimedialib.graphics.FontStyle;
 import nl.colorize.multimedialib.graphics.Image;
+import nl.colorize.multimedialib.graphics.OutlineFont;
 import nl.colorize.multimedialib.graphics.PolygonModel;
-import nl.colorize.multimedialib.graphics.TTFont;
+import nl.colorize.multimedialib.math.Cache;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Point3D;
 import nl.colorize.multimedialib.renderer.Audio;
@@ -44,16 +44,13 @@ import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.java2d.MP3;
 import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
 import nl.colorize.util.Configuration;
-import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.ResourceFile;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import static com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal;
 import static com.badlogic.gdx.graphics.VertexAttributes.Usage.Position;
@@ -69,18 +66,13 @@ import static com.badlogic.gdx.graphics.VertexAttributes.Usage.TextureCoordinate
 public class GDXMediaLoader implements MediaLoader, GeometryBuilder, Disposable {
 
     private List<Disposable> loaded;
-    private Map<TTFont, BitmapFont> fonts;
-    private Map<String, FileHandle> fontLocations;
-    private Map<ColorRGB, Texture> colorTextureCache;
+    private Cache<FontCacheKey, BitmapFont> fontCache;
 
-    private static final int COLOR_TEXTURE_SIZE = 8;
-    private static final Logger LOGGER = LogHelper.getLogger(GDXMediaLoader.class);
+    private static final int FONT_CACHE_SIZE = 100;
 
     public GDXMediaLoader() {
         this.loaded = new ArrayList<>();
-        this.fonts = new HashMap<>();
-        this.fontLocations = new HashMap<>();
-        this.colorTextureCache = new HashMap<>();
+        this.fontCache = Cache.create(this::generateBitmapFont, FONT_CACHE_SIZE);
     }
 
     @Override
@@ -96,55 +88,25 @@ public class GDXMediaLoader implements MediaLoader, GeometryBuilder, Disposable 
         return new MP3(new ResourceFile(file.getPath()));
     }
 
-    public Texture getColorTexture(ColorRGB color) {
-        Texture colorTexture = colorTextureCache.get(color);
-        if (colorTexture == null) {
-            colorTexture = generateColorTexture(color);
-            colorTextureCache.put(color, colorTexture);
-            loaded.add(colorTexture);
-        }
-        return colorTexture;
-    }
-
-    private Texture generateColorTexture(ColorRGB color) {
-        Pixmap pixelData = new Pixmap(COLOR_TEXTURE_SIZE, COLOR_TEXTURE_SIZE, Pixmap.Format.RGBA8888);
-        pixelData.setColor(toColor(color));
-        pixelData.fillRectangle(0, 0, COLOR_TEXTURE_SIZE, COLOR_TEXTURE_SIZE);
-        return new Texture(pixelData);
-    }
-
     @Override
-    public TTFont loadFont(FilePointer file, String family, int size, ColorRGB color, boolean bold) {
-        fontLocations.put(family, getFileHandle(file));
-        return new TTFont(family, size, color, bold);
+    public OutlineFont loadFont(FilePointer file, FontStyle style) {
+        return new GDXBitmapFont(this, getFileHandle(file), style);
     }
 
-    protected BitmapFont getBitmapFont(TTFont font, int actualSize) {
-        TTFont cacheKey = new TTFont(font.family(), actualSize, font.color(), font.bold());
-        BitmapFont bitmapFont = fonts.get(cacheKey);
-
-        if (bitmapFont == null) {
-            bitmapFont = loadBitmapFont(font, actualSize);
-            fonts.put(cacheKey, bitmapFont);
-            loaded.add(bitmapFont);
-        }
-
-        return bitmapFont;
+    protected BitmapFont getBitmapFont(FileHandle source, FontStyle style) {
+        FontCacheKey cacheKey = new FontCacheKey(source, style);
+        return fontCache.get(cacheKey);
     }
 
-    private BitmapFont loadBitmapFont(TTFont font, int actualSize) {
-        FileHandle fontLocation = fontLocations.get(font.family());
-        Preconditions.checkArgument(fontLocation != null, "Unknown font location: " + font);
-
+    private BitmapFont generateBitmapFont(FontCacheKey cacheKey) {
         FreeTypeFontGenerator.FreeTypeFontParameter config =
             new FreeTypeFontGenerator.FreeTypeFontParameter();
-        config.size = actualSize;
-        config.color = toColor(font.color());
+        config.size = cacheKey.style.size();
+        config.color = toColor(cacheKey.style.color());
 
-        FreeTypeFontGenerator fontGenerator = new FreeTypeFontGenerator(fontLocation);
+        FreeTypeFontGenerator fontGenerator = new FreeTypeFontGenerator(cacheKey.source());
         BitmapFont bitmapFont = fontGenerator.generateFont(config);
         fontGenerator.dispose();
-
         return bitmapFont;
     }
 
@@ -286,7 +248,9 @@ public class GDXMediaLoader implements MediaLoader, GeometryBuilder, Disposable 
     public void dispose() {
         loaded.forEach(Disposable::dispose);
         loaded.clear();
-        fonts.clear();
-        colorTextureCache.clear();
+        fontCache.invalidateAll();
+    }
+
+    private record FontCacheKey(FileHandle source, FontStyle style) {
     }
 }

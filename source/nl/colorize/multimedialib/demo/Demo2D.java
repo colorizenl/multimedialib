@@ -12,10 +12,10 @@ import nl.colorize.multimedialib.graphics.Align;
 import nl.colorize.multimedialib.graphics.Animation;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
+import nl.colorize.multimedialib.graphics.OutlineFont;
 import nl.colorize.multimedialib.graphics.Primitive;
 import nl.colorize.multimedialib.graphics.Sprite;
 import nl.colorize.multimedialib.graphics.SpriteSheet;
-import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.graphics.Text;
 import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Point2D;
@@ -38,7 +38,6 @@ import nl.colorize.multimedialib.scene.Stage;
 import nl.colorize.multimedialib.scene.Updatable;
 import nl.colorize.multimedialib.scene.effect.Effect;
 import nl.colorize.multimedialib.scene.effect.TransitionEffect;
-import nl.colorize.multimedialib.tool.DemoLauncher;
 import nl.colorize.util.Callback;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.animation.Interpolation;
@@ -66,7 +65,7 @@ public class Demo2D implements Scene {
     private SceneContext context;
 
     private SpriteSheet marioSpriteSheet;
-    private TTFont font;
+    private OutlineFont font;
     private List<Mario> marios;
     private Effect colorizeLogo;
     private Audio audioClip;
@@ -194,7 +193,7 @@ public class Demo2D implements Scene {
         InputDevice inputDevice = context.getInputDevice();
         handleClick(inputDevice, context.getStage());
         checkLogoClick(inputDevice);
-        handleSystemControls(inputDevice, context.getNetworkAccess());
+        handleSystemControls(inputDevice, context.getNetwork());
 
         for (Mario mario : marios) {
             updateMario(mario, deltaTime);

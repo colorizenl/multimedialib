@@ -12,11 +12,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class SimpleCacheTest {
+class CacheTest {
 
     @Test
     void useLoader() {
-        SimpleCache<Integer, String> cache = SimpleCache.create(key -> "" + key, 10);
+        Cache<Integer, String> cache = Cache.create(key -> "" + key, 10);
 
         assertEquals("1", cache.get(1));
         assertEquals("2", cache.get(2));
@@ -24,7 +24,7 @@ class SimpleCacheTest {
 
     @Test
     void evictOldEntries() {
-        SimpleCache<Integer, String> cache = SimpleCache.create(key -> "" + key, 3);
+        Cache<Integer, String> cache = Cache.create(key -> "" + key, 3);
         cache.get(1);
         cache.get(2);
 

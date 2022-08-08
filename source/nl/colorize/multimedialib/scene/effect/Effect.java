@@ -11,9 +11,9 @@ import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.graphics.Align;
 import nl.colorize.multimedialib.graphics.Animation;
 import nl.colorize.multimedialib.graphics.Image;
+import nl.colorize.multimedialib.graphics.OutlineFont;
 import nl.colorize.multimedialib.graphics.Primitive;
 import nl.colorize.multimedialib.graphics.Sprite;
-import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.graphics.Text;
 import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Point2D;
@@ -261,7 +261,7 @@ public class Effect {
         return effect;
     }
 
-    public static Effect forText(String text, TTFont font, Align align, Timeline timeline) {
+    public static Effect forText(String text, OutlineFont font, Align align, Timeline timeline) {
         Text textObject = new Text(text, font, align);
         Effect effect = new Effect(timeline);
         effect.displayObject.withGraphics(textObject);
@@ -277,7 +277,7 @@ public class Effect {
      * over time, with more and more characters appearing on screen over time
      * until the entire text is shown.
      */
-    public static Effect forTextAppear(String text, TTFont font, Align align, float duration) {
+    public static Effect forTextAppear(String text, OutlineFont font, Align align, float duration) {
         Preconditions.checkArgument(text.length() > 0, "Cannot animate empty text");
         Preconditions.checkArgument(duration > 0f, "Invalid duration: " + duration);
 
@@ -301,7 +301,7 @@ public class Effect {
      * Shorthand for creating an effect that modifies the text's alpha value
      * based on a timeline.
      */
-    public static Effect forTextAlpha(String text, TTFont font, Align align, Timeline timeline) {
+    public static Effect forTextAlpha(String text, OutlineFont font, Align align, Timeline timeline) {
         Effect effect = forText(text, font, align, timeline);
         effect.modify(value -> effect.getTransform().setAlpha(Math.round(value)));
         return effect;

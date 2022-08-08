@@ -12,7 +12,6 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.TextureData;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -21,7 +20,6 @@ import nl.colorize.multimedialib.graphics.Align;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Primitive;
 import nl.colorize.multimedialib.graphics.Sprite;
-import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.graphics.Text;
 import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Circle;
@@ -40,8 +38,6 @@ import static com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888;
 public class GDXGraphics2D implements StageVisitor {
 
     private Canvas canvas;
-    private GDXMediaLoader mediaLoader;
-
     private SpriteBatch spriteBatch;
     private ShapeRenderer shapeBatch;
     private Map<TextureRegion, TextureRegion> maskCache;
@@ -49,13 +45,11 @@ public class GDXGraphics2D implements StageVisitor {
     private static final Transform DEFAULT_TRANSFORM = new Transform();
     private static final int CIRCLE_SEGMENTS = 32;
 
-    protected GDXGraphics2D(Canvas canvas, GDXMediaLoader mediaLoader) {
+    protected GDXGraphics2D(Canvas canvas) {
         this.canvas = canvas;
-        this.mediaLoader = mediaLoader;
-
-        spriteBatch = new SpriteBatch();
-        shapeBatch = new ShapeRenderer();
-        maskCache = new HashMap<>();
+        this.spriteBatch = new SpriteBatch();
+        this.shapeBatch = new ShapeRenderer();
+        this.maskCache = new HashMap<>();
     }
 
     @Override
@@ -144,7 +138,7 @@ public class GDXGraphics2D implements StageVisitor {
         spriteBatch.setColor(1f, 1f, 1f, transform.getAlpha() / 100f);
         spriteBatch.draw(textureRegion, screenX - screenWidth / 2f, screenY - screenHeight / 2f,
             screenWidth / 2f, screenHeight / 2f, screenWidth, screenHeight,
-            transform.getScaleX() / 100f, transform.getScaleY() / 100f, transform.getRotation());
+            transform.getScaleX() / 100f, transform.getScaleY() / 100f, -transform.getRotation());
     }
 
     private TextureRegion getMask(TextureRegion textureRegion, ColorRGB color) {
@@ -181,18 +175,17 @@ public class GDXGraphics2D implements StageVisitor {
 
     @Override
     public void drawText(Text text) {
-        TTFont font = text.getFont();
-        int actualSize = Math.round(font.size() * canvas.getZoomLevel());
-        BitmapFont bitmapFont = mediaLoader.getBitmapFont(font, actualSize);
+        GDXBitmapFont baseFont = (GDXBitmapFont) text.getFont();
+        GDXBitmapFont displayFont = (GDXBitmapFont) baseFont.scale(canvas);
         float screenX = toScreenX(text.getPosition().getX());
         int align = getTextAlign(text.getAlign());
 
         switchMode(true, false);
 
         text.forLines((i, line) -> {
-            float lineY = text.getPosition().getY() + i * font.getLineHeight();
-            float screenY = toScreenY(lineY - 0.4f * actualSize);
-            bitmapFont.draw(spriteBatch, line, screenX, screenY, 0, align, false);
+            float lineY = text.getPosition().getY() + i * text.getLineHeight(canvas);
+            float screenY = toScreenY(lineY - 0.4f * displayFont.getStyle().size());
+            displayFont.getBitmapFont().draw(spriteBatch, line, screenX, screenY, 0, align, false);
         });
     }
 

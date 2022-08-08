@@ -8,8 +8,8 @@ package nl.colorize.multimedialib.demo;
 
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
+import nl.colorize.multimedialib.graphics.OutlineFont;
 import nl.colorize.multimedialib.graphics.PolygonModel;
-import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.graphics.Text;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Point3D;
@@ -37,7 +37,7 @@ import java.util.List;
 public class Demo3D implements Scene {
 
     private SceneContext context;
-    private TTFont font;
+    private OutlineFont font;
     private Image logo;
     private List<PolygonModel> models;
     private List<Point2D> walkVectors;

@@ -42,6 +42,9 @@ public class Browser {
     @JSBody(script = "return window.location.href;")
     public static native String getPageURL();
 
+    @JSBody(script = "return window.location.search.toString();")
+    public static native String getPageQueryString();
+
     @JSBody(script = "return navigator.userAgent;")
     public static native String getUserAgent();
 
@@ -86,9 +89,6 @@ public class Browser {
 
     @JSBody(script = "return canvas.height;")
     public static native float getCanvasHeight();
-
-    @JSBody(script = "return getRequestedRenderer();")
-    public static native String getRequestedRenderer();
 
     @JSBody(
         params = {"id"},

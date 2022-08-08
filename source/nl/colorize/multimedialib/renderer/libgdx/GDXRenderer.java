@@ -21,7 +21,6 @@ import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
-import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.graphics.glutils.HdpiMode;
 import com.badlogic.gdx.math.Vector3;
 import nl.colorize.multimedialib.graphics.ColorRGB;
@@ -33,10 +32,13 @@ import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.multimedialib.renderer.java2d.StandardNetworkAccess;
+import nl.colorize.multimedialib.scene.ErrorHandler;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.scene.Stage;
 import nl.colorize.multimedialib.scene.Stage3D;
 import nl.colorize.util.LoadUtils;
+import nl.colorize.util.LogHelper;
 import nl.colorize.util.swing.Utils2D;
 
 import java.awt.image.BufferedImage;
@@ -44,6 +46,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.zip.Deflater;
 
 /**
@@ -69,36 +73,37 @@ public class GDXRenderer implements Renderer, ApplicationListener {
     private List<ModelInstance> displayList;
     private GDXGraphics2D graphicsContext;
 
-    private boolean freeCamera;
-    private CameraInputController freeCameraController;
-
     private static final int FIELD_OF_VIEW = 75;
     private static final float NEAR_PLANE = 1f;
     private static final float FAR_PLANE = 300f;
+    private static final Logger LOGGER = LogHelper.getLogger(GDXRenderer.class);
 
     public GDXRenderer(DisplayMode displayMode, WindowOptions window) {
-        this.canvas = displayMode.getCanvas();
-        this.framerate = displayMode.getFramerate();
+        this.canvas = displayMode.canvas();
+        this.framerate = displayMode.framerate();
         this.window = window;
-
-        this.freeCamera = false;
     }
 
     @Override
-    public void start(Scene initialScene) {
+    public void start(Scene initialScene, ErrorHandler errorHandler) {
         this.initialScene = initialScene;
 
         Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
         config.setWindowedMode(canvas.getWidth(), canvas.getHeight());
         config.setDecorated(true);
         config.setIdleFPS(framerate);
+        config.setForegroundFPS(framerate);
         config.setHdpiMode(HdpiMode.Pixels);
-        config.setTitle(window.getTitle());
-        if (window.hasIcon()) {
-            config.setWindowIcon(Files.FileType.Internal, window.getIconFile().getPath());
+        config.setTitle(window.title());
+        if (window.iconFile() != null) {
+            config.setWindowIcon(Files.FileType.Internal, window.iconFile().getPath());
         }
 
-        new Lwjgl3Application(this, config);
+        try {
+            new Lwjgl3Application(this, config);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error during animation loop", e);
+        }
     }
 
     @Override
@@ -112,14 +117,9 @@ public class GDXRenderer implements Renderer, ApplicationListener {
         resize(canvas.getWidth(), canvas.getHeight());
         modelBatch = new ModelBatch();
         displayList = new ArrayList<>();
-        graphicsContext = new GDXGraphics2D(canvas, mediaLoader);
+        graphicsContext = new GDXGraphics2D(canvas);
 
         initStage();
-
-        if (freeCamera) {
-            freeCameraController = new CameraInputController(camera);
-            Gdx.input.setInputProcessor(freeCameraController);
-        }
     }
 
     private void initStage() {
@@ -165,26 +165,26 @@ public class GDXRenderer implements Renderer, ApplicationListener {
 
         float frameTime = 1f / framerate;
         input.update(frameTime);
-        if (freeCamera) {
-            freeCameraController.update();
-        }
 
         context.update(frameTime);
         context.getFrameStats().markFrameUpdate();
 
-        renderStage((Stage3D) context.getStage());
+        renderStage(context.getStage());
         graphicsContext.switchMode(false, false);
         context.getFrameStats().markFrameRender();
     }
 
-    private void renderStage(Stage3D stage) {
-        camera.position.set(toVector(stage.getCameraPosition()));
-        camera.up.set(0f, 1f, 0f);
-        camera.lookAt(toVector(stage.getCameraTarget()));
-        camera.update();
+    private void renderStage(Stage stage) {
+        if (stage instanceof Stage3D stage3D) {
+            camera.position.set(toVector(stage3D.getCameraPosition()));
+            camera.up.set(0f, 1f, 0f);
+            camera.lookAt(toVector(stage3D.getCameraTarget()));
+            camera.update();
 
-        environment.set(new ColorAttribute(ColorAttribute.AmbientLight, toColor(stage.getAmbientLight())));
-        light.set(toColor(stage.getLightColor()), toVector(stage.getLightPosition()));
+            environment.set(new ColorAttribute(ColorAttribute.AmbientLight,
+                toColor(stage3D.getAmbientLight())));
+            light.set(toColor(stage3D.getLightColor()), toVector(stage3D.getLightPosition()));
+        }
 
         updateDisplayList();
 
@@ -198,9 +198,11 @@ public class GDXRenderer implements Renderer, ApplicationListener {
     private void updateDisplayList() {
         displayList.clear();
 
-        for (PolygonModel model : ((Stage3D) context.getStage()).getModels()) {
-            GDXModel gdxModel = (GDXModel) model;
-            displayList.add(gdxModel.getInstance());
+        if (context.getStage() instanceof Stage3D stage3D) {
+            for (PolygonModel model : stage3D.getModels()) {
+                GDXModel gdxModel = (GDXModel) model;
+                displayList.add(gdxModel.getInstance());
+            }
         }
     }
 
@@ -232,9 +234,5 @@ public class GDXRenderer implements Renderer, ApplicationListener {
         } catch (IOException e) {
             throw new MediaException("Screenshot failed", e);
         }
-    }
-
-    public void enableFreeCamera() {
-        freeCamera = true;
     }
 }

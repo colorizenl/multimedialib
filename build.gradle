@@ -13,11 +13,18 @@ compileJava.options.encoding = "UTF-8"
 sourceSets.main.java.srcDirs = ["source"]
 sourceSets.main.resources.srcDirs = ["resources"]
 sourceSets.test.java.srcDirs = ["test"]
+ext.libgdxVersion = "1.11.0"
+ext.teavmVersion = "0.7.2"
 
 repositories {
     mavenCentral()
     maven {
-        url "https://teavm.org/maven/repository"
+        // url "https://teavm.org/maven/repository"
+        url "https://maven.pkg.github.com/colorizenl/teavm"
+        credentials {
+            username githubPackagesOwner
+            password githubPackagesToken
+        }
     }
     maven {
         url "https://jitpack.io"
@@ -25,26 +32,27 @@ repositories {
 }
 
 dependencies {
-    api "nl.colorize:colorize-java-commons:2022.8"
+    api "nl.colorize:colorize-java-commons:2022.9"
 
-    implementation "com.badlogicgames.gdx:gdx:1.11.0"
-    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:1.11.0"
-    implementation "com.badlogicgames.gdx:gdx-platform:1.11.0:natives-desktop"
-    implementation "com.badlogicgames.gdx:gdx-freetype:1.11.0"
-    implementation "com.badlogicgames.gdx:gdx-freetype-platform:1.11.0:natives-desktop"
+    implementation "com.badlogicgames.gdx:gdx:${libgdxVersion}"
+    implementation "com.badlogicgames.gdx:gdx-platform:${libgdxVersion}:natives-desktop"
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:${libgdxVersion}"
+    implementation "com.badlogicgames.gdx:gdx-lwjgl3-glfw-awt-macos:${libgdxVersion}"
+    implementation "com.badlogicgames.gdx:gdx-freetype:${libgdxVersion}"
+    implementation "com.badlogicgames.gdx:gdx-freetype-platform:${libgdxVersion}:natives-desktop"
 
-    implementation "org.teavm:teavm:0.7.0-dev-1201"
-    implementation "org.teavm:teavm-jso:0.7.0-dev-1201"
-    implementation "org.teavm:teavm-jso-apis:0.7.0-dev-1201"
-    implementation "org.teavm:teavm-classlib:0.7.0-dev-1201"
-    implementation "org.teavm:teavm-tooling:0.7.0-dev-1201"
+    implementation "org.teavm:teavm:${teavmVersion}"
+    implementation "org.teavm:teavm-jso:${teavmVersion}"
+    implementation "org.teavm:teavm-jso-apis:${teavmVersion}"
+    implementation "org.teavm:teavm-classlib:${teavmVersion}"
+    implementation "org.teavm:teavm-tooling:${teavmVersion}"
 
     implementation "javazoom:jlayer:1.0.1"
     implementation "org.java-websocket:Java-WebSocket:1.5.3"
     implementation "org.slf4j:slf4j-jdk14:1.7.36"
     implementation "com.github.mgsx-dev.gdx-gltf:gltf:1.0.0"
 
-    testImplementation "org.junit.jupiter:junit-jupiter:5.8.2"
+    testImplementation "org.junit.jupiter:junit-jupiter:5.9.0"
 }
 
 test {
@@ -71,19 +79,17 @@ task coverage(dependsOn: ["test", "jacocoTestReport"]) {
 task transpileDemoApplication2D(type: JavaExec, dependsOn: ["compileJava", "processResources"]) {
     classpath = sourceSets.main.runtimeClasspath
     main = "nl.colorize.multimedialib.tool.TeaVMTranspilerTool"
-    args "-project", "MultimediaLib-TeaVM-Demo",
-         "-resources", "resources",
-         "-renderer", "canvas",
-         "-out", "${buildDir}/browserdemo2d",
-         "-main", "nl.colorize.multimedialib.tool.TeaDemo2D"
+    args "--project", "MultimediaLib-TeaVM-Demo",
+         "--resources", "resources",
+         "--out", "${buildDir}/browserdemo2d",
+         "--main", "nl.colorize.multimedialib.demo.TeaDemo2D"
 }
 
 task transpileDemoApplication3D(type: JavaExec, dependsOn: ["compileJava", "processResources"]) {
     classpath = sourceSets.main.runtimeClasspath
     main = "nl.colorize.multimedialib.tool.TeaVMTranspilerTool"
-    args "-project", "MultimediaLib-TeaVM-Demo",
-         "-resources", "resources",
-         "-renderer", "three",
-         "-out", "${buildDir}/browserdemo2d",
-         "-main", "nl.colorize.multimedialib.tool.TeaDemo3D"
+    args "--project", "MultimediaLib-TeaVM-Demo",
+         "--resources", "resources",
+         "--out", "${buildDir}/browserdemo2d",
+         "--main", "nl.colorize.multimedialib.demo.TeaDemo3D"
 }

@@ -22,14 +22,14 @@ import java.util.function.Function;
  * implementation. It is provided for environments with a limited Java standard
  * library, where Guava's cache is not fully available.
  */
-public class SimpleCache<K, V> {
+public class Cache<K, V> {
 
     private LinkedList<K> keys;
     private Map<K, V> entries;
     private Function<K, V> loader;
     private int capacity;
 
-    private SimpleCache(Function<K, V> loader, int capacity) {
+    public Cache(Function<K, V> loader, int capacity) {
         Preconditions.checkArgument(capacity >= 1, "Invalid cache capacity");
 
         this.keys = new LinkedList<>();
@@ -60,7 +60,27 @@ public class SimpleCache<K, V> {
         return entries.containsKey(key);
     }
 
-    public static <K, V> SimpleCache<K, V> create(Function<K, V> loader, int capacity) {
-        return new SimpleCache<K, V>(loader, capacity);
+    public void invalidate(K key) {
+        entries.remove(key);
+    }
+
+    public void invalidateAll() {
+        entries.clear();
+    }
+
+    /**
+     * Creates a new cache with a limited capacity. If the cache grows beyond
+     * this size, the oldest entries are removed in order to make space.
+     */
+    public static <K, V> Cache<K, V> create(Function<K, V> loader, int capacity) {
+        return new Cache<>(loader, capacity);
+    }
+
+    /**
+     * Creates a new cache with unlimited capacity. Entries are never removed,
+     * the cache will continue to grow until the application is out of memory.
+     */
+    public static <K, V> Cache<K, V> createUnlimited(Function<K, V> loader) {
+        return new Cache<>(loader, Integer.MAX_VALUE);
     }
 }

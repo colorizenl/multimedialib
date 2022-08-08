@@ -10,7 +10,7 @@ import nl.colorize.multimedialib.graphics.Align;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Primitive;
 import nl.colorize.multimedialib.graphics.Sprite;
-import nl.colorize.multimedialib.graphics.TTFont;
+import nl.colorize.multimedialib.graphics.FontStyle;
 import nl.colorize.multimedialib.graphics.Text;
 import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Circle;
@@ -19,7 +19,7 @@ import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Shape;
-import nl.colorize.multimedialib.math.SimpleCache;
+import nl.colorize.multimedialib.math.Cache;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.scene.StageVisitor;
 import nl.colorize.util.swing.Utils2D;
@@ -50,7 +50,7 @@ public class Java2DGraphicsContext implements StageVisitor {
 
     private Map<ColorRGB, Color> colorCache;
     private Map<String, BufferedImage> maskCache;
-    private SimpleCache<RenderedCircle, BufferedImage> circleCache;
+    private Cache<RenderedCircle, BufferedImage> circleCache;
 
     private static final Transform NULL_TRANSFORM = new Transform();
     private static final int SHAPE_CACHE_CAPACITY = 1000;
@@ -61,7 +61,7 @@ public class Java2DGraphicsContext implements StageVisitor {
 
         this.colorCache = new HashMap<>();
         this.maskCache = new HashMap<>();
-        this.circleCache = SimpleCache.create(RenderedCircle::render, SHAPE_CACHE_CAPACITY);
+        this.circleCache = Cache.create(RenderedCircle::render, SHAPE_CACHE_CAPACITY);
     }
 
     public Canvas getCanvas() {
@@ -176,22 +176,19 @@ public class Java2DGraphicsContext implements StageVisitor {
 
     @Override
     public void drawText(Text text) {
-        TTFont font = text.getFont();
-
-        float normalizedFontSize = Math.round(canvas.getZoomLevel() * font.size());
-        Font awtFont = mediaLoader.getFont(font).deriveFont(font.bold() ? Font.BOLD : Font.PLAIN,
-            normalizedFontSize);
+        Font font = ((AWTFont) text.getFont().scale(canvas)).getFont();
+        FontStyle style = text.getFont().getStyle();
 
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(text.getAlpha());
 
-        g2.setColor(convertColor(font.color()));
-        g2.setFont(awtFont);
-        drawLines(text.getLines(), text.getPosition(), text.getAlign(), font.getLineHeight());
+        g2.setColor(convertColor(style.color()));
+        g2.setFont(font);
+        drawLines(text.getLines(), text.getPosition(), text.getAlign(), text.getLineHeight(canvas));
         g2.setComposite(originalComposite);
     }
 
-    private void drawLines(List<String> lines, Point2D position, Align align, int lineHeight) {
+    private void drawLines(List<String> lines, Point2D position, Align align, float lineHeight) {
         for (int i = 0; i < lines.size(); i++) {
             float screenX = canvas.toScreenX(position.getX());
             float screenY = canvas.toScreenY(position.getY() + i * lineHeight);

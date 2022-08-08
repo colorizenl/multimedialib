@@ -48,6 +48,9 @@ public interface NetworkAccess {
      * Connects to the web socket located at the specified URI. Note that some
      * platforms may only allow the secure web socket protocol
      * (i.e. {@code "wss://"}).
+     *
+     * @throws UnsupportedOperationException if the renderer does not support
+     *         web socket connections.
      */
     public NetworkConnection connectWebSocket(String uri);
 
@@ -56,8 +59,8 @@ public interface NetworkAccess {
      * to the peer with the specified ID. This ID must be provided by a broker
      * service, it is not possible to discover peers directly.
      *
-     * @throws UnsupportedOperationException if the platform does not support
-     *         WebRTC peer-to-peer connections or WebRTC in general.
+     * @throws UnsupportedOperationException if the renderer or the current platform
+     *         does not support WebRTC peer-to-peer connections.
      */
     public NetworkConnection connectWebRTC(String id);
 }

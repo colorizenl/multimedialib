@@ -6,10 +6,10 @@
 
 package nl.colorize.multimedialib.mock;
 
-import nl.colorize.multimedialib.graphics.ColorRGB;
+import nl.colorize.multimedialib.graphics.FontStyle;
 import nl.colorize.multimedialib.graphics.Image;
+import nl.colorize.multimedialib.graphics.OutlineFont;
 import nl.colorize.multimedialib.graphics.PolygonModel;
-import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.MediaLoader;
@@ -38,7 +38,7 @@ public class MockMediaLoader implements MediaLoader {
     }
 
     @Override
-    public TTFont loadFont(FilePointer file, String family, int size, ColorRGB color, boolean bold) {
+    public OutlineFont loadFont(FilePointer file, FontStyle style) {
         throw new UnsupportedOperationException();
     }
 

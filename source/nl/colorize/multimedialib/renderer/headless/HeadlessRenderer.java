@@ -16,6 +16,7 @@ import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.java2d.Java2DRenderer;
 import nl.colorize.multimedialib.renderer.java2d.StandardNetworkAccess;
+import nl.colorize.multimedialib.scene.ErrorHandler;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 
@@ -50,7 +51,7 @@ public class HeadlessRenderer implements Renderer {
 
         HeadlessMediaLoader mediaLoader = new HeadlessMediaLoader(graphicsEnvironmentEnabled);
         StandardNetworkAccess network = new StandardNetworkAccess();
-        NullInputDevice input = new NullInputDevice(displayMode.getCanvas());
+        NullInputDevice input = new NullInputDevice(displayMode.canvas());
         context = new SceneContext(displayMode, input, mediaLoader, network);
     }
 
@@ -63,13 +64,13 @@ public class HeadlessRenderer implements Renderer {
     }
 
     @Override
-    public void start(Scene initialScene) {
+    public void start(Scene initialScene, ErrorHandler errorHandler) {
         context.changeScene(initialScene);
         doFrame();
     }
     
     public void doFrame() {
-        context.update(1f / displayMode.getFramerate());
+        context.update(1f / displayMode.framerate());
     }
 
     @Override

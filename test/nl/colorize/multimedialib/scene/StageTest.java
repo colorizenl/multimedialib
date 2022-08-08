@@ -10,7 +10,6 @@ import com.google.common.collect.ImmutableList;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Primitive;
 import nl.colorize.multimedialib.graphics.Sprite;
-import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.graphics.Text;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
@@ -19,6 +18,7 @@ import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.mock.MockImage;
 import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.headless.HeadlessFont;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -42,7 +42,7 @@ class StageTest {
         stage.add(spriteA);
         stage.add(Primitive.of(new Rect(10, 20, 30, 40), ColorRGB.RED));
         stage.add(spriteB);
-        stage.add(new Text("abc", new TTFont("test", 10, ColorRGB.BLACK, false)));
+        stage.add(new Text("abc", new HeadlessFont()));
 
         List<String> visited = new ArrayList<>();
 

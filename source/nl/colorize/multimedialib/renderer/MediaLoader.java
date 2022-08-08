@@ -10,9 +10,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Image;
+import nl.colorize.multimedialib.graphics.OutlineFont;
 import nl.colorize.multimedialib.graphics.PolygonModel;
 import nl.colorize.multimedialib.graphics.SpriteSheet;
-import nl.colorize.multimedialib.graphics.TTFont;
+import nl.colorize.multimedialib.graphics.FontStyle;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.util.Configuration;
 import nl.colorize.util.CSVRecord;
@@ -58,13 +59,14 @@ public interface MediaLoader {
 
         Image image = loadImage(imageFile);
         List<CSVRecord> metadata = CSVRecord.parseRecords(loadText(metadataFile), ";", true);
-
         SpriteSheet spriteSheet = new SpriteSheet(image);
+
         for (CSVRecord region : metadata) {
             Rect bounds = new Rect(region.getFloat(1), region.getFloat(2), region.getFloat(3),
                 region.getFloat(4));
             spriteSheet.markRegion(region.get(0), bounds);
         }
+
         return spriteSheet;
     }
 
@@ -79,32 +81,23 @@ public interface MediaLoader {
     public Audio loadAudio(FilePointer file);
 
     /**
-     * Loads a TrueType font from a {@code .ttf} file and converts it to a
-     * format that can be used by the renderer.
+     * Loads a TrueType or FreeType font and converts it to a format that
+     * can be used by the renderer. The loaded font will be attached to the
+     * font family name specified in the font style.
      *
      * @throws MediaException if the file does not exist, or if the font
      *         cannot be loaded on the current platform.
      */
-    public TTFont loadFont(FilePointer file, String family, int size, ColorRGB color, boolean bold);
-
-    /**
-     * Loads a TrueType font from a {@code .ttf} file and converts it to a
-     * format that can be used by the renderer.
-     *
-     * @throws MediaException if the file does not exist, or if the font
-     *         cannot be loaded on the current platform.
-     */
-    default TTFont loadFont(FilePointer file, String family, int size, ColorRGB color) {
-        return loadFont(file, family, size, color, false);
-    }
+    public OutlineFont loadFont(FilePointer file, FontStyle style);
 
     /**
      * Loads the default font, the open source font Open Sans. This is included
      * in MultimediaLib and therefore guaranteed to be always available.
      */
-    default TTFont loadDefaultFont(int size, ColorRGB color) {
+    default OutlineFont loadDefaultFont(int size, ColorRGB color) {
         FilePointer file = new FilePointer("OpenSans-Regular.ttf");
-        return loadFont(file, "Open Sans", size, color, false);
+        FontStyle style = new FontStyle("Open Sans", size, false, color);
+        return loadFont(file, style);
     }
 
     /**

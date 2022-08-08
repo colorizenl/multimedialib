@@ -7,12 +7,11 @@
 package nl.colorize.multimedialib.scene.effect;
 
 import nl.colorize.multimedialib.graphics.Align;
-import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Sprite;
-import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.mock.MockImage;
 import nl.colorize.multimedialib.mock.MockScene;
 import nl.colorize.multimedialib.mock.MockSceneContext;
+import nl.colorize.multimedialib.renderer.headless.HeadlessFont;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.util.animation.Timeline;
 import org.junit.jupiter.api.BeforeEach;
@@ -86,8 +85,7 @@ public class EffectTest {
         timeline.addKeyFrame(0f, 100f);
         timeline.addKeyFrame(2f, 0f);
 
-        Effect effect = Effect.forTextAlpha("test", new TTFont("test", 12, ColorRGB.BLACK, false),
-            Align.LEFT, timeline);
+        Effect effect = Effect.forTextAlpha("test", new HeadlessFont(), Align.LEFT, timeline);
         effect.attachTo(context);
 
         assertEquals(100f, effect.getTransform().getAlpha(), EPSILON);

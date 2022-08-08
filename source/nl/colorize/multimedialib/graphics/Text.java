@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableList;
 import nl.colorize.multimedialib.math.MathUtils;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.util.TextUtils;
 
 import java.util.List;
@@ -22,7 +23,7 @@ public class Text implements Graphic2D {
 
     private String text;
     private List<String> lines;
-    private TTFont font;
+    private OutlineFont font;
     private Align align;
     private float lineHeight;
 
@@ -30,19 +31,19 @@ public class Text implements Graphic2D {
     private Point2D position;
     private float alpha;
 
-    public Text(String text, TTFont font, Align align) {
+    public Text(String text, OutlineFont font, Align align) {
         this.text = text;
         this.lines = TextUtils.LINE_SPLITTER.splitToList(text);
         this.font = font;
         this.align = align;
-        this.lineHeight = font.getLineHeight();
+        this.lineHeight = Math.round(font.getStyle().size() * 1.8f);
 
         this.visible = true;
         this.position = new Point2D(0f, 0f);
         this.alpha = 100f;
     }
 
-    public Text(String text, TTFont font) {
+    public Text(String text, OutlineFont font) {
         this(text, font, Align.LEFT);
     }
 
@@ -70,11 +71,11 @@ public class Text implements Graphic2D {
         }
     }
 
-    public void setFont(TTFont font) {
+    public void setFont(OutlineFont font) {
         this.font = font;
     }
 
-    public TTFont getFont() {
+    public OutlineFont getFont() {
         return font;
     }
 
@@ -90,8 +91,8 @@ public class Text implements Graphic2D {
         this.lineHeight = lineHeight;
     }
 
-    public float getLineHeight() {
-        return lineHeight;
+    public float getLineHeight(Canvas canvas) {
+        return lineHeight * canvas.getZoomLevel();
     }
 
     public void setVisible(boolean visible) {
@@ -122,7 +123,7 @@ public class Text implements Graphic2D {
 
     @Override
     public Rect getBounds() {
-        float approximateWidth = font.size() * text.length();
+        float approximateWidth = font.getStyle().size() * text.length();
         float approximateHeight = lineHeight * lines.size();
         return new Rect(position.getX(), position.getY(), approximateWidth, approximateHeight);
     }

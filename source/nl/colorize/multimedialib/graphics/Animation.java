@@ -193,14 +193,6 @@ public class Animation implements AnimationInfo {
      * Data structure for all information related to showing one of the frames
      * within the animation.
      */
-    private static class FrameInfo {
-
-        private Image image;
-        private float frameTime;
-
-        public FrameInfo(Image image, float frameTime) {
-            this.image = image;
-            this.frameTime = frameTime;
-        }
+    private record FrameInfo(Image image, float frameTime) {
     }
 }

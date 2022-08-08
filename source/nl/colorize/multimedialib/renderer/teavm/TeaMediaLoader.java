@@ -7,10 +7,10 @@
 package nl.colorize.multimedialib.renderer.teavm;
 
 import com.google.common.base.Splitter;
-import nl.colorize.multimedialib.graphics.ColorRGB;
+import nl.colorize.multimedialib.graphics.FontStyle;
 import nl.colorize.multimedialib.graphics.Image;
+import nl.colorize.multimedialib.graphics.OutlineFont;
 import nl.colorize.multimedialib.graphics.PolygonModel;
-import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.MediaLoader;
@@ -95,11 +95,11 @@ public class TeaMediaLoader implements MediaLoader {
     }
 
     @Override
-    public TTFont loadFont(FilePointer file, String family, int size, ColorRGB color, boolean bold) {
+    public OutlineFont loadFont(FilePointer file, FontStyle style) {
         String id = String.valueOf(nextFontId);
-        Browser.loadFont(id, "resources/" + normalizeFilePath(file, false), family);
+        Browser.loadFont(id, "resources/" + normalizeFilePath(file, false), style.family());
         nextFontId++;
-        return new TTFont(family, size, color, false);
+        return new TeaFont(id, style);
     }
 
     @Override

@@ -7,10 +7,10 @@
 package nl.colorize.multimedialib.renderer.teavm.pixi;
 
 import nl.colorize.multimedialib.graphics.ColorRGB;
+import nl.colorize.multimedialib.graphics.FontStyle;
 import nl.colorize.multimedialib.graphics.Graphic2D;
 import nl.colorize.multimedialib.graphics.Primitive;
 import nl.colorize.multimedialib.graphics.Sprite;
-import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.graphics.Text;
 import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Circle;
@@ -197,11 +197,10 @@ public class PixiRenderer implements StageVisitor, StageObserver {
                 region.getX(), region.getY(), region.getWidth(), region.getHeight());
         } else if (graphic instanceof Primitive) {
             return pixi.createGraphics(layer.getName());
-        } else if (graphic instanceof Text) {
-            Text text = (Text) graphic;
-            TTFont font = text.getFont();
-            return pixi.createText(layer.getName(), font.family(), font.size(), font.bold(),
-                text.getAlign().toString(), font.getLineHeight(), font.color().getRGB());
+        } else if (graphic instanceof Text text) {
+            FontStyle style = text.getFont().scale(canvas).getStyle();
+            return pixi.createText(layer.getName(), style.family(), style.size(), style.bold(),
+                text.getAlign().toString(), text.getLineHeight(canvas), style.color().getRGB());
         } else {
             throw new IllegalArgumentException("Unknown graphics type: " + graphic);
         }

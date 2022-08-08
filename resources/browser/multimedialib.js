@@ -65,22 +65,6 @@ function createCanvas(width, height) {
     return newCanvas;
 }
 
-function getRequestedRenderer() {
-    const urlParam = window.location.href.match(/renderer=(\w+)/);
-    if (urlParam != null) {
-        return urlParam[1];
-    }
-
-    const metaTags = document.getElementsByTagName("meta");
-    for (let i = 0; i < metaTags.length; i++) {
-        if (metaTags[i].getAttribute("name") == "renderer") {
-            return metaTags[i].getAttribute("content");
-        }
-    }
-    
-    throw "Renderer not specified";
-}
-
 function resizeCanvas(container) {
     const targetWidth = Math.round(container.offsetWidth);
     const targetHeight = Math.round(document.documentElement.clientHeight);
@@ -100,9 +84,9 @@ function registerMouseEvent(eventType, event) {
 
 function registerTouchEvent(eventType, event) {
     for (let i = 0; i < event.changedTouches.length; i++) {
-        let identifier = event.changedTouches[i].identifier;
-        let touchX = event.changedTouches[i].pageX - canvas.offsetLeft;
-        let touchY = event.changedTouches[i].pageY - canvas.offsetTop;
+        const identifier = event.changedTouches[i].identifier;
+        const touchX = event.changedTouches[i].pageX - canvas.offsetLeft;
+        const touchY = event.changedTouches[i].pageY - canvas.offsetTop;
         registerPointerEvent(eventType + ";" + identifier + ";" + touchX + ";" + touchY);
     }
 }
@@ -112,7 +96,7 @@ function registerPointerEvent(entry) {
 }
 
 function flushPointerEventBuffer() {
-    let flushed = pointerEventBuffer;
+    const flushed = pointerEventBuffer;
     pointerEventBuffer = [];
     return flushed;
 }
@@ -133,16 +117,17 @@ function cancelEvent(event) {
 }
 
 function loadImage(id, path) {
-    let imageElement = document.createElement("img");
+    const imageElement = document.createElement("img");
     imageElement.src = path;
     imageContainer.appendChild(imageElement);
     images[id] = imageElement;
 }
 
 function tintImage(originalId, newId, color) {
-    let image = images[originalId];
-    let tinted = createCanvas(image.width, image.height);
-    let tintedContext = tinted.getContext("2d");
+    const image = images[originalId];
+    const tinted = createCanvas(image.width, image.height);
+    const tintedContext = tinted.getContext("2d");
+
     tintedContext.drawImage(image, 0, 0, image.width, image.height);
     tintedContext.globalCompositeOperation = "source-atop";
     tintedContext.fillStyle = color;
@@ -181,13 +166,13 @@ function loadAudio(id, path) {
 }
 
 function loadFont(id, path, fontFamily) {
-    let css = "";
-    css += "@font-face { ";
-    css += "    font-family: '" + fontFamily + "'; ";
-    css += "    font-style: normal; ";
-    css += "    font-weight: 400; ";
-    css += "    src: url('" + path + "') format('truetype'); ";
-    css += "}; ";
+    const css = ""
+        + "@font-face { "
+        + "    font-family: '" + fontFamily + "'; "
+        + "    font-style: normal; "
+        + "    font-weight: 400; "
+        + "    src: url('" + path + "') format('truetype'); "
+        + "}; ";
 
     const style = document.createElement("style");
     style.type = "text/css";
@@ -196,7 +181,7 @@ function loadFont(id, path, fontFamily) {
 }
 
 function loadTextFile(id) {
-	let resource = document.getElementById(id);
+	const resource = document.getElementById(id);
 	if (resource == null) {
 		return null;
 	}
@@ -209,8 +194,8 @@ function getImageData(id, x, y) {
         let imageData = imageDataCache[id];
 
         if (imageData == null) {
-            let imageCanvas = createCanvas(image.width, image.height);
-            let imageCanvasContext = imageCanvas.getContext("2d");
+            const imageCanvas = createCanvas(image.width, image.height);
+            const imageCanvasContext = imageCanvas.getContext("2d");
             imageCanvasContext.drawImage(image, 0, 0);
             imageData = imageCanvasContext;
 
@@ -226,7 +211,7 @@ function getImageData(id, x, y) {
 }
 
 function isImageDataAvailable(imageData, x, y) {
-    let rgba = imageData.getImageData(x, y, 1, 1).data;
+    const rgba = imageData.getImageData(x, y, 1, 1).data;
     return (rgba[0] + rgba[1] + rgba[2] + rgba[3]) != 0;
 }
 

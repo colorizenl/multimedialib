@@ -4,16 +4,14 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.tool;
+package nl.colorize.multimedialib.demo;
 
-import nl.colorize.multimedialib.demo.Demo2D;
-import nl.colorize.multimedialib.demo.Demo3D;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.WindowOptions;
-import nl.colorize.multimedialib.renderer.java2d.Java2DRenderer;
-import nl.colorize.multimedialib.renderer.libgdx.GDXRenderer;
+import nl.colorize.multimedialib.scene.ErrorHandler;
+import nl.colorize.multimedialib.scene.MultimediaAppLauncher;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.util.cli.CommandLineArgumentParser;
 import nl.colorize.util.swing.ApplicationMenuListener;
@@ -51,40 +49,25 @@ public class DemoLauncher implements ApplicationMenuListener {
     }
 
     private void start() {
-        Renderer renderer = createRenderer();
-        renderer.start(createDemoScene());
-    }
+        DisplayMode displayMode = new DisplayMode(getCanvas(), framerate);
+        WindowOptions window = new WindowOptions("MultimediaLib - Demo", WindowOptions.DEFAULT_ICON, this);
 
-    private Renderer createRenderer() {
-        switch (rendererName) {
-            case "java2d" : return createJava2DRenderer();
-            case "gdx" : return createGDXRenderer();
-            default : throw new IllegalArgumentException("Renderer not supported: " + rendererName);
-        }
-    }
+        Renderer renderer = switch (rendererName) {
+            case "java2d" -> MultimediaAppLauncher.launchJava2D(displayMode, window);
+            case "libgdx", "gdx" -> MultimediaAppLauncher.launchGDX(displayMode, window);
+            default -> throw new UnsupportedOperationException("Unsupported renderer: " + rendererName);
+        };
 
-    private Java2DRenderer createJava2DRenderer() {
-        return new Java2DRenderer(getDisplayMode(), getWindowOptions());
-    }
-
-    private GDXRenderer createGDXRenderer() {
-        GDXRenderer renderer = new GDXRenderer(getDisplayMode(), getWindowOptions());
-        if (graphics.equals("3d")) {
-            renderer.enableFreeCamera();
-        }
-        return renderer;
+        Scene demo = createDemoScene();
+        renderer.start(demo, ErrorHandler.DEFAULT);
     }
 
     private Scene createDemoScene() {
-        switch (graphics) {
-            case "2d" : return new Demo2D();
-            case "3d" : return new Demo3D();
-            default : throw new IllegalArgumentException("Unknown graphics mode: " + graphics);
-        }
-    }
-
-    private DisplayMode getDisplayMode() {
-        return new DisplayMode(getCanvas(), framerate);
+        return switch (graphics) {
+            case "2d" -> new Demo2D();
+            case "3d" -> new Demo3D();
+            default -> throw new UnsupportedOperationException("Unknown graphics mode: " + graphics);
+        };
     }
 
     private Canvas getCanvas() {
@@ -93,12 +76,6 @@ public class DemoLauncher implements ApplicationMenuListener {
         } else {
             return Canvas.flexible(Demo2D.DEFAULT_CANVAS_WIDTH, Demo2D.DEFAULT_CANVAS_HEIGHT);
         }
-    }
-
-    private WindowOptions getWindowOptions() {
-        WindowOptions windowOptions = new WindowOptions("MultimediaLib - Demo");
-        windowOptions.setAppMenuListener(this);
-        return windowOptions;
     }
 
     @Override

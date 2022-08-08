@@ -36,7 +36,6 @@ public class TeaVMTranspilerToolTest {
         tool.resourceDir = resourcesDir;
         tool.outputDir = outputDir;
         tool.mainClassName = MockApp.class.getName();
-        tool.renderer = "canvas";
         tool.run();
 
         String generatedCode = Files.toString(new File(outputDir, "classes.js"), Charsets.UTF_8);
@@ -63,7 +62,6 @@ public class TeaVMTranspilerToolTest {
         tool.resourceDir = resourcesDir;
         tool.outputDir = outputDir;
         tool.mainClassName = MockApp.class.getName();
-        tool.renderer = "canvas";
         tool.run();
 
         assertTrue(new File(outputDir, "multimedialib.js").exists());
@@ -88,7 +86,6 @@ public class TeaVMTranspilerToolTest {
         tool.resourceDir = resourcesDir;
         tool.outputDir = outputDir;
         tool.mainClassName = MockApp.class.getName();
-        tool.renderer = "canvas";
         tool.run();
 
         assertTrue(new File(outputDir, "test.x").exists());
@@ -107,7 +104,6 @@ public class TeaVMTranspilerToolTest {
         tool.resourceDir = resourcesDir;
         tool.outputDir = outputDir;
         tool.mainClassName = MockApp.class.getName();
-        tool.renderer = "canvas";
         tool.run();
 
         String generatedHTML = Files.toString(new File(outputDir, "index.html"), Charsets.UTF_8);
@@ -132,7 +128,6 @@ public class TeaVMTranspilerToolTest {
         tool.resourceDir = resourcesDir;
         tool.outputDir = outputDir;
         tool.mainClassName = MockApp.class.getName();
-        tool.renderer = "canvas";
         tool.run();
 
         String generatedHTML = Files.toString(new File(outputDir, "index.html"), Charsets.UTF_8);
@@ -153,7 +148,6 @@ public class TeaVMTranspilerToolTest {
         tool.resourceDir = inputDir;
         tool.outputDir = outputDir;
         tool.mainClassName = MockApp.class.getName();
-        tool.renderer = "canvas";
         tool.manifestFile = new File(inputDir, "manifest.json");
         tool.run();
 

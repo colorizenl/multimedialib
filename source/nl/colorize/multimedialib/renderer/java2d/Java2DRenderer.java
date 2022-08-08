@@ -12,6 +12,7 @@ import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.NetworkAccess;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.WindowOptions;
+import nl.colorize.multimedialib.scene.ErrorHandler;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.util.LogHelper;
@@ -37,6 +38,7 @@ import java.awt.event.WindowListener;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -73,8 +75,8 @@ public class Java2DRenderer implements Renderer {
     public Java2DRenderer(DisplayMode displayMode, WindowOptions windowOptions) {
         SwingUtils.initializeSwing();
 
-        this.canvas = displayMode.getCanvas();
-        this.framerate = displayMode.getFramerate();
+        this.canvas = displayMode.canvas();
+        this.framerate = displayMode.framerate();
         this.syncTimer = new Stopwatch();
 
         this.mediaLoader = new StandardMediaLoader();
@@ -87,7 +89,7 @@ public class Java2DRenderer implements Renderer {
     }
 
     @Override
-    public void start(Scene initialScene) {
+    public void start(Scene initialScene, ErrorHandler errorHandler) {
         window = initializeWindow(windowOptions);
         graphicsContext = new Java2DGraphicsContext(canvas, mediaLoader);
 
@@ -95,7 +97,8 @@ public class Java2DRenderer implements Renderer {
         context = new SceneContext(getDisplayMode(), inputDevice, mediaLoader, network);
         context.changeScene(initialScene);
 
-        Thread renderingThread = new Thread(this::runAnimationLoop, "MultimediaLib-RenderingThread");
+        Runnable animationLoop = () -> runAnimationLoop(errorHandler);
+        Thread renderingThread = new Thread(animationLoop, "MultimediaLib-RenderingThread");
         renderingThread.start();
     }
 
@@ -107,7 +110,7 @@ public class Java2DRenderer implements Renderer {
         window.setFocusTraversalKeysEnabled(false);
         window.addWindowListener(createWindowCloseListener());
         window.addComponentListener(createResizeListener());
-        window.setTitle(windowOptions.getTitle());
+        window.setTitle(windowOptions.title());
         window.setIconImage(loadIcon(windowOptions));
         window.getContentPane().setPreferredSize(new Dimension(canvas.getWidth(), canvas.getHeight()));
         window.pack();
@@ -121,10 +124,10 @@ public class Java2DRenderer implements Renderer {
         window.addMouseMotionListener(inputDevice);
 
         if (Platform.isMac()) {
-            MacIntegration.setApplicationMenuListener(windowOptions.getAppMenuListener());
+            MacIntegration.setApplicationMenuListener(windowOptions.appMenuListener());
         }
 
-        if (windowOptions.isFullscreen()) {
+        if (windowOptions.fullscreen()) {
             SwingUtils.goFullScreen(window);
         }
 
@@ -146,7 +149,7 @@ public class Java2DRenderer implements Renderer {
                 LOGGER.info("Closing window");
                 terminated.set(true);
 
-                if (!windowOptions.isEmbedded()) {
+                if (!windowOptions.embedded()) {
                     System.exit(0);
                 }
             }
@@ -154,8 +157,8 @@ public class Java2DRenderer implements Renderer {
     }
 
     private Image loadIcon(WindowOptions windowOptions) {
-        if (windowOptions.hasIcon()) {
-            ResourceFile iconFile = new ResourceFile(windowOptions.getIconFile().getPath());
+        if (windowOptions.iconFile() != null) {
+            ResourceFile iconFile = new ResourceFile(windowOptions.iconFile().getPath());
             return SwingUtils.loadIcon(iconFile).getImage();
         } else {
             return null;
@@ -166,26 +169,32 @@ public class Java2DRenderer implements Renderer {
      * Main entry point for the rendering thread. This will keep running the
      * animation loop for as long as the application is active.
      */
-    private void runAnimationLoop() {
+    private void runAnimationLoop(ErrorHandler errorHandler) {
         while (!terminated.get()) {
-            syncTimer.tick();
+            try {
+                syncTimer.tick();
 
-            if (canvasDirty.get()) {
-                canvasDirty.set(false);
-                prepareCanvas();
+                if (canvasDirty.get()) {
+                    canvasDirty.set(false);
+                    prepareCanvas();
+                }
+
+                context.getFrameStats().markFrameStart();
+                float frameTime = 1f / framerate;
+                inputDevice.update(frameTime);
+                context.update(frameTime);
+                context.getFrameStats().markFrameUpdate();
+                drawFrame();
+                context.getFrameStats().markFrameRender();
+
+                Thread.yield();
+                long elapsedTime = syncTimer.tock();
+                syncFrame(elapsedTime);
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Error during animation loop", e);
+                errorHandler.onError(context, e);
+                quit();
             }
-
-            context.getFrameStats().markFrameStart();
-            float frameTime = 1f / framerate;
-            inputDevice.update(frameTime);
-            context.update(frameTime);
-            context.getFrameStats().markFrameUpdate();
-            drawFrame();
-            context.getFrameStats().markFrameRender();
-
-            Thread.yield();
-            long elapsedTime = syncTimer.tock();
-            syncFrame(elapsedTime);
         }
     }
 

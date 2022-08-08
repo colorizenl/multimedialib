@@ -9,7 +9,7 @@ package nl.colorize.multimedialib.renderer.teavm;
 import nl.colorize.multimedialib.graphics.ColorRGB;
 import nl.colorize.multimedialib.graphics.Primitive;
 import nl.colorize.multimedialib.graphics.Sprite;
-import nl.colorize.multimedialib.graphics.TTFont;
+import nl.colorize.multimedialib.graphics.FontStyle;
 import nl.colorize.multimedialib.graphics.Text;
 import nl.colorize.multimedialib.graphics.Transform;
 import nl.colorize.multimedialib.math.Circle;
@@ -117,17 +117,16 @@ public class CanvasRenderer implements StageVisitor {
 
     @Override
     public void drawText(Text text) {
-        TTFont font = text.getFont();
-        float fontSize = font.size() * sceneCanvas.getZoomLevel();
-        String fontString = (font.bold() ? "bold " : "") + fontSize + "px " + font.family();
+        FontStyle style = text.getFont().scale(sceneCanvas).getStyle();
+        String fontString = (style.bold() ? "bold " : "") + style.size() + "px " + style.family();
 
         context.setGlobalAlpha(text.getAlpha() / 100f);
-        context.setFillStyle(font.color().toHex());
+        context.setFillStyle(style.color().toHex());
         context.setFont(fontString);
         context.setTextAlign(text.getAlign().toString().toLowerCase());
         text.forLines((i, line) -> {
-            context.fillText(line, toScreenX(text.getPosition()),
-                toScreenY(text.getPosition().getY() + i * font.getLineHeight()));
+            float y = toScreenY(text.getPosition().getY() + i * text.getLineHeight(sceneCanvas));
+            context.fillText(line, toScreenX(text.getPosition()), y);
         });
         context.setGlobalAlpha(1f);
     }

@@ -6,10 +6,10 @@
 
 package nl.colorize.multimedialib.mock;
 
-import nl.colorize.multimedialib.graphics.ColorRGB;
+import nl.colorize.multimedialib.graphics.FontStyle;
 import nl.colorize.multimedialib.graphics.Image;
+import nl.colorize.multimedialib.graphics.OutlineFont;
 import nl.colorize.multimedialib.graphics.PolygonModel;
-import nl.colorize.multimedialib.graphics.TTFont;
 import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
@@ -18,10 +18,11 @@ import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.NetworkAccess;
 import nl.colorize.multimedialib.renderer.NetworkConnection;
 import nl.colorize.multimedialib.renderer.Renderer;
+import nl.colorize.multimedialib.scene.ErrorHandler;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.util.Configuration;
 import nl.colorize.util.Callback;
+import nl.colorize.util.Configuration;
 import nl.colorize.util.http.Headers;
 import nl.colorize.util.http.PostData;
 
@@ -39,7 +40,7 @@ public class MockRenderer implements Renderer, MediaLoader, NetworkAccess {
     }
 
     @Override
-    public void start(Scene initialScene) {
+    public void start(Scene initialScene, ErrorHandler errorHandler) {
         context.changeScene(initialScene);
     }
 
@@ -54,7 +55,7 @@ public class MockRenderer implements Renderer, MediaLoader, NetworkAccess {
     }
 
     @Override
-    public TTFont loadFont(FilePointer file, String family, int size, ColorRGB color, boolean bold) {
+    public OutlineFont loadFont(FilePointer file, FontStyle style) {
         throw new UnsupportedOperationException();
     }
 

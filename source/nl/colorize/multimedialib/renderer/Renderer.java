@@ -6,6 +6,7 @@
 
 package nl.colorize.multimedialib.renderer;
 
+import nl.colorize.multimedialib.scene.ErrorHandler;
 import nl.colorize.multimedialib.scene.Scene;
 
 /**
@@ -32,7 +33,7 @@ import nl.colorize.multimedialib.scene.Scene;
  */
 public interface Renderer {
 
-    public void start(Scene initialScene);
+    public void start(Scene initialScene, ErrorHandler errorHandler);
 
     public DisplayMode getDisplayMode();
 

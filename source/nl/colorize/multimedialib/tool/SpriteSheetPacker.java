@@ -52,12 +52,12 @@ public class SpriteSheetPacker {
 
     public static void main(String[] args) {
         CommandLineArgumentParser argParser = new CommandLineArgumentParser("SpriteSheetPacker")
-            .add("-input", "Directory containing source images")
-            .add("-outimage", "Generated image file location")
-            .add("-outdata", "Generated metadata file location")
-            .add("-size", "Width/height of the sprite sheet")
-            .addOptional("-metadata", "yaml", "Metadata file format, either 'yaml' or 'csv'")
-            .addOptional("-exclude", "-1", "Excludes all images beyond a certain size");
+            .add("--input", "Directory containing source images")
+            .add("--outimage", "Generated image file location")
+            .add("--outdata", "Generated metadata file location")
+            .add("--size", "Width/height of the sprite sheet")
+            .addOptional("--metadata", "yaml", "Metadata file format, either 'yaml' or 'csv'")
+            .addOptional("--exclude", "-1", "Excludes all images beyond a certain size");
 
         argParser.parseArgs(args);
 

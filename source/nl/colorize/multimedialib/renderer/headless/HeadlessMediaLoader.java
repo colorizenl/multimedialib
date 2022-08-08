@@ -7,9 +7,9 @@
 package nl.colorize.multimedialib.renderer.headless;
 
 import com.google.common.annotations.VisibleForTesting;
-import nl.colorize.multimedialib.graphics.ColorRGB;
+import nl.colorize.multimedialib.graphics.FontStyle;
 import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.graphics.OutlineFont;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
 
@@ -24,8 +24,6 @@ public class HeadlessMediaLoader extends StandardMediaLoader {
 
     private boolean graphicsEnvironmentEnabled;
 
-    public static final int HEADLESS_IMAGE_SIZE = 128;
-
     public HeadlessMediaLoader(boolean graphicsEnvironmentEnabled) {
         this.graphicsEnvironmentEnabled = graphicsEnvironmentEnabled;
     }
@@ -39,34 +37,12 @@ public class HeadlessMediaLoader extends StandardMediaLoader {
         }
     }
 
-    /**
-     * Placeholder that is used when image loading has been disabled.
-     */
-    private static class HeadlessImage implements Image {
-
-        @Override
-        public Rect getRegion() {
-            return new Rect(0, 0, HEADLESS_IMAGE_SIZE, HEADLESS_IMAGE_SIZE);
-        }
-
-        @Override
-        public Image extractRegion(Rect region) {
-            return this;
-        }
-
-        @Override
-        public ColorRGB getColor(int x, int y) {
-            return ColorRGB.BLACK;
-        }
-
-        @Override
-        public int getAlpha(int x, int y) {
-            return 100;
-        }
-
-        @Override
-        public Image tint(ColorRGB color) {
-            return this;
+    @Override
+    public OutlineFont loadFont(FilePointer file, FontStyle style) {
+        if (graphicsEnvironmentEnabled) {
+            return super.loadFont(file, style);
+        } else {
+            return new HeadlessFont(style);
         }
     }
 }

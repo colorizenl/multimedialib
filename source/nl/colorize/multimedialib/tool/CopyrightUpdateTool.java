@@ -52,10 +52,10 @@ public class CopyrightUpdateTool {
 
     public static void main(String[] args) {
         CommandLineArgumentParser argParser = new CommandLineArgumentParser("CopyrightUpdateTool")
-            .add("-source", "Source code directory")
-            .add("-startyear", "Copyright start year or 'leave' for existing")
-            .add("-currentyear", "Current year for copyright statement")
-            .addOptional("-license", null, "Override copyright license type");
+            .add("--source", "Source code directory")
+            .add("--startyear", "Copyright start year or 'leave' for existing")
+            .add("--currentyear", "Current year for copyright statement")
+            .addOptional("--license", null, "Override copyright license type");
 
         argParser.parseArgs(args);
 

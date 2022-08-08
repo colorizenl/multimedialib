@@ -42,9 +42,9 @@ public class ImageManipulationTool {
 
     public static void main(String[] args) {
         CommandLineArgumentParser argParser = new CommandLineArgumentParser("ImageManipulationTool")
-            .add("-input", "Input directory containing the source images")
-            .add("-output", "Output directory for generated results")
-            .addOptional("-alpha", null, "Introduce alpha channel (color in the format #000000)");
+            .add("--input", "Input directory containing the source images")
+            .add("--output", "Output directory for generated results")
+            .addOptional("--alpha", null, "Introduce alpha channel (color in the format #000000)");
 
         argParser.parseArgs(args);
 

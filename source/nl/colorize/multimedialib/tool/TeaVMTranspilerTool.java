@@ -52,7 +52,6 @@ public class TeaVMTranspilerTool {
     protected String projectName;
     protected File resourceDir;
     protected String mainClassName;
-    protected String renderer;
     protected File outputDir;
     protected boolean minify;
     protected File manifestFile;
@@ -105,13 +104,12 @@ public class TeaVMTranspilerTool {
 
     public static void main(String[] args) {
         CommandLineArgumentParser argParser = new CommandLineArgumentParser("TeaVMTranspiler")
-            .add("-project", "Project name for the application")
-            .add("-main", "Main class that acts as application entry point")
-            .add("-resources", "Location of the application's resource files")
-            .add("-renderer", "One of 'canvas', 'pixi', 'three'")
-            .add("-out", "Output directory for the generated files")
-            .addOptional("-manifest", null, "PWA manifest.json file location")
-            .addFlag("-minify", "Minifies the generated JavaScript, off by default");
+            .add("--project", "Project name for the application")
+            .add("--main", "Main class that acts as application entry point")
+            .add("--resources", "Location of the application's resource files")
+            .add("--out", "Output directory for the generated files")
+            .addOptional("--manifest", null, "PWA manifest.json file location")
+            .addFlag("--minify", "Minifies the generated JavaScript, off by default");
 
         argParser.parseArgs(args);
 
@@ -120,7 +118,6 @@ public class TeaVMTranspilerTool {
         tool.mainClassName = argParser.get("main");
         tool.resourceDir = argParser.getDir("resources");
         tool.manifestFile = argParser.getFile("manifest");
-        tool.renderer = argParser.get("renderer");
         tool.outputDir = argParser.getFile("out");
         tool.minify = argParser.getBool("minify");
         tool.run();
@@ -129,8 +126,6 @@ public class TeaVMTranspilerTool {
     protected void run() {
         Preconditions.checkArgument(resourceDir.exists(),
             "Resource directory not found: " + resourceDir.getAbsolutePath());
-        Preconditions.checkArgument(SUPPORTED_RENDERERS.contains(renderer),
-            "Invalid renderer: " + renderer);
 
         outputDir.mkdir();
         checkMainClass();
@@ -245,7 +240,6 @@ public class TeaVMTranspilerTool {
         try (PrintWriter writer = new PrintWriter(outputFile, Charsets.UTF_8.displayName())) {
             for (String line : file.readLines(Charsets.UTF_8)) {
                 line = line.replace("{project}", projectName);
-                line = line.replace("{renderer}", renderer);
                 line = line.replace("{manifest}", generateManifestHTML());
                 if (line.trim().equals("{resources}")) {
                     line = generateTextResourceFilesHTML(textResources);

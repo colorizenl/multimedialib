@@ -30,7 +30,6 @@ public class SceneContext implements Updatable {
     private Stage stage;
     private InputDevice inputDevice;
     private MediaLoader mediaLoader;
-    private MediaManager media;
     private NetworkAccess network;
 
     private Scene activeScene;
@@ -47,10 +46,9 @@ public class SceneContext implements Updatable {
      */
     public SceneContext(DisplayMode displayMode, InputDevice input, MediaLoader mediaLoader,
                         NetworkAccess network) {
-        this.stage = new Stage(displayMode.getCanvas());
+        this.stage = new Stage(displayMode.canvas());
         this.inputDevice = input;
         this.mediaLoader = mediaLoader;
-        this.media = new MediaManager(mediaLoader);
         this.network = network;
 
         this.activeScene = null;
@@ -58,7 +56,7 @@ public class SceneContext implements Updatable {
         this.requestedScene = null;
         this.requestedSceneSystems = new ArrayList<>();
 
-        this.frameStats = new FrameStats(displayMode.getFramerate());
+        this.frameStats = new FrameStats(displayMode.framerate());
     }
 
     @Override
@@ -187,11 +185,7 @@ public class SceneContext implements Updatable {
         return mediaLoader;
     }
 
-    public MediaManager getMedia() {
-        return media;
-    }
-
-    public NetworkAccess getNetworkAccess() {
+    public NetworkAccess getNetwork() {
         return network;
     }
 

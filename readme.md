@@ -110,14 +110,12 @@ To start the desktop version of the demo application, run the class
 `nl.colorize.multimedialib.tool.DemoLauncher`. This class supports the following command line 
 parameters:
 
-| Name             | Required | Description                                   |
-|------------------|----------|-----------------------------------------------|
-| -renderer        | yes      | Renderer to use for the demo (java2d, gdx).   |
-| -graphics        | yes      | Either '2d' or '3d'.                          |
-| -framerate       | no       | Demo framerate, default is 60 fps.            |
-| -canvas          | no       | Uses a fixed canvas size to display graphics. |
-| -orientationlock | no       | Restricts the demo to landscape orientation.  |
-| -verification    | no       | Prints instructions for verification.         |
+| Name                | Required | Description                                   |
+|---------------------|----------|-----------------------------------------------|
+| `--renderer`        | yes      | Renderer to use for the demo (java2d, gdx).   |
+| `--graphics`        | yes      | Either '2d' or '3d'.                          |
+| `--framerate`       | no       | Demo framerate, default is 60 fps.            |
+| `--canvas`          | no       | Uses a fixed canvas size to display graphics. |
 
 Note that when using 3D graphics on Mac OS the command line argument `-XstartOnFirstThread` must
 be present.
@@ -136,14 +134,13 @@ using [TeaVM](http://teavm.org). Transpilation is started using the `TeaVMTransp
 included as part of the library. The tool provides a command line interface, and supports the 
 following arguments:
 
-| Name         | Required | Description                                            |
-|--------------|----------|--------------------------------------------------------|
-| -project     | yes      | Project name for the application.                      |
-| -renderer    | yes      | One of 'canvas', 'pixi', 'three'.                      |
-| -resources   | yes      | Directory containing the application's resource files. |
-| -out         | yes      | Output directory for the generated files.              |
-| -main        | yes      | Main class that acts as application entry point.       |
-| -minify      | no       | Minifies the generated JavaScript, off by default.     |
+| Name          | Required | Description                                            |
+|---------------|----------|--------------------------------------------------------|
+| `--project`   | yes      | Project name for the application.                      |
+| `--resources` | yes      | Directory containing the application's resource files. |
+| `--out`       | yes      | Output directory for the generated files.              |
+| `--main`      | yes      | Main class that acts as application entry point.       |
+| `--minify`    | no       | Minifies the generated JavaScript, off by default.     |
 
 Loading image contents in JavaScript is not allowed unless when running on a remote host. This is
 not a problem for "true" web applications, but can be problematic if the JavaScript version of the
@@ -184,14 +181,14 @@ MultimediaLib includes a tool to create a sprite sheet from all images within a 
 tool is started using `SpriteSheetPacker` that is part of the library. The tool takes the 
 following arguments.
 
-| Name            | Required | Description                                   |
-|-----------------|----------|-----------------------------------------------|
-| -input          | yes      | Directory containing source images.           |
-| -outimage       | yes      | Generated image file location.                |
-| -outdata        | yes      | Generated metadata file location.             |
-| -metadata       | yes      | Metadata file format, either 'yaml' or 'csv'. |
-| -size <size>    | yes      | Width/height of the sprite sheet.             |
-| -exclude <size> | no       | Excludes all images beyond a certain size.    |
+| Name               | Required | Description                                   |
+|--------------------|----------|-----------------------------------------------|
+| `--input`          | yes      | Directory containing source images.           |
+| `--outimage`       | yes      | Generated image file location.                |
+| `--outdata`        | yes      | Generated metadata file location.             |
+| `--metadata`       | yes      | Metadata file format, either 'yaml' or 'csv'. |
+| `--size <size>`    | yes      | Width/height of the sprite sheet.             |
+| `--exclude <size>` | no       | Excludes all images beyond a certain size.    |
 
 This will generate the PNG file containing the sprite sheet graphics and the YAML file with
 metadata in the specified locations. Sprite sheets can then be loaded back as media assets.
