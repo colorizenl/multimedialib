@@ -10,7 +10,7 @@ jobs:
       - name: Compile
         run: gradle compileJava
       - name: Unit tests
-        run: gradle -Djava.awt.headless=true coverage --info
+        run: gradle -Djava.awt.headless=true npmInstall coverage --info
       - name: Transpile TeaVM demo applications
         run: gradle npmInstall transpileDemoApplication2D transpileDemoApplication3D
     env:
