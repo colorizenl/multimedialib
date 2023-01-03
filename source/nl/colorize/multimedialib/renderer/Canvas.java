@@ -1,23 +1,26 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
 import com.google.common.base.Preconditions;
-import nl.colorize.multimedialib.graphics.Graphic2D;
+import nl.colorize.multimedialib.math.MathUtils;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 
 /**
- * Defines the resolution of the application graphics independently from
- * the screen resolution of the device. This allows applications to have
- * a reasonably consistent user interface across devices with different
- * screen sizes, as the canvas can be scaled depending on the difference
- * between preferred canvas size and the actual screen size. This class
- * is then used to convert between the two coordinate systems.
+ * Defines how the application graphics should be displayed. This consists of
+ * both the canvas size and the targeted framerate.
+ * <p>
+ * In most applications, the canvas resolution is independent of the screen
+ * resolution of the device. This allows applications to have a reasonably
+ * consistent user interface across devices with different screen sizes, as
+ * the canvas can be scaled depending on the difference between preferred
+ * canvas size and the actual screen size. This class is then used to convert
+ * between the two coordinate systems.
  * <p>
  * In some cases no scaling is necessary, and the application will simply
  * use the native resolution of the screen. This is referred to as a
@@ -28,55 +31,21 @@ public class Canvas {
 
     private int preferredWidth;
     private int preferredHeight;
-    private ZoomStrategy zoomStrategy;
+    private boolean zoom;
 
     private int screenWidth;
     private int screenHeight;
     private int offsetX;
     private int offsetY;
 
-    public enum ZoomStrategy {
-        FLEXIBLE,
-        ZOOM_IN,
-        ZOOM_OUT,
-        ZOOM_BALANCED
-    }
-
-    /**
-     * Creates a new canvas with the specified zoom strategy. Zooming will only
-     * occur if the canvas cannot be displayed at its preferred size.
-     */
-    public Canvas(int preferredWidth, int preferredHeight, ZoomStrategy zoomStrategy) {
+    private Canvas(int preferredWidth, int preferredHeight, boolean zoom) {
         resize(preferredWidth, preferredHeight);
-        this.zoomStrategy = zoomStrategy;
+        this.zoom = zoom;
 
         this.screenWidth = preferredWidth;
         this.screenHeight = preferredHeight;
         this.offsetX = 0;
         this.offsetY = 0;
-    }
-
-    /**
-     * Changes the strategy used by the canvas at runtime.
-     */
-    public void changeStrategy(ZoomStrategy zoomStrategy) {
-        this.zoomStrategy = zoomStrategy;
-    }
-    
-    /**
-     * Changes the canvas size to the specified dimensions.
-     * <p>
-     * This method should be used judiciously. Applications should generally
-     * not resize the canvas at runtime, due to the negative impact on user
-     * experience. Obviously, the screen or window *can* be resized, but the
-     * canvas' zoom strategy is already capable of handling such changes.
-     */
-    public void resize(int preferredWidth, int preferredHeight) {
-        Preconditions.checkArgument(preferredWidth > 0 && preferredHeight > 0,
-            "Invalid canvas dimensions: " + preferredWidth + "x" + preferredHeight);
-
-        this.preferredWidth = preferredWidth;
-        this.preferredHeight = preferredHeight;
     }
 
     /**
@@ -119,16 +88,13 @@ public class Canvas {
     }
 
     public float getZoomLevel() {
+        if (!zoom) {
+            return 1f;
+        }
+
         float horizontalZoom = (float) screenWidth / (float) preferredWidth;
         float verticalZoom = (float) screenHeight / (float) preferredHeight;
-
-        switch (zoomStrategy) {
-            case FLEXIBLE : return 1f;
-            case ZOOM_IN : return Math.max(horizontalZoom, verticalZoom);
-            case ZOOM_OUT : return Math.min(horizontalZoom, verticalZoom);
-            case ZOOM_BALANCED : return (horizontalZoom + verticalZoom) / 2f;
-            default : throw new AssertionError();
-        }
+        return Math.min(horizontalZoom, verticalZoom);
     }
 
     public float toCanvasX(int screenX) {
@@ -164,70 +130,53 @@ public class Canvas {
     }
 
     /**
-     * Convenience method that returns true if the graphic is entirely or
-     * partially contained within this canvas.
+     * Changes the strategy used by the canvas at runtime. This method is
+     * deprecated as application behavior is often unable to handle such a
+     * scenario.
      */
-    public boolean isVisible(Graphic2D graphic) {
-        Rect canvasBounds = getBounds();
-        return graphic.isVisible() && graphic.getBounds().intersects(canvasBounds);
+    @Deprecated
+    public void changeStrategy(boolean zoom) {
+        this.zoom = zoom;
+    }
+
+    /**
+     * Changes the canvas size to the specified dimensions.
+     * <p>
+     * This method should be used judiciously. Applications should generally
+     * not resize the canvas at runtime, due to the negative impact on user
+     * experience. Obviously, the screen or window *can* be resized, but the
+     * canvas' zoom strategy is already capable of handling such changes.
+     */
+    @Deprecated
+    public void resize(int preferredWidth, int preferredHeight) {
+        Preconditions.checkArgument(preferredWidth > 0 && preferredHeight > 0,
+            "Invalid canvas dimensions: " + preferredWidth + "x" + preferredHeight);
+
+        this.preferredWidth = preferredWidth;
+        this.preferredHeight = preferredHeight;
     }
 
     @Override
     public String toString() {
-        return getWidth() + "x" + getHeight();
+        float zoomLevel = getZoomLevel();
+        return getWidth() + "x" + getHeight() + " @ " + MathUtils.format(zoomLevel, 1) + "x";
     }
 
     /**
-     * Creates a canvas that resizes itself to match the screen size, always
-     * keeping a zoom level of 1.0. The provided width and height are only
-     * used to initialize the canvas but will not be used afterwards.
+     * Creates a new canvas that will try to match the preferred size, scaling
+     * the canvas if necessary.
      */
-    public static Canvas flexible(int initialWidth, int initialHeight) {
-        return new Canvas(initialWidth, initialHeight, ZoomStrategy.FLEXIBLE);
+    public static Canvas forSize(int preferredWidth, int preferredHeight) {
+        return new Canvas(preferredWidth, preferredHeight, true);
     }
 
     /**
-     * Creates a canvas with fixed dimensions. The canvas will be scaled to
-     * match the current screen size. Note that it might not be possible to
-     * retain the preferred canvas dimensions in all cases, as the screen
-     * might have a different aspect ratio than the canvas.
-     *
-     * @deprecated This method is not clear enough on how the canvas will
-     *             behave at different aspect ratios. Use
-     *             {@link #zoomIn(int, int)} or {@link #zoomOut(int, int)}
-     *             instead to define an explicit zoom strategy.
+     * Creates a new canvas that will not perform any scaling, and will simply
+     * display graphics at the screen's native resolution. A preferred width
+     * and height still need to be provided for sitations where the platform
+     * allows or requires the application to define its preferred size.
      */
-    @Deprecated
-    public static Canvas fixed(int preferredWidth, int preferredHeight) {
-        return zoomOut(preferredWidth, preferredHeight);
-    }
-
-    /**
-     * Creates a canvas with the specified dimensions, that will scale based
-     * on the smallest screen dimension. This means that the canvas will
-     * seem zoomed in when the screen and the canvas have very different
-     * aspect ratios.
-     */
-    public static Canvas zoomIn(int preferredWidth, int preferredHeight) {
-        return new Canvas(preferredWidth, preferredHeight, ZoomStrategy.ZOOM_IN);
-    }
-
-    /**
-     * Creates a canvas with the specified dimensions, that will scale based
-     * on the largest screen dimension. This means that the canvas will
-     * seem zoomed out when the screen and the canvas have very different
-     * aspect ratios.
-     */
-    public static Canvas zoomOut(int preferredWidth, int preferredHeight) {
-        return new Canvas(preferredWidth, preferredHeight, ZoomStrategy.ZOOM_OUT);
-    }
-
-    /**
-     * Creates a canvas with the specified dimensions, that will scale in a
-     * way that strikes a balance between the preferred aspect ratio and the
-     * actual aspect ratio of the screen.
-     */
-    public static Canvas zoomBalanced(int preferredWidth, int preferredHeight) {
-        return new Canvas(preferredWidth, preferredHeight, ZoomStrategy.ZOOM_BALANCED);
+    public static Canvas forNative(int preferredWidth, int preferredHeight) {
+        return new Canvas(preferredWidth, preferredHeight, false);
     }
 }

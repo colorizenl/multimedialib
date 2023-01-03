@@ -1,18 +1,18 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.java2d;
 
-import nl.colorize.multimedialib.graphics.Align;
-import nl.colorize.multimedialib.graphics.ColorRGB;
-import nl.colorize.multimedialib.graphics.Primitive;
-import nl.colorize.multimedialib.graphics.Sprite;
-import nl.colorize.multimedialib.graphics.FontStyle;
-import nl.colorize.multimedialib.graphics.Text;
-import nl.colorize.multimedialib.graphics.Transform;
+import nl.colorize.multimedialib.stage.Align;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Primitive;
+import nl.colorize.multimedialib.stage.Sprite;
+import nl.colorize.multimedialib.stage.FontStyle;
+import nl.colorize.multimedialib.stage.Text;
+import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Point2D;
@@ -21,7 +21,8 @@ import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Shape;
 import nl.colorize.multimedialib.math.Cache;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.scene.StageVisitor;
+import nl.colorize.multimedialib.stage.Layer2D;
+import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.swing.Utils2D;
 
 import java.awt.AlphaComposite;
@@ -82,6 +83,10 @@ public class Java2DGraphicsContext implements StageVisitor {
     public void clear(int windowWidth, int windowHeight) {
         g2.setColor(Color.BLACK);
         g2.fillRect(0, 0, windowWidth, windowHeight);
+    }
+
+    @Override
+    public void prepareLayer(Layer2D layer) {
     }
 
     @Override
@@ -184,7 +189,7 @@ public class Java2DGraphicsContext implements StageVisitor {
 
         g2.setColor(convertColor(style.color()));
         g2.setFont(font);
-        drawLines(text.getLines(), text.getPosition(), text.getAlign(), text.getLineHeight(canvas));
+        drawLines(text.getLines(), text.getPosition(), text.getAlign(), text.getLineHeight());
         g2.setComposite(originalComposite);
     }
 

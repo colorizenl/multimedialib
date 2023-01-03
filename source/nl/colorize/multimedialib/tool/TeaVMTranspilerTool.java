@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,19 +8,13 @@ package nl.colorize.multimedialib.tool;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
+import com.google.common.xml.XmlEscapers;
 import nl.colorize.multimedialib.renderer.MediaException;
+import nl.colorize.util.AppProperties;
 import nl.colorize.util.FileUtils;
-import nl.colorize.util.Formatting;
-import nl.colorize.util.LoadUtils;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.cli.CommandLineArgumentParser;
-import nl.colorize.util.http.URLLoader;
-import nl.colorize.util.http.URLResponse;
-import nl.colorize.util.xml.XMLHelper;
-import org.jdom2.Element;
 import org.teavm.diagnostics.Problem;
 import org.teavm.tooling.ConsoleTeaVMToolLog;
 import org.teavm.tooling.TeaVMTargetType;
@@ -32,15 +26,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Transpiles MultimediaLib applications to JavaScript using TeaVM. After transpilation
@@ -54,72 +45,60 @@ public class TeaVMTranspilerTool {
     protected String mainClassName;
     protected File outputDir;
     protected boolean minify;
-    protected File manifestFile;
 
-    private static final List<String> FRAMEWORK_RESOURCE_FILE_PATHS = ImmutableList.of(
+    private static final List<String> FRAMEWORK_RESOURCES = List.of(
+        "colorize-logo.png",
+        "transition-effect.png",
+
         "browser/index.html",
         "browser/multimedialib.js",
-        "browser/pixi-renderer.js",
-        "browser/service-worker.js",
+        "browser/pixi-interface.js",
+        "browser/three-interface.js",
         "browser/assets/multimedialib.css",
         "browser/assets/favicon.png",
         "browser/assets/apple-icon.png",
-        "browser/assets/orientation-lock.png",
         "browser/assets/loading.gif",
         "browser/assets/OpenSans-Regular.ttf",
-        "colorize-logo.png",
-        "orientation-lock.png",
-        "ui-widget-background.png",
-        "transition-effect.png"
+
+        "demo/demo.png",
+        "demo/demo.mp3",
+        "demo/colorize-logo.gltf",
+        "demo/sepia-vertex.glsl",
+        "demo/sepia-fragment.glsl"
     );
 
-    private static final Map<String, String> NPM_VERSIONS = Maps.fromProperties(
-        LoadUtils.loadProperties(new ResourceFile("npm-versions.properties"), Charsets.UTF_8));
+    private static final ResourceFile JS_LIBRARY_LIST = new ResourceFile("browser/lib/js-libraries.txt");
 
-    private static final List<String> JAVASCRIPT_URLS = ImmutableList.of(
-        "https://pixijs.download/v" + NPM_VERSIONS.get("pixi.js") + "/pixi.min.js",
-        "https://pixijs.download/v" + NPM_VERSIONS.get("pixi.js") + "/pixi.min.js.map",
-        "https://cdn.jsdelivr.net/npm/pixi-heaven@" + NPM_VERSIONS.get("pixi-heaven") + "/dist/pixi-heaven.umd.min.js",
-        "https://cdn.jsdelivr.net/npm/pixi-heaven@" + NPM_VERSIONS.get("pixi-heaven") + "/dist/pixi-heaven.umd.min.js.map",
-        "https://unpkg.com/three@" + NPM_VERSIONS.get("three") + "/build/three.min.js",
-        "https://unpkg.com/three@" + NPM_VERSIONS.get("three") + "/examples/js/loaders/GLTFLoader.js",
-        "https://unpkg.com/peerjs@" + NPM_VERSIONS.get("peerjs") + "/dist/peerjs.min.js",
-        "https://unpkg.com/peerjs@" + NPM_VERSIONS.get("peerjs") + "/dist/peerjs.min.cjs.map"
-    );
+    private static final List<String> TEXT_FILE_TYPES = List.of(
+        ".txt", ".md", ".json", ".yml", ".yaml", ".properties", ".fnt", ".csv", ".atlas", "-manifest");
 
-    private static final List<String> TEXT_FILE_TYPES = ImmutableList.of(
-        ".txt", ".md", ".json", ".yml", ".yaml", ".properties", ".fnt", ".csv", "-manifest");
-
-    private static final List<String> RESOURCE_FILE_TYPES = ImmutableList.of(
+    private static final List<String> RESOURCE_FILE_TYPES = List.of(
         ".css", ".png", ".jpg", ".svg", ".gif", ".ttf", ".wav", ".mp3", ".ogg", ".gltf", ".fbx", ".g3db");
         
-    private static final List<String> KNOWN_MISSING_CLASSES = ImmutableList.of(
+    private static final List<String> KNOWN_MISSING_CLASSES = List.of(
         "[java.lang.System.exit(I)V]",
         "[java.lang.reflect.TypeVariable]",
-        "[java.lang.Class.getGenericSuperclass()Ljava/lang/reflect/Type;]"
+        "[java.lang.Class.getGenericSuperclass()Ljava/lang/reflect/Type;]",
+        "[java.util.Properties.load(Ljava/io/Reader;)V]"
     );
 
-    private static final List<String> SUPPORTED_RENDERERS = ImmutableList.of("canvas", "pixi", "three");
     private static final Logger LOGGER = LogHelper.getLogger(TeaVMTranspilerTool.class);
 
-    public static void main(String[] args) {
-        CommandLineArgumentParser argParser = new CommandLineArgumentParser("TeaVMTranspiler")
-            .add("--project", "Project name for the application")
-            .add("--main", "Main class that acts as application entry point")
-            .add("--resources", "Location of the application's resource files")
-            .add("--out", "Output directory for the generated files")
-            .addOptional("--manifest", null, "PWA manifest.json file location")
-            .addFlag("--minify", "Minifies the generated JavaScript, off by default");
-
-        argParser.parseArgs(args);
+    public static void main(String[] argv) {
+        AppProperties args = new CommandLineArgumentParser(TeaVMTranspilerTool.class)
+            .addRequired("--project", "Project name for the application")
+            .addRequired("--main", "Main class that acts as application entry point")
+            .addRequired("--resources", "Location of the application's resource files")
+            .addRequired("--out", "Output directory for the generated files")
+            .addFlag("--minify", "Minifies the generated JavaScript, off by default")
+            .parseArgs(argv);
 
         TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
-        tool.projectName = argParser.get("project");
-        tool.mainClassName = argParser.get("main");
-        tool.resourceDir = argParser.getDir("resources");
-        tool.manifestFile = argParser.getFile("manifest");
-        tool.outputDir = argParser.getFile("out");
-        tool.minify = argParser.getBool("minify");
+        tool.projectName = args.get("project");
+        tool.mainClassName = args.get("main");
+        tool.resourceDir = args.getDir("resources");
+        tool.outputDir = args.getFile("out");
+        tool.minify = args.getBool("minify");
         tool.run();
     }
 
@@ -132,12 +111,7 @@ public class TeaVMTranspilerTool {
 
         try {
             copyResources();
-            JAVASCRIPT_URLS.forEach(this::downloadJavaScriptLibrary);
             transpile();
-            if (manifestFile != null) {
-                copyManifest();
-                generateServiceWorker();
-            }
             printSummary();
         } catch (TeaVMToolException e) {
             LOGGER.log(Level.SEVERE, "Transpiling failed", e);
@@ -154,15 +128,11 @@ public class TeaVMTranspilerTool {
     }
 
     private void printSummary() {
-        long htmlSize = new File(outputDir, "index.html").length();
-        long jsSize = new File(outputDir, "classes.js").length();
-        long libSize = Arrays.stream(new File(outputDir, "libraries").listFiles())
-            .mapToLong(File::length)
-            .sum();
+        long htmlSize = new File(outputDir, "index.html").length() / 1024;
+        long jsSize = new File(outputDir, "classes.js").length() / 1024;
 
-        LOGGER.info("HTML file size:                     " + Formatting.memoryFormat(htmlSize, 1));
-        LOGGER.info("Transpiled JavaScript file size:    " + Formatting.memoryFormat(jsSize, 1));
-        LOGGER.info("JavaScript library file size:       " + Formatting.memoryFormat(libSize, 1));
+        LOGGER.info("HTML file size:                     " + htmlSize + " KB");
+        LOGGER.info("Transpiled JavaScript file size:    " + jsSize + " KB");
         LOGGER.info("Results saved to " + outputDir.getAbsolutePath());
     }
 
@@ -203,9 +173,11 @@ public class TeaVMTranspilerTool {
     }
 
     protected void copyResources() {
-        List<ResourceFile> resourceFiles = gatherResourceFiles();
+        List<ResourceFile> resourceFiles = new ArrayList<>();
+        resourceFiles.addAll(gatherResourceFiles());
         resourceFiles.add(generateManifest(resourceFiles));
 
+        LOGGER.info("Copying " + FRAMEWORK_RESOURCES.size()  + " framework resource files");
         LOGGER.info("Copying " + resourceFiles.size() + " resource files");
         
         List<ResourceFile> textFiles = new ArrayList<>();
@@ -218,15 +190,31 @@ public class TeaVMTranspilerTool {
             }
         }
 
-        LOGGER.info("Generating " + FRAMEWORK_RESOURCE_FILE_PATHS.size() + " files");
+        List<String> jsLibraries = copyJavaScriptLibraries();
 
-        for (String path : FRAMEWORK_RESOURCE_FILE_PATHS) {
+        for (String path : FRAMEWORK_RESOURCES) {
             if (path.endsWith(".html")) {
-                rewriteHTML(new ResourceFile(path), textFiles);
+                rewriteHTML(new ResourceFile(path), textFiles, jsLibraries);
             } else {
                 copyBinaryResourceFile(new ResourceFile(path));
             }
         }
+    }
+
+    private List<String> copyJavaScriptLibraries() {
+        List<String> fileNames = new ArrayList<>();
+
+        File libDir = new File(outputDir, "libraries");
+        libDir.mkdir();
+
+        for (String entry : JS_LIBRARY_LIST.readLines(Charsets.UTF_8)) {
+            ResourceFile file = new ResourceFile("browser/lib/" + entry);
+            File outputFile = new File(libDir, entry);
+            copyBinaryResourceFile(file, outputFile);
+            fileNames.add(entry);
+        }
+
+        return fileNames;
     }
 
     private boolean isFileType(ResourceFile needle, List<String> haystack) {
@@ -234,15 +222,15 @@ public class TeaVMTranspilerTool {
             .anyMatch(type -> needle.getName().toLowerCase().endsWith(type));
     }
 
-    private void rewriteHTML(ResourceFile file, List<ResourceFile> textResources) {
+    private void rewriteHTML(ResourceFile file, List<ResourceFile> textFiles, List<String> jsLibraries) {
         File outputFile = getOutputFile(file);
 
         try (PrintWriter writer = new PrintWriter(outputFile, Charsets.UTF_8.displayName())) {
             for (String line : file.readLines(Charsets.UTF_8)) {
                 line = line.replace("{project}", projectName);
-                line = line.replace("{manifest}", generateManifestHTML());
+                line = line.replace("{js-libraries}", generateScriptTags(jsLibraries));
                 if (line.trim().equals("{resources}")) {
-                    line = generateTextResourceFilesHTML(textResources);
+                    line = generateTextResourceFilesHTML(textFiles);
                 }
                 writer.println(line);
             }
@@ -251,56 +239,39 @@ public class TeaVMTranspilerTool {
         }
     }
 
-    private String generateManifestHTML() {
-        if (manifestFile == null) {
-            return "";
-        }
-        return "<link rel=\"manifest\" href=\"manifest.json\" />";
+    private String generateScriptTags(List<String> jsLibraries) {
+        return jsLibraries.stream()
+            .map(file -> "<script src=\"libraries/" + file + "\"></script>")
+            .collect(Collectors.joining("\n"));
     }
 
     private String generateTextResourceFilesHTML(List<ResourceFile> files) {
         StringBuilder buffer = new StringBuilder();
 
         for (ResourceFile file : files) {
-            Element element = new Element("div");
-            element.setAttribute("id", normalizeFileName(file).replace(".", "_"));
-            element.setText(file.read(Charsets.UTF_8));
+            String id = normalizeFileName(file).replace(".", "_");
+            String contents = file.read(Charsets.UTF_8);
 
-            String xml = XMLHelper.toString(element);
-            buffer.append(xml);
-            buffer.append("\n");
+            buffer.append("<div id=\"" + id + "\">");
+            buffer.append(XmlEscapers.xmlContentEscaper().escape(contents));
+            buffer.append("</div>\n");
         }
 
         return buffer.toString();
     }
 
-    private void copyBinaryResourceFile(ResourceFile file) {
-        File outputFile = getOutputFile(file);
-
+    private void copyBinaryResourceFile(ResourceFile file, File outputFile) {
         try (InputStream stream = file.openStream()) {
-            byte[] contents = LoadUtils.readToByteArray(stream);
+            byte[] contents = stream.readAllBytes();
             FileUtils.write(contents, outputFile);
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Cannot copy file " + file, e);
         }
     }
 
-    private void downloadJavaScriptLibrary(String url) {
-        File librariesDir = new File(outputDir, "libraries");
-        librariesDir.mkdir();
-
-        String outputFileName = url.substring(url.lastIndexOf("/") + 1);
-        File outputFile = new File(librariesDir, outputFileName);
-
-        if (!outputFile.exists()) {
-            LOGGER.info("Downloading " + url);
-            try {
-                URLResponse response = URLLoader.get(url).sendRequest();
-                FileUtils.write(response.getBody(), Charsets.UTF_8, outputFile);
-            } catch (IOException e) {
-                throw new RuntimeException("Cannot download " + url, e);
-            }
-        }
+    private void copyBinaryResourceFile(ResourceFile file) {
+        File outputFile = getOutputFile(file);
+        copyBinaryResourceFile(file, outputFile);
     }
 
     private List<ResourceFile> gatherResourceFiles() {
@@ -310,7 +281,7 @@ public class TeaVMTranspilerTool {
                 .filter(file -> !file.isDirectory() && !file.getName().startsWith("."))
                 .filter(file -> !file.getAbsolutePath().contains("/lib/"))
                 .map(file -> new ResourceFile(file))
-                .collect(Collectors.toList());
+                .toList();
         } catch (IOException e) {
             throw new MediaException("Cannot read resource files directory: " + resourceDir, e);
         }
@@ -324,7 +295,7 @@ public class TeaVMTranspilerTool {
             List<String> entries = resourceFiles.stream()
                 .map(file -> normalizeFileName(file))
                 .sorted()
-                .collect(Collectors.toList());
+                .toList();
 
             Files.write(manifestFile.toPath(), entries, Charsets.UTF_8);
 
@@ -346,45 +317,5 @@ public class TeaVMTranspilerTool {
 
     private String normalizeFileName(ResourceFile file) {
         return file.getName().replace("/", "_");
-    }
-
-    private void copyManifest() {
-        try {
-            File outputFile = new File(outputDir, "manifest.json");
-            Files.copy(manifestFile.toPath(), outputFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            throw new MediaException("Cannot copy manifest", e);
-        }
-    }
-
-    /**
-     * Updates the {@code service-worker.js} template for the application. This
-     * will recreate the cache every time, since it is assumed that a new build
-     * also means the previous cache should be invalidated.
-     */
-    private void generateServiceWorker() {
-        try {
-            File outputFile = new File(outputDir, "service-worker.js");
-            String template = Files.readString(outputFile.toPath(), Charsets.UTF_8);
-
-            String resourceFilePaths = gatherServiceWorkerFilePaths()
-                .map(path -> "    \"" + path + "\",")
-                .collect(Collectors.joining("\n"));
-
-            String generated = template
-                .replace("{cachename}", projectName + "-" + System.currentTimeMillis())
-                .replace("{resourcefiles}", resourceFilePaths);
-
-            Files.write(outputFile.toPath(), generated.getBytes(Charsets.UTF_8));
-        } catch (IOException e) {
-            throw new MediaException("Cannot create service worker", e);
-        }
-    }
-
-    private Stream<String> gatherServiceWorkerFilePaths() throws IOException {
-        return Files.walk(outputDir.toPath())
-            .map(path -> outputDir.toPath().relativize(path))
-            .sorted()
-            .map(path -> "/" + path);
     }
 }

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -52,6 +52,19 @@ public interface InputDevice {
     default boolean isPointerReleased() {
         return isPointerReleased(getCanvas().getBounds());
     }
+
+    /**
+     * Clears the state of the pointer, so that the pointer released event
+     * cannot propagate to other event handlers that might run during the
+     * same frame.
+     *
+     * @deprecated Scenes should not have direct access to the underlying
+     *             renderer state. The need for this method will be replaced
+     *             by the ability to stop propagation for pointer events in
+     *             a future version of MultimediaLib.
+     */
+    @Deprecated
+    public void clearPointerReleased();
 
     /**
      * Returns if the current device supports touch input. If true, the values

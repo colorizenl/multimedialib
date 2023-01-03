@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -262,6 +262,11 @@ public class AWTInput implements InputDevice, Updatable, KeyListener, MouseListe
     public boolean isPointerReleased(Rect area) {
         Point2D mousePosition = getMousePosition();
         return mouseState == MOUSE_STATE_RELEASED && area.contains(mousePosition);
+    }
+
+    @Override
+    public void clearPointerReleased() {
+        mouseState = MOUSE_STATE_DEFAULT;
     }
 
     @Override

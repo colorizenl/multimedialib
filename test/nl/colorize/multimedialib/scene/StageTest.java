@@ -1,16 +1,22 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.scene;
 
 import com.google.common.collect.ImmutableList;
-import nl.colorize.multimedialib.graphics.ColorRGB;
-import nl.colorize.multimedialib.graphics.Primitive;
-import nl.colorize.multimedialib.graphics.Sprite;
-import nl.colorize.multimedialib.graphics.Text;
+import nl.colorize.multimedialib.renderer.GraphicsMode;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Graphic2D;
+import nl.colorize.multimedialib.stage.Layer2D;
+import nl.colorize.multimedialib.stage.Primitive;
+import nl.colorize.multimedialib.stage.Sprite;
+import nl.colorize.multimedialib.stage.Stage;
+import nl.colorize.multimedialib.stage.StageObserver;
+import nl.colorize.multimedialib.stage.StageVisitor;
+import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Point2D;
@@ -30,6 +36,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StageTest {
 
+    private static final Canvas CANVAS = Canvas.forNative(800, 600);
+
     @Test
     void visitStage() {
         Sprite spriteA = new Sprite();
@@ -38,7 +46,7 @@ class StageTest {
         Sprite spriteB = new Sprite();
         spriteB.addState("b", new MockImage());
 
-        Stage stage = new Stage(Canvas.flexible(800, 600));
+        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
         stage.add(spriteA);
         stage.add(Primitive.of(new Rect(10, 20, 30, 40), ColorRGB.RED));
         stage.add(spriteB);
@@ -47,6 +55,10 @@ class StageTest {
         List<String> visited = new ArrayList<>();
 
         stage.visit(new StageVisitor() {
+            @Override
+            public void prepareLayer(Layer2D layer) {
+            }
+
             @Override
             public void drawBackground(ColorRGB color) {
             }
@@ -90,7 +102,7 @@ class StageTest {
         Rect rect = new Rect(100, 200, 100, 100);
         Primitive primitive = Primitive.of(rect, ColorRGB.RED);
 
-        Stage stage = new Stage(Canvas.flexible(800, 600));
+        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
         stage.add(primitive);
 
         assertFalse(primitive.hitTest(new Point2D(0, 200)));
@@ -105,5 +117,65 @@ class StageTest {
         assertTrue(primitive.hitTest(new Point2D(200, 200)));
         assertTrue(primitive.hitTest(new Point2D(300, 200)));
         assertFalse(primitive.hitTest(new Point2D(400, 200)));
+    }
+
+    @Test
+    void observerAlsoListensForLayerChanges() {
+        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
+        Layer2D layer = stage.addLayer("test");
+
+        List<Graphic2D> added1 = new ArrayList<>();
+        stage.getObservers().add(createObserver(added1));
+
+        layer.add(Primitive.of(new Rect(10, 10, 100, 100), ColorRGB.RED));
+
+        List<Graphic2D> added2 = new ArrayList<>();
+        stage.getObservers().add(createObserver(added2));
+
+        layer.add(Primitive.of(new Rect(10, 10, 100, 100), ColorRGB.GREEN));
+
+        assertEquals(2, added1.size());
+        assertEquals(1, added2.size());
+    }
+
+    @Test
+    void stringForm() {
+        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
+        Layer2D layer = stage.addLayer("test");
+        layer.add(new Sprite(new MockImage()));
+        layer.add(Primitive.of(new Rect(10, 10, 200, 200), ColorRGB.RED));
+        layer.add(new Text("test", null));
+
+        String expected = """
+            Stage
+                2D graphics layer [test]
+                    Text [test]
+                    Primitive [10, 10, 200, 200]
+                    Sprite [MockImage @ (0, 0)]
+                2D graphics layer [$$default]
+            """;
+
+        assertEquals(expected, stage.toString());
+    }
+
+    private StageObserver createObserver(List<Graphic2D> added) {
+        return new StageObserver() {
+            @Override
+            public void onLayerAdded(Layer2D layer) {
+            }
+
+            @Override
+            public void onGraphicAdded(Layer2D layer, Graphic2D graphic) {
+                added.add(graphic);
+            }
+
+            @Override
+            public void onGraphicRemoved(Layer2D layer, Graphic2D graphic) {
+            }
+
+            @Override
+            public void onStageCleared() {
+            }
+        };
     }
 }

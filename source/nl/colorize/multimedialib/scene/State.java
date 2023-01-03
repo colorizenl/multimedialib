@@ -1,28 +1,39 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.scene;
 
+import com.google.common.base.Preconditions;
+
 /**
- * Stores information relevant for one of the states. States themselves are
- * intended to be immutable, though the state machine itself obviously has
- * state.
+ * One of the possible states for a {@link FiniteStateMachine}.
  * <p>
- * This interface can be used in two ways. The first is to implement the
- * interface in custom state classes or enums, and store all configuration
- * related to those states in the class. The second approach is to use the
- * {@link SimpleState} implementation to avoid having to create state classes.
+ * By default, states remain active until a new state is explicitly requested
+ * via the finite state machine itself. However, it is also possible to define
+ * states that are active for a limited duration (in seconds). After this
+ * duration has been exceeded, the finite state machine will change state to
+ * the next requested state.
+ *
+ * @param <T> Type of the state properties. This object can be used to
+ *            associate additional data with each state.
  */
-public interface State {
+public record State<T>(String name, float duration, State<T> nextState, T properties) {
 
-    public String getName();
+    public State {
+        Preconditions.checkArgument(!name.isEmpty(), "Missing state name");
+        Preconditions.checkArgument(duration >= 0f, "Invalid duration: " + duration);
+        Preconditions.checkArgument(duration > 0f == (nextState != null),
+            "Cannot define next state for state with infinite duration");
+    }
 
-    public float getDuration();
+    public static <T> State<T> of(String name, float duration, State<T> nextState, T properties) {
+        return new State<>(name, duration, nextState, properties);
+    }
 
-    public State getNext();
-
-    public boolean isInterruptable();
+    public static <T> State<T> of(String name, T properties) {
+        return new State<>(name, 0f, null, properties);
+    }
 }

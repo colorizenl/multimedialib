@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,20 +8,20 @@ package nl.colorize.multimedialib.renderer.teavm;
 
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
+import nl.colorize.multimedialib.renderer.ErrorHandler;
+import nl.colorize.multimedialib.renderer.GraphicsMode;
+import nl.colorize.multimedialib.renderer.InputDevice;
+import nl.colorize.multimedialib.renderer.MediaLoader;
+import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Renderer;
-import nl.colorize.multimedialib.renderer.teavm.pixi.PixiRenderer;
-import nl.colorize.multimedialib.renderer.teavm.three.ThreeRenderer;
-import nl.colorize.multimedialib.scene.ErrorHandler;
+import nl.colorize.multimedialib.renderer.pixi.PixiGraphics;
+import nl.colorize.multimedialib.renderer.three.ThreeGraphics;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.multimedialib.scene.StageObserver;
-import nl.colorize.multimedialib.scene.StageVisitor;
-import nl.colorize.util.LogHelper;
+import nl.colorize.multimedialib.stage.StageObserver;
+import nl.colorize.multimedialib.stage.StageVisitor;
 import org.teavm.jso.browser.AnimationFrameCallback;
 import org.teavm.jso.browser.Window;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Renderer based on <a href="http://teavm.org">TeaVM</a> that is transpiled to
@@ -31,27 +31,22 @@ import java.util.logging.Logger;
  */
 public class TeaRenderer implements Renderer {
 
-    private WebGraphics graphicsMode;
     private Canvas canvas;
+    private StageVisitor graphics;
     private TeaInputDevice inputDevice;
     private TeaMediaLoader mediaLoader;
     private SceneContext context;
-    private StageVisitor stageVisitor;
     private ErrorHandler errorHandler;
 
     private int framerate;
     private float frameTime;
     private double lastFrameTimestamp;
 
-    private static final Logger LOGGER = LogHelper.getLogger(TeaRenderer.class);
-
-    public TeaRenderer(DisplayMode displayMode, WebGraphics graphicsMode) {
-        this.graphicsMode = graphicsMode;
+    public TeaRenderer(DisplayMode displayMode, StageVisitor graphics) {
         this.canvas = displayMode.canvas();
-        this.mediaLoader = new TeaMediaLoader();
+        this.graphics = graphics;
+        this.mediaLoader = new TeaMediaLoader(graphics);
         this.inputDevice = new TeaInputDevice(canvas, mediaLoader.getPlatformFamily());
-        TeaNetworkAccess network = new TeaNetworkAccess();
-        context = new SceneContext(displayMode, inputDevice, mediaLoader, network);
         errorHandler = ErrorHandler.DEFAULT;
 
         this.framerate = displayMode.framerate();
@@ -61,25 +56,16 @@ public class TeaRenderer implements Renderer {
 
     @Override
     public void start(Scene initialScene, ErrorHandler errorHandler) {
-        LOGGER.info("Using graphics mode " + graphicsMode);
+        this.errorHandler = errorHandler;
+        this.context = new SceneContext(this, initialScene);
 
-        stageVisitor = switch (graphicsMode) {
-            case CANVAS -> new CanvasRenderer(canvas);
-            case PIXI -> new PixiRenderer(canvas);
-            case THREE -> new ThreeRenderer(canvas);
-        };
-
-        if (stageVisitor instanceof StageObserver) {
-            context.getStage().addObserver((StageObserver) stageVisitor);
+        if (graphics instanceof StageObserver observer) {
+            context.getStage().getObservers().add(observer);
         }
 
-        if (stageVisitor instanceof PixiRenderer) {
+        if (graphics instanceof PixiGraphics) {
             inputDevice.setPixelRatio(1f);
         }
-
-        this.errorHandler = errorHandler;
-
-        context.changeScene(initialScene);
 
         AnimationFrameCallback callback = this::onAnimationFrame;
         Window.requestAnimationFrame(callback);
@@ -101,7 +87,7 @@ public class TeaRenderer implements Renderer {
                 inputDevice.update(frameTime);
                 context.update(frameTime);
                 context.getFrameStats().markFrameUpdate();
-                context.getStage().visit(stageVisitor);
+                context.getStage().visit(graphics);
                 context.getFrameStats().markFrameRender();
                 lastFrameTimestamp = timestamp;
             }
@@ -109,8 +95,9 @@ public class TeaRenderer implements Renderer {
             AnimationFrameCallback callback = this::onAnimationFrame;
             Window.requestAnimationFrame(callback);
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error during animation loop", e);
             errorHandler.onError(context, e);
+            // Need to rethrow the exception to get TeaVM's normal stack trace.
+            throw e;
         }
     }
 
@@ -129,7 +116,36 @@ public class TeaRenderer implements Renderer {
     }
 
     @Override
+    public GraphicsMode getGraphicsMode() {
+        if (graphics instanceof ThreeGraphics) {
+            return GraphicsMode.MODE_3D;
+        } else {
+            return GraphicsMode.MODE_2D;
+        }
+    }
+
+    @Override
     public DisplayMode getDisplayMode() {
         return new DisplayMode(canvas, framerate);
+    }
+
+    @Override
+    public StageVisitor accessGraphics() {
+        return graphics;
+    }
+
+    @Override
+    public InputDevice accessInputDevice() {
+        return inputDevice;
+    }
+
+    @Override
+    public MediaLoader accessMediaLoader() {
+        return mediaLoader;
+    }
+
+    @Override
+    public Network accessNetwork() {
+        return new TeaNetwork();
     }
 }

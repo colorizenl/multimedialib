@@ -1,14 +1,14 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
-import nl.colorize.multimedialib.graphics.ColorRGB;
-import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.graphics.PolygonModel;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Image;
+import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Point3D;
 

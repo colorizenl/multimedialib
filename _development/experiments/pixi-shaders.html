@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>MultimediaLib | PixiJS shader experiments</title>
+    <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no" />
+    <script src="https://pixijs.download/v6.4.2/pixi.min.js"></script>
+</head>
+
+<body>
+<div onclick="setFilter(null, null)">No shader</div>
+<div onclick="setFilter(exampleVertex, exampleFragment)">Example shader</div>
+<div onclick="setFilter(flagVertex, flagFragment)">Flag shader</div>
+<div onclick="setFilter(motionBlurVertex, motionBlurFragment)">Motion blur shader</div>
+<div onclick="setFilter(null, waterFragment)">Water shader</div>
+<div onclick="setFilter(null, transitionFragment)">Transition shader</div>
+<div onclick="setFilter(null, shadowFragment)">Shadow shader</div>
+
+<script>
+    let background = null;
+    let sprite = null;
+
+    const uniforms = {
+        iMouse: [400, 300],
+        iTime: 0
+    };
+
+    function setFilter(vertex, fragment) {
+        if (vertex || fragment) {
+            const filter = new PIXI.Filter(vertex, fragment, uniforms);
+            sprite.filters = [filter];
+        } else {
+            sprite.filters = [];
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", event => {
+        const app = new PIXI.Application({width: 800, height: 500});
+        document.body.appendChild(app.view);
+
+        background = PIXI.Sprite.from("../example.jpg");
+        background.width = 800;
+        background.height = 500;
+        app.stage.addChild(background);
+
+        sprite = PIXI.Sprite.from("../colorize.png");
+        sprite.y = 100;
+        app.stage.addChild(sprite);
+
+        let elapsed = 0.0;
+        app.ticker.add(delta => {
+            elapsed += delta;
+            sprite.x = 100.0 + Math.cos(elapsed / 50.0) * 100.0;
+            uniforms.iTime += delta;
+        });
+
+        app.stage.interactive = true;
+        app.stage.on("pointermove", e => uniforms.iMouse = [e.data.global.x, -e.data.global.y + 500]);
+    });
+
+    //--------------------------------------------------------------------------------
+    // Example shader
+    //--------------------------------------------------------------------------------
+
+    const exampleVertex = `
+        attribute vec2 aVertexPosition;
+        uniform mat3 projectionMatrix;
+        varying vec2 vTextureCoord;
+        varying vec2 vFilterCoord;
+        uniform vec4 inputSize;
+        uniform vec4 outputFrame;
+
+        vec4 filterVertexPosition(void) {
+            vec2 position = aVertexPosition * max(outputFrame.zw, vec2(0.)) + outputFrame.xy;
+            return vec4((projectionMatrix * vec3(position, 1.0)).xy, 0.0, 1.0);
+        }
+
+        vec2 filterTextureCoord(void) {
+            return aVertexPosition * (outputFrame.zw * inputSize.zw);
+        }
+
+        void main(void) {
+            gl_Position = filterVertexPosition();
+            vTextureCoord = filterTextureCoord();
+        }
+    `;
+
+    const exampleFragment = `
+        varying vec2 vTextureCoord;
+        varying vec2 vFilterCoord;
+        uniform sampler2D uSampler;
+        uniform float iTime;
+        uniform vec2 iMouse;
+        uniform vec2 iResolution;
+
+        float dist(vec2 p0, vec2 pf) {
+            return sqrt((pf.x - p0.x) * (pf.x - p0.x) + (pf.y - p0.y) * (pf.y - p0.y));
+        }
+
+        void main(void) {
+            float d = dist(iMouse.xy,gl_FragCoord.xy) * 0.005;
+            gl_FragColor = mix(vec4(0.0, 0.0, 0.0, 0.0), vec4(0.0, 0.0, 0.0, 1.0), d);
+        }
+    `;
+
+    //--------------------------------------------------------------------------------
+    // Flag shader
+    //--------------------------------------------------------------------------------
+
+    const flagVertex = `
+        uniform float wave_size = 1.0;
+        uniform float face_distortion = 0.5;
+        uniform vec2 time_scale = vec2(0.3, 0.0);
+        uniform vec2 uv_offset_scale = vec2(-0.2, -0.1);
+        uniform sampler2D uv_offset_texture : hint_black;
+
+        void vertex() {
+            vec2 base_uv_offset = UV * uv_offset_scale;
+            base_uv_offset += TIME * time_scale;
+            float noise = texture(uv_offset_texture, base_uv_offset).r;
+            float texture_based_offset = noise * 2.0 - 1.0;
+            texture_based_offset *= wave_size;
+            texture_based_offset *= UV.x;
+            VERTEX.y += texture_based_offset;
+            VERTEX.z += texture_based_offset * face_distortion;
+            VERTEX.x += texture_based_offset * -face_distortion;
+        }
+    `;
+
+    const flagFragment = `
+        vec2 base_uv_offset = UV * uv_offset_scale;
+        base_uv_offset += TIME * time_scale;
+        float noise = texture(uv_offset_texture, base_uv_offset).r;
+        ALBEDO = vec3(0.0, noise, 1.0 - noise);
+    `;
+
+    //--------------------------------------------------------------------------------
+    // Motion blur shader
+    //--------------------------------------------------------------------------------
+
+    const motionBlurVertex = `
+        uniform vec2 dir = vec2(0,0);
+        uniform int quality = 4;
+
+        void vertex(){
+            vec2 blurSize = abs(dir) * 2.0;
+            VERTEX *= blurSize + 1.0;
+            UV = (UV - 0.5) * (blurSize + 1.0) + 0.5;
+        }
+    `;
+
+    const motionBlurFragment = `
+        uniform vec2 dir = vec2(0,0);
+        uniform int quality = 4;
+
+        float insideUnitSquare(vec2 v) {
+            vec2 s = step(vec2(0.0), v) - step(vec2(1.0), v);
+            return s.x * s.y;
+        }
+
+        float inSquare = insideUnitSquare(UV);
+        float numSamples = inSquare;
+        COLOR = texture(TEXTURE, UV) * inSquare;
+        vec2 stepSize = dir / (float(quality));
+        vec2 uv;
+        for (int i = 1; i <= quality; i++) {
+            uv = UV + stepSize * float(i);
+            inSquare = insideUnitSquare(uv);
+            numSamples += inSquare;
+            COLOR += texture(TEXTURE, uv) * inSquare;
+            uv = UV - stepSize * float(i);
+            inSquare = insideUnitSquare(uv);
+            numSamples += inSquare;
+            COLOR += texture(TEXTURE, uv) * inSquare;
+        }
+        COLOR.rgb /= numSamples;
+        COLOR.a /= float(quality) * 2.0 + 1.0;
+    `;
+
+    //--------------------------------------------------------------------------------
+    // Water shader
+    //--------------------------------------------------------------------------------
+
+    const waterFragment = `
+        uniform float wave_speed = 3.0;
+        uniform float wave_freq = 10.0;
+        uniform float wave_width = 1;
+
+        void fragment() {
+            vec2 scale_UV = SCREEN_UV;
+            vec2 wave_uv_offset;
+            wave_uv_offset.x = cos((TIME * wave_speed) + UV.x + UV.y * wave_freq * 2.0) * wave_width * 0.01;
+            COLOR = texture(SCREEN_TEXTURE, scale_UV + wave_uv_offset);
+        }
+    `;
+
+    //--------------------------------------------------------------------------------
+    // Transition shader
+    //--------------------------------------------------------------------------------
+
+    const transitionFragment = `
+        uniform vec4 in_color;
+        uniform vec4 out_color;
+        uniform float in_out = 0.0;
+        uniform float position = 0.856;
+        uniform vec2 size = vec2(16.0, 16.0);
+
+        void fragment() {
+            vec2 a = (1.0 / SCREEN_PIXEL_SIZE) / size;
+            vec2 uv = UV;
+            uv *= a;
+
+            vec2 i_uv = floor(uv);
+            vec2 f_uv = fract(uv);
+
+            float wave = max(0.0, i_uv.x / (a.x) - position);
+
+            vec2 center = f_uv * 2.0 - 1.0;
+            float circle = length(center);
+            circle = 1.0 - step(wave,circle);
+            vec4 color = mix(in_color, out_color, step(0.5, in_out));
+            COLOR = vec4(circle) * color;
+        }
+    `;
+
+    //--------------------------------------------------------------------------------
+    // Shadow shader
+    //--------------------------------------------------------------------------------
+
+    const shadowFragment = `
+        uniform vec2 deform = vec2(2.0, 2.0);
+        uniform vec2 offset = vec2(0.0, 0.0);
+        uniform vec4 modulate;
+
+        void fragment() {
+            vec2 ps = TEXTURE_PIXEL_SIZE;
+            vec2 uv = UV;
+            float sizex = texture_size.x;
+            float sizey = texture_size.y;
+            uv.y += offset.y * ps.y;
+            uv.x += offset.x * ps.x;
+            float decalx = ((uv.y - ps.x * sizex) * deform.x);
+            float decaly = ((uv.y - ps.y * sizey) * deform.y);
+            uv.x += decalx;
+            uv.y += decaly;
+            vec4 shadow = vec4(modulate.rgb, texture(TEXTURE, uv).a * modulate.a);
+            vec4 col = texture(TEXTURE, UV);
+            COLOR = mix(shadow, col, col.a);
+        }
+    `;
+</script>
+</body>
+</html>

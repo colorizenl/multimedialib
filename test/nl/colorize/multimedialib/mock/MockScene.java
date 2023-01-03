@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -16,11 +16,13 @@ public class MockScene implements Scene {
     private AtomicInteger startCount;
     private AtomicInteger endCount;
     private AtomicInteger frameUpdateCount;
+    private boolean completed;
 
     public MockScene() {
         this.startCount = new AtomicInteger(0);
         this.endCount = new AtomicInteger(0);
         this.frameUpdateCount = new AtomicInteger(0);
+        this.completed = false;
     }
 
     @Override
@@ -36,6 +38,15 @@ public class MockScene implements Scene {
     @Override
     public void update(SceneContext context, float deltaTime) {
         frameUpdateCount.incrementAndGet();
+    }
+
+    public void setCompleted(boolean completed) {
+        this.completed = completed;
+    }
+
+    @Override
+    public boolean isCompleted() {
+        return completed;
     }
 
     public int getStartCount() {

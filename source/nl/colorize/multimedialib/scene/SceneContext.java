@@ -1,176 +1,166 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.scene;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.MediaLoader;
-import nl.colorize.multimedialib.renderer.NetworkAccess;
+import nl.colorize.multimedialib.renderer.Network;
+import nl.colorize.multimedialib.renderer.Renderer;
+import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.util.Platform;
-import nl.colorize.util.PlatformFamily;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
- * Provides access to all information that is available in the context of the
- * currently active scene. This includes the stage which contains all graphics
- * and audio, but also the renderer and the underlying platform.
+ * Provides access to the contents of the currently active scene. This includes
+ * both the stage and platform resources via the renderer.
+ * <p>
+ * This class also allows <em>sub-scenes</em> to be attached to the current
+ * scene. These sub-scenes can contain their own logic, but cannot outlive their
+ * parent scene. When the active scene is changed, both the scene itself and its
+ * sub-scenes will be terminated and the stage will be cleared in preparation
+ * for the next scene.
  */
 public class SceneContext implements Updatable {
 
-    private Stage stage;
-    private InputDevice inputDevice;
+    private DisplayMode displayMode;
+    private InputDevice input;
     private MediaLoader mediaLoader;
-    private NetworkAccess network;
+    private Network network;
 
-    private Scene activeScene;
-    private List<ActorSystem> activeSceneSystems;
-    private Scene requestedScene;
-    private List<ActorSystem> requestedSceneSystems;
-
+    private Stage stage;
+    private SceneGraph activeSceneGraph;
+    private SceneGraph requestedSceneGraph;
     private FrameStats frameStats;
 
     /**
-     * Initializes the scene context. This constructor is used by the renderer,
-     * which will then provide the scene context to scenes. There should be no
-     * reason to call this constructor from application code.
+     * Initializes a new {@link SceneContext} for the specified renderer. This
+     * constructor is called by the renderer, there is no need to call it
+     * directly from application code.
      */
-    public SceneContext(DisplayMode displayMode, InputDevice input, MediaLoader mediaLoader,
-                        NetworkAccess network) {
-        this.stage = new Stage(displayMode.canvas());
-        this.inputDevice = input;
-        this.mediaLoader = mediaLoader;
-        this.network = network;
+    public SceneContext(Renderer renderer, Scene initialScene) {
+        this.displayMode = renderer.getDisplayMode();
+        this.input = renderer.accessInputDevice();
+        this.mediaLoader = renderer.accessMediaLoader();
+        this.network = renderer.accessNetwork();
 
-        this.activeScene = null;
-        this.activeSceneSystems = new ArrayList<>();
-        this.requestedScene = null;
-        this.requestedSceneSystems = new ArrayList<>();
-
+        this.stage = new Stage(renderer.getGraphicsMode(), displayMode.canvas());
         this.frameStats = new FrameStats(displayMode.framerate());
+
+        changeScene(initialScene);
     }
 
+    /**
+     * Updates application logic for the current scene, then renders the
+     * contents of the stage. This method is called by the renderer as part
+     * of every frame update.
+     */
     @Override
     public void update(float deltaTime) {
-        Preconditions.checkState(activeScene != null || requestedScene != null,
-            "No initial scene requested");
-
-        updateFrame(deltaTime);
-    }
-
-    private void updateFrame(float deltaTime) {
         stage.update(deltaTime);
 
-        if (requestedScene != null) {
+        if (requestedSceneGraph != null) {
             activateRequestedScene();
         }
 
-        updateActiveScene(deltaTime);
+        updateSceneGraph(activeSceneGraph, deltaTime);
     }
 
-    private void updateActiveScene(float deltaTime) {
-        activeScene.update(this, deltaTime);
+    private void updateSceneGraph(SceneGraph current, float deltaTime) {
+        current.scene.update(this, deltaTime);
 
         // Iterate the list of systems backwards to handle
         // concurrent modification while the list is being
         // iterated, without having to create a copy of the
         // list every frame.
-        for (int i = activeSceneSystems.size() - 1; i >= 0; i--) {
-            ActorSystem system = activeSceneSystems.get(i);
-            system.update(this, deltaTime);
+        for (int i = current.subScenes.size() - 1; i >= 0; i--) {
+            SceneGraph subScene = current.subScenes.get(i);
 
-            if (system.isCompleted()) {
-                activeSceneSystems.remove(system);
+            // We need to check twice if the sub-scene has
+            // been completed, both before and after its
+            // own update.
+            if (!checkCompleted(current, subScene)) {
+                updateSceneGraph(subScene, deltaTime);
+                checkCompleted(current, subScene);
             }
         }
     }
 
+    private boolean checkCompleted(SceneGraph parent, SceneGraph subScene) {
+        if (subScene.scene.isCompleted()) {
+            subScene.scene.end(this);
+            parent.subScenes.remove(subScene);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     private void activateRequestedScene() {
-        if (activeScene != null) {
-            activeScene.end(this);
-            activeSceneSystems.clear();
+        if (activeSceneGraph != null) {
+            activeSceneGraph.walk(scene -> scene.end(this));
             stage.clear();
         }
 
-        activeScene = requestedScene;
-        activeSceneSystems.addAll(requestedSceneSystems);
-
-        requestedScene = null;
-        List<ActorSystem> uninitializedSystems = ImmutableList.copyOf(requestedSceneSystems);
-        requestedSceneSystems.clear();
-
-        activeScene.start(this);
-        uninitializedSystems.forEach(system -> system.init(this));
+        activeSceneGraph = requestedSceneGraph;
+        activeSceneGraph.walk(scene -> scene.start(this));
+        requestedSceneGraph = null;
     }
 
     /**
-     * Requests to change the active scene after the current frame has been
-     * completed.
-     *
-     * @throws IllegalStateException if a different scene has already been
-     *         requested, but that scene has not yet started.
+     * Requests to change the active scene after the current frame update has
+     * been completed. If another scene had already been requested, calling
+     * this method again will overrule that request.
      */
     public void changeScene(Scene requestedScene) {
-        Preconditions.checkState(this.requestedScene == null,
-            "Requested " + requestedScene + ", but already requested " + this.requestedScene);
-
-        this.requestedScene = requestedScene;
+        requestedSceneGraph = new SceneGraph(requestedScene);
     }
 
     /**
-     * Attaches a system to the currently active scene. The system will remain
-     * active until either completed or the current scene ends.
+     * Attaches a sub-scene to the currently active scene. The sub-scene will
+     * remain active until it is detached or the parent scene ends.
      */
-    public void attach(ActorSystem system) {
-        // We iterate the list of systems backwards to allow for concurrent
-        // modification, but that means we need to store the list in reverse
-        // order to keep the expected behavior. This is a relatively expensive
-        // operation, but we expect iterating systems is done *much* more often
-        // than adding systems.
-        if (requestedScene == null) {
-            activeSceneSystems.add(0, system);
-            system.init(this);
+    public void attach(Scene subScene) {
+        SceneGraph subSceneGraph = new SceneGraph(subScene);
+
+        // We iterate the list of sub-scenes backwards to allow for
+        // concurrent modification, but that means we need to store
+        // the list in reverse order to keep the expected behavior.
+        // This is a relatively expensive operation, but we expect
+        // iterating sub-scenes is done *much* more often than adding
+        // sub-scenes.
+        if (requestedSceneGraph == null) {
+            activeSceneGraph.subScenes.add(0, subSceneGraph);
+            subScene.start(this);
         } else {
-            requestedSceneSystems.add(0, system);
+            requestedSceneGraph.subScenes.add(0, subSceneGraph);
         }
     }
 
     /**
-     * Attaches a system to the currently active scene. The system will remain
-     * active until either completed or the current scene ends. This is a
-     * shorthand for {@link ActorSystem#wrap(Updatable)}.
+     * Convenience method that converts an {@link Updatable} to a sub-scene,
+     * then attaches it to the currently active scene. The sub-scene will follow
+     * the same life-cycle as described in {@link #attach(Scene)}.
      */
-    public void attach(Updatable system) {
-        attach(ActorSystem.wrap(system));
-    }
-
-    /**
-     * Attaches a system that will wait until the specified duration in seconds
-     * has been reached, after which it will perform the specified action and
-     * immediately end.
-     *
-     * @deprecated Use {@link ActorSystem#delay(float, Runnable)} instead.
-     */
-    @Deprecated
-    public void delay(float duration, Runnable action) {
-        attach(ActorSystem.delay(duration, action));
+    public void attach(Updatable subScene) {
+        attach(Scene.wrap(subScene));
     }
 
     public Stage getStage() {
         return stage;
     }
 
-    public Stage3D getStage3D() {
-        return (Stage3D) stage;
+    public DisplayMode getDisplayMode() {
+        return displayMode;
     }
 
     public Canvas getCanvas() {
@@ -178,51 +168,15 @@ public class SceneContext implements Updatable {
     }
 
     public InputDevice getInputDevice() {
-        return inputDevice;
+        return input;
     }
 
     public MediaLoader getMediaLoader() {
         return mediaLoader;
     }
 
-    public NetworkAccess getNetwork() {
+    public Network getNetwork() {
         return network;
-    }
-
-    /**
-     * Returns the platform running the application. When running in a browser,
-     * this will return the platform that is running the browser based on the
-     * browser's {@code User-Agent} header.
-     */
-    public PlatformFamily getPlatform() {
-        return mediaLoader.getPlatformFamily();
-    }
-
-    /**
-     * Returns the distribution channel that was used to obtain the application.
-     * Examples of return values are "App Store", "Download", and "Web".
-     */
-    public String getDistributionChannel() {
-        return switch (getPlatform()) {
-            case IOS -> "App Store";
-            case ANDROID -> "Google Play";
-            case MAC -> "Mac App Store";
-            case TEAVM -> "Web";
-            default -> "Download";
-        };
-    }
-
-    /**
-     * Returns the dimensions of the screen that contain the application window.
-     * The return value is in the format {@code width}x{@code height}. If the
-     * application is not dislayed fullscreen but in the window, the returned
-     * dimensions will be for that window rather than for the entire screen.
-     */
-    public String getScreenSize() {
-        Canvas canvas = stage.getCanvas();
-        int width = Math.round(canvas.getWidth() * canvas.getZoomLevel());
-        int height = Math.round(canvas.getHeight() * canvas.getZoomLevel());
-        return width + "x" + height;
     }
 
     public FrameStats getFrameStats() {
@@ -230,23 +184,33 @@ public class SceneContext implements Updatable {
     }
 
     /**
-     * Returns true if the current platform allows the application to quit. If
-     * true, actually quitting the application can be done using {@link #quit()}.
-     * This will return false on platforms like browsers that do not allow
-     * applications to control the platform itself.
+     * Attempts to quit the application. Returns false if the current platform
+     * does not allow the application to quit.
      */
-    public boolean canQuit() {
-        return Platform.isWindows() || Platform.isMac();
+    public boolean quit() {
+        boolean success = false;
+        if (Platform.isWindows() || Platform.isMac()) {
+            success = true;
+            System.exit(0);
+        }
+        return success;
     }
 
     /**
-     * Quits the application. This will only work if the current platform allows
-     * the application to quit, i.e. {@link #canQuit()} returns true. If not,
-     * this method does nothing.
+     * The currently active scene consists of the parent scene, plus an optional
+     * number of sub-scenes. The sub-scenes can contain their own logic, but
+     * cannot live their parent scene. When walking the scene graph, the parent
+     * scene is visited before its sub-scenes.
      */
-    public void quit() {
-        if (canQuit()) {
-            System.exit(0);
+    private record SceneGraph(Scene scene, List<SceneGraph> subScenes) {
+
+        public SceneGraph(Scene scene) {
+            this(scene, new ArrayList<>());
+        }
+
+        public void walk(Consumer<Scene> callback) {
+            callback.accept(scene);
+            subScenes.forEach(subScene -> subScene.walk(callback));
         }
     }
 }

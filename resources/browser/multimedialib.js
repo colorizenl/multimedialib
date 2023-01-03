@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -19,8 +19,6 @@ let pointerEventBuffer = [];
 let keyStates = {};
 
 document.addEventListener("DOMContentLoaded", event => {
-    registerServiceWorker();
-
     imageContainer = document.getElementById("imageContainer");
     audioContainer = document.getElementById("audioContainer");
     fontContainer = document.getElementById("fontContainer");
@@ -225,19 +223,5 @@ function stopAudio(id, reset) {
     audio[id].pause();
     if (reset) {
         audio[id].currentTime = 0.0;
-    }
-}
-
-function registerServiceWorker() {
-    const browserSupport = "serviceWorker" in navigator;
-    const hasManifest = document.querySelectorAll("link[rel=manifest]").length > 0;
-    const isLocal = window.location.protocol.indexOf("file") != -1;
-
-    if (browserSupport && hasManifest && !isLocal) {
-        navigator.serviceWorker.register("service-worker.js")
-            .then(() => console.log("Registered service worker"))
-            .catch(e => console.log("Failed to register service worker"));
-    } else {
-        console.log("Service worker not supported");
     }
 }

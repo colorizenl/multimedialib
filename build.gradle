@@ -1,30 +1,33 @@
 plugins {
-    id "com.github.ben-manes.versions" version "0.42.0"
+    id "io.freefair.lombok" version "6.6.1"
+    id "com.github.node-gradle.node" version "3.5.0"
+    id "com.github.ben-manes.versions" version "0.44.0"
 }
 
 apply plugin: "java-library"
 apply plugin: "jacoco"
+apply plugin: "maven-publish"
+apply plugin: "signing"
 
 group = "nl.colorize"
-version = "2022.1"
+version = "2023.1"
 sourceCompatibility = "17"
 targetCompatibility = "17"
 compileJava.options.encoding = "UTF-8"
 sourceSets.main.java.srcDirs = ["source"]
 sourceSets.main.resources.srcDirs = ["resources"]
 sourceSets.test.java.srcDirs = ["test"]
+
+node.download = false
+npm_outdated.ignoreExitValue = true
+
 ext.libgdxVersion = "1.11.0"
-ext.teavmVersion = "0.7.2"
+ext.teavmVersion = "0.7.0-dev-1208"
 
 repositories {
     mavenCentral()
     maven {
-        // url "https://teavm.org/maven/repository"
-        url "https://maven.pkg.github.com/colorizenl/teavm"
-        credentials {
-            username githubPackagesOwner
-            password githubPackagesToken
-        }
+        url "https://teavm.org/maven/repository"
     }
     maven {
         url "https://jitpack.io"
@@ -32,7 +35,7 @@ repositories {
 }
 
 dependencies {
-    api "nl.colorize:colorize-java-commons:2022.9"
+    api "nl.colorize:colorize-java-commons:2023.1"
 
     implementation "com.badlogicgames.gdx:gdx:${libgdxVersion}"
     implementation "com.badlogicgames.gdx:gdx-platform:${libgdxVersion}:natives-desktop"
@@ -40,6 +43,7 @@ dependencies {
     implementation "com.badlogicgames.gdx:gdx-lwjgl3-glfw-awt-macos:${libgdxVersion}"
     implementation "com.badlogicgames.gdx:gdx-freetype:${libgdxVersion}"
     implementation "com.badlogicgames.gdx:gdx-freetype-platform:${libgdxVersion}:natives-desktop"
+    implementation "com.badlogicgames.gdx:gdx-tools:${libgdxVersion}"
 
     implementation "org.teavm:teavm:${teavmVersion}"
     implementation "org.teavm:teavm-jso:${teavmVersion}"
@@ -50,9 +54,14 @@ dependencies {
     implementation "javazoom:jlayer:1.0.1"
     implementation "org.java-websocket:Java-WebSocket:1.5.3"
     implementation "org.slf4j:slf4j-jdk14:1.7.36"
-    implementation "com.github.mgsx-dev.gdx-gltf:gltf:1.0.0"
+    implementation "com.github.mgsx-dev.gdx-gltf:gltf:2.1.0"
 
-    testImplementation "org.junit.jupiter:junit-jupiter:5.9.0"
+    testImplementation "org.junit.jupiter:junit-jupiter:5.9.1"
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
 
 test {
@@ -62,9 +71,33 @@ test {
 jacocoTestReport {
     afterEvaluate {
         classDirectories.from = files(classDirectories.files.collect {
-            fileTree(dir: it, exclude: ["**/java2d/**", "**/libgdx/**", "**/teavm/**", "**/demo/**"])
+            fileTree(dir: it, exclude: ["**/java2d/**", "**/libgdx/**", "**/teavm/**",
+                                        "**/pixi/**", "**/three/**", "**/demo/**"])
         })
     }
+}
+
+javadoc {
+    exclude "nl/colorize/multimedialib/demo/**"
+}
+
+npmInstall.doLast {
+    def jsLibraryFiles = [
+        "node_modules/pixi.js/dist/browser/pixi.min.js",
+        "node_modules/pixi.js/dist/browser/pixi.min.js.map",
+        "node_modules/pixi-heaven/dist/pixi-heaven.umd.min.js",
+        "node_modules/pixi-heaven/dist/pixi-heaven.umd.min.js.map",
+        "node_modules/three/build/three.min.js",
+        "node_modules/peerjs/dist/peerjs.min.js"
+    ];
+
+    copy {
+        from jsLibraryFiles
+        into "resources/browser/lib"
+    }
+
+    file("resources/browser/lib/js-libraries.txt").text =
+        jsLibraryFiles.collect { it.split("/").last() }.join("\n")
 }
 
 task coverage(dependsOn: ["test", "jacocoTestReport"]) {
@@ -76,7 +109,7 @@ task coverage(dependsOn: ["test", "jacocoTestReport"]) {
     }
 }
 
-task transpileDemoApplication2D(type: JavaExec, dependsOn: ["compileJava", "processResources"]) {
+task transpileDemoApplication2D(type: JavaExec, dependsOn: jar) {
     classpath = sourceSets.main.runtimeClasspath
     main = "nl.colorize.multimedialib.tool.TeaVMTranspilerTool"
     args "--project", "MultimediaLib-TeaVM-Demo",
@@ -85,11 +118,64 @@ task transpileDemoApplication2D(type: JavaExec, dependsOn: ["compileJava", "proc
          "--main", "nl.colorize.multimedialib.demo.TeaDemo2D"
 }
 
-task transpileDemoApplication3D(type: JavaExec, dependsOn: ["compileJava", "processResources"]) {
+task transpileDemoApplication3D(type: JavaExec, dependsOn: jar) {
     classpath = sourceSets.main.runtimeClasspath
     main = "nl.colorize.multimedialib.tool.TeaVMTranspilerTool"
     args "--project", "MultimediaLib-TeaVM-Demo",
          "--resources", "resources",
          "--out", "${buildDir}/browserdemo2d",
          "--main", "nl.colorize.multimedialib.demo.TeaDemo3D"
+}
+
+jar.dependsOn npmInstall
+dependencyUpdates.dependsOn npm_outdated
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifactId = "multimedialib"
+            from components.java
+
+            pom {
+                name = "MultimediaLib"
+                description = "Framework for building multimedia applications that support desktop, mobile, and web."
+                url = "https://www.clrz.nl"
+
+                licenses {
+                    license {
+                        name = "The Apache License, Version 2.0"
+                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = "colorize"
+                        name = "Colorize"
+                        email = "contact@colorize.nl"
+                    }
+                }
+
+                scm {
+                    connection = "scm:git:https://github.com/colorizenl/multimedialib.git"
+                    developerConnection = "scm:git:https://github.com/colorizenl/multimedialib.git"
+                    url = "https://github.com/colorizenl/multimedialib"
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+            credentials {
+                username ossrhUser
+                password ossrhPassword
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.maven
 }

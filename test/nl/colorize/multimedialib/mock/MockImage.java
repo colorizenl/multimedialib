@@ -1,18 +1,15 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.mock;
 
-import nl.colorize.multimedialib.graphics.ColorRGB;
-import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Image;
+import nl.colorize.multimedialib.math.Region;
 
-/**
- * Mock implementation of the {@code Image} and {@code ImageRegion} interfaces.
- */
 public class MockImage implements Image {
 
     private String name;
@@ -38,17 +35,12 @@ public class MockImage implements Image {
     }
 
     @Override
-    public Rect getRegion() {
-        return new Rect(0, 0, width, height);
+    public Region getRegion() {
+        return new Region(0, 0, width, height);
     }
 
     public void setWidth(int width) {
         this.width = width;
-    }
-
-    @Override
-    public int getWidth() {
-        return width;
     }
 
     public void setHeight(int height) {
@@ -56,13 +48,8 @@ public class MockImage implements Image {
     }
 
     @Override
-    public int getHeight() {
-        return height;
-    }
-
-    @Override
-    public Image extractRegion(Rect region) {
-        return new MockImage(Math.round(region.getWidth()), Math.round(region.getHeight()));
+    public Image extractRegion(Region region) {
+        return new MockImage(region.width(), region.height());
     }
 
     @Override

@@ -1,22 +1,18 @@
 MultimediaLib
 =============
 
-Framework for building multimedia applications that support desktop, mobile, and web. 
-MultimediaLib is mainly targeted at 2D graphics and animation, though 3D graphics are also 
-supported.
+MultimediaLib is a framework for creating multimedia applications in Java that run on multiple
+platforms: desktop applications (Windows, Mac OS, Linux), mobile apps (iOS, Android), and web
+(browser, PWA). MultimediaLib mainly targets 2D graphics and animation, though support for basic
+3D graphics is also provided.
 
 ![MultimediaLib example screenshot](_development/example.jpg)
 
-MultimediaLib supports several different platforms:
-
-- **Desktop:** Windows, Mac OS, Linux
-- **Mobile:** iOS, Android
-- **Web:** All modern browsers, PWA
-
-MultimediaLib acts as an abstraction layer between the application layer and the underlying 
-platform. This is a similar approach to other frameworks, but MultimediaLib differs in that it 
-targets not only different mobile platforms, but also allows the same application to be used on 
-desktop platforms and from the browser.
+MultimediaLib acts as an abstraction layer between the application and the platform's underlying
+resources, such as graphics, audio, input, and network access. Other frameworks use a similar
+approach, but tend to target mobile platforms, native applications (on mobile/desktop/both), or
+web applications. MultimediaLib's main strength is that applications will run on *all* those
+different platforms.
     
 Usage
 -----
@@ -27,73 +23,66 @@ to the dependencies section in `pom.xml`:
     <dependency>
         <groupId>nl.colorize</groupId>
         <artifactId>multimedialib</artifactId>
-        <version>2022.1</version>
+        <version>2023.1</version>
     </dependency>  
     
 The library can also be used in Gradle projects:
 
     dependencies {
-        implementation "nl.colorize:multimedialib:2022.1"
+        implementation "nl.colorize:multimedialib:2023.1"
     }
     
 Supported platforms
 -------------------
 
-The *renderer* is the central access point for all platform-specific functionality, as depicted
-in the picture above. Applications can access the renderer to display graphics, load media, check
-for user input, or internet access.
+MultimediaLib provides multiple *renderers*, that act as the interface between the application
+and the underlying platform. Multiple renderer implementations are provided. This allows 99%
+of application code to be cross-platform, apart from a small platform-specific launcher that
+initializes the application with the correct renderer.
 
-![MultimediaLib platform architecture](_development/platform-architecture.svg)
-
-MultimediaLib contains a number of renderer implementations, for different platforms and for
-different types of applications. Some renderers are implemented using the platforms' native 
-graphics API, other renderers are implemented on top of other libraries or frameworks. 
-The following table shows an overview of the available renderer implementations:
+The following renderer implementations are available:
 
 | Renderer                                                                             | Desktop | iOS | Android | Web | Graphics |
 |--------------------------------------------------------------------------------------|---------|-----|---------|-----|----------|
 | Java2D renderer                                                                      | ✓       | ×   | ×       | ×   | 2D       |
 | [libGDX](https://libgdx.badlogicgames.com) / [LWJGL](https://www.lwjgl.org) renderer | ✓       | ×   | ×       | ×   | 2D + 3D  |
-| HTML5 canvas renderer                                                                | ✓       | ✓   | ✓       | ✓   | 2D       |
-| [PixiJS](https://www.pixijs.com) renderer                                            | ✓       | ✓   | ✓       | ✓   | 2D       |
-| [three.js](https://threejs.org) renderer                                             | ✓       | ✓   | ✓       | ✓   | 2D + 3D  |
+| HTML5 canvas renderer (via [TeaVM](https://teavm.org))                               | ✓       | ✓   | ✓       | ✓   | 2D       |
+| [PixiJS](https://www.pixijs.com) renderer (via [TeaVM](https://teavm.org))           | ✓       | ✓   | ✓       | ✓   | 2D       |
+| [three.js](https://threejs.org) renderer (via [TeaVM](https://teavm.org))            | ✓       | ✓   | ✓       | ✓   | 2D + 3D  |
 
 When using a browser-based renderer, the application needs to be transpiled to JavaScript in order
-for it to run in the browser. MultimediaLib includes a command line tool for integrating this step
-into the build, refer to the section *Transpiling applications to HTML/JavaScript* below.
+for it to run in the browser. MultimediaLib comes with a
+[command line tool](#transpiling-applications-to-html-javascript) that can be used to transpile
+the application as part of the build.
 
 Not all platforms and renderers will support all features. Refer to the
 [platform/renderer compatibility table](compatibility.md) for a full overview of supported features.
 
-Application structure
----------------------
+A standard build will result in JAR files (for desktop applications) and static web pages (for 
+TeaVM/browser applications). Both can be wrapped to create native applications for various
+platforms. Refer to the [documentation on distributing applications](#distributing-applications)
+for instructions on how to provide a more native distribution for each platform.
+
+Architecture
+------------
 
 MultimediaLib uses a number of concepts similar to
-[Adobe Flash](https://en.wikipedia.org/wiki/Adobe_Flash), both in terms of its theatre-inspired
-terminology and in terms of how applications are split into multiple scenes.
+[Adobe Flash](https://en.wikipedia.org/wiki/Adobe_Flash), both in terms of its theater-inspired
+terminology and in terms of how applications are structured.
 
-![MultimediaLib application architecture](_development/application-architecture.svg)
+![MultimediaLib architecture](_development/architecture.svg)
 
-Each scene represents a discrete part or phase of an application that is active for some period 
-of time. Only one scene can be active at any point in time. Simple applications may consist of a 
-single scene, while larger applications will typically have many. The currently active scene will 
-receive frame updates for as long as it is active.
+Applications are split into *scenes*. Only one scene can be active at the same time, but complex
+scenes can consist of multiple sub-scenes, each responsible for a certain part of the scene. 
+The currently active scene has access to the *stage*, which contains the graphics and audio for
+the current scenes. Graphics are split into multiple 2D layers, plus one layer for 3D graphics
+for renderers that support 3D.
 
-Scenes update the *stage*, which displays the graphics and sound for the current scene. The stage
-consists of multiple layers of 2D graphics, 3D graphics, or a combination thereof. The stage is 
-linked to the current scene, once the scene ends the stage is cleared and all contents are removed.
-During frame updates, scenes use the *scene context* to access both the stage and the underlying 
-platform.
-
-Scene logic is based on the
-[Entity Component System](https://en.wikipedia.org/wiki/Entity_component_system) architecture
-pattern. The scene is split into a number of *actors* (also known as "entities"). Actors do not
-contain data themselves. Instead, all data associated with an actor is located in *components*.
-The actual logic is implemented in a number of *systems*. These systems update both the scene's
-data (located in actors and their components) and the scene's stage. Simple scenes may consist of
-a single system, while more complex scenes will consist of many. Most systems will be active for
-the entire duration of the scene, but some systems may only be active for a limited period of time
-or until a certain condition is reached.
+Scene logic is intentionally separate from the contents of the stage. This allows each scene to
+function as an [Entity Component System](https://en.wikipedia.org/wiki/Entity_component_system). 
+Each sub-scene acts as a "system" that operates on data, the stage, or a combination thereof.
+Regular [POJOs](https://en.wikipedia.org/wiki/Plain_old_Java_object) act as components, while
+an "entity" is simply an ID plus a number of components.
 
 Starting the demo applications
 ------------------------------
@@ -112,7 +101,7 @@ parameters:
 
 | Name                | Required | Description                                   |
 |---------------------|----------|-----------------------------------------------|
-| `--renderer`        | yes      | Renderer to use for the demo (java2d, gdx).   |
+| `--renderer`        | yes      | Either 'java2d' or 'gdx'.                     |
 | `--graphics`        | yes      | Either '2d' or '3d'.                          |
 | `--framerate`       | no       | Demo framerate, default is 60 fps.            |
 | `--canvas`          | no       | Uses a fixed canvas size to display graphics. |
@@ -131,70 +120,63 @@ Transpiling applications to HTML/JavaScript
 Applications using MultimediaLib are written in Java. However, these applications can be transpiled
 to a combination of HTML and JavaScript so that they can be distributed via the web. This is done
 using [TeaVM](http://teavm.org). Transpilation is started using the `TeaVMTranspilerTool` that is 
-included as part of the library. The tool provides a command line interface, and supports the 
-following arguments:
+included as part of the library, and supports the following arguments:
 
-| Name          | Required | Description                                            |
-|---------------|----------|--------------------------------------------------------|
-| `--project`   | yes      | Project name for the application.                      |
-| `--resources` | yes      | Directory containing the application's resource files. |
-| `--out`       | yes      | Output directory for the generated files.              |
-| `--main`      | yes      | Main class that acts as application entry point.       |
-| `--minify`    | no       | Minifies the generated JavaScript, off by default.     |
+| Name          | Required | Description                                                  |
+|---------------|----------|--------------------------------------------------------------|
+| `--project`   | yes      | Project name for the application.                            |
+| `--main`      | yes      | Main class that acts as application entry point.             |
+| `--resources` | yes      | Directory containing the application's resource files.       |
+| `--out`       | yes      | Output directory for the generated files.                    |
+| `--minify`    | no       | Minifies the generated JavaScript, off by default.           |
 
 Loading image contents in JavaScript is not allowed unless when running on a remote host. This is
 not a problem for "true" web applications, but can be problematic if the JavaScript version of the
 application is embedded in a mobile app. For this reason, all image are converted to data URLs
 during transpilation, so that they can be used without these restrictions.
 
+Packing images into a sprite atlas
+----------------------------------
+
+A "sprite atlas" is a large image that consists of a large image that contains multiple sprites,
+with each sprite is identified by a name the coordinates of the sprite within the larger image.
+Loading images individually is a perfectly valid approach for smaller applications, but large
+applications dependent on numerous images tend to benefit from using a sprite atlas in terms of
+loading time.
+
+MultimediaLib includes a command line tool that can be used to create a sprite atlas from a
+directory of images. This is done using the `SpriteAtlasPacker` that is includes as part of the
+library, and supports the following arguments:
+
+| Name        | Required | Description                                                       |
+|-------------|----------|-------------------------------------------------------------------|
+| `--input`   | yes      | Input directory containing images to process.                     |
+| `--output`  | yes      | Output directory for saving the generated texture atlas.          |
+| `--name`    | no       | File name for generated sprite atlas, defaults to directory name. |
+| `--nested`  | no       | Creates a separate sprite atlas for each subdirectory.            |
+| `--flatten` | no       | Base region name on file name only, instead of relative path.     |
+
+This will create a sprite using with the [libGDX](https://libgdx.badlogicgames.com) `.atlas` file
+format. Note that the sprite atlas can still be loaded and usedwhen the application does not use
+the libGDX renderer.
+
 Distributing applications
 -------------------------
 
 MultimediaLib does not include a distribution mechanism for applications, but it integrates with
-other tools for each supported platform.
+other tools for each supported platform. Other tools can be used to create a native distribution:
 
-- **Windows:** Use [Launch4j](http://launch4j.sourceforge.net) to create a .exe file. 
+- The [Colorize Gradle application plugin](https://plugins.gradle.org/plugin/nl.colorize.gradle.application)
+  is capable of building Mac application bundles and PWAs.
+- [Launch4j](http://launch4j.sourceforge.net) can generate `.exe` files for Windows.
   Alternatively, the browser version can be submitted to the Windows Store as a PWA.
-- **Mac OS:** Create an application bundle and installer, and distribute those via the Mac App
-  Store. A [Gradle plugin](https://plugins.gradle.org/plugin/nl.colorize.gradle.macapplicationbundle)
-  is provided to generate the application bundle as part of the build.
-- **iOS:** Use [Cordova](https://cordova.apache.org) to wrap the transpiled version of the
-  application in a native app, and distribute that via the App Store. A
-  [Gradle Cordova plugin](https://plugins.gradle.org/plugin/nl.colorize.gradle.cordova) is provided
-  to generate the app as part of the build.
-- **Android:** Use [Cordova](https://cordova.apache.org) to wrap the transpiled version of the
-  application in a native app, and distribute that via the Play Store. The same
-  [Gradle Cordova plugin](https://plugins.gradle.org/plugin/nl.colorize.gradle.cordova) can be
-  used to generate this app as part of the build.
-- **Web:** Upload the transpiled version of the application can be uploaded to a web server
-  and distribute the corresponding URL.
+- [PWA Builder](https://www.pwabuilder.com) can generate native apps for Windows, Android, and
+  iOS that use a PWA as input.
+- [Cordova](https://cordova.apache.org) can wrap the web application in a native app for Android,
+  iOS, and Mac.
 
-Packing images into a sprite sheet
-----------------------------------
-
-A "sprite sheet" is a large image that consists of a large image that contains multiple sprites,
-with each sprite is identified by a name and a set of coordinates. A sprite sheet consists of the
-image plus a metadata file describing those coordinates. On most platforms sprite sheets have 
-better performance characteristics than loading the images individually. 
-
-MultimediaLib includes a tool to create a sprite sheet from all images within a directory. This
-tool is started using `SpriteSheetPacker` that is part of the library. The tool takes the 
-following arguments.
-
-| Name               | Required | Description                                   |
-|--------------------|----------|-----------------------------------------------|
-| `--input`          | yes      | Directory containing source images.           |
-| `--outimage`       | yes      | Generated image file location.                |
-| `--outdata`        | yes      | Generated metadata file location.             |
-| `--metadata`       | yes      | Metadata file format, either 'yaml' or 'csv'. |
-| `--size <size>`    | yes      | Width/height of the sprite sheet.             |
-| `--exclude <size>` | no       | Excludes all images beyond a certain size.    |
-
-This will generate the PNG file containing the sprite sheet graphics and the YAML file with
-metadata in the specified locations. Sprite sheets can then be loaded back as media assets.
-
-Documentation
--------------
+More documentation
+------------------
 
 - [JavaDoc](http://api.clrz.nl/multimedialib/)
 
@@ -206,14 +188,13 @@ library itself:
 
 - [Java JDK](http://java.oracle.com) 17+
 - [Gradle](http://gradle.org)
+- [NodeJS](https://nodejs.org/en/) 18+
 
 Note that creating application that *use* MultimediaLib will usually have additional dependencies,
 depending on which platforms are targeted.
 
-- [NodeJS](https://nodejs.org/en/) 14+
-- [Cordova](https://cordova.apache.org) 
-- [Xcode](https://developer.apple.com/xcode/) (for iOS apps)
-- [Android SDK](https://developer.android.com/sdk/index.html) (for Android apps)
+- [Xcode](https://developer.apple.com/xcode/) for iOS apps
+- [Android SDK](https://developer.android.com/sdk/index.html) for Android apps
 
 The following Gradle build tasks are available:
 
@@ -222,13 +203,17 @@ The following Gradle build tasks are available:
 - `gradle test` runs all unit tests
 - `gradle coverage` runs all unit tests and reports on test coverage
 - `gradle javadoc` generates the JavaDoc API documentation
-- `gradle dependencyUpdates` checks for and reports on library updates.
-- `gradle -b build-mavencentral.gradle publish` publishes to Maven central (requires account)
+- `gradle dependencyUpdates` checks for and reports on library updates
+- `gradle publish` publishes to Maven central
+
+Note: Publishing the library to Maven Central requires the Gradle properties `ossrhUser` and 
+`ossrhPassword`. If you want to use the library locally, simply provide dummy values for these
+properties in `~/.gradle/gradle.properties`.
   
 License
 -------
 
-Copyright 2009-2022 Colorize
+Copyright 2009-2023 Colorize
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

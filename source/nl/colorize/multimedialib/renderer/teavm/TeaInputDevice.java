@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Captures browser events for various input methods, and makes them accessible
@@ -143,7 +142,7 @@ public class TeaInputDevice implements InputDevice, Updatable {
             CSVRecord data = CSVRecord.parseRecord(pointerEvent, ";");
 
             Pointer pointer = getPointer(data.get(1));
-            pointer.location.set(data.getFloat(2), data.getFloat(3));
+            pointer.location.set(Float.parseFloat(data.get(2)), Float.parseFloat(data.get(3)));
 
             String eventType = data.get(0);
             int eventState = getPointerEventState(eventType);
@@ -188,7 +187,7 @@ public class TeaInputDevice implements InputDevice, Updatable {
     public List<Point2D> getPointers() {
         return pointers.values().stream()
             .map(pointer -> pointer.getCanvasPosition(canvas, pixelRatio))
-            .collect(Collectors.toList());
+            .toList();
     }
 
     @Override
@@ -203,6 +202,11 @@ public class TeaInputDevice implements InputDevice, Updatable {
         return pointers.values().stream()
             .filter(pointer -> pointer.state == 2)
             .anyMatch(pointer -> area.contains(pointer.getCanvasPosition(canvas, pixelRatio)));
+    }
+
+    @Override
+    public void clearPointerReleased() {
+        pointers.values().forEach(pointer -> pointer.state = 0);
     }
 
     @Override

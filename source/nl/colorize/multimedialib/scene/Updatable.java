@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -14,8 +14,8 @@ package nl.colorize.multimedialib.scene;
 public interface Updatable {
 
     /**
-     * Updates this object for the current frame.
-     * @param deltaTime Elapsed time since the last frame, in seconds.
+     * Updates this object for the current frame. {@code deltaTime} indicates
+     * the elapsed time since the last frame, in seconds.
      */
     public void update(float deltaTime);
 }

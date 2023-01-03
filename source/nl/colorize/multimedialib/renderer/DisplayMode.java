@@ -1,21 +1,14 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
-import com.google.common.base.Preconditions;
-
 /**
- * Renderer configuration on how graphics should be displayed, covering both
- * screen/window size and resolution and framerate.
+ * Configures the renderer's display mode, which consists of both the canvas
+ * resolution and the targeted framerate.
  */
 public record DisplayMode(Canvas canvas, int framerate) {
-
-    public DisplayMode {
-        Preconditions.checkArgument(framerate >= 10,
-            "Invalid framerate: " + framerate);
-    }
 }

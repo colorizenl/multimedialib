@@ -1,13 +1,16 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.math;
 
+import com.google.common.base.Preconditions;
 import com.google.common.math.IntMath;
 
+import java.math.RoundingMode;
+import java.text.NumberFormat;
 import java.util.List;
 
 /**
@@ -34,15 +37,11 @@ public final class MathUtils {
     }
     
     public static int signum(int n) {
-        if (n > 0) return 1;
-        if (n < 0) return -1;
-        return 0;
+        return Integer.compare(n, 0);
     }
     
     public static int signum(float n) {
-        if (n > 0f) return 1;
-        if (n < 0f) return -1;
-        return 0;
+        return Float.compare(n, 0f);
     }
 
     public static int signum(boolean value) {
@@ -119,5 +118,21 @@ public final class MathUtils {
      */
     public static boolean equals(float a, float b) {
         return Math.abs(a - b) < EPSILON;
+    }
+
+    /**
+     * Formats a number with the specified number of decimal places. This is an
+     * alternative to {@code String.format}, which is not fully supported on
+     * some platforms.
+     */
+    public static String format(float n, int decimals) {
+        Preconditions.checkArgument(decimals >= 0,
+            "Invalid number of decimals: " + decimals);
+
+        NumberFormat format = NumberFormat.getInstance();
+        format.setMinimumFractionDigits(decimals);
+        format.setMaximumFractionDigits(decimals);
+        format.setRoundingMode(RoundingMode.UP);
+        return format.format(n);
     }
 }

@@ -1,30 +1,23 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
-import nl.colorize.multimedialib.scene.ErrorHandler;
 import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.multimedialib.stage.StageVisitor;
 
 /**
- * The renderer acts as the entry point for accessing platform-specific
- * behavior such as running the animation loop, displaying 2D and 3D graphics,
- * playing audio, and capturing user input from input devices.
+ * The renderer acts as the entry point from the application to the underlying
+ * platform, managing the animation loop, graphics, audio, and input.
  * <p>
  * When started, the renderer will create the display system and then start the
- * animation loop. Frame updates will be scheduled to match the desired framerate,
- * although this might not be possible depending on the current platform and the
- * amount and complexity of graphics that are drawn.
- * <p>
- * For 3D graphics, the renderer will draw all objects that are part of the
- * <em>stage</em>. Note that some renderer implementations may be limited to 2D
- * graphics and do not support 3D graphics.
- * <p>
- * For 2D graphics, the renderer will draw a number of layers. If 2D and 3D
- * graphicd are mixed, all 2D graphics are drawn on top of the 3D graphics.
+ * animation loop. Frame updates will be scheduled to match the targeted
+ * framerate. Each frame update consists of executing application logic for the
+ * current <em>scene</em>, after which the contents of the <em>stage</em> are
+ * rendered.
  * <p>
  * The renderer has two concepts of display size: the screen and the canvas. This
  * difference exists to allow applications to support multiple resolutions that
@@ -33,9 +26,29 @@ import nl.colorize.multimedialib.scene.Scene;
  */
 public interface Renderer {
 
+    /**
+     * Initializes this renderer and starts playing the requested scene. Errors
+     * that occur during the application will be forwarded to the specified
+     * error handler.
+     * <p>
+     * Renderer implementations may run the applications in a separate renderer
+     * thread. Application logic should therefore be located in the scene, and
+     * not rely on accessing this {@link Renderer} instance from the original
+     * thread.
+     */
     public void start(Scene initialScene, ErrorHandler errorHandler);
 
+    public GraphicsMode getGraphicsMode();
+
     public DisplayMode getDisplayMode();
+
+    public StageVisitor accessGraphics();
+
+    public InputDevice accessInputDevice();
+
+    public MediaLoader accessMediaLoader();
+
+    public Network accessNetwork();
 
     /**
      * Takes a screenshots of the renderer's current graphics, and saves it to

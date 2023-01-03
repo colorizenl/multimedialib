@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -9,7 +9,6 @@ package nl.colorize.multimedialib.tool;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-import nl.colorize.util.FileUtils;
 import nl.colorize.util.swing.Utils2D;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -27,10 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class TeaVMTranspilerToolTest {
 
     @Test
-    public void testTranspile() throws IOException {
-        File resourcesDir = Files.createTempDir();
-        File outputDir = Files.createTempDir();
-
+    void transpile(@TempDir File resourcesDir, @TempDir File outputDir) throws IOException {
         TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
         tool.projectName = "test";
         tool.resourceDir = resourcesDir;
@@ -53,10 +49,7 @@ public class TeaVMTranspilerToolTest {
     }
 
     @Test
-    public void testCopyStandardOutputFiles() {
-        File resourcesDir = Files.createTempDir();
-        File outputDir = Files.createTempDir();
-
+    void copyStandardOutputFiles(@TempDir File resourcesDir, @TempDir File outputDir) {
         TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
         tool.projectName = "test";
         tool.resourceDir = resourcesDir;
@@ -69,10 +62,7 @@ public class TeaVMTranspilerToolTest {
     }
 
     @Test
-    public void testCopyBinaryFiles() throws IOException {
-        File resourcesDir = Files.createTempDir();
-        File outputDir = Files.createTempDir();
-
+    void copyBinaryFiles(@TempDir File resourcesDir, @TempDir File outputDir) throws IOException {
         BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = Utils2D.createGraphics(image, false, false);
         g2.setColor(Color.RED);
@@ -92,10 +82,7 @@ public class TeaVMTranspilerToolTest {
     }
 
     @Test
-    public void testRewriteHTML() throws IOException {
-        File resourcesDir = Files.createTempDir();
-        File outputDir = Files.createTempDir();
-
+    void rewriteHTML(@TempDir File resourcesDir, @TempDir File outputDir) throws IOException {
         Files.write("This is a test file\ncontaining multiple lines",
             new File(resourcesDir, "test.txt"), Charsets.UTF_8);
 
@@ -116,10 +103,7 @@ public class TeaVMTranspilerToolTest {
     }
 
     @Test
-    public void testGenerateResourceFileManifest() throws IOException {
-        File resourcesDir = Files.createTempDir();
-        File outputDir = Files.createTempDir();
-
+    void generateResourceManifest(@TempDir File resourcesDir, @TempDir File outputDir) throws IOException {
         Files.write("This is a test file", new File(resourcesDir, "test1.txt"), Charsets.UTF_8);
         Files.write("This is a another test file", new File(resourcesDir, "test2.txt"), Charsets.UTF_8);
 
@@ -134,27 +118,12 @@ public class TeaVMTranspilerToolTest {
 
         String expected = "";
         expected += "<div id=\"resource-file-manifest\">test1.txt\n";
-        expected += "test2.txt</div>\n";
+        expected += "test2.txt\n";
+        expected += "</div>\n";
 
         assertTrue(generatedHTML.contains(expected), "Generated HTML:\n" + generatedHTML);
     }
 
-    @Test
-    void generateServiceWorker(@TempDir File inputDir, @TempDir File outputDir) throws IOException {
-        FileUtils.write("{}", Charsets.UTF_8, new File(inputDir, "manifest.json"));
-
-        TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
-        tool.projectName = "test";
-        tool.resourceDir = inputDir;
-        tool.outputDir = outputDir;
-        tool.mainClassName = MockApp.class.getName();
-        tool.manifestFile = new File(inputDir, "manifest.json");
-        tool.run();
-
-        assertTrue(new File(outputDir, "manifest.json").exists());
-        assertTrue(new File(outputDir, "service-worker.js").exists());
-    }
-    
     /**
      * This only exists so that the generated TeaVM code can have
      * an entry point during the tests.

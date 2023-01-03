@@ -1,23 +1,27 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.java2d;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
+import com.google.common.base.Preconditions;
 import com.google.common.reflect.ClassPath;
-import nl.colorize.multimedialib.graphics.FontStyle;
-import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.graphics.OutlineFont;
-import nl.colorize.multimedialib.graphics.PolygonModel;
 import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
+import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.UnsupportedGraphicsModeException;
-import nl.colorize.util.Configuration;
+import nl.colorize.multimedialib.stage.FontStyle;
+import nl.colorize.multimedialib.stage.Image;
+import nl.colorize.multimedialib.stage.OutlineFont;
+import nl.colorize.multimedialib.stage.PolygonModel;
+import nl.colorize.multimedialib.stage.Shader;
+import nl.colorize.util.AppProperties;
 import nl.colorize.util.LoadUtils;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
@@ -31,10 +35,10 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -47,11 +51,17 @@ import java.util.stream.Collectors;
  */
 public class StandardMediaLoader implements MediaLoader {
 
+    private Function<FilePointer, ResourceFile> locator;
     private Set<String> classPathResources;
 
     private static final Logger LOGGER = LogHelper.getLogger(StandardMediaLoader.class);
 
+    /**
+     * Creates a {@link StandardMediaLoader} that will look for resource files
+     * in the classpath, with a fallback to the local file system.
+     */
     public StandardMediaLoader() {
+        this.locator = file -> new ResourceFile(file.path());
         this.classPathResources = Collections.emptySet();
 
         try {
@@ -65,25 +75,42 @@ public class StandardMediaLoader implements MediaLoader {
         }
     }
 
+    /**
+     * Creates a {@link StandardMediaLoader} that will only look for resource
+     * files in the specified directory. This can be used for testing, where
+     * files are located in a temporary directory and not on the classpath.
+     */
+    @VisibleForTesting
+    public StandardMediaLoader(File resourceDir) {
+        Preconditions.checkArgument(resourceDir.exists() && resourceDir.isDirectory(),
+            "Invalid resource directory: " + resourceDir.getAbsolutePath());
+
+        this.locator = file -> {
+            File localFile = new File(resourceDir.getAbsolutePath() + "/" + file.path());
+            return new ResourceFile(localFile);
+        };
+        this.classPathResources = Collections.emptySet();
+    }
+
     @Override
     public Image loadImage(FilePointer file) {
         try {
-            ResourceFile source = new ResourceFile(file.getPath());
+            ResourceFile source = toResourceFile(file);
             BufferedImage loadedImage = Utils2D.loadImage(source.openStream());
             return new AWTImage(loadedImage, file);
         } catch (IOException e) {
-            throw new MediaException("Cannot load image from " + file.getPath(), e);
+            throw new MediaException("Cannot load image from " + file.path(), e);
         }
     }
 
     @Override
     public Audio loadAudio(FilePointer file) {
-        return new MP3(new ResourceFile(file.getPath()));
+        return new MP3(toResourceFile(file));
     }
 
     @Override
     public OutlineFont loadFont(FilePointer file, FontStyle style) {
-        ResourceFile source = new ResourceFile(file.getPath());
+        ResourceFile source = toResourceFile(file);
 
         try (InputStream stream = source.openStream()) {
             Font font = Font.createFont(Font.TRUETYPE_FONT, stream);
@@ -95,14 +122,13 @@ public class StandardMediaLoader implements MediaLoader {
             // style, since we have no idea what size the loaded font has.
             return new AWTFont(font, style).derive(style);
         } catch (IOException | FontFormatException e) {
-            throw new MediaException("Cannot load font from " + file.getPath(), e);
+            throw new MediaException("Cannot load font from " + file.path(), e);
         }
     }
 
     @Override
     public String loadText(FilePointer file) {
-        ResourceFile resourceFile = new ResourceFile(file.getPath());
-        return resourceFile.read(Charsets.UTF_8);
+        return toResourceFile(file).read(Charsets.UTF_8);
     }
 
     @Override
@@ -111,37 +137,51 @@ public class StandardMediaLoader implements MediaLoader {
     }
 
     @Override
+    public GeometryBuilder getGeometryBuilder() {
+        throw new UnsupportedGraphicsModeException();
+    }
+
+    @Override
+    public Shader loadShader(FilePointer vertexShaderFile, FilePointer fragmentShaderFile) {
+        return Shader.NO_OP;
+    }
+
+    @Override
     public boolean containsResourceFile(FilePointer file) {
         if (classPathResources.isEmpty()) {
-            return new ResourceFile(file.getPath()).exists();
+            return toResourceFile(file).exists();
         } else {
-            return classPathResources.contains(file.getPath());
+            return classPathResources.contains(file.path());
         }
     }
 
     @Override
-    public Configuration loadApplicationData(String appName, String fileName) {
+    public AppProperties loadApplicationData(String appName, String fileName) {
         File file = Platform.getApplicationData(appName, fileName);
 
         if (!file.exists()) {
-            return Configuration.fromProperties();
+            return AppProperties.from(new Properties());
         }
 
         try {
             Properties properties = LoadUtils.loadProperties(file, Charsets.UTF_8);
-            return Configuration.fromProperties(properties);
+            return AppProperties.from(properties);
         } catch (IOException e) {
             throw new MediaException("Unable to load application data", e);
         }
     }
 
     @Override
-    public void saveApplicationData(Configuration data, String appName, String fileName) {
+    public void saveApplicationData(Properties data, String appName, String fileName) {
         try {
             File file = Platform.getApplicationData(appName, fileName);
-            Files.writeString(file.toPath(), data.serialize(), Charsets.UTF_8);
+            LoadUtils.saveProperties(data, file, Charsets.UTF_8);
         } catch (IOException e) {
             throw new MediaException("Unable to save application data", e);
         }
+    }
+
+    private ResourceFile toResourceFile(FilePointer file) {
+        return locator.apply(file);
     }
 }

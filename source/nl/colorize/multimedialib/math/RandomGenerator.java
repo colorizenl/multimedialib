@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -15,19 +15,36 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Utility class to help with random numbers. This class should be used instead
- * of {@code Math.random()} and similar methods, as using class allows for "fake"
- * random numbers that ensure deterministic behavior.
+ * Utility class to help with random numbers. This class uses a shared global
+ * {@link Random} instance. This prevents situations where application code
+ * creates {@link Random} instances across various locations, making it easier
+ * to toggle between "real" random and deterministic pseudo-random.
  */
 public class RandomGenerator {
 
     private static Random generator = new Random();
 
     private RandomGenerator() {
+    }
+
+    /**
+     * Changes the random number generator used by this class to generate
+     * deterministic pseudo-random numbers based on the specified seed value.
+     */
+    public static void seed(long value) {
+        generator = new Random(value);
+    }
+
+    /**
+     * Changes the random number generator used by this class to generate
+     * "true" random numbers. This method can be used to revert the changes
+     * made by using {@link #seed(long)}.
+     */
+    public static void randomSeed() {
+        generator = new Random();
     }
 
     /**
@@ -107,7 +124,7 @@ public class RandomGenerator {
      * @throws IllegalArgumentException if the provided stream is empty.
      */
     public static <T> T pick(Stream<T> elements) {
-        return pick(elements.collect(Collectors.toList()));
+        return pick(elements.toList());
     }
 
     /**
@@ -143,7 +160,7 @@ public class RandomGenerator {
         shuffled.addAll(original);
         
         if (original.size() >= 2) {
-            Collections.shuffle(shuffled);
+            Collections.shuffle(shuffled, generator);
         }
         
         return shuffled;

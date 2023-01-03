@@ -1,32 +1,29 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.teavm;
 
-import com.google.common.base.Preconditions;
-import nl.colorize.multimedialib.graphics.ColorRGB;
-import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.renderer.FilePointer;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Image;
+import nl.colorize.util.LogHelper;
 
 import java.util.UUID;
+import java.util.logging.Logger;
 
 public class TeaImage implements Image {
 
     private String id;
     private FilePointer origin;
-    private Rect region;
+    private Region region;
 
-    private int cachedWidth;
-    private int cachedHeight;
+    private static final Logger LOGGER = LogHelper.getLogger(TeaImage.class);
 
-    protected TeaImage(String id, FilePointer origin, Rect region) {
-        Preconditions.checkArgument(region == null || (region.getWidth() > 0 && region.getHeight() > 0),
-            "Invalid region for image " + origin + ": " + region);
-
+    protected TeaImage(String id, FilePointer origin, Region region) {
         this.id = id;
         this.origin = origin;
         this.region = region;
@@ -40,37 +37,30 @@ public class TeaImage implements Image {
         return origin;
     }
 
-    private void cacheImageSize() {
-        if (region == null || region.getWidth() == 0 || region.getHeight() == 0) {
-            region = new Rect(0f, 0f, Browser.getImageWidth(id), Browser.getImageHeight(id));
-        }
-
-        if (cachedWidth == 0 || cachedHeight == 0) {
-            cachedWidth = Math.round(region.getWidth());
-            cachedHeight = Math.round(region.getHeight());
-        }
-    }
-
     @Override
-    public Rect getRegion() {
-        cacheImageSize();
+    public Region getRegion() {
+        if (region == null) {
+            int width = (int) Browser.getImageWidth(id);
+            int height = (int) Browser.getImageHeight(id);
+
+            // Unlike other renderers, images are loaded asynchronously.
+            // Application logic should not run before all required images
+            // have been loaded, but if this somehow happens anyway we
+            // return a non-zero region to prevent the application code
+            // from crashing.
+            if (width == 0 || height == 0) {
+                LOGGER.warning("Image data not yet available for " + this);
+                return new Region(0, 0, 1, 1);
+            }
+
+            region = new Region(0, 0, width, height);
+        }
+
         return region;
     }
 
     @Override
-    public int getWidth() {
-        cacheImageSize();
-        return cachedWidth;
-    }
-
-    @Override
-    public int getHeight() {
-        cacheImageSize();
-        return cachedHeight;
-    }
-
-    @Override
-    public TeaImage extractRegion(Rect region) {
+    public TeaImage extractRegion(Region region) {
         return new TeaImage(id, origin, region);
     }
 
@@ -103,6 +93,9 @@ public class TeaImage implements Image {
 
     @Override
     public String toString() {
-        return origin.getPath();
+        if (origin == null) {
+            return "TeaImage";
+        }
+        return origin.toString();
     }
 }

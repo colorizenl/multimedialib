@@ -1,14 +1,14 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.java2d;
 
-import nl.colorize.multimedialib.graphics.ColorRGB;
-import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Image;
+import nl.colorize.multimedialib.math.Region;
 import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
@@ -54,7 +54,7 @@ public class AWTImageTest {
         image.setRGB(2, 0, Color.BLUE.getRGB());
 
         AWTImage texture = new AWTImage(image);
-        Image region = texture.extractRegion(new Rect(1, 0, 2, 1));
+        Image region = texture.extractRegion(new Region(1, 0, 2, 1));
 
         assertEquals(2, region.getWidth());
         assertEquals(1, region.getHeight());

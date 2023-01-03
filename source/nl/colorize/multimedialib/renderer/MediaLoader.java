@@ -1,26 +1,25 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
-import nl.colorize.multimedialib.graphics.ColorRGB;
-import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.graphics.OutlineFont;
-import nl.colorize.multimedialib.graphics.PolygonModel;
-import nl.colorize.multimedialib.graphics.SpriteSheet;
-import nl.colorize.multimedialib.graphics.FontStyle;
-import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.util.Configuration;
-import nl.colorize.util.CSVRecord;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.FontStyle;
+import nl.colorize.multimedialib.stage.Image;
+import nl.colorize.multimedialib.stage.OutlineFont;
+import nl.colorize.multimedialib.stage.PolygonModel;
+import nl.colorize.multimedialib.stage.Shader;
+import nl.colorize.multimedialib.stage.SpriteAtlas;
+import nl.colorize.util.AppProperties;
 import nl.colorize.util.Platform;
 import nl.colorize.util.PlatformFamily;
 
 import java.util.List;
+import java.util.Properties;
 
 /**
  * Loads media files such as images or audio in a format that can later be used
@@ -42,32 +41,14 @@ public interface MediaLoader {
     public Image loadImage(FilePointer file);
 
     /**
-     * Convenience method that loads a sprite sheet from its image and its
-     * metadata file in CSV format. The sprite sheet is assumed to have been
-     * created using the {@code SpriteSheetPackerTool}.
-     * <p>
-     * Note that no convenience method for loading sprite sheets with YAML
-     * metadata is provided, as this library does not include out-of-the-box
-     * support for YAML.
+     * Loads a sprite atlas based on the libGDX {@code .atlas} file format.
      *
-     * @throws MediaException if the sprite sheet cannot be loaded.
-     * @throws IllegalArgumentException when attempting to load non-CSV metadata.
+     * @throws MediaException if the image format is not supported by the
+     *        renderer or by the platform, or if the file does not exist.
      */
-    default SpriteSheet loadSpriteSheetCSV(FilePointer imageFile, FilePointer metadataFile) {
-        Preconditions.checkArgument(metadataFile.getPath().endsWith(".csv"),
-            "Only sprite sheet metadata in CSV format is supported");
-
-        Image image = loadImage(imageFile);
-        List<CSVRecord> metadata = CSVRecord.parseRecords(loadText(metadataFile), ";", true);
-        SpriteSheet spriteSheet = new SpriteSheet(image);
-
-        for (CSVRecord region : metadata) {
-            Rect bounds = new Rect(region.getFloat(1), region.getFloat(2), region.getFloat(3),
-                region.getFloat(4));
-            spriteSheet.markRegion(region.get(0), bounds);
-        }
-
-        return spriteSheet;
+    default SpriteAtlas loadAtlas(FilePointer file) {
+        SpriteAtlasLoader atlasLoader = new SpriteAtlasLoader(this);
+        return atlasLoader.load(file);
     }
 
     /**
@@ -106,10 +87,28 @@ public interface MediaLoader {
      * specific renderers.
      *
      * @throws MediaException if the model cannot be loaded.
-     * @throws UnsupportedGraphicsModeException if the renderer does not support
-     *         3D graphics.
+     * @throws UnsupportedGraphicsModeException if the current renderer does
+     *         not support 3D graphics.
      */
     public PolygonModel loadModel(FilePointer file);
+
+    /**
+     * Provides access to a {@link GeometryBuilder} instance that can be used
+     * to create simple 3D geometry in a programmatic way.
+     *
+     * @throws UnsupportedGraphicsModeException if the current renderer does
+     *         not support 3D graphics.
+     */
+    public GeometryBuilder getGeometryBuilder();
+
+    /**
+     * Loads a GLSL shader based on two {@code .glsl} files, one for the vertex
+     * shader and one for the fragment shader. If the renderer does not support
+     * shaders, this will return a no-op shader implementation.
+     *
+     * @throws MediaException if the shader cannot be parsed.
+     */
+    public Shader loadShader(FilePointer vertexShaderFile, FilePointer fragmentShaderFile);
 
     /**
      * Loads a text-based resource file using UTF-8 encoding.
@@ -140,7 +139,7 @@ public interface MediaLoader {
      *
      * @throws MediaException if the file cannot be loaded.
      */
-    public Configuration loadApplicationData(String appName, String fileName);
+    public AppProperties loadApplicationData(String appName, String fileName);
 
     /**
      * Saves application data for the application with the specified name. The
@@ -149,7 +148,7 @@ public interface MediaLoader {
      *
      * @throws MediaException if the file could not be saved.
      */
-    public void saveApplicationData(Configuration data, String appName, String fileName);
+    public void saveApplicationData(Properties data, String appName, String fileName);
 
     @Deprecated
     default PlatformFamily getPlatformFamily() {

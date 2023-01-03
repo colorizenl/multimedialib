@@ -1,15 +1,15 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.java2d;
 
 import com.google.common.base.Preconditions;
-import nl.colorize.multimedialib.graphics.ColorRGB;
-import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Image;
+import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.util.swing.Utils2D;
 
@@ -45,24 +45,14 @@ public class AWTImage implements Image {
     }
 
     @Override
-    public Rect getRegion() {
-        return new Rect(0, 0, image.getWidth(), image.getHeight());
+    public Region getRegion() {
+        return new Region(0, 0, image.getWidth(), image.getHeight());
     }
 
     @Override
-    public int getWidth() {
-        return image.getWidth();
-    }
-
-    @Override
-    public int getHeight() {
-        return image.getHeight();
-    }
-
-    @Override
-    public Image extractRegion(Rect region) {
-        BufferedImage subImage = image.getSubimage(Math.round(region.getX()), Math.round(region.getY()),
-            Math.round(region.getWidth()), Math.round(region.getHeight()));
+    public Image extractRegion(Region region) {
+        BufferedImage subImage = image.getSubimage(region.x(), region.y(),
+            region.width(), region.height());
         return new AWTImage(subImage, origin);
     }
 
@@ -96,14 +86,5 @@ public class AWTImage implements Image {
         g2.dispose();
 
         return new AWTImage(tinted, origin);
-    }
-
-    @Override
-    public String toString() {
-        if (origin != null) {
-            return origin.getPath();
-        } else {
-            return "<generated image>";
-        }
     }
 }

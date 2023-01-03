@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -19,7 +19,7 @@ public class Point2D {
     private float x;
     private float y;
 
-    public static final float EPSILON = Shape.EPSILON;
+    public static final float EPSILON = MathUtils.EPSILON;
 
     public Point2D(float x, float y) {
         this.x = x;
@@ -150,8 +150,7 @@ public class Point2D {
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof Point2D) {
-            Point2D other = (Point2D) o;
+        if (o instanceof Point2D other) {
             return Math.abs(x - other.x) < EPSILON && Math.abs(y - other.y) < EPSILON;
         } else {
             return false;

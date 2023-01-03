@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -11,9 +11,9 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.TextureData;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import nl.colorize.multimedialib.graphics.ColorRGB;
-import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Image;
+import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.renderer.FilePointer;
 
 import static com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888;
@@ -28,13 +28,13 @@ public class GDXImage implements Image {
     private Texture texture;
     private TextureRegion textureRegion;
     private Pixmap textureData;
-    private Rect bounds;
+    private Region bounds;
 
-    protected GDXImage(FilePointer origin, Texture texture, Rect bounds) {
-        float u1 = bounds.getX() / texture.getWidth();
-        float v1 = bounds.getY() / texture.getHeight();
-        float u2 = bounds.getEndX() / texture.getWidth();
-        float v2 = bounds.getEndY() / texture.getHeight();
+    protected GDXImage(FilePointer origin, Texture texture, Region bounds) {
+        float u1 = bounds.x() / (float) texture.getWidth();
+        float v1 = bounds.y() / (float) texture.getHeight();
+        float u2 = bounds.x1() / (float) texture.getWidth();
+        float v2 = bounds.y1() / (float) texture.getHeight();
 
         this.origin = origin;
         this.texture = texture;
@@ -43,24 +43,20 @@ public class GDXImage implements Image {
     }
 
     protected GDXImage(FilePointer origin, Texture texture) {
-        this(origin, texture, new Rect(0, 0, texture.getWidth(), texture.getHeight()));
+        this(origin, texture, new Region(0, 0, texture.getWidth(), texture.getHeight()));
     }
 
-    public Texture getTexture() {
-        return texture;
-    }
-
-    public TextureRegion getTextureRegion() {
+    protected TextureRegion getTextureRegion() {
         return textureRegion;
     }
 
     @Override
-    public Rect getRegion() {
+    public Region getRegion() {
         return bounds;
     }
 
     @Override
-    public Image extractRegion(Rect region) {
+    public Image extractRegion(Region region) {
         return new GDXImage(origin, texture, region);
     }
 
@@ -97,7 +93,7 @@ public class GDXImage implements Image {
 
         for (int x = 0; x < getWidth(); x++) {
             for (int y = 0; y < getHeight(); y++) {
-                int rgba = original.getPixel(Math.round(bounds.getX()) + x, Math.round(bounds.getY()) + y);
+                int rgba = original.getPixel(bounds.x() + x, bounds.y() + y);
                 int maskRGBA = Color.rgba8888(color.getR() / 255f, color.getG() / 2f,
                     color.getB() / 255f, new Color(rgba).a * 100f);
                 tinted.drawPixel(x, y, maskRGBA);
@@ -110,10 +106,5 @@ public class GDXImage implements Image {
         tinted.dispose();
 
         return new GDXImage(origin, texture);
-    }
-
-    @Override
-    public String toString() {
-        return origin + "@" + bounds;
     }
 }

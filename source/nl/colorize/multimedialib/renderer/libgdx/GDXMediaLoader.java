@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -15,27 +15,16 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
-import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
-import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
-import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.loader.G3dModelLoader;
-import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.UBJsonReader;
-import com.google.common.base.Charsets;
 import net.mgsx.gltf.loaders.gltf.GLTFLoader;
 import net.mgsx.gltf.scene3d.scene.SceneAsset;
-import nl.colorize.multimedialib.graphics.ColorRGB;
-import nl.colorize.multimedialib.graphics.FontStyle;
-import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.graphics.OutlineFont;
-import nl.colorize.multimedialib.graphics.PolygonModel;
 import nl.colorize.multimedialib.math.Cache;
-import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.math.Point3D;
 import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GeometryBuilder;
@@ -43,18 +32,19 @@ import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.java2d.MP3;
 import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
-import nl.colorize.util.Configuration;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.FontStyle;
+import nl.colorize.multimedialib.stage.Image;
+import nl.colorize.multimedialib.stage.OutlineFont;
+import nl.colorize.multimedialib.stage.PolygonModel;
+import nl.colorize.multimedialib.stage.Shader;
+import nl.colorize.util.AppProperties;
 import nl.colorize.util.Platform;
 import nl.colorize.util.ResourceFile;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-
-import static com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal;
-import static com.badlogic.gdx.graphics.VertexAttributes.Usage.Position;
-import static com.badlogic.gdx.graphics.VertexAttributes.Usage.TextureCoordinates;
+import java.util.Properties;
 
 /**
  * Loads media assets using the libGDX framework.
@@ -63,12 +53,14 @@ import static com.badlogic.gdx.graphics.VertexAttributes.Usage.TextureCoordinate
  * and release the associated resources. This can be done globally for all
  * media files by calling {@link #dispose()}.
  */
-public class GDXMediaLoader implements MediaLoader, GeometryBuilder, Disposable {
+public class GDXMediaLoader implements MediaLoader, Disposable {
 
     private List<Disposable> loaded;
     private Cache<FontCacheKey, BitmapFont> fontCache;
 
+    private static final Texture.TextureFilter TEXTURE_FILTER = Texture.TextureFilter.Nearest;
     private static final int FONT_CACHE_SIZE = 100;
+    private static final String CHARSET = "UTF-8";
 
     public GDXMediaLoader() {
         this.loaded = new ArrayList<>();
@@ -78,14 +70,14 @@ public class GDXMediaLoader implements MediaLoader, GeometryBuilder, Disposable 
     @Override
     public Image loadImage(FilePointer file) {
         Texture texture = new Texture(getFileHandle(file));
+        texture.setFilter(TEXTURE_FILTER, TEXTURE_FILTER);
         loaded.add(texture);
-
         return new GDXImage(file, texture);
     }
 
     @Override
     public Audio loadAudio(FilePointer file) {
-        return new MP3(new ResourceFile(file.getPath()));
+        return new MP3(new ResourceFile(file.path()));
     }
 
     @Override
@@ -112,8 +104,7 @@ public class GDXMediaLoader implements MediaLoader, GeometryBuilder, Disposable 
 
     @Override
     public String loadText(FilePointer file) {
-        ResourceFile resourceFile = new ResourceFile(file.getPath());
-        return resourceFile.read(Charsets.UTF_8);
+        return getFileHandle(file).readString(CHARSET);
     }
 
     @Override
@@ -136,7 +127,12 @@ public class GDXMediaLoader implements MediaLoader, GeometryBuilder, Disposable 
         }
     }
 
-    private PolygonModel createInstance(Model model) {
+    @Override
+    public GeometryBuilder getGeometryBuilder() {
+        return new GDXGeometryBuilder(this);
+    }
+
+    protected PolygonModel createInstance(Model model) {
         ModelInstance instance = new ModelInstance(model);
         instance.materials.get(0).set(
             new BlendingAttribute(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA));
@@ -145,103 +141,58 @@ public class GDXMediaLoader implements MediaLoader, GeometryBuilder, Disposable 
     }
 
     @Override
+    public Shader loadShader(FilePointer vertexShaderFile, FilePointer fragmentShaderFile) {
+        String vertexGLSL = getFileHandle(vertexShaderFile).readString(CHARSET);
+        String fragmentGLSL = getFileHandle(fragmentShaderFile).readString(CHARSET);
+
+        ShaderProgram shaderProgram = new ShaderProgram(vertexGLSL, fragmentGLSL);
+        loaded.add(shaderProgram);
+
+        if (!shaderProgram.isCompiled()) {
+            throw new MediaException("Failed to compile shader");
+        }
+
+        return new GDXShader(shaderProgram);
+    }
+
+    @Override
     public boolean containsResourceFile(FilePointer file) {
         return getFileHandle(file).exists();
     }
 
     @Override
-    public Configuration loadApplicationData(String appName, String fileName) {
+    public AppProperties loadApplicationData(String appName, String fileName) {
         if (Platform.isWindows() || Platform.isMac()) {
             StandardMediaLoader delegate = new StandardMediaLoader();
             return delegate.loadApplicationData(appName, fileName);
         } else {
             Preferences preferences = Gdx.app.getPreferences(appName + "." + fileName);
-            Map<String, String> data = new LinkedHashMap<>();
+            Properties properties = new Properties();
 
             for (String key : preferences.get().keySet()) {
-                data.put(key, preferences.getString(key));
+                properties.setProperty(key, preferences.getString(key));
             }
 
-            return Configuration.fromProperties(data);
+            return AppProperties.from(properties);
         }
     }
 
     @Override
-    public void saveApplicationData(Configuration data, String appName, String fileName) {
+    public void saveApplicationData(Properties data, String appName, String fileName) {
         if (Platform.isWindows() || Platform.isMac()) {
             StandardMediaLoader delegate = new StandardMediaLoader();
             delegate.saveApplicationData(data, appName, fileName);
         } else {
             Preferences preferences = Gdx.app.getPreferences(appName);
-            for (String property : data.getPropertyNames()) {
-                preferences.putString(property, data.get(property));
+            for (String property : data.stringPropertyNames()) {
+                preferences.putString(property, data.getProperty(property));
             }
             preferences.flush();
         }
     }
 
     private FileHandle getFileHandle(FilePointer file) {
-        return getFileHandle(file.getPath());
-    }
-
-    private FileHandle getFileHandle(String path) {
-        return Gdx.files.internal(path);
-    }
-
-    public Color toColor(ColorRGB color) {
-        return new Color(color.getR() / 255f, color.getG() / 255f, color.getB() / 255f, 1f);
-    }
-
-    @Override
-    public PolygonModel createQuad(Point2D size, ColorRGB color) {
-        return createBox(new Point3D(size.getX(), 0.001f, size.getY()), color);
-    }
-
-    @Override
-    public PolygonModel createQuad(Point2D size, Image texture) {
-        return createBox(new Point3D(size.getX(), 0.001f, size.getY()), texture);
-    }
-
-    @Override
-    public PolygonModel createBox(Point3D size, ColorRGB color) {
-        ModelBuilder modelBuilder = new ModelBuilder();
-        Model model = modelBuilder.createBox(size.getX(), size.getY(), size.getZ(),
-            createMaterial(color), Position | Normal);
-        return createInstance(model);
-    }
-
-    @Override
-    public PolygonModel createBox(Point3D size, Image texture) {
-        ModelBuilder modelBuilder = new ModelBuilder();
-        Model model = modelBuilder.createBox(size.getX(), size.getY(), size.getZ(),
-            createMaterial((GDXImage) texture), Position | Normal | TextureCoordinates);
-        return createInstance(model);
-    }
-
-    @Override
-    public PolygonModel createSphere(float diameter, ColorRGB color) {
-        ModelBuilder modelBuilder = new ModelBuilder();
-        Model model = modelBuilder.createSphere(diameter, diameter, diameter, 32, 32,
-            createMaterial(color), Position | Normal);
-        return createInstance(model);
-    }
-
-    @Override
-    public PolygonModel createSphere(float diameter, Image texture) {
-        ModelBuilder modelBuilder = new ModelBuilder();
-        Model model = modelBuilder.createSphere(diameter, diameter, diameter, 32, 32,
-            createMaterial((GDXImage) texture), Position | Normal | TextureCoordinates);
-        return createInstance(model);
-    }
-
-    private Material createMaterial(ColorRGB color) {
-        ColorAttribute colorAttr = ColorAttribute.createDiffuse(toColor(color));
-        return new Material(colorAttr);
-    }
-
-    private Material createMaterial(GDXImage texture) {
-        TextureAttribute colorAttr = TextureAttribute.createDiffuse(texture.getTextureRegion());
-        return new Material(colorAttr);
+        return Gdx.files.internal(file.path());
     }
 
     @Override
@@ -249,6 +200,10 @@ public class GDXMediaLoader implements MediaLoader, GeometryBuilder, Disposable 
         loaded.forEach(Disposable::dispose);
         loaded.clear();
         fontCache.invalidateAll();
+    }
+
+    public static Color toColor(ColorRGB color) {
+        return new Color(color.getR() / 255f, color.getG() / 255f, color.getB() / 255f, 1f);
     }
 
     private record FontCacheKey(FileHandle source, FontStyle style) {

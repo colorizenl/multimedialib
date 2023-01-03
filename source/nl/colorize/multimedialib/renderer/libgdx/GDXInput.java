@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -163,6 +163,11 @@ public class GDXInput implements InputDevice, Updatable {
     @Override
     public boolean isPointerReleased(Rect area) {
         return pointerReleased && area.contains(pointer);
+    }
+
+    @Override
+    public void clearPointerReleased() {
+        pointerReleased = false;
     }
 
     @Override

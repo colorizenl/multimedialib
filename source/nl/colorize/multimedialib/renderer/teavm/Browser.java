@@ -1,12 +1,13 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.teavm;
 
-import nl.colorize.multimedialib.renderer.teavm.pixi.PixiInterface;
+import nl.colorize.multimedialib.renderer.pixi.PixiInterface;
+import nl.colorize.multimedialib.renderer.three.ThreeInterface;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.canvas.CanvasImageSource;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
@@ -189,9 +190,16 @@ public class Browser {
     public static native String loadTextResourceFile(String id);
 
     //-------------------------------------------------------------------------
-    // Pixi.js
+    // Pixi.js interface
     //-------------------------------------------------------------------------
 
     @JSBody(script = "return new PixiInterface();")
     public static native PixiInterface initPixiInterface();
+
+    //-------------------------------------------------------------------------
+    // Three.js interface
+    //-------------------------------------------------------------------------
+
+    @JSBody(script = "return new ThreeInterface();")
+    public static native ThreeInterface initThreeInterface();
 }

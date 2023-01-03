@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -9,12 +9,16 @@ package nl.colorize.multimedialib.renderer.java2d;
 import nl.colorize.multimedialib.math.MathUtils;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
-import nl.colorize.multimedialib.renderer.NetworkAccess;
+import nl.colorize.multimedialib.renderer.GraphicsMode;
+import nl.colorize.multimedialib.renderer.InputDevice;
+import nl.colorize.multimedialib.renderer.MediaLoader;
+import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.WindowOptions;
-import nl.colorize.multimedialib.scene.ErrorHandler;
+import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.ResourceFile;
@@ -92,13 +96,10 @@ public class Java2DRenderer implements Renderer {
     public void start(Scene initialScene, ErrorHandler errorHandler) {
         window = initializeWindow(windowOptions);
         graphicsContext = new Java2DGraphicsContext(canvas, mediaLoader);
-
-        NetworkAccess network = new StandardNetworkAccess();
-        context = new SceneContext(getDisplayMode(), inputDevice, mediaLoader, network);
-        context.changeScene(initialScene);
+        context = new SceneContext(this, initialScene);
 
         Runnable animationLoop = () -> runAnimationLoop(errorHandler);
-        Thread renderingThread = new Thread(animationLoop, "MultimediaLib-RenderingThread");
+        Thread renderingThread = new Thread(animationLoop, "MultimediaLib-Java2D-Renderer");
         renderingThread.start();
     }
 
@@ -158,7 +159,7 @@ public class Java2DRenderer implements Renderer {
 
     private Image loadIcon(WindowOptions windowOptions) {
         if (windowOptions.iconFile() != null) {
-            ResourceFile iconFile = new ResourceFile(windowOptions.iconFile().getPath());
+            ResourceFile iconFile = new ResourceFile(windowOptions.iconFile().path());
             return SwingUtils.loadIcon(iconFile).getImage();
         } else {
             return null;
@@ -283,8 +284,33 @@ public class Java2DRenderer implements Renderer {
     }
 
     @Override
+    public GraphicsMode getGraphicsMode() {
+        return GraphicsMode.MODE_2D;
+    }
+
+    @Override
     public DisplayMode getDisplayMode() {
         return new DisplayMode(canvas, framerate);
+    }
+
+    @Override
+    public StageVisitor accessGraphics() {
+        return graphicsContext;
+    }
+
+    @Override
+    public InputDevice accessInputDevice() {
+        return inputDevice;
+    }
+
+    @Override
+    public MediaLoader accessMediaLoader() {
+        return mediaLoader;
+    }
+
+    @Override
+    public Network accessNetwork() {
+        return new StandardNetwork();
     }
 
     @Override

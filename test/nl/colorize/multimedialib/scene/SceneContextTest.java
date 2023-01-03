@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,13 +8,15 @@ package nl.colorize.multimedialib.scene;
 
 import com.google.common.collect.ImmutableList;
 import nl.colorize.multimedialib.mock.MockScene;
-import nl.colorize.multimedialib.mock.MockSceneContext;
+import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SceneContextTest {
 
@@ -23,8 +25,7 @@ public class SceneContextTest {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        SceneContext app = new MockSceneContext();
-        app.changeScene(sceneA);
+        SceneContext app = new SceneContext(new HeadlessRenderer(), sceneA);
         app.update(1f);
         app.update(1f);
 
@@ -40,8 +41,7 @@ public class SceneContextTest {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        SceneContext app = new MockSceneContext();
-        app.changeScene(sceneA);
+        SceneContext app = new SceneContext(new HeadlessRenderer(), sceneA);
         app.update(1f);
         app.changeScene(sceneB);
         app.update(1f);
@@ -59,8 +59,7 @@ public class SceneContextTest {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        SceneContext app = new MockSceneContext();
-        app.changeScene(sceneA);
+        SceneContext app = new SceneContext(new HeadlessRenderer(), sceneA);
         app.update(1f);
         app.changeScene(sceneB);
         app.update(1f);
@@ -76,8 +75,7 @@ public class SceneContextTest {
         MockScene sceneA = new MockScene();
         List<String> tracker = new ArrayList<>();
 
-        SceneContext app = new MockSceneContext();
-        app.changeScene(sceneA);
+        SceneContext app = new SceneContext(new HeadlessRenderer(), sceneA);
         app.attach((context, deltaTime) -> tracker.add("a"));
         app.attach((context, deltaTime) -> tracker.add("b"));
         app.update(1f);
@@ -91,8 +89,7 @@ public class SceneContextTest {
         MockScene sceneB = new MockScene();
         List<String> tracker = new ArrayList<>();
 
-        SceneContext app = new MockSceneContext();
-        app.changeScene(sceneA);
+        SceneContext app = new SceneContext(new HeadlessRenderer(), sceneA);
         app.attach((context, deltaTime) -> tracker.add("a"));
         app.attach((context, deltaTime) -> tracker.add("b"));
         app.update(1f);
@@ -101,27 +98,12 @@ public class SceneContextTest {
         app.attach((context, deltaTime) -> tracker.add("c"));
         app.update(1f);
 
-        assertEquals(ImmutableList.of("a", "b", "a", "b", "c"), tracker);
-    }
-
-    @Test
-    void systemActiveForDuration() {
-        SceneContext context = new MockSceneContext();
-        context.changeScene(new MockScene());
-
-        List<String> buffer = new ArrayList<>();
-        context.attach(ActorSystem.timed(2f, () -> buffer.add("a")));
-        context.update(1f);
-        context.update(1f);
-        context.update(1f);
-
-        assertEquals(ImmutableList.of("a", "a"), buffer);
+        assertEquals(List.of("a", "b", "a", "b", "c"), tracker);
     }
 
     @Test
     void addSystemDuringIteration() {
-        SceneContext context = new MockSceneContext();
-        context.changeScene(new MockScene());
+        SceneContext context = new SceneContext(new HeadlessRenderer(), new MockScene());
 
         List<String> buffer = new ArrayList<>();
         context.attach((ctx, dt) -> {
@@ -135,22 +117,75 @@ public class SceneContextTest {
         context.update(1f);
         context.update(1f);
 
-        assertEquals(ImmutableList.of("a", "a", "a", "b", "a", "b"), buffer);
+        assertEquals(List.of("a", "a", "a", "b", "a", "b"), buffer);
     }
 
     @Test
-    void delayedAction() {
-        SceneContext context = new MockSceneContext();
-        context.changeScene(new MockScene());
-
-        List<String> buffer = new ArrayList<>();
-        context.attach(deltaTime -> buffer.add("a"));
-        context.delay(2f, () -> buffer.add("z"));
+    void completedSubSceneIsStopped() {
+        MockScene parent = new MockScene();
+        MockScene child = new MockScene();
+        SceneContext context = new SceneContext(new HeadlessRenderer(), parent);
+        context.attach(child);
         context.update(1f);
         context.update(1f);
-        context.update(1f);
+        child.setCompleted(true);
         context.update(1f);
 
-        assertEquals(ImmutableList.of("a", "a", "z", "a", "a"), buffer);
+        assertFalse(parent.isCompleted());
+        assertTrue(child.isCompleted());
+        assertEquals(3, parent.getFrameUpdateCount());
+        assertEquals(2, child.getFrameUpdateCount());
+    }
+
+    @Test
+    void completedParentSceneIsNotStopped() {
+        MockScene parent = new MockScene();
+        SceneContext context = new SceneContext(new HeadlessRenderer(), parent);
+        context.update(1f);
+        context.update(1f);
+        parent.setCompleted(true);
+        context.update(1f);
+
+        assertTrue(parent.isCompleted());
+        assertEquals(3, parent.getFrameUpdateCount());
+    }
+
+    @Test
+    void startSubScene() {
+        MockScene parent = new MockScene();
+        MockScene child1 = new MockScene();
+        MockScene child2 = new MockScene();
+
+        SceneContext context = new SceneContext(new HeadlessRenderer(), parent);
+        context.attach(child1);
+        context.update(1f);
+        context.attach(child2);
+        context.update(1f);
+
+        assertEquals(1, parent.getStartCount());
+        assertEquals(1, child1.getStartCount());
+        assertEquals(1, child2.getStartCount());
+    }
+
+    @Test
+    void startSubSceneAttachedToUpcomingScene() {
+        MockScene parent = new MockScene();
+        MockScene child1 = new MockScene();
+        MockScene newParent = new MockScene();
+        MockScene child2 = new MockScene();
+
+        SceneContext context = new SceneContext(new HeadlessRenderer(), parent);
+        context.attach(child1);
+        context.update(1f);
+        context.changeScene(newParent);
+        context.attach(child2);
+        context.update(1f);
+        context.attach(child1);
+        context.update(1f);
+
+        assertEquals(1, parent.getStartCount());
+        assertEquals(2, child1.getStartCount());
+        assertEquals(1, newParent.getStartCount());
+        assertEquals(1, child2.getStartCount());
     }
 }

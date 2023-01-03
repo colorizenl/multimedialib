@@ -1,14 +1,14 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2022 Colorize
+// Copyright 2009-2023 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.headless;
 
-import nl.colorize.multimedialib.graphics.ColorRGB;
-import nl.colorize.multimedialib.graphics.Image;
-import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Image;
+import nl.colorize.multimedialib.math.Region;
 
 public class HeadlessImage implements Image {
 
@@ -25,13 +25,13 @@ public class HeadlessImage implements Image {
     }
 
     @Override
-    public Rect getRegion() {
-        return new Rect(0, 0, width, height);
+    public Region getRegion() {
+        return new Region(0, 0, width, height);
     }
 
     @Override
-    public Image extractRegion(Rect region) {
-        return this;
+    public Image extractRegion(Region region) {
+        return new HeadlessImage(region.width(), region.height());
     }
 
     @Override
