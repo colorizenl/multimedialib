@@ -43,9 +43,4 @@ public class HeadlessImage implements Image {
     public int getAlpha(int x, int y) {
         return 100;
     }
-
-    @Override
-    public Image tint(ColorRGB color) {
-        return this;
-    }
 }

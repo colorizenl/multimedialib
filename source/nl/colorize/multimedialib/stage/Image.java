@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.stage;
 
 import nl.colorize.multimedialib.math.Region;
+import nl.colorize.multimedialib.renderer.MediaAsset;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 
 /**
@@ -19,7 +20,7 @@ import nl.colorize.multimedialib.renderer.MediaLoader;
  * practice of including multiple images within a larger image, either as a
  * sprite sheet (for 2D graphics) or a texture (for 3D graphics).
  */
-public interface Image {
+public interface Image extends MediaAsset {
 
     public Region getRegion();
 
@@ -51,11 +52,4 @@ public interface Image {
      * between 0 (fully transparent) and 100 (fully opaque).
      */
     public int getAlpha(int x, int y);
-
-    /**
-     * Creates a new image with the same contents as this one, but with the RGB
-     * values for all pixels in the image being tinted with the specified color.
-     * The alpha value of the existing pixels will be preserved.
-     */
-    public Image tint(ColorRGB color);
 }

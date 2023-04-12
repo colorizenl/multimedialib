@@ -10,18 +10,17 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.reflect.ClassPath;
-import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.UnsupportedGraphicsModeException;
+import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.OutlineFont;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.multimedialib.stage.Shader;
-import nl.colorize.util.AppProperties;
 import nl.colorize.util.LoadUtils;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
@@ -156,18 +155,18 @@ public class StandardMediaLoader implements MediaLoader {
     }
 
     @Override
-    public AppProperties loadApplicationData(String appName, String fileName) {
+    public Properties loadApplicationData(String appName, String fileName) {
         File file = Platform.getApplicationData(appName, fileName);
 
         if (!file.exists()) {
-            return AppProperties.from(new Properties());
+            return new Properties();
         }
 
         try {
-            Properties properties = LoadUtils.loadProperties(file, Charsets.UTF_8);
-            return AppProperties.from(properties);
+            return LoadUtils.loadProperties(file, Charsets.UTF_8);
         } catch (IOException e) {
-            throw new MediaException("Unable to load application data", e);
+            LOGGER.log(Level.WARNING, "Unable to load application data", e);
+            return new Properties();
         }
     }
 

@@ -12,33 +12,24 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.glutils.HdpiMode;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
+import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
-import nl.colorize.multimedialib.renderer.InputDevice;
-import nl.colorize.multimedialib.renderer.MediaException;
-import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
+import nl.colorize.multimedialib.renderer.RenderCapabilities;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.multimedialib.renderer.java2d.StandardNetwork;
-import nl.colorize.multimedialib.renderer.ErrorHandler;
+import nl.colorize.multimedialib.scene.RenderContext;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.Stage;
-import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.LogHelper;
-import nl.colorize.util.swing.Utils2D;
 
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.zip.Deflater;
 
 /**
  * Renderer built on top of the libGDX framework. In turn, libGDX supports multiple
@@ -99,7 +90,8 @@ public class GDXRenderer implements Renderer, ApplicationListener {
         resize(canvas.getWidth(), canvas.getHeight());
         graphicsContext = new GDXGraphics(canvas);
 
-        context = new SceneContext(this, initialScene);
+        context = new RenderContext(this);
+        context.changeScene(initialScene);
     }
 
     @Override
@@ -151,50 +143,10 @@ public class GDXRenderer implements Renderer, ApplicationListener {
     }
 
     @Override
-    public GraphicsMode getGraphicsMode() {
-        return graphicsMode;
-    }
-
-    @Override
-    public DisplayMode getDisplayMode() {
-        return new DisplayMode(canvas, framerate);
-    }
-
-    @Override
-    public StageVisitor accessGraphics() {
-        return graphicsContext;
-    }
-
-    @Override
-    public InputDevice accessInputDevice() {
-        return input;
-    }
-
-    @Override
-    public MediaLoader accessMediaLoader() {
-        return mediaLoader;
-    }
-
-    @Override
-    public Network accessNetwork() {
-        return new StandardNetwork();
-    }
-
-    @Override
-    public String takeScreenshot() {
-        Pixmap screenshot = Pixmap.createFromFrameBuffer(0, 0, Gdx.graphics.getWidth(),
-            Gdx.graphics.getHeight());
-
-        try {
-            File tempFile = File.createTempFile("temp-screenshot", ".png");
-            PixmapIO.writePNG(Gdx.files.external(tempFile.getAbsolutePath()), screenshot,
-                Deflater.DEFAULT_COMPRESSION, true);
-            screenshot.dispose();
-
-            BufferedImage screenshotImage = Utils2D.loadImage(tempFile);
-            return Utils2D.toDataURL(screenshotImage);
-        } catch (IOException e) {
-            throw new MediaException("Screenshot failed", e);
-        }
+    public RenderCapabilities getCapabilities() {
+        DisplayMode displayMode = new DisplayMode(canvas, framerate);
+        Network network = new StandardNetwork();
+        return new RenderCapabilities(graphicsMode, displayMode,
+            graphicsContext, input, mediaLoader, network);
     }
 }

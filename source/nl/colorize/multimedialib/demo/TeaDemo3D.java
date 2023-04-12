@@ -8,9 +8,9 @@ package nl.colorize.multimedialib.demo;
 
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
+import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.renderer.teavm.TeaRenderer;
 import nl.colorize.multimedialib.renderer.three.ThreeGraphics;
-import nl.colorize.multimedialib.renderer.ErrorHandler;
 
 /**
  * Entry point for transpiling the 3D graphics demo to JavaScript using TeaVM.

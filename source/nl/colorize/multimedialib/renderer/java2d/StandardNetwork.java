@@ -8,13 +8,15 @@ package nl.colorize.multimedialib.renderer.java2d;
 
 import com.google.common.net.HttpHeaders;
 import nl.colorize.multimedialib.renderer.Network;
-import nl.colorize.util.Callback;
+import nl.colorize.util.Platform;
+import nl.colorize.util.Promise;
 import nl.colorize.util.http.Headers;
 import nl.colorize.util.http.Method;
 import nl.colorize.util.http.PostData;
 import nl.colorize.util.http.URLLoader;
 import nl.colorize.util.http.URLResponse;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -25,15 +27,15 @@ import java.nio.charset.StandardCharsets;
 public class StandardNetwork implements Network {
 
     @Override
-    public void get(String url, Headers headers, Callback<URLResponse> callback) {
+    public Promise<URLResponse> get(String url, Headers headers) {
         URLLoader request = createRequest(Method.GET, url, headers, null);
-        request.sendAsync(callback);
+        return request.sendPromise();
     }
 
     @Override
-    public void post(String url, Headers headers, PostData body, Callback<URLResponse> callback) {
+    public Promise<URLResponse> post(String url, Headers headers, PostData body) {
         URLLoader request = createRequest(Method.POST, url, headers, body);
-        request.sendAsync(callback);
+        return request.sendPromise();
     }
 
     private URLLoader createRequest(Method method, String url, Headers headers, PostData body) {
@@ -46,5 +48,11 @@ public class StandardNetwork implements Network {
             request.withBody(body);
         }
         return request;
+    }
+
+    @Override
+    public boolean isDevelopmentEnvironment() {
+        File workDir = Platform.getUserWorkingDirectory();
+        return new File(workDir, "build.gradle").exists();
     }
 }

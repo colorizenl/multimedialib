@@ -14,6 +14,7 @@ import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Shape;
 import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.UnsupportedGraphicsModeException;
 import nl.colorize.multimedialib.scene.Updatable;
@@ -41,6 +42,7 @@ import java.util.logging.Logger;
 public class Stage implements Updatable {
 
     private Canvas canvas;
+    private FrameStats frameStats;
     private ColorRGB backgroundColor;
     private Map<String, Layer2D> layers2D;
     private Layer3D layer3D;
@@ -49,12 +51,12 @@ public class Stage implements Updatable {
     public static final String DEFAULT_LAYER = Layer2D.DEFAULT_LAYER;
     private static final Logger LOGGER = LogHelper.getLogger(Stage.class);
 
-    public Stage(GraphicsMode graphicsMode, Canvas canvas) {
+    public Stage(GraphicsMode graphicsMode, Canvas canvas, FrameStats frameStats) {
         this.canvas = canvas;
-        this.observers = new ArrayList<>();
-
+        this.frameStats = frameStats;
         this.backgroundColor = ColorRGB.BLACK;
         this.layers2D = new LinkedHashMap<>();
+        this.observers = new ArrayList<>();
 
         // Add default layers for 2D and (when supported) 3D graphics.
         addLayer(DEFAULT_LAYER);
@@ -92,6 +94,14 @@ public class Stage implements Updatable {
         return layer;
     }
 
+    /**
+     * Returns the layer with the specified name. This assumes the layer
+     * already exists, use {@link #retrieveLayer(String)} if you want to
+     * simultaneously create the layer.
+     *
+     * @throws IllegalArgumentException if no layer with the specified
+     *         name currently exists.
+     */
     public Layer2D getLayer(String name) {
         Layer2D layer = layers2D.get(name);
         Preconditions.checkArgument(layer != null, "No such layer: " + name);
@@ -131,41 +141,24 @@ public class Stage implements Updatable {
         return layer3D;
     }
 
-    @Deprecated
-    public void add(Layer2D layer, Graphic2D graphic) {
-        layer.add(graphic);
-    }
-
-    @Deprecated
+    /**
+     * Adds graphics to the layer with the specified name. This method is a
+     * shorthand for {@code getLayer(layerName).add(graphic)}.
+     *
+     * @throws IllegalArgumentException if no layer with the specified name
+     *         currently exists.
+     */
     public void add(String layerName, Graphic2D graphic) {
         getLayer(layerName).add(graphic);
     }
 
-    @Deprecated
-    public void add(Layer2D layer, Group group) {
-        layer.add(group);
-    }
-
-    @Deprecated
-    public void add(String layerName, Group group) {
-        getLayer(layerName).add(group);
-    }
-
-    @Deprecated
-    public void add(Graphic2D graphic) {
-        getLayer(DEFAULT_LAYER).add(graphic);
-    }
-
-    @Deprecated
-    public void remove(Layer2D layer, Graphic2D graphic) {
-        layer.remove(graphic);
-    }
-
-    @Deprecated
-    public void remove(String layerName, Graphic2D graphic) {
-        getLayer(layerName).remove(graphic);
-    }
-
+    /**
+     * Removes graphics from any layer on the stage where it might exist.
+     *
+     * @deprecated Use {@code getLayer(...).remove(graphic}} to remove the
+     *             graphic from the correct layer instead. This method has
+     *             poor performance behavior for large and complex stages.
+     */
     @Deprecated
     public void remove(Graphic2D graphic) {
         layers2D.values().forEach(layer -> layer.remove(graphic));
@@ -176,6 +169,9 @@ public class Stage implements Updatable {
      * in which they should be drawn.
      */
     public void visit(StageVisitor visitor) {
+        Rect canvasBounds = canvas.getBounds();
+
+        frameStats.resetDrawOperations();
         visitor.preVisitStage(this);
         visitor.drawBackground(backgroundColor);
 
@@ -183,16 +179,21 @@ public class Stage implements Updatable {
             visitor.prepareLayer(layer);
 
             for (Graphic2D graphic : layer.getGraphics()) {
-                boolean visible = graphic.isVisible();
+                boolean visible = determineGraphicVisible(graphic, canvasBounds);
                 visitor.preVisitGraphic(graphic, visible);
                 if (visible) {
                     visitGraphic(graphic, visitor);
                     visitor.postVisitGraphic(graphic);
+                    frameStats.markDrawOperation(graphic);
                 }
             }
         }
 
         visitor.postVisitStage(this);
+    }
+
+    private boolean determineGraphicVisible(Graphic2D graphic, Rect canvasBounds) {
+        return graphic.isVisible() && graphic.getBounds().intersects(canvasBounds);
     }
 
     private void visitGraphic(Graphic2D graphic, StageVisitor visitor) {

@@ -23,13 +23,13 @@ to the dependencies section in `pom.xml`:
     <dependency>
         <groupId>nl.colorize</groupId>
         <artifactId>multimedialib</artifactId>
-        <version>2023.1</version>
+        <version>2023.1.1</version>
     </dependency>  
     
 The library can also be used in Gradle projects:
 
     dependencies {
-        implementation "nl.colorize:multimedialib:2023.1"
+        implementation "nl.colorize:multimedialib:2023.1.1"
     }
     
 Supported platforms
@@ -52,14 +52,10 @@ The following renderer implementations are available:
 
 When using a browser-based renderer, the application needs to be transpiled to JavaScript in order
 for it to run in the browser. MultimediaLib comes with a
-[command line tool](#transpiling-applications-to-html-javascript) that can be used to transpile
+[command line tool](#transpiling-applications-to-htmljavascript) that can be used to transpile
 the application as part of the build.
 
-Not all platforms and renderers will support all features. Refer to the
-[platform/renderer compatibility table](compatibility.md) for a full overview of supported features.
-
-A standard build will result in JAR files (for desktop applications) and static web pages (for 
-TeaVM/browser applications). Both can be wrapped to create native applications for various
+Both Java applications and browser applications can be wrapped to native distributions for various
 platforms. Refer to the [documentation on distributing applications](#distributing-applications)
 for instructions on how to provide a more native distribution for each platform.
 
@@ -109,10 +105,17 @@ parameters:
 Note that when using 3D graphics on Mac OS the command line argument `-XstartOnFirstThread` must
 be present.
 
-The browser version of the demo applications can be created by running 
-`gradle transpileDemoApplication2D` and `gradle transpileDemoApplication3D` respectively.
-The build output is then saved to the directories `build/browserdemo2d` and `browserdemo3d`, and 
-can be started by opening the corresponding `index.html` in a browser.
+The demo application can also be tested as a (native) app for various platforms:
+
+- **Browser:** The browser version of the demo applications can be created by running 
+  `gradle transpileDemoApplication2D` and `gradle transpileDemoApplication3D` respectively.
+  The build output is then saved to the directories `build/browserdemo2d` and `browserdemo3d`,
+  and can be started by opening the corresponding `index.html` in a browser.
+- **Mac:** Running `gradle createApplicationBundle` will generate the native Mac application
+  bundle in `build/mac`. This command can only be used on a Mac.
+- **iOS:** Running `gradle xcodeGen` will generate an Xcode project for a native iOS version of
+  the demo application. The Xcode project will be located in `build/xcode`. This command can only
+  be used on a Mac.
 
 Transpiling applications to HTML/JavaScript
 -------------------------------------------
@@ -167,13 +170,13 @@ MultimediaLib does not include a distribution mechanism for applications, but it
 other tools for each supported platform. Other tools can be used to create a native distribution:
 
 - The [Colorize Gradle application plugin](https://plugins.gradle.org/plugin/nl.colorize.gradle.application)
-  is capable of building Mac application bundles and PWAs.
+  is capable of building executables and installers for various platforms.
 - [Launch4j](http://launch4j.sourceforge.net) can generate `.exe` files for Windows.
   Alternatively, the browser version can be submitted to the Windows Store as a PWA.
 - [PWA Builder](https://www.pwabuilder.com) can generate native apps for Windows, Android, and
   iOS that use a PWA as input.
-- [Cordova](https://cordova.apache.org) can wrap the web application in a native app for Android,
-  iOS, and Mac.
+- [Cordova](https://cordova.apache.org) can wrap the web application in a hybrid web/native app
+  for Android, iOS, and Mac.
 
 More documentation
 ------------------
@@ -183,23 +186,17 @@ More documentation
 Build instructions
 ------------------
 
-Building the library can be done on any platform. The following is mandatory for building the
-library itself:
+Building the library requires the following:
 
 - [Java JDK](http://java.oracle.com) 17+
 - [Gradle](http://gradle.org)
 - [NodeJS](https://nodejs.org/en/) 18+
 
-Note that creating application that *use* MultimediaLib will usually have additional dependencies,
-depending on which platforms are targeted.
-
-- [Xcode](https://developer.apple.com/xcode/) for iOS apps
-- [Android SDK](https://developer.android.com/sdk/index.html) for Android apps
-
 The following Gradle build tasks are available:
 
 - `gradle clean` cleans the build directory
 - `gradle assemble` creates the JAR file for distribution
+- `gradle npmInstall` updates NPM libraries and packages them inside the library
 - `gradle test` runs all unit tests
 - `gradle coverage` runs all unit tests and reports on test coverage
 - `gradle javadoc` generates the JavaDoc API documentation
@@ -215,14 +212,14 @@ License
 
 Copyright 2009-2023 Colorize
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-        http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+> Licensed under the Apache License, Version 2.0 (the "License");
+> you may not use this file except in compliance with the License.
+> You may obtain a copy of the License at
+>
+>    http://www.apache.org/licenses/LICENSE-2.0
+>
+> Unless required by applicable law or agreed to in writing, software
+> distributed under the License is distributed on an "AS IS" BASIS,
+> WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+> See the License for the specific language governing permissions and
+> limitations under the License.

@@ -9,16 +9,15 @@ package nl.colorize.multimedialib.renderer.java2d;
 import nl.colorize.multimedialib.math.MathUtils;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
+import nl.colorize.multimedialib.renderer.ErrorHandler;
+import nl.colorize.multimedialib.renderer.FrameSync;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
-import nl.colorize.multimedialib.renderer.InputDevice;
-import nl.colorize.multimedialib.renderer.MediaLoader;
-import nl.colorize.multimedialib.renderer.Network;
+import nl.colorize.multimedialib.renderer.RenderCapabilities;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.WindowOptions;
-import nl.colorize.multimedialib.renderer.ErrorHandler;
+import nl.colorize.multimedialib.scene.RenderContext;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.ResourceFile;
@@ -40,7 +39,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.image.BufferStrategy;
-import java.awt.image.BufferedImage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -55,11 +53,9 @@ import java.util.logging.Logger;
  */
 public class Java2DRenderer implements Renderer {
 
+    private DisplayMode displayMode;
     private Canvas canvas;
-    private int framerate;
-    private Stopwatch syncTimer;
-    private long oversleep;
-
+    private FrameSync frameSync;
     private SceneContext context;
     private StandardMediaLoader mediaLoader;
     private AWTInput inputDevice;
@@ -79,10 +75,9 @@ public class Java2DRenderer implements Renderer {
     public Java2DRenderer(DisplayMode displayMode, WindowOptions windowOptions) {
         SwingUtils.initializeSwing();
 
+        this.displayMode = displayMode;
         this.canvas = displayMode.canvas();
-        this.framerate = displayMode.framerate();
-        this.syncTimer = new Stopwatch();
-
+        this.frameSync = new FrameSync(displayMode);
         this.mediaLoader = new StandardMediaLoader();
         this.windowOptions = windowOptions;
 
@@ -95,8 +90,10 @@ public class Java2DRenderer implements Renderer {
     @Override
     public void start(Scene initialScene, ErrorHandler errorHandler) {
         window = initializeWindow(windowOptions);
-        graphicsContext = new Java2DGraphicsContext(canvas, mediaLoader);
-        context = new SceneContext(this, initialScene);
+        graphicsContext = new Java2DGraphicsContext(canvas);
+
+        context = new RenderContext(this);
+        context.changeScene(initialScene);
 
         Runnable animationLoop = () -> runAnimationLoop(errorHandler);
         Thread renderingThread = new Thread(animationLoop, "MultimediaLib-Java2D-Renderer");
@@ -169,34 +166,49 @@ public class Java2DRenderer implements Renderer {
     /**
      * Main entry point for the rendering thread. This will keep running the
      * animation loop for as long as the application is active.
+     * <p>
+     * After every frame, this method will sleep the rendering thread to
+     * synchronize the animation loop as close to the targeted framerate as
+     * possible.
      */
     private void runAnimationLoop(ErrorHandler errorHandler) {
-        while (!terminated.get()) {
-            try {
-                syncTimer.tick();
+        Stopwatch timer = new Stopwatch();
+
+        try {
+            while (!terminated.get()) {
+                long timestamp = timer.value();
+                long elapsed = timer.tick();
 
                 if (canvasDirty.get()) {
                     canvasDirty.set(false);
                     prepareCanvas();
                 }
 
-                context.getFrameStats().markFrameStart();
-                float frameTime = 1f / framerate;
-                inputDevice.update(frameTime);
-                context.update(frameTime);
-                context.getFrameStats().markFrameUpdate();
-                drawFrame();
-                context.getFrameStats().markFrameRender();
+                frameSync.requestFrame(timestamp, this::doFrame);
 
+                long sleepTime = Math.max(elapsed - displayMode.getFrameTimeMS(), 0) - timer.tock();
                 Thread.yield();
-                long elapsedTime = syncTimer.tock();
-                syncFrame(elapsedTime);
-            } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Error during animation loop", e);
-                errorHandler.onError(context, e);
-                quit();
+                Thread.sleep(MathUtils.clamp(sleepTime, MIN_SLEEP_TIME, MAX_SLEEP_TIME));
             }
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error during animation loop", e);
+            errorHandler.onError(context, e);
+            quit();
         }
+    }
+
+    /**
+     * Performs an application frame update. This method is called from the
+     * application loop, but might be called at different intervals than the
+     * native display refresh rate.
+     */
+    private void doFrame(float deltaTime) {
+        context.getFrameStats().markFrameStart();
+        inputDevice.update(deltaTime);
+        context.update(deltaTime);
+        context.getFrameStats().markFrameUpdate();
+        drawFrame();
+        context.getFrameStats().markFrameRender();
     }
 
     private void drawFrame() {
@@ -236,32 +248,6 @@ public class Java2DRenderer implements Renderer {
     }
 
     /**
-     * Synchronizes the timing of frame updates to make the animation loop
-     * run as close to the targeted framerate as possible.
-     * <p>
-     * This method uses {@code Thread.sleep} to pause the rendering thread.
-     * Unfortunately, the sleep accuracy is not perfect and will often be
-     * off by 1-2 milliseconds. This is normally not a big deal, but for
-     * higher framerates this will have a noticeable impact. This method
-     * therefore attempts to compensate for these inaccuracies.
-     */
-    private void syncFrame(long currentTrameTime) {
-        long targetFrameTime = 1000L / framerate;
-
-        long sleepTime = targetFrameTime - currentTrameTime - oversleep;
-        sleepTime = MathUtils.clamp(sleepTime, MIN_SLEEP_TIME, MAX_SLEEP_TIME);
-
-        try {
-            Stopwatch sleepTimer = new Stopwatch();
-            Thread.sleep(sleepTime);
-            long actualSleepTime = sleepTimer.tock();
-            oversleep = actualSleepTime - sleepTime;
-        } catch (InterruptedException e) {
-            LOGGER.warning("Frame sync interrupted");
-        }
-    }
-
-    /**
      * Prepares the window buffer for the current frame. This buffer will be
      * used to display the graphics once the entire frame has been rendered.
      */
@@ -284,43 +270,10 @@ public class Java2DRenderer implements Renderer {
     }
 
     @Override
-    public GraphicsMode getGraphicsMode() {
-        return GraphicsMode.MODE_2D;
-    }
-
-    @Override
-    public DisplayMode getDisplayMode() {
-        return new DisplayMode(canvas, framerate);
-    }
-
-    @Override
-    public StageVisitor accessGraphics() {
-        return graphicsContext;
-    }
-
-    @Override
-    public InputDevice accessInputDevice() {
-        return inputDevice;
-    }
-
-    @Override
-    public MediaLoader accessMediaLoader() {
-        return mediaLoader;
-    }
-
-    @Override
-    public Network accessNetwork() {
-        return new StandardNetwork();
-    }
-
-    @Override
-    public String takeScreenshot() {
-        BufferedImage screenshot = new BufferedImage(canvas.getWidth(), canvas.getHeight(),
-            BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = Utils2D.createGraphics(screenshot, true, true);
-        window.getContentPane().print(g2);
-        g2.dispose();
-        return Utils2D.toDataURL(screenshot);
+    public RenderCapabilities getCapabilities() {
+        StandardNetwork network = new StandardNetwork();
+        return new RenderCapabilities(GraphicsMode.MODE_2D, displayMode,
+            graphicsContext, inputDevice, mediaLoader, network);
     }
 
     public void quit() {

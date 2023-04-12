@@ -4,9 +4,11 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.renderer;
+package nl.colorize.multimedialib.stage;
 
 import com.google.common.base.Preconditions;
+import nl.colorize.multimedialib.renderer.MediaAsset;
+import nl.colorize.multimedialib.renderer.MediaLoader;
 
 /**
  * Represents an audio clip. Audio can be loaded from one of the common file
@@ -14,7 +16,7 @@ import com.google.common.base.Preconditions;
  * a value between 0 and 100, where 100 indicates the audio clip's original
  * volume. Audio clips stored in files are loaded using a {@link MediaLoader}.
  */
-public abstract class Audio {
+public abstract class Audio implements MediaAsset {
 
     private int volume;
     private boolean loop;

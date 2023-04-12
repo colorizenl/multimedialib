@@ -32,8 +32,6 @@ public class Sprite implements Graphic2D {
     private Point2D position;
     private Transform transform;
 
-    private Rect cachedBounds;
-
     private static final String DEFAULT_STATE = "$$default";
 
     public Sprite() {
@@ -41,8 +39,6 @@ public class Sprite implements Graphic2D {
         this.visible = true;
         this.position = new Point2D(0, 0);
         this.transform = new Transform();
-
-        this.cachedBounds = new Rect(0f, 0f, 0f, 0f);
     }
 
     public Sprite(Animation anim) {
@@ -132,6 +128,7 @@ public class Sprite implements Graphic2D {
         return getCurrentGraphics().getHeight();
     }
 
+    @Override
     public void setVisible(boolean visible) {
         this.visible = visible;
     }
@@ -171,8 +168,7 @@ public class Sprite implements Graphic2D {
     public Rect getBounds() {
         float width = Math.max(getCurrentWidth() * (transform.getScaleX() / 100f), 1f);
         float height = Math.max(getCurrentHeight() * (transform.getScaleY() / 100f), 1f);
-        cachedBounds.set(position.getX() - width / 2f, position.getY() - height / 2f, width, height);
-        return cachedBounds;
+        return new Rect(position.getX() - width / 2f, position.getY() - height / 2f, width, height);
     }
 
     /**

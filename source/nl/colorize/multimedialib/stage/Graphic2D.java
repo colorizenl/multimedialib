@@ -17,6 +17,8 @@ import nl.colorize.multimedialib.scene.Updatable;
  */
 public interface Graphic2D extends Updatable {
 
+    public void setVisible(boolean visible);
+
     public boolean isVisible();
 
     default void setPosition(Point2D position) {

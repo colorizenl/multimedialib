@@ -265,6 +265,11 @@ public class AWTInput implements InputDevice, Updatable, KeyListener, MouseListe
     }
 
     @Override
+    public boolean isPointerReleased() {
+        return mouseState == MOUSE_STATE_RELEASED;
+    }
+
+    @Override
     public void clearPointerReleased() {
         mouseState = MOUSE_STATE_DEFAULT;
     }
@@ -310,10 +315,5 @@ public class AWTInput implements InputDevice, Updatable, KeyListener, MouseListe
         Popups.message(null, "", panel);
 
         return field.getText();
-    }
-
-    @Override
-    public Canvas getCanvas() {
-        return canvas;
     }
 }

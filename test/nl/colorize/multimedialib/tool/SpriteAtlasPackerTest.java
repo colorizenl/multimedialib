@@ -162,4 +162,29 @@ public class SpriteAtlasPackerTest {
         assertTrue(new File(outputDir, "sub1.atlas").exists());
         assertTrue(new File(outputDir, "sub2.atlas").exists());
     }
+
+    @Test
+    void recursiveDirectories(@TempDir File inputDir, @TempDir File outputDir) throws IOException {
+        File subDir1 = new File(inputDir, "sub1");
+        subDir1.mkdir();
+
+        File subDir2 = new File(subDir1, "sub2");
+        subDir2.mkdir();
+        Utils2D.savePNG(Utils2D.createTestImage(100, 100), new File(subDir2, "a.png"));
+        Utils2D.savePNG(Utils2D.createTestImage(100, 100), new File(subDir2, "b.png"));
+
+        File subDir3 = new File(subDir2, "sub3");
+        subDir3.mkdir();
+        Utils2D.savePNG(Utils2D.createTestImage(100, 100), new File(subDir3, "c.png"));
+
+        SpriteAtlasPacker spriteSheetPacker = new SpriteAtlasPacker();
+        spriteSheetPacker.inputDir = inputDir;
+        spriteSheetPacker.outputDir = outputDir;
+        spriteSheetPacker.nested = true;
+        spriteSheetPacker.run();
+
+        assertFalse(new File(outputDir, "sub1.atlas").exists());
+        assertTrue(new File(outputDir, "sub2.atlas").exists());
+        assertTrue(new File(outputDir, "sub3.atlas").exists());
+    }
 }

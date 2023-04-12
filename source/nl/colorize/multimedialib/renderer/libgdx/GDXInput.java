@@ -166,18 +166,24 @@ public class GDXInput implements InputDevice, Updatable {
     }
 
     @Override
+    public boolean isPointerReleased() {
+        return pointerReleased;
+    }
+
+    @Override
     public void clearPointerReleased() {
         pointerReleased = false;
     }
 
     @Override
     public boolean isTouchAvailable() {
-        return Platform.getPlatformFamily().isMobile();
+        Platform platform = Platform.getPlatform();
+        return platform == Platform.IOS || platform == Platform.ANDROID;
     }
 
     @Override
     public boolean isKeyboardAvailable() {
-        return Platform.getPlatformFamily().isDesktop();
+        return !isTouchAvailable();
     }
 
     @Override
@@ -203,10 +209,5 @@ public class GDXInput implements InputDevice, Updatable {
         Popups.message(null, "", panel);
 
         return field.getText();
-    }
-
-    @Override
-    public Canvas getCanvas() {
-        return canvas;
     }
 }

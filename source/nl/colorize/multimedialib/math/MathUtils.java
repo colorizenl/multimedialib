@@ -75,10 +75,15 @@ public final class MathUtils {
     }
     
     public static float average(List<? extends Number> numbers) {
+        if (numbers.isEmpty()) {
+            return 0f;
+        }
+
         float sum = 0f;
         for (Number num : numbers) {
             sum += num.floatValue();
         }
+
         return sum / numbers.size();
     }
     

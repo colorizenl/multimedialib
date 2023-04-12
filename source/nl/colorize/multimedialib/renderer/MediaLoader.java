@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.renderer;
 
 import com.google.common.base.Splitter;
+import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
@@ -14,9 +15,6 @@ import nl.colorize.multimedialib.stage.OutlineFont;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.multimedialib.stage.Shader;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
-import nl.colorize.util.AppProperties;
-import nl.colorize.util.Platform;
-import nl.colorize.util.PlatformFamily;
 
 import java.util.List;
 import java.util.Properties;
@@ -139,7 +137,7 @@ public interface MediaLoader {
      *
      * @throws MediaException if the file cannot be loaded.
      */
-    public AppProperties loadApplicationData(String appName, String fileName);
+    public Properties loadApplicationData(String appName, String fileName);
 
     /**
      * Saves application data for the application with the specified name. The
@@ -149,9 +147,4 @@ public interface MediaLoader {
      * @throws MediaException if the file could not be saved.
      */
     public void saveApplicationData(Properties data, String appName, String fileName);
-
-    @Deprecated
-    default PlatformFamily getPlatformFamily() {
-        return Platform.getPlatformFamily();
-    }
 }

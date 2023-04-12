@@ -7,36 +7,34 @@
 package nl.colorize.multimedialib.renderer.teavm;
 
 import com.google.common.base.Splitter;
-import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GeometryBuilder;
+import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.UnsupportedGraphicsModeException;
 import nl.colorize.multimedialib.renderer.pixi.PixiGraphics;
 import nl.colorize.multimedialib.renderer.pixi.PixiShader;
 import nl.colorize.multimedialib.renderer.three.ThreeGraphics;
 import nl.colorize.multimedialib.renderer.three.ThreeShader;
+import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.OutlineFont;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.multimedialib.stage.Shader;
 import nl.colorize.multimedialib.stage.StageVisitor;
-import nl.colorize.util.AppProperties;
 import nl.colorize.util.LoadUtils;
-import nl.colorize.util.PlatformFamily;
+import nl.colorize.util.Promise;
+import org.teavm.jso.browser.Window;
+import org.teavm.jso.dom.html.HTMLAudioElement;
+import org.teavm.jso.dom.html.HTMLDocument;
+import org.teavm.jso.dom.html.HTMLElement;
+import org.teavm.jso.dom.html.HTMLImageElement;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Delegates media loading to the browser. Images, audio, and fonts are loaded
@@ -45,74 +43,52 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class TeaMediaLoader implements MediaLoader {
 
+    private HTMLDocument document;
     private StageVisitor graphics;
-    private Map<FilePointer, ProgressTracker> progressTrackers;
-    private List<TeaImage> loadedImages;
-    private int nextAudioId;
-    private int nextFontId;
     private List<FilePointer> manifest;
 
     private static final FilePointer MANIFEST_FILE = new FilePointer("resource-file-manifest");
     private static final Splitter LINE_SPLITTER = Splitter.on("\n").trimResults().omitEmptyStrings();
 
     protected TeaMediaLoader(StageVisitor graphics) {
+        this.document = Window.current().getDocument();
         this.graphics = graphics;
-        this.progressTrackers = new LinkedHashMap<>();
-        this.loadedImages = new ArrayList<>();
-        this.nextAudioId = 1;
-        this.nextFontId = 1;
         this.manifest = Collections.emptyList();
-    }
-
-    /**
-     * Checks the loading status of all resources, and returns true if all
-     * previously requested resources have completed loading.In JavaScript
-     * all operations that involve loading resources from files are done
-     * asynchronously, but managing a scene that is partially loaded would
-     * be extremely inconvenient, so this method can be used to suspend the
-     * scene until loading has been completed.
-     */
-    public boolean checkLoadingProgress() {
-        Map<FilePointer, ProgressTracker> remaining = new LinkedHashMap<>();
-
-        for (Map.Entry<FilePointer, ProgressTracker> entry : progressTrackers.entrySet()) {
-            if (!entry.getValue().isLoadingComplete()) {
-                remaining.put(entry.getKey(), entry.getValue());
-            }
-        }
-
-        progressTrackers = remaining;
-        return remaining.isEmpty();
     }
 
     @Override
     public Image loadImage(FilePointer file) {
-        String id = String.valueOf(loadedImages.size() + 1);
-        Browser.loadImage(id, "resources/" + normalizeFilePath(file, false));
-        
-        // The browser will load the image asynchronously, but we can
-        // already return a pointer that will be used to retrieve the
-        // image information once it becomes available.
-        TeaImage imagePointer = new TeaImage(id, file, null);
-        loadedImages.add(imagePointer);
-        progressTrackers.put(file, () -> Browser.getImageHeight(id) > 0);
-        return imagePointer;
+        HTMLImageElement img = (HTMLImageElement) document.createElement("img");
+        Promise<HTMLImageElement> imgPromise = new Promise<>();
+        img.addEventListener("load", event -> imgPromise.resolve(img));
+        img.setSrc("resources/" + normalizeFilePath(file, false));
+        return new TeaImage(imgPromise, null);
     }
 
     @Override
     public Audio loadAudio(FilePointer file) {
-        String id = String.valueOf(nextAudioId);
-        Browser.loadAudio(id, "resources/" + normalizeFilePath(file, false));
-        nextAudioId++;
-        return new TeaAudio(id);
+        HTMLAudioElement audioElement = (HTMLAudioElement) document.createElement("audio");
+        audioElement.setSrc("resources/" + normalizeFilePath(file, false));
+        return new TeaAudio(audioElement);
     }
 
     @Override
     public OutlineFont loadFont(FilePointer file, FontStyle style) {
-        String id = String.valueOf(nextFontId);
-        Browser.loadFont(id, "resources/" + normalizeFilePath(file, false), style.family());
-        nextFontId++;
-        return new TeaFont(id, style);
+        String css = "";
+        css += "@font-face {\n";
+        css += "    font-family: '" + style.family() + "';\n";
+        css += "    font-style: normal;\n";
+        css += "    font-weight: 400;\n";
+        css += "    src: url('resources/" + normalizeFilePath(file, false) + "') format('truetype');\n";
+        css += "};\n";
+
+        HTMLElement styleElement = document.createElement("style");
+        styleElement.appendChild(document.createTextNode(css));
+
+        HTMLElement fontContainer = document.getElementById("fontContainer");
+        fontContainer.appendChild(styleElement);
+
+        return new TeaFont(style);
     }
 
     @Override
@@ -143,23 +119,21 @@ public class TeaMediaLoader implements MediaLoader {
 
     @Override
     public String loadText(FilePointer file) {
-        return Browser.loadTextResourceFile(normalizeFilePath(file, true));
+        HTMLElement resource = document.getElementById(normalizeFilePath(file, true));
+        if (resource == null) {
+            throw new MediaException("Unknown text resource file: " + file);
+        }
+        return resource.getInnerText().trim();
     }
 
     @Override
     public boolean containsResourceFile(FilePointer file) {
-        String fileEntry = file.path();
-        if (fileEntry.indexOf('/') != -1) {
-            fileEntry = fileEntry.substring(fileEntry.lastIndexOf('/') + 1);
-        }
+        String fileEntry = file.path().contains("/")
+            ? file.path().substring(file.path().lastIndexOf("/") + 1)
+            : file.path();
 
-        for (FilePointer entry : loadResourceFileManifest()) {
-            if (entry.path().equals(fileEntry)) {
-                return true;
-            }
-        }
-
-        return false;
+        return loadResourceFileManifest().stream()
+            .anyMatch(entry -> entry.path().equals(fileEntry));
     }
 
     private List<FilePointer> loadResourceFileManifest() {
@@ -186,20 +160,13 @@ public class TeaMediaLoader implements MediaLoader {
     }
 
     @Override
-    public AppProperties loadApplicationData(String appName, String fileName) {
+    public Properties loadApplicationData(String appName, String fileName) {
         String value = Browser.getLocalStorage(appName + "." + fileName);
-        if (value == null || value.isEmpty()) {
-            return AppProperties.from(new Properties());
-        }
 
-        //TODO this doesn't support non-ASCII characters, TeaVM
-        //     does not support Properties.load(Reader).
-        try (ByteArrayInputStream stream = new ByteArrayInputStream(value.getBytes(UTF_8))) {
-            Properties properties = new Properties();
-            properties.load(stream);
-            return AppProperties.from(properties);
-        } catch (IOException e) {
-            throw new AssertionError(e);
+        if (value != null && !value.isEmpty()) {
+            return LoadUtils.loadProperties(value);
+        } else {
+            return new Properties();
         }
     }
 
@@ -207,35 +174,5 @@ public class TeaMediaLoader implements MediaLoader {
     public void saveApplicationData(Properties data, String appName, String fileName) {
         String serializedData = LoadUtils.serializeProperties(data);
         Browser.setLocalStorage(appName + "." + fileName, serializedData);
-    }
-
-    /**
-     * Returns the underlying platform. This will not return a generic
-     * "browser" or "web" value, but instead return the platform that is
-     * running the browser. The detection is based on the browser's User-Agent
-     * header.
-     */
-    @Override
-    public PlatformFamily getPlatformFamily() {
-        String userAgent = Browser.getUserAgent().toLowerCase();
-
-        if (userAgent.contains("iphone") || userAgent.contains("ipad")) {
-            return PlatformFamily.IOS;
-        } else if (userAgent.contains("android")) {
-            return PlatformFamily.ANDROID;
-        } else if (userAgent.contains("mac")) {
-            return PlatformFamily.MAC;
-        } else {
-            return PlatformFamily.WINDOWS;
-        }
-    }
-
-    /**
-     * Callback interface for polling whether a resource is still loading.
-     */
-    @FunctionalInterface
-    private static interface ProgressTracker {
-
-        public boolean isLoadingComplete();
     }
 }

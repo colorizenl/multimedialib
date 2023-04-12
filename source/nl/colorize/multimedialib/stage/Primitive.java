@@ -72,6 +72,7 @@ public class Primitive implements Graphic2D {
         return alpha;
     }
 
+    @Override
     public void setVisible(boolean visible) {
         this.visible = visible;
     }

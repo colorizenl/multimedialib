@@ -296,9 +296,7 @@ public class Polygon implements Shape {
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof Polygon) {
-            Polygon other = (Polygon) o;
-
+        if (o instanceof Polygon other) {
             if (points.length != other.points.length) {
                 return false;
             }

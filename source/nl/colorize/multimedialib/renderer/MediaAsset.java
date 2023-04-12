@@ -4,9 +4,11 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.renderer.pixi;
+package nl.colorize.multimedialib.renderer;
 
-import org.teavm.jso.JSObject;
-
-public interface PixiFilter extends JSObject {
+/**
+ * Marker interface for media types that can be loaded by the renderer using
+ * its {@link MediaLoader}.
+ */
+public interface MediaAsset {
 }

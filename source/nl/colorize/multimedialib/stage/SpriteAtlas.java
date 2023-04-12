@@ -7,9 +7,9 @@
 package nl.colorize.multimedialib.stage;
 
 import com.google.common.base.Preconditions;
-import nl.colorize.multimedialib.math.Cache;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.util.TextUtils;
+import nl.colorize.util.stats.Cache;
 
 import java.util.HashMap;
 import java.util.List;
@@ -34,7 +34,7 @@ public class SpriteAtlas {
 
     public SpriteAtlas() {
         this.subImages = new HashMap<>();
-        this.subImageCache = Cache.create(this::loadSubImage, 1024);
+        this.subImageCache = Cache.from(this::loadSubImage, 1024);
     }
 
     private String normalizeSubImageName(String name) {

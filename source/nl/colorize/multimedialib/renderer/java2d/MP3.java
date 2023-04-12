@@ -8,7 +8,7 @@ package nl.colorize.multimedialib.renderer.java2d;
 
 import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.player.Player;
-import nl.colorize.multimedialib.renderer.Audio;
+import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.ResourceFile;
 

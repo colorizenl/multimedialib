@@ -16,11 +16,7 @@ import java.util.List;
  * components have a value between 0 and 255, where (0, 0, 0) is black and
  * (255, 255, 255) is white.
  */
-public final class ColorRGB {
-
-    private int r;
-    private int g;
-    private int b;
+public record ColorRGB(int r, int g, int b) {
     
     public static final ColorRGB BLACK = new ColorRGB(0, 0, 0);
     public static final ColorRGB WHITE = new ColorRGB(255, 255, 255);
@@ -39,10 +35,10 @@ public final class ColorRGB {
      * @throws IllegalArgumentException if one of the color components is outside
      *         the range 0-255.
      */
-    public ColorRGB(int r, int g, int b) {
-        this.r = parseColorComponent(r);
-        this.g = parseColorComponent(g);
-        this.b = parseColorComponent(b);
+    public ColorRGB {
+        Preconditions.checkArgument(r >= 0 && r <= 255, "Invalid red: " + r);
+        Preconditions.checkArgument(g >= 0 && g <= 255, "Invalid green: " + g);
+        Preconditions.checkArgument(b >= 0 && b <= 255, "Invalid blue: " + b);
     }
 
     /**
@@ -50,21 +46,7 @@ public final class ColorRGB {
      * will be ignored.
      */
     public ColorRGB(int rgba) {
-        this.r = (rgba >> 16) & 0xFF;
-        this.g = (rgba >> 8) & 0xFF;
-        this.b = rgba & 0xFF;
-    }
-
-    public int getR() {
-        return r;
-    }
-
-    public int getG() {
-        return g;
-    }
-
-    public int getB() {
-        return b;
+        this((rgba >> 16) & 0xFF, (rgba >> 8) & 0xFF, rgba & 0xFF);
     }
 
     public int getRGB() {
@@ -72,6 +54,24 @@ public final class ColorRGB {
         rgb = (rgb << 8) + g;
         rgb = (rgb << 8) + b;
         return rgb;
+    }
+
+    /**
+     * Returns this color in hexidecimal notation. For example, the color red
+     * (255, 0, 0) will return "#FF0000".
+     */
+    public String toHex() {
+        StringBuilder hex = new StringBuilder(7);
+        hex.append('#');
+        hex.append(toHex(r));
+        hex.append(toHex(g));
+        hex.append(toHex(b));
+        return hex.toString().toUpperCase();
+    }
+
+    private String toHex(int component) {
+        String str = Integer.toHexString(component);
+        return (str.length() > 1) ? str : "0" + str;
     }
 
     /**
@@ -99,42 +99,10 @@ public final class ColorRGB {
 
         return colors;
     }
-    
-    @Override
-    public boolean equals(Object o) {
-        if (o instanceof ColorRGB) {
-            ColorRGB other = (ColorRGB) o;
-            return r == other.r && g == other.g && b == other.b;
-        }
-        return false;
-    }
-    
-    @Override
-    public int hashCode() {
-        return ((0) << 24) | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | ((b & 0xFF));
-    }
-    
+
     @Override
     public String toString() {
-        return "ColorRGB(" + r + ", " + g + ", " + b + ")";
-    }
-    
-    /**
-     * Returns this color in hexidecimal notation. For example, the color red
-     * (255, 0, 0) will return "#FF0000".
-     */
-    public String toHex() {
-        StringBuilder hex = new StringBuilder(7);
-        hex.append('#');
-        hex.append(toHex(r));
-        hex.append(toHex(g));
-        hex.append(toHex(b));
-        return hex.toString().toUpperCase();
-    }
-    
-    private String toHex(int component) {
-        String str = Integer.toHexString(component);
-        return (str.length() > 1) ? str : "0" + str;
+        return toHex();
     }
 
     /**
@@ -155,11 +123,5 @@ public final class ColorRGB {
         return new ColorRGB(Integer.parseInt(hex.substring(0, 2), 16),
                 Integer.parseInt(hex.substring(2, 4), 16),
                 Integer.parseInt(hex.substring(4, 6), 16));
-    }
-    
-    private static int parseColorComponent(int colorComponent) {
-        Preconditions.checkArgument(colorComponent >= 0 && colorComponent <= 255,
-                "Color component out of range: " + colorComponent);
-        return colorComponent;
     }
 }

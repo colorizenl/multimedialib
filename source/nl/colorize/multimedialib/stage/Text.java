@@ -12,6 +12,7 @@ import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.util.TextUtils;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 
@@ -48,11 +49,22 @@ public class Text implements Graphic2D {
 
     public void setText(String... lines) {
         if (lines.length == 1) {
-            this.text = lines[0];
+            setText(TextUtils.LINE_SPLITTER.splitToList(text));
+        } else {
+            setText(ImmutableList.copyOf(lines));
+        }
+    }
+
+    public void setText(List<String> lines) {
+        if (lines.isEmpty()) {
+            this.text = "";
+            this.lines = Collections.emptyList();
+        } else if (lines.size() == 1) {
+            this.text = lines.get(0);
             this.lines = TextUtils.LINE_SPLITTER.splitToList(text);
         } else {
             this.text = TextUtils.LINE_JOINER.join(lines);
-            this.lines = ImmutableList.copyOf(lines);
+            this.lines = lines;
         }
     }
 
@@ -98,6 +110,7 @@ public class Text implements Graphic2D {
         }
     }
 
+    @Override
     public void setVisible(boolean visible) {
         this.visible = visible;
     }

@@ -6,25 +6,25 @@
 
 package nl.colorize.multimedialib.demo;
 
-import nl.colorize.multimedialib.stage.ColorRGB;
-import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.stage.Layer3D;
-import nl.colorize.multimedialib.stage.OutlineFont;
-import nl.colorize.multimedialib.stage.PolygonModel;
-import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Point3D;
 import nl.colorize.multimedialib.math.RandomGenerator;
 import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.renderer.FilePointer;
-import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.stage.Align;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Image;
+import nl.colorize.multimedialib.stage.Layer3D;
+import nl.colorize.multimedialib.stage.OutlineFont;
+import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.multimedialib.stage.Stage;
+import nl.colorize.multimedialib.stage.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +34,7 @@ import java.util.List;
  * a number of models randomly walking around. Using this demo application
  * requires a renderer that supports 3D graphics.
  */
-public class Demo3D implements Scene {
+public class Demo3D implements Scene, ErrorHandler {
 
     private SceneContext context;
     private OutlineFont font;
@@ -71,7 +71,7 @@ public class Demo3D implements Scene {
         hud = new Text("", font);
         hud.getPosition().set(20, 20);
         hud.setLineHeight(20);
-        context.getStage().add(hud);
+        context.getStage().getDefaultLayer().add(hud);
     }
 
     private void createFloor(Layer3D stage) {
@@ -160,16 +160,16 @@ public class Demo3D implements Scene {
     }
 
     private void updateHUD(Stage stage) {
-        Canvas canvas = stage.getCanvas();
-        FrameStats stats = context.getFrameStats();
+        List<String> info = context.getDebugInformation();
+        info.add("Models:  " + models.size());
+        info.add("Pointer:  " + pointer);
+        hud.setText(info);
+    }
 
-        hud.setText(
-            "Canvas:  " + canvas,
-            "Framerate:  " + Math.round(stats.getFramerate()),
-            "Update time:  " + stats.getUpdateTime() + "ms",
-            "Render time:  " + stats.getRenderTime() + "ms",
-            "Models:  " + models.size(),
-            "Pointer:  " + pointer
-        );
+    @Override
+    public void onError(SceneContext context, Exception cause) {
+        Text errorText = new Text("Error:\n\n" + cause.getMessage(), font, Align.CENTER);
+        errorText.setPosition(context.getCanvas().getCenter());
+        context.getStage().getDefaultLayer().add(errorText);
     }
 }

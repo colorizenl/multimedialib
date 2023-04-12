@@ -30,7 +30,8 @@ public class EffectTest {
 
     @BeforeEach
     public void before() {
-        context = new SceneContext(new HeadlessRenderer(), new MockScene());
+        context = new RenderContext(new HeadlessRenderer());
+        context.changeScene(new MockScene());
     }
 
     @Test

@@ -15,14 +15,10 @@ import nl.colorize.multimedialib.stage.Layer2D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Transform;
-import nl.colorize.util.LogHelper;
-import nl.colorize.util.Platform;
 import nl.colorize.util.animation.Timeline;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * Uses a particle wipe effect that can be used for screen transitions. There
@@ -34,60 +30,73 @@ public class WipeTransition extends Effect {
 
     private Timeline timeline;
     private boolean reverse;
-    private Canvas canvas;
     private Image particleImage;
     private float duration;
     private ColorRGB fillColor;
     private List<List<Particle>> particles;
 
-    public static final String LAYER = "$$WipeTransition";
-    private static final FilePointer PARTICLE_IMAGE = new FilePointer("transition-effect.png");
-    private static final Logger LOGGER = LogHelper.getLogger(WipeTransition.class);
+    public static final FilePointer DIAMOND = new FilePointer("effects/particle-diamond.png");
+    public static final FilePointer CIRCLE = new FilePointer("effects/particle-circle.png");
 
-    private WipeTransition(boolean reverse, Canvas canvas, Image particleImage, float duration) {
+    private static final String LAYER = "$$WipeTransition";
+    private static final int PARTICLE_SIZE = 64;
+
+    /**
+     * Creates a new wipe transition based on the specified particle image. If
+     * {@code reverse} is true, the transition will start fully obscured and
+     * will then play backwards, slowly revealing the stage.
+     */
+    public WipeTransition(FilePointer imageFile, ColorRGB color, float duration, boolean reverse) {
         this.timeline = new Timeline()
             .addKeyFrame(0f, 0f)
             .addKeyFrame(duration, 1f);
-        stopAfter(timeline.getDuration());
 
-        this.reverse = reverse;
-        this.canvas = canvas;
-        this.particleImage = particleImage;
         this.duration = duration;
-        this.particles = generateParticles();
+        this.fillColor = color;
+        this.reverse = reverse;
+        this.particles = new ArrayList<>();
+
+        addStartHandler(() -> initialize(imageFile));
+        addFrameHandler(timeline::movePlayhead);
+        addFrameHandler(this::updateParticles);
+        addFrameHandler(this::updateFill);
+        stopIf(timeline::isCompleted);
     }
 
-    private List<List<Particle>> generateParticles() {
-        //TODO
-        if (Platform.isTeaVM()) {
-            LOGGER.warning("Particle effects are disabled on TeaVM due to performance issues");
-            return Collections.emptyList();
-        }
+    /**
+     * Creates a new wipe transition based on diamond-shaped particles. If
+     * {@code reverse} is true, the transition will start fully obscured and
+     * will then play backwards, slowly revealing the stage.
+     */
+    public WipeTransition(ColorRGB color, float duration, boolean reverse) {
+        this(DIAMOND, color, duration, reverse);
+    }
 
-        List<List<Particle>> particles = new ArrayList<>();
+    private void initialize(FilePointer imageFile) {
+        SceneContext context = getContext();
+        particleImage = context.getMediaLoader().loadImage(imageFile);
 
-        for (int x = 0; x <= canvas.getWidth(); x += particleImage.getWidth()) {
+        generateParticles(context.getCanvas());
+
+        particles.stream()
+            .flatMap(column -> column.stream())
+            .forEach(particle -> addParticleSprite(context, particle.sprite));
+    }
+
+    private void generateParticles(Canvas canvas) {
+        particles.clear();
+
+        for (int x = 0; x <= canvas.getWidth(); x += PARTICLE_SIZE) {
             List<Particle> column = new ArrayList<>();
             particles.add(column);
 
-            for (int y = 0; y <= canvas.getHeight(); y += particleImage.getHeight()) {
+            for (int y = 0; y <= canvas.getHeight(); y += PARTICLE_SIZE) {
                 float pDelay = (column.size() + 1) * 0.04f;
                 Particle particle = new Particle(x, y, pDelay, duration * 0.5f);
                 particle.sprite = new Sprite(particleImage);
                 column.add(particle);
             }
         }
-
-        return particles;
-    }
-
-    @Override
-    public void start(SceneContext context) {
-        super.start(context);
-
-        particles.stream()
-            .flatMap(column -> column.stream())
-            .forEach(particle -> addParticleSprite(context, particle.sprite));
     }
 
     private void addParticleSprite(SceneContext context, Sprite sprite) {
@@ -96,10 +105,7 @@ public class WipeTransition extends Effect {
         removeAfterwards(sprite);
     }
 
-    @Override
-    public void update(SceneContext context, float deltaTime) {
-        super.update(context, deltaTime);
-
+    private void updateParticles(float deltaTime) {
         for (List<Particle> column : particles) {
             for (Particle particle : column) {
                 particle.timeline.movePlayhead(deltaTime);
@@ -107,11 +113,13 @@ public class WipeTransition extends Effect {
                 particle.sprite.setTransform(getParticleTransform(particle));
             }
         }
+    }
 
-        if (fillColor != null && timeline.getDelta() >= 0.8f) {
-            Primitive fill = Primitive.of(canvas.getBounds(), fillColor);
+    private void updateFill(float deltaTime) {
+        if (!reverse && fillColor != null && timeline.getDelta() >= 0.8f) {
+            Primitive fill = Primitive.of(getContext().getCanvas().getBounds(), fillColor);
+            getContext().getStage().retrieveLayer(LAYER).add(fill);
             removeAfterwards(fill);
-            context.getStage().retrieveLayer(LAYER).add(fill);
         }
     }
 
@@ -121,30 +129,10 @@ public class WipeTransition extends Effect {
             delta = 1f - delta;
         }
 
-        float scale = Math.max(delta * 200f, 1f);
-        return Transform.withScale(scale);
-    }
-
-    public static WipeTransition obscure(SceneContext context, ColorRGB color, float duration) {
-        Image particleImage = context.getMediaLoader().loadImage(PARTICLE_IMAGE).tint(color);
-        Canvas canvas = context.getCanvas();
-        WipeTransition effect = new WipeTransition(false, canvas, particleImage, duration);
-        effect.fillColor = color;
-        return effect;
-    }
-
-    public static WipeTransition obscure(Canvas canvas, Image particleImage, float duration) {
-        return new WipeTransition(false, canvas, particleImage, duration);
-    }
-
-    public static WipeTransition reveal(SceneContext context, ColorRGB color, float duration) {
-        Image particleImage = context.getMediaLoader().loadImage(PARTICLE_IMAGE).tint(color);
-        Canvas canvas = context.getCanvas();
-        return new WipeTransition(true, canvas, particleImage, duration);
-    }
-
-    public static WipeTransition reveal(Canvas canvas, Image particleImage, float duration) {
-        return new WipeTransition(true, canvas, particleImage, duration);
+        Transform transform = new Transform();
+        transform.setScale(Math.max(delta * 200f, 1f));
+        transform.setMask(fillColor);
+        return transform;
     }
 
     /**

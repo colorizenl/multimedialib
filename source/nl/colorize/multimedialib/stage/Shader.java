@@ -6,11 +6,13 @@
 
 package nl.colorize.multimedialib.stage;
 
+import nl.colorize.multimedialib.renderer.MediaAsset;
+
 /**
  * Parsed and compiled OpenGL shader, consisting of both a vertex shader and a
  * fragment shader.
  */
-public interface Shader {
+public interface Shader extends MediaAsset {
 
     /**
      * No-op shader implementation that can be used by renderers that do not

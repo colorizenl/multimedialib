@@ -8,37 +8,46 @@ package nl.colorize.multimedialib.renderer.pixi;
 
 import org.teavm.jso.JSObject;
 import org.teavm.jso.JSProperty;
+import org.teavm.jso.dom.html.HTMLImageElement;
 
 /**
  * TeaVM interface for the {@code pixi-interface.js} JavaScript implementation.
  */
 public interface PixiInterface extends JSObject {
 
+    public void init();
+
     @JSProperty
-    public PixiDisplayObject getContainer();
+    public Pixi.App getPixiApp();
+
+    @JSProperty
+    public Pixi.DisplayObject getContainer();
 
     public void createLayer(String layerName);
 
     public void changeBackgroundColor(int backgroundColor);
 
-    public PixiDisplayObject createSprite(String layerName, String imageId,
-                                          float regionX, float regionY,
-                                          float regionWidth, float regionHeight);
+    public void addDisplayObject(String layerName, Pixi.DisplayObject displayObject);
 
-    public PixiDisplayObject createGraphics(String layerName);
-
-    public PixiDisplayObject createText(String layerName, String family, float size, boolean bold,
-                                        String align, float lineHeight, int color);
-
-    public void removeDisplayObject(String layerName, PixiDisplayObject displayObject);
+    public void removeDisplayObject(String layerName, Pixi.DisplayObject displayObject);
 
     public void clearStage();
 
-    public void applyTint(PixiDisplayObject sprite, int tintColor);
+    public Pixi.DisplayObject createContainer();
 
-    public void clearTint(PixiDisplayObject sprite);
+    public Pixi.DisplayObject createSprite(HTMLImageElement image, float regionX, float regionY,
+                                           float regionWidth, float regionHeight);
 
-    public PixiFilter createFilter(String vertexGLSL, String fragmentGLSL);
+    public Pixi.DisplayObject createGraphics();
 
-    public void applyFilter(String layerName, PixiFilter filter);
+    public Pixi.DisplayObject createText(String family, float size, boolean bold,
+                                         String align, float lineHeight, int color);
+
+    public void applyTint(Pixi.DisplayObject sprite, int tintColor);
+
+    public void clearTint(Pixi.DisplayObject sprite);
+
+    public Pixi.Filter createFilter(String vertexGLSL, String fragmentGLSL);
+
+    public void applyFilter(String layerName, Pixi.Filter filter);
 }

@@ -7,15 +7,11 @@
 package nl.colorize.multimedialib.renderer.java2d;
 
 import com.google.common.base.Preconditions;
-import nl.colorize.multimedialib.stage.ColorRGB;
-import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.renderer.FilePointer;
-import nl.colorize.util.swing.Utils2D;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Image;
 
-import java.awt.AlphaComposite;
-import java.awt.Color;
-import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 
 /**
@@ -73,18 +69,5 @@ public class AWTImage implements Image {
         int rgba = image.getRGB(x, y);
         int alpha = (rgba >> 24) & 0xFF;
         return Math.round(alpha / 2.55f);
-    }
-
-    @Override
-    public Image tint(ColorRGB color) {
-        BufferedImage tinted = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = Utils2D.createGraphics(tinted, true, false);
-        g2.drawImage(image, 0, 0, getWidth(), getHeight(), null);
-        g2.setComposite(AlphaComposite.SrcAtop);
-        g2.setColor(new Color(color.getR(), color.getG(), color.getB()));
-        g2.fillRect(0, 0, tinted.getWidth(), tinted.getHeight());
-        g2.dispose();
-
-        return new AWTImage(tinted, origin);
     }
 }

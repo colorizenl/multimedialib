@@ -7,7 +7,16 @@
 package nl.colorize.multimedialib.scene;
 
 import com.google.common.collect.ImmutableList;
+import nl.colorize.multimedialib.math.Circle;
+import nl.colorize.multimedialib.math.Line;
+import nl.colorize.multimedialib.math.Point2D;
+import nl.colorize.multimedialib.math.Polygon;
+import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.mock.MockImage;
+import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
+import nl.colorize.multimedialib.renderer.headless.HeadlessFont;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Graphic2D;
 import nl.colorize.multimedialib.stage.Layer2D;
@@ -17,14 +26,6 @@ import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.StageObserver;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
-import nl.colorize.multimedialib.math.Circle;
-import nl.colorize.multimedialib.math.Line;
-import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.math.Polygon;
-import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.multimedialib.mock.MockImage;
-import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.headless.HeadlessFont;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -46,11 +47,11 @@ class StageTest {
         Sprite spriteB = new Sprite();
         spriteB.addState("b", new MockImage());
 
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
-        stage.add(spriteA);
-        stage.add(Primitive.of(new Rect(10, 20, 30, 40), ColorRGB.RED));
-        stage.add(spriteB);
-        stage.add(new Text("abc", new HeadlessFont()));
+        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS, new FrameStats());
+        stage.getDefaultLayer().add(spriteA);
+        stage.getDefaultLayer().add(Primitive.of(new Rect(10, 20, 30, 40), ColorRGB.RED));
+        stage.getDefaultLayer().add(spriteB);
+        stage.getDefaultLayer().add(new Text("abc", new HeadlessFont()));
 
         List<String> visited = new ArrayList<>();
 
@@ -102,8 +103,8 @@ class StageTest {
         Rect rect = new Rect(100, 200, 100, 100);
         Primitive primitive = Primitive.of(rect, ColorRGB.RED);
 
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
-        stage.add(primitive);
+        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS, new FrameStats());
+        stage.getDefaultLayer().add(primitive);
 
         assertFalse(primitive.hitTest(new Point2D(0, 200)));
         assertTrue(primitive.hitTest(new Point2D(100, 200)));
@@ -121,7 +122,7 @@ class StageTest {
 
     @Test
     void observerAlsoListensForLayerChanges() {
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
+        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS, new FrameStats());
         Layer2D layer = stage.addLayer("test");
 
         List<Graphic2D> added1 = new ArrayList<>();
@@ -140,7 +141,7 @@ class StageTest {
 
     @Test
     void stringForm() {
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
+        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS, new FrameStats());
         Layer2D layer = stage.addLayer("test");
         layer.add(new Sprite(new MockImage()));
         layer.add(Primitive.of(new Rect(10, 10, 200, 200), ColorRGB.RED));

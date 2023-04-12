@@ -1,7 +1,8 @@
 plugins {
-    id "io.freefair.lombok" version "6.6.1"
-    id "com.github.node-gradle.node" version "3.5.0"
-    id "com.github.ben-manes.versions" version "0.44.0"
+    id "io.freefair.lombok" version "8.0.1"
+    id "com.github.node-gradle.node" version "3.5.1"
+    id "com.github.ben-manes.versions" version "0.46.0"
+    id "nl.colorize.gradle.application" version "2023.6"
 }
 
 apply plugin: "java-library"
@@ -10,7 +11,7 @@ apply plugin: "maven-publish"
 apply plugin: "signing"
 
 group = "nl.colorize"
-version = "2023.1"
+version = "2023.2"
 sourceCompatibility = "17"
 targetCompatibility = "17"
 compileJava.options.encoding = "UTF-8"
@@ -22,7 +23,7 @@ node.download = false
 npm_outdated.ignoreExitValue = true
 
 ext.libgdxVersion = "1.11.0"
-ext.teavmVersion = "0.7.0-dev-1208"
+ext.teavmVersion = "0.8.0-dev-1"
 
 repositories {
     mavenCentral()
@@ -35,7 +36,7 @@ repositories {
 }
 
 dependencies {
-    api "nl.colorize:colorize-java-commons:2023.1"
+    api "nl.colorize:colorize-java-commons:2023.6"
 
     implementation "com.badlogicgames.gdx:gdx:${libgdxVersion}"
     implementation "com.badlogicgames.gdx:gdx-platform:${libgdxVersion}:natives-desktop"
@@ -45,7 +46,6 @@ dependencies {
     implementation "com.badlogicgames.gdx:gdx-freetype-platform:${libgdxVersion}:natives-desktop"
     implementation "com.badlogicgames.gdx:gdx-tools:${libgdxVersion}"
 
-    implementation "org.teavm:teavm:${teavmVersion}"
     implementation "org.teavm:teavm-jso:${teavmVersion}"
     implementation "org.teavm:teavm-jso-apis:${teavmVersion}"
     implementation "org.teavm:teavm-classlib:${teavmVersion}"
@@ -56,7 +56,7 @@ dependencies {
     implementation "org.slf4j:slf4j-jdk14:1.7.36"
     implementation "com.github.mgsx-dev.gdx-gltf:gltf:2.1.0"
 
-    testImplementation "org.junit.jupiter:junit-jupiter:5.9.1"
+    testImplementation "org.junit.jupiter:junit-jupiter:5.9.2"
 }
 
 java {
@@ -81,14 +81,35 @@ javadoc {
     exclude "nl/colorize/multimedialib/demo/**"
 }
 
+macApplicationBundle {
+    name = "MultimediaLib Demo Application"
+    identifier = "nl.colorize.multimedialib.demo"
+    description = "MultimediaLib Demo Application"
+    copyright = "Copyright 2023 Colorize"
+    bundleVersion = "${version}"
+    icon = "resources/colorize-icon.icns"
+    applicationCategory = "public.app-category.developer-tools"
+    mainClassName = "nl.colorize.multimedialib.demo.DemoLauncher"
+}
+
+xcode {
+    appId = "multimedialibdemo"
+    bundleId = "nl.colorize.multimedialib.demo"
+    appName = "MultimediaLib Demo Application"
+    appVersion = "${version}"
+    icon = "resources/browser/assets/apple-icon.png"
+    resourcesDir = "${buildDir}/browserdemo2d"   
+}
+
 npmInstall.doLast {
     def jsLibraryFiles = [
         "node_modules/pixi.js/dist/browser/pixi.min.js",
         "node_modules/pixi.js/dist/browser/pixi.min.js.map",
-        "node_modules/pixi-heaven/dist/pixi-heaven.umd.min.js",
-        "node_modules/pixi-heaven/dist/pixi-heaven.umd.min.js.map",
+        "node_modules/pixi-heaven/dist/pixi-heaven.umd.js",
+        "node_modules/pixi-heaven/dist/pixi-heaven.umd.js.map",
         "node_modules/three/build/three.min.js",
-        "node_modules/peerjs/dist/peerjs.min.js"
+        "node_modules/peerjs/dist/peerjs.min.js",
+        "node_modules/peerjs/dist/peerjs.min.js.map"
     ];
 
     copy {
@@ -98,6 +119,13 @@ npmInstall.doLast {
 
     file("resources/browser/lib/js-libraries.txt").text =
         jsLibraryFiles.collect { it.split("/").last() }.join("\n")
+}
+
+createApplicationBundle.doLast {
+    copy {
+        from configurations.runtimeClasspath
+        into "${buildDir}/mac/MultimediaLib Demo Application.app/Contents/Java"
+    }
 }
 
 task coverage(dependsOn: ["test", "jacocoTestReport"]) {
@@ -111,7 +139,7 @@ task coverage(dependsOn: ["test", "jacocoTestReport"]) {
 
 task transpileDemoApplication2D(type: JavaExec, dependsOn: jar) {
     classpath = sourceSets.main.runtimeClasspath
-    main = "nl.colorize.multimedialib.tool.TeaVMTranspilerTool"
+    mainClass = "nl.colorize.multimedialib.tool.TeaVMTranspilerTool"
     args "--project", "MultimediaLib-TeaVM-Demo",
          "--resources", "resources",
          "--out", "${buildDir}/browserdemo2d",
@@ -120,7 +148,7 @@ task transpileDemoApplication2D(type: JavaExec, dependsOn: jar) {
 
 task transpileDemoApplication3D(type: JavaExec, dependsOn: jar) {
     classpath = sourceSets.main.runtimeClasspath
-    main = "nl.colorize.multimedialib.tool.TeaVMTranspilerTool"
+    mainClass = "nl.colorize.multimedialib.tool.TeaVMTranspilerTool"
     args "--project", "MultimediaLib-TeaVM-Demo",
          "--resources", "resources",
          "--out", "${buildDir}/browserdemo2d",
@@ -128,7 +156,9 @@ task transpileDemoApplication3D(type: JavaExec, dependsOn: jar) {
 }
 
 jar.dependsOn npmInstall
+test.dependsOn npmInstall
 dependencyUpdates.dependsOn npm_outdated
+xcodeGen.dependsOn transpileDemoApplication2D
 
 publishing {
     publications {

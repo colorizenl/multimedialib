@@ -12,16 +12,10 @@ import nl.colorize.multimedialib.stage.OutlineFont;
 
 public class TeaFont implements OutlineFont {
 
-    private String id;
     private FontStyle style;
 
-    protected TeaFont(String id, FontStyle style) {
-        this.id = id;
+    protected TeaFont(FontStyle style) {
         this.style = style;
-    }
-
-    protected String getId() {
-        return id;
     }
 
     @Override
@@ -34,6 +28,6 @@ public class TeaFont implements OutlineFont {
         Preconditions.checkArgument(style.family().equals(newStyle.family()),
             "Font family mismatch: expected " + style.family());
 
-        return new TeaFont(id, newStyle);
+        return new TeaFont(newStyle);
     }
 }

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <title>MultimediaLib | Three.js for 2D graphics</title>
+    <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no"/>
+    <script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
+</head>
+
+<body>
+<script>
+    document.addEventListener("DOMContentLoaded", event => {
+        window.addEventListener("resize", () => {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+
+            cameraOrtho.left = -width / 2;
+            cameraOrtho.right = width / 2;
+            cameraOrtho.top = height / 2;
+            cameraOrtho.bottom = -height / 2;
+            cameraOrtho.updateProjectionMatrix();
+
+            //TODO updateHUDSprites();
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            cube.rotation.x += 0.01;
+            cube.rotation.y += 0.01;
+
+            renderer.clear();
+            renderer.render(scene3D, camera3D);
+            renderer.clearDepth();
+            renderer.render(scene2D, camera2D);
+        }
+
+        animate();
+    });
+</script>
+</body>
+</html>

@@ -9,13 +9,9 @@ package nl.colorize.multimedialib.renderer.teavm;
 import org.teavm.jso.JSFunctor;
 import org.teavm.jso.JSObject;
 
-/**
- * Callback function that is invoked from JavaScript when an AJAX request has
- * been sent and the response has been received.
- */
 @JSFunctor
 @FunctionalInterface
-public interface AjaxCallback extends JSObject {
+public interface ErrorCallback extends JSObject {
 
-    public void onResponse(String response);
+    public void onError(String error);
 }

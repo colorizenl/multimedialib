@@ -18,14 +18,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class SceneContextTest {
+public class RenderContextTest {
 
     @Test
     public void testInitialScene() {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        SceneContext app = new SceneContext(new HeadlessRenderer(), sceneA);
+        RenderContext app = new RenderContext(new HeadlessRenderer());
+        app.changeScene(sceneA);
         app.update(1f);
         app.update(1f);
 
@@ -41,7 +42,8 @@ public class SceneContextTest {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        SceneContext app = new SceneContext(new HeadlessRenderer(), sceneA);
+        RenderContext app = new RenderContext(new HeadlessRenderer());
+        app.changeScene(sceneA);
         app.update(1f);
         app.changeScene(sceneB);
         app.update(1f);
@@ -59,7 +61,8 @@ public class SceneContextTest {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        SceneContext app = new SceneContext(new HeadlessRenderer(), sceneA);
+        RenderContext app = new RenderContext(new HeadlessRenderer());
+        app.changeScene(sceneA);
         app.update(1f);
         app.changeScene(sceneB);
         app.update(1f);
@@ -75,7 +78,8 @@ public class SceneContextTest {
         MockScene sceneA = new MockScene();
         List<String> tracker = new ArrayList<>();
 
-        SceneContext app = new SceneContext(new HeadlessRenderer(), sceneA);
+        RenderContext app = new RenderContext(new HeadlessRenderer());
+        app.changeScene(sceneA);
         app.attach((context, deltaTime) -> tracker.add("a"));
         app.attach((context, deltaTime) -> tracker.add("b"));
         app.update(1f);
@@ -89,7 +93,8 @@ public class SceneContextTest {
         MockScene sceneB = new MockScene();
         List<String> tracker = new ArrayList<>();
 
-        SceneContext app = new SceneContext(new HeadlessRenderer(), sceneA);
+        RenderContext app = new RenderContext(new HeadlessRenderer());
+        app.changeScene(sceneA);
         app.attach((context, deltaTime) -> tracker.add("a"));
         app.attach((context, deltaTime) -> tracker.add("b"));
         app.update(1f);
@@ -103,7 +108,8 @@ public class SceneContextTest {
 
     @Test
     void addSystemDuringIteration() {
-        SceneContext context = new SceneContext(new HeadlessRenderer(), new MockScene());
+        RenderContext context = new RenderContext(new HeadlessRenderer());
+        context.changeScene(new MockScene());
 
         List<String> buffer = new ArrayList<>();
         context.attach((ctx, dt) -> {
@@ -124,7 +130,8 @@ public class SceneContextTest {
     void completedSubSceneIsStopped() {
         MockScene parent = new MockScene();
         MockScene child = new MockScene();
-        SceneContext context = new SceneContext(new HeadlessRenderer(), parent);
+        RenderContext context = new RenderContext(new HeadlessRenderer());
+        context.changeScene(parent);
         context.attach(child);
         context.update(1f);
         context.update(1f);
@@ -140,7 +147,8 @@ public class SceneContextTest {
     @Test
     void completedParentSceneIsNotStopped() {
         MockScene parent = new MockScene();
-        SceneContext context = new SceneContext(new HeadlessRenderer(), parent);
+        RenderContext context = new RenderContext(new HeadlessRenderer());
+        context.changeScene(parent);
         context.update(1f);
         context.update(1f);
         parent.setCompleted(true);
@@ -156,7 +164,8 @@ public class SceneContextTest {
         MockScene child1 = new MockScene();
         MockScene child2 = new MockScene();
 
-        SceneContext context = new SceneContext(new HeadlessRenderer(), parent);
+        RenderContext context = new RenderContext(new HeadlessRenderer());
+        context.changeScene(parent);
         context.attach(child1);
         context.update(1f);
         context.attach(child2);
@@ -174,7 +183,8 @@ public class SceneContextTest {
         MockScene newParent = new MockScene();
         MockScene child2 = new MockScene();
 
-        SceneContext context = new SceneContext(new HeadlessRenderer(), parent);
+        RenderContext context = new RenderContext(new HeadlessRenderer());
+        context.changeScene(parent);
         context.attach(child1);
         context.update(1f);
         context.changeScene(newParent);
@@ -187,5 +197,26 @@ public class SceneContextTest {
         assertEquals(2, child1.getStartCount());
         assertEquals(1, newParent.getStartCount());
         assertEquals(1, child2.getStartCount());
+    }
+
+    @Test
+    void globalSceneIsNeverRemoved() {
+        MockScene scene1 = new MockScene();
+        MockScene scene2 = new MockScene();
+        MockScene scene3 = new MockScene();
+        MockScene scene4 = new MockScene();
+
+        RenderContext context = new RenderContext(new HeadlessRenderer());
+        context.changeScene(scene1);
+        context.attach(scene2);
+        context.attachGlobalScene(scene3);
+        context.update(1f);
+        context.changeScene(scene4);
+        context.update(1f);
+
+        assertEquals(1, scene1.getFrameUpdateCount());
+        assertEquals(1, scene2.getFrameUpdateCount());
+        assertEquals(2, scene3.getFrameUpdateCount());
+        assertEquals(1, scene4.getFrameUpdateCount());
     }
 }

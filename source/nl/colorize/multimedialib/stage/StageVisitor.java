@@ -23,7 +23,8 @@ public interface StageVisitor {
     default void postVisitStage(Stage stage) {
     }
 
-    public void prepareLayer(Layer2D layer);
+    default void prepareLayer(Layer2D layer) {
+    }
 
     default void preVisitGraphic(Graphic2D graphic, boolean visible) {
     }

@@ -40,8 +40,8 @@ public class TeaVMTranspilerToolTest {
         expected += "function ncmt_TeaVMTranspilerToolTest$MockApp_main($args) {\n";
         expected += "    var $result;\n";
         expected += "    $result = ju_ArrayList__init_();\n";
+        expected += "    $result.$add($rt_s(2));\n";
         expected += "    $result.$add($rt_s(3));\n";
-        expected += "    $result.$add($rt_s(4));\n";
         expected += "    $result.$clear();\n";
         expected += "}\n";
 
@@ -116,10 +116,29 @@ public class TeaVMTranspilerToolTest {
 
         String generatedHTML = Files.toString(new File(outputDir, "index.html"), Charsets.UTF_8);
 
-        String expected = "";
-        expected += "<div id=\"resource-file-manifest\">test1.txt\n";
-        expected += "test2.txt\n";
-        expected += "</div>\n";
+        String expected = """
+            <div id="resource-file-manifest">OpenSans-Regular.ttf
+            apple-icon.png
+            colorize-icon-256.png
+            colorize-icon-32.png
+            colorize-logo.gltf
+            colorize-logo.png
+            demo.mp3
+            demo.png
+            favicon.png
+            loading.gif
+            multimedialib.css
+            multimedialib.js
+            particle-circle.png
+            particle-diamond.png
+            pixi-interface.js
+            sepia-fragment.glsl
+            sepia-vertex.glsl
+            test1.txt
+            test2.txt
+            three-interface.js
+            </div>
+            """;
 
         assertTrue(generatedHTML.contains(expected), "Generated HTML:\n" + generatedHTML);
     }

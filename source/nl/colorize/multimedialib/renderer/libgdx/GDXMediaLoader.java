@@ -24,23 +24,22 @@ import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.UBJsonReader;
 import net.mgsx.gltf.loaders.gltf.GLTFLoader;
 import net.mgsx.gltf.scene3d.scene.SceneAsset;
-import nl.colorize.multimedialib.math.Cache;
-import nl.colorize.multimedialib.renderer.Audio;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.java2d.MP3;
 import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
+import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.OutlineFont;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.multimedialib.stage.Shader;
-import nl.colorize.util.AppProperties;
 import nl.colorize.util.Platform;
 import nl.colorize.util.ResourceFile;
+import nl.colorize.util.stats.Cache;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,7 +63,7 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
 
     public GDXMediaLoader() {
         this.loaded = new ArrayList<>();
-        this.fontCache = Cache.create(this::generateBitmapFont, FONT_CACHE_SIZE);
+        this.fontCache = Cache.from(this::generateBitmapFont, FONT_CACHE_SIZE);
     }
 
     @Override
@@ -161,7 +160,7 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
     }
 
     @Override
-    public AppProperties loadApplicationData(String appName, String fileName) {
+    public Properties loadApplicationData(String appName, String fileName) {
         if (Platform.isWindows() || Platform.isMac()) {
             StandardMediaLoader delegate = new StandardMediaLoader();
             return delegate.loadApplicationData(appName, fileName);
@@ -173,7 +172,7 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
                 properties.setProperty(key, preferences.getString(key));
             }
 
-            return AppProperties.from(properties);
+            return properties;
         }
     }
 
@@ -199,11 +198,11 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
     public void dispose() {
         loaded.forEach(Disposable::dispose);
         loaded.clear();
-        fontCache.invalidateAll();
+        fontCache.forgetAll();
     }
 
     public static Color toColor(ColorRGB color) {
-        return new Color(color.getR() / 255f, color.getG() / 255f, color.getB() / 255f, 1f);
+        return new Color(color.r() / 255f, color.g() / 255f, color.b() / 255f, 1f);
     }
 
     private record FontCacheKey(FileHandle source, FontStyle style) {

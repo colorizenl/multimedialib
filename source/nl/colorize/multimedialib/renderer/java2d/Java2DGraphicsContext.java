@@ -6,23 +6,22 @@
 
 package nl.colorize.multimedialib.renderer.java2d;
 
-import nl.colorize.multimedialib.stage.Align;
-import nl.colorize.multimedialib.stage.ColorRGB;
-import nl.colorize.multimedialib.stage.Primitive;
-import nl.colorize.multimedialib.stage.Sprite;
-import nl.colorize.multimedialib.stage.FontStyle;
-import nl.colorize.multimedialib.stage.Text;
-import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.multimedialib.math.Shape;
-import nl.colorize.multimedialib.math.Cache;
 import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.stage.Align;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Layer2D;
+import nl.colorize.multimedialib.stage.Primitive;
+import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.StageVisitor;
+import nl.colorize.multimedialib.stage.Text;
+import nl.colorize.multimedialib.stage.Transform;
+import nl.colorize.util.stats.Cache;
 import nl.colorize.util.swing.Utils2D;
 
 import java.awt.AlphaComposite;
@@ -33,10 +32,7 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 /**
  * Uses Java 2D to render graphics. Because of Java 2D's flexibility this class
@@ -47,22 +43,20 @@ public class Java2DGraphicsContext implements StageVisitor {
 
     private Canvas canvas;
     private Graphics2D g2;
-    private StandardMediaLoader mediaLoader;
 
-    private Map<ColorRGB, Color> colorCache;
-    private Map<String, BufferedImage> maskCache;
-    private Cache<RenderedCircle, BufferedImage> circleCache;
+    private Cache<ColorRGB, Color> colorCache;
+    private Cache<MaskImage, BufferedImage> maskCache;
+    private Cache<CircleImage, BufferedImage> circleCache;
 
     private static final Transform NULL_TRANSFORM = new Transform();
-    private static final int SHAPE_CACHE_CAPACITY = 1000;
+    private static final int CACHE_CAPACITY = 1000;
 
-    public Java2DGraphicsContext(Canvas canvas, StandardMediaLoader mediaLoader) {
+    public Java2DGraphicsContext(Canvas canvas) {
         this.canvas = canvas;
-        this.mediaLoader = mediaLoader;
 
-        this.colorCache = new HashMap<>();
-        this.maskCache = new HashMap<>();
-        this.circleCache = Cache.create(RenderedCircle::render, SHAPE_CACHE_CAPACITY);
+        this.colorCache = Cache.from(this::convertColor, CACHE_CAPACITY);
+        this.maskCache = Cache.from(MaskImage::render, CACHE_CAPACITY);
+        this.circleCache = Cache.from(CircleImage::render, CACHE_CAPACITY);
     }
 
     public Canvas getCanvas() {
@@ -94,7 +88,7 @@ public class Java2DGraphicsContext implements StageVisitor {
         float width = canvas.toScreenX(canvas.getWidth());
         float height = canvas.toScreenY(canvas.getHeight());
 
-        g2.setColor(convertColor(backgroundColor));
+        g2.setColor(colorCache.get(backgroundColor));
         g2.fillRect(0, 0, Math.round(width), Math.round(height) + 30);
     }
 
@@ -106,7 +100,7 @@ public class Java2DGraphicsContext implements StageVisitor {
         float y1 = canvas.toScreenY(line.getEnd().getY());
 
         g2.setStroke(new BasicStroke(line.getThickness()));
-        g2.setColor(convertColor(graphic.getColor()));
+        g2.setColor(colorCache.get(graphic.getColor()));
         g2.drawLine(Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1));
     }
 
@@ -119,7 +113,7 @@ public class Java2DGraphicsContext implements StageVisitor {
 
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(graphic.getAlpha());
-        g2.setColor(convertColor(graphic.getColor()));
+        g2.setColor(colorCache.get(graphic.getColor()));
         g2.fillRect(Math.round(screenX), Math.round(screenY), Math.round(screenWidth),
             Math.round(screenHeight));
         g2.setComposite(originalComposite);
@@ -127,7 +121,7 @@ public class Java2DGraphicsContext implements StageVisitor {
 
     @Override
     public void drawCircle(Primitive graphic, Circle circle) {
-        RenderedCircle key = new RenderedCircle(circle.getRadius(), graphic.getColor());
+        CircleImage key = new CircleImage(circle.getRadius(), colorCache.get(graphic.getColor()));
         BufferedImage image = circleCache.get(key);
 
         Transform transform = new Transform();
@@ -148,7 +142,7 @@ public class Java2DGraphicsContext implements StageVisitor {
 
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(graphic.getAlpha());
-        g2.setColor(convertColor(graphic.getColor()));
+        g2.setColor(colorCache.get(graphic.getColor()));
         g2.fillPolygon(px, py, polygon.getNumPoints());
         g2.setComposite(originalComposite);
     }
@@ -172,8 +166,8 @@ public class Java2DGraphicsContext implements StageVisitor {
         g2.drawImage(image, transform2D, null);
 
         if (transform.getMask() != null) {
-            BufferedImage maskImage = prepareMaskImage(image, transform.getMask());
-            g2.drawImage(maskImage, transform2D, null);
+            MaskImage key = new MaskImage(image, colorCache.get(transform.getMask()));
+            g2.drawImage(maskCache.get(key), transform2D, null);
         }
 
         g2.setComposite(originalComposite);
@@ -187,7 +181,7 @@ public class Java2DGraphicsContext implements StageVisitor {
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(text.getAlpha());
 
-        g2.setColor(convertColor(style.color()));
+        g2.setColor(colorCache.get(style.color()));
         g2.setFont(font);
         drawLines(text.getLines(), text.getPosition(), text.getAlign(), text.getLineHeight());
         g2.setComposite(originalComposite);
@@ -235,35 +229,7 @@ public class Java2DGraphicsContext implements StageVisitor {
     }
 
     private Color convertColor(ColorRGB color) {
-        Color result = colorCache.get(color);
-        if (result == null) {
-            result = new Color(color.getR(), color.getG(), color.getB());
-            colorCache.put(color, result);
-        }
-        return result;
-    }
-
-    private BufferedImage prepareMaskImage(BufferedImage original, ColorRGB mask) {
-        String cacheKey = original.getWidth() + "x" + original.getHeight();
-        BufferedImage maskImage = maskCache.get(cacheKey);
-
-        if (maskImage == null) {
-            maskImage = new BufferedImage(original.getWidth(), original.getHeight(),
-                BufferedImage.TYPE_INT_ARGB);
-            maskCache.put(cacheKey, maskImage);
-        }
-
-        Graphics2D g2 = Utils2D.createGraphics(maskImage, true, false);
-        g2.setComposite(AlphaComposite.Clear);
-        g2.fillRect(0, 0, maskImage.getWidth(), maskImage.getHeight());
-        g2.setComposite(AlphaComposite.SrcOver);
-        g2.setColor(convertColor(mask));
-        g2.drawImage(original, 0, 0, original.getWidth(), original.getHeight(), null);
-        g2.setComposite(AlphaComposite.SrcAtop);
-        g2.fillRect(0, 0, maskImage.getWidth(), maskImage.getHeight());
-        g2.dispose();
-
-        return maskImage;
+        return new Color(color.r(), color.g(), color.b());
     }
 
     /**
@@ -271,39 +237,37 @@ public class Java2DGraphicsContext implements StageVisitor {
      * This can have a significant performance impact, so shapes are rendered
      * to an image, then that image is drawn by the renderer.
      */
-    private static class RenderedCircle {
-
-        private float radius;
-        private ColorRGB color;
-
-        public RenderedCircle(float radius, ColorRGB color) {
-            this.radius = radius;
-            this.color = color;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (o instanceof RenderedCircle) {
-                RenderedCircle other = (RenderedCircle) o;
-                return Math.abs(radius - other.radius) < Shape.EPSILON && color.equals(other.color);
-            } else {
-                return false;
-            }
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(radius, color);
-        }
+    private record CircleImage(float radius, Color color) {
 
         public BufferedImage render() {
             int size = Math.round(radius * 2f);
-            Color rgba = new Color(color.getR(), color.getG(), color.getB());
-
             BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g2 = Utils2D.createGraphics(image, true, false);
-            g2.setColor(rgba);
+            g2.setColor(color);
             g2.fillOval(0, 0, size, size);
+            g2.dispose();
+            return image;
+        }
+    }
+
+    /**
+     * Cache key for images with a mask/tint transform. This is an expensive
+     * operation in Java2D since it needs to create a new image that combines
+     * the original image with the mask.
+     */
+    private record MaskImage(BufferedImage original, Color maskColor) {
+
+        public BufferedImage render() {
+            BufferedImage image = new BufferedImage(original.getWidth(), original.getHeight(),
+                BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2 = Utils2D.createGraphics(image, true, false);
+            g2.setComposite(AlphaComposite.Clear);
+            g2.fillRect(0, 0, image.getWidth(), image.getHeight());
+            g2.setComposite(AlphaComposite.SrcOver);
+            g2.setColor(maskColor);
+            g2.drawImage(original, 0, 0, original.getWidth(), original.getHeight(), null);
+            g2.setComposite(AlphaComposite.SrcAtop);
+            g2.fillRect(0, 0, image.getWidth(), image.getHeight());
             g2.dispose();
             return image;
         }

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -21,21 +22,21 @@ class FrameStatsTest {
 
     @Test
     void calculateFramerateFromTimestamp() {
-        FrameStats frameStats = new FrameStats(mockTimer(0L, 1000L, 1500L, 1800L, 3000L), 60);
+        FrameStats frameStats = new FrameStats(mockTimer(0L, 1000L, 1500L, 1800L, 3000L));
         frameStats.markFrameStart();
         frameStats.markFrameUpdate();
         frameStats.markFrameRender();
         frameStats.markFrameStart();
 
-        assertEquals(0.5f, frameStats.getFramerate(), EPSILON);
-        assertEquals(500L, frameStats.getUpdateTime());
-        assertEquals(300L, frameStats.getRenderTime());
+        assertEquals(1f, frameStats.getFramerate(), EPSILON);
+        assertEquals(500L, frameStats.getFrameUpdateTime());
+        assertEquals(300L, frameStats.getFrameRenderTime());
     }
 
     @Test
     void trackMultipleFrames() {
         Stopwatch timer = mockTimer(0L, 1000L, 1500L, 1800L, 2000L, 2500L, 2800L, 3000L);
-        FrameStats frameStats = new FrameStats(timer, 60);
+        FrameStats frameStats = new FrameStats(timer);
         frameStats.markFrameStart();
         frameStats.markFrameUpdate();
         frameStats.markFrameRender();
@@ -45,25 +46,18 @@ class FrameStatsTest {
         frameStats.markFrameStart();
 
         assertEquals(1f, frameStats.getFramerate(), EPSILON);
-        assertEquals(500L, frameStats.getUpdateTime());
-        assertEquals(300L, frameStats.getRenderTime());
+        assertEquals(500L, frameStats.getFrameUpdateTime());
+        assertEquals(300L, frameStats.getFrameRenderTime());
     }
 
     @Test
-    void useWeightedValuesWhenCalculatingAverage() {
-        Stopwatch timer = mockTimer(0L, 1000L, 1500L, 1800L, 3000L, 3100L, 3200L, 4000L);
-        FrameStats frameStats = new FrameStats(timer, 60);
-        frameStats.markFrameStart();
-        frameStats.markFrameUpdate();
-        frameStats.markFrameRender();
-        frameStats.markFrameStart();
-        frameStats.markFrameUpdate();
-        frameStats.markFrameRender();
-        frameStats.markFrameStart();
+    void customStats() {
+        FrameStats frameStats = new FrameStats();
+        frameStats.markCustom("A", 10f);
+        frameStats.markCustom("A", 20f);
+        frameStats.markCustom("B", 30f);
 
-        assertEquals(0.55f, frameStats.getFramerate(), EPSILON);
-        assertEquals(460L, frameStats.getUpdateTime());
-        assertEquals(280L, frameStats.getRenderTime());
+        assertEquals(Map.of("A", 15, "B", 30), frameStats.getCustomStats());
     }
 
     private Stopwatch mockTimer(long... values) {

@@ -108,6 +108,11 @@ public class GDXGraphics implements StageVisitor {
             toScreenX(canvas.getWidth()), toScreenY(canvas.getHeight()));
     }
 
+    /**
+     * Draws a line using libGDX's {@code ShapeBatch}. Drawing lines will
+     * always trigger a mode switch, as "line mode" and "fill mode" are
+     * separate and lines are the only shape without a fill.
+     */
     @Override
     public void drawLine(Primitive graphic, Line line) {
         float x0 = toScreenX(line.getStart().getX());
@@ -115,9 +120,12 @@ public class GDXGraphics implements StageVisitor {
         float x1 = toScreenX(line.getEnd().getX());
         float y1 = toScreenY(line.getEnd().getY());
 
-        switchMode(false, true);
+        switchMode(false, false);
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        shapeBatch.begin(ShapeRenderer.ShapeType.Line);
         shapeBatch.setColor(convertColor(graphic.getColor()));
         shapeBatch.line(x0, y0, x1, y1);
+        shapeBatch.end();
     }
 
     @Override
@@ -238,12 +246,12 @@ public class GDXGraphics implements StageVisitor {
     }
 
     private int getTextAlign(Align align) {
-        switch (align) {
-            case LEFT : return com.badlogic.gdx.utils.Align.left;
-            case CENTER : return com.badlogic.gdx.utils.Align.center;
-            case RIGHT : return com.badlogic.gdx.utils.Align.right;
-            default : throw new AssertionError();
-        }
+        return switch (align) {
+            case LEFT -> com.badlogic.gdx.utils.Align.left;
+            case CENTER -> com.badlogic.gdx.utils.Align.center;
+            case RIGHT -> com.badlogic.gdx.utils.Align.right;
+            default -> throw new AssertionError();
+        };
     }
 
     private float toScreenX(float x) {
@@ -255,7 +263,7 @@ public class GDXGraphics implements StageVisitor {
     }
 
     private Color convertColor(ColorRGB color, float alpha) {
-        return new Color(color.getR() / 255f, color.getG() / 255f, color.getB() / 255f, alpha / 100f);
+        return new Color(color.r() / 255f, color.g() / 255f, color.b() / 255f, alpha / 100f);
     }
 
     private Color convertColor(ColorRGB color) {

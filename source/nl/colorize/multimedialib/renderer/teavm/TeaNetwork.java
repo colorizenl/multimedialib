@@ -9,8 +9,8 @@ package nl.colorize.multimedialib.renderer.teavm;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import nl.colorize.multimedialib.renderer.Network;
-import nl.colorize.util.Callback;
 import nl.colorize.util.LogHelper;
+import nl.colorize.util.Promise;
 import nl.colorize.util.http.Headers;
 import nl.colorize.util.http.PostData;
 import nl.colorize.util.http.URLResponse;
@@ -34,21 +34,25 @@ public class TeaNetwork implements Network {
     private static final Logger LOGGER = LogHelper.getLogger(TeaNetwork.class);
 
     @Override
-    public void get(String url, Headers headers, Callback<URLResponse> callback) {
+    public Promise<URLResponse> get(String url, Headers headers) {
         XMLHttpRequest request = XMLHttpRequest.create();
-        request.setOnReadyStateChange(() -> handleResponse(request, callback));
+        Promise<URLResponse> promise = new Promise<>();
+        request.setOnReadyStateChange(() -> handleResponse(request, promise));
         request.open("GET", url, true);
         addRequestHeaders(request, headers);
         request.send();
+        return promise;
     }
 
     @Override
-    public void post(String url, Headers headers, PostData data, Callback<URLResponse> callback) {
+    public Promise<URLResponse> post(String url, Headers headers, PostData data) {
         XMLHttpRequest request = XMLHttpRequest.create();
-        request.setOnReadyStateChange(() -> handleResponse(request, callback));
+        Promise<URLResponse> promise = new Promise<>();
+        request.setOnReadyStateChange(() -> handleResponse(request, promise));
         request.open("POST", url, true);
         addRequestHeaders(request, headers);
         request.send(data.encode(UTF_8));
+        return promise;
     }
 
     private void addRequestHeaders(XMLHttpRequest request, Headers headers) {
@@ -56,13 +60,13 @@ public class TeaNetwork implements Network {
         headers.forEach(request::setRequestHeader);
     }
 
-    private void handleResponse(XMLHttpRequest request, Callback<URLResponse> callback) {
+    private void handleResponse(XMLHttpRequest request, Promise<URLResponse> promise) {
         if (request.getReadyState() == XMLHttpRequest.DONE) {
             if (request.getStatus() >= 200 && request.getStatus() <= 204) {
                 URLResponse response = parseResponse(request);
-                callback.onResponse(response);
+                promise.resolve(response);
             } else {
-                callback.onError(new IOException("AJAX request failed: " + request.getStatusText()));
+                promise.reject(new IOException("AJAX request failed: " + request.getStatusText()));
             }
         }
     }
@@ -88,5 +92,10 @@ public class TeaNetwork implements Network {
         }
 
         return headers;
+    }
+
+    @Override
+    public boolean isDevelopmentEnvironment() {
+        return Browser.getPageURL().contains("local=true");
     }
 }

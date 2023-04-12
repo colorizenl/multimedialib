@@ -4,17 +4,14 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.renderer.pixi;
+package nl.colorize.multimedialib.renderer.three;
 
 import org.teavm.jso.JSObject;
-import org.teavm.jso.JSProperty;
 
-public interface PixiTexture extends JSObject {
-
-    @JSProperty
-    public PixiRectangle getFrame();
-
-    public void update();
-
-    public void updateUvs();
+/**
+ * TeaVM interface stubs for the Three.js JavaScript library.
+ * <p>
+ * <a href="https://threejs.org/docs/index.html">Documentation</a>
+ */
+public interface Three extends JSObject {
 }

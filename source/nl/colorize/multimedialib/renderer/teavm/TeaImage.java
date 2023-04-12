@@ -7,95 +7,102 @@
 package nl.colorize.multimedialib.renderer.teavm;
 
 import nl.colorize.multimedialib.math.Region;
-import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.util.LogHelper;
+import nl.colorize.util.Promise;
+import org.teavm.jso.browser.Window;
+import org.teavm.jso.canvas.CanvasRenderingContext2D;
+import org.teavm.jso.dom.html.HTMLCanvasElement;
+import org.teavm.jso.dom.html.HTMLDocument;
+import org.teavm.jso.dom.html.HTMLImageElement;
+import org.teavm.jso.typedarrays.Uint8ClampedArray;
 
-import java.util.UUID;
+import java.util.Optional;
 import java.util.logging.Logger;
 
+/**
+ * Image implementation that is based on an HTML {@code img} element. Since all
+ * browser images are loaded asynchronously, an instance of this class can refer
+ * to either the full image, or to an image that is currently being loaded.
+ */
 public class TeaImage implements Image {
 
-    private String id;
-    private FilePointer origin;
+    private Promise<HTMLImageElement> imgPromise;
     private Region region;
 
+    private CanvasRenderingContext2D imageData;
+
+    private static final Region IMAGE_LOADING_REGION = new Region(0, 0, 1, 1);
     private static final Logger LOGGER = LogHelper.getLogger(TeaImage.class);
 
-    protected TeaImage(String id, FilePointer origin, Region region) {
-        this.id = id;
-        this.origin = origin;
+    protected TeaImage(Promise<HTMLImageElement> imgPromise, Region region) {
+        this.imgPromise = imgPromise;
         this.region = region;
     }
 
-    public String getId() {
-        return id;
+    public Promise<HTMLImageElement> getImagePromise() {
+        return imgPromise;
     }
 
-    public FilePointer getOrigin() {
-        return origin;
+    public Optional<HTMLImageElement> getImageElement() {
+        return imgPromise.getValue();
+    }
+
+    public boolean isLoaded() {
+        return imgPromise.getValue().isPresent();
     }
 
     @Override
     public Region getRegion() {
-        if (region == null) {
-            int width = (int) Browser.getImageWidth(id);
-            int height = (int) Browser.getImageHeight(id);
-
-            // Unlike other renderers, images are loaded asynchronously.
-            // Application logic should not run before all required images
-            // have been loaded, but if this somehow happens anyway we
-            // return a non-zero region to prevent the application code
-            // from crashing.
-            if (width == 0 || height == 0) {
-                LOGGER.warning("Image data not yet available for " + this);
-                return new Region(0, 0, 1, 1);
-            }
-
-            region = new Region(0, 0, width, height);
+        if (region != null) {
+            return region;
+        } else {
+            return imgPromise.getValue()
+                .map(img -> new Region(0, 0, img.getWidth(), img.getHeight()))
+                .orElse(IMAGE_LOADING_REGION);
         }
-
-        return region;
     }
 
     @Override
     public TeaImage extractRegion(Region region) {
-        return new TeaImage(id, origin, region);
+        return new TeaImage(imgPromise, region);
     }
 
     @Override
     public ColorRGB getColor(int x, int y) {
-        float[] rgba = Browser.getImageData(id, x, y);
-        int r = Math.round(rgba[0]);
-        int g = Math.round(rgba[1]);
-        int b = Math.round(rgba[2]);
-
-        if (r < 0) {
-            return null;
-        }
-
-        return new ColorRGB(r, g, b);
+        int[] rgba = getImageData(x, y);
+        return new ColorRGB(rgba[0], rgba[1], rgba[2]);
     }
 
     @Override
     public int getAlpha(int x, int y) {
-        float[] rgba = Browser.getImageData(id, x, y);
+        int[] rgba = getImageData(x, y);
         return Math.round(rgba[3] / 2.55f);
     }
 
-    @Override
-    public Image tint(ColorRGB color) {
-        String newId = id + "-tinted-" + UUID.randomUUID();
-        Browser.tintImage(id, newId, color.toHex());
-        return new TeaImage(newId, origin, region);
+    private int[] getImageData(int x, int y) {
+        HTMLImageElement img = imgPromise.getValue().orElse(null);
+
+        if (img == null) {
+            return new int[] { 0, 0, 0, 0 };
+        }
+
+        if (imageData == null) {
+            HTMLDocument document = Window.current().getDocument();
+            HTMLCanvasElement canvas = (HTMLCanvasElement) document.createElement("canvas");
+            imageData = (CanvasRenderingContext2D) canvas.getContext("2d");
+            imageData.drawImage(img, 0, 0);
+        }
+
+        Uint8ClampedArray rgba = imageData.getImageData(x, y, 1, 1).getData();
+        return new int[] { rgba.get(0), rgba.get(1), rgba.get(2), rgba.get(3) };
     }
 
     @Override
     public String toString() {
-        if (origin == null) {
-            return "TeaImage";
-        }
-        return origin.toString();
+        return imgPromise.getValue()
+            .map(HTMLImageElement::getSrc)
+            .orElse("<loading>");
     }
 }

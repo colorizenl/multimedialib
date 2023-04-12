@@ -21,6 +21,10 @@ public class Line implements Shape {
         this.thickness = thickness;
     }
 
+    public Line(float startX, float startY, float endX, float endY, int thickness) {
+        this(new Point2D(startX, startY), new Point2D(endX, endY), thickness);
+    }
+
     public Point2D getStart() {
         return start;
     }

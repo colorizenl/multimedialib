@@ -6,15 +6,15 @@
 
 package nl.colorize.multimedialib.demo;
 
+import com.google.common.base.Splitter;
+import com.google.common.net.HttpHeaders;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.RandomGenerator;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Region;
-import nl.colorize.multimedialib.renderer.Audio;
-import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.renderer.FilePointer;
-import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.MediaLoader;
@@ -26,6 +26,7 @@ import nl.colorize.multimedialib.scene.Updatable;
 import nl.colorize.multimedialib.scene.WipeTransition;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.Animation;
+import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.Layer2D;
@@ -37,7 +38,7 @@ import nl.colorize.multimedialib.stage.SpriteAtlas;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
-import nl.colorize.util.LogHelper;
+import nl.colorize.util.stats.Tuple;
 import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
 import nl.colorize.util.http.Headers;
@@ -45,7 +46,6 @@ import nl.colorize.util.http.PostData;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * Simple demo application that displays a number of animated Mario sprites on
@@ -59,7 +59,7 @@ import java.util.logging.Logger;
  * {@link DemoLauncher}. It can also be embedded in applications by creating an
  * instance of this class from the application code.
  */
-public class Demo2D implements Scene {
+public class Demo2D implements Scene, ErrorHandler {
 
     private SceneContext context;
 
@@ -80,7 +80,6 @@ public class Demo2D implements Scene {
     private static final FilePointer FRAGMENT_SHADER = new FilePointer("demo/sepia-fragment.glsl");
     private static final FilePointer VERTEX_SHADER = new FilePointer("demo/sepia-vertex.glsl");
 
-    private static final int INITIAL_MARIOS = 20;
     private static final List<String> DIRECTIONS = List.of("north", "east", "south", "west");
     private static final int BUTTON_WIDTH = 100;
     private static final int BUTTON_HEIGHT = 25;
@@ -91,7 +90,6 @@ public class Demo2D implements Scene {
     private static final Transform MASK_TRANSFORM = Transform.withMask(ColorRGB.WHITE);
     private static final ColorRGB COLORIZE_COLOR = ColorRGB.parseHex("#e45d61");
     private static final String EXAMPLE_URL = "https://dashboard.clrz.nl/rest/echo";
-    private static final Logger LOGGER = LogHelper.getLogger(Demo2D.class);
 
     @Override
     public void start(SceneContext context) {
@@ -102,7 +100,7 @@ public class Demo2D implements Scene {
 
         initMarioSprites(mediaLoader);
         marios = new ArrayList<>();
-        addMarios(context.getStage(), INITIAL_MARIOS);
+        addMarios(context.getStage());
 
         font = mediaLoader.loadDefaultFont(12, ColorRGB.WHITE);
         audioClip = mediaLoader.loadAudio(AUDIO_FILE);
@@ -135,11 +133,12 @@ public class Demo2D implements Scene {
         hud.setLineHeight(20);
         stage.add("hud", hud);
 
-        createButton(context, "Add sprites", RED_BUTTON, 0, () -> addMarios(stage, 10));
+        createButton(context, "Add sprites", RED_BUTTON, 0, () -> addMarios(stage));
         createButton(context, "Remove sprites", RED_BUTTON, 30, () -> removeMarios(10));
         createButton(context, "Play sound", GREEN_BUTTON, 60, audioClip::play);
         createButton(context, "Background", GREEN_BUTTON, 90, this::toggleBackgroundColor);
         createButton(context, "Toggle shader", PINK_BUTTON, 120, this::toggleShader);
+        createButton(context, "Cause error", PINK_BUTTON, 150, this::causeError);
 
         Polygon hexagon = new Polygon(80, 70, 120, 70, 135, 100, 120, 130, 80, 130, 65, 100);
         Primitive hexagonPrimitive = Primitive.of(hexagon, COLORIZE_COLOR);
@@ -157,11 +156,11 @@ public class Demo2D implements Scene {
         Primitive bounds = Primitive.of(new Rect(
             context.getCanvas().getWidth() - BUTTON_WIDTH - 2, y + 2,
             BUTTON_WIDTH, BUTTON_HEIGHT), color);
-        context.getStage().add(context.getStage().getLayer("hud"), bounds);
+        context.getStage().getLayer("hud").add(bounds);
 
         Text text = new Text(label, font, Align.CENTER);
         text.getPosition().set(context.getCanvas().getWidth() - BUTTON_WIDTH / 2f, y + 19);
-        context.getStage().add(context.getStage().getLayer("hud"), text);
+        context.getStage().getLayer("hud").add(text);
 
         Effect effect = new Effect();
         effect.addClickHandler(bounds, click);
@@ -185,16 +184,24 @@ public class Demo2D implements Scene {
         colorizeLogo.addFrameHandler(dt -> sprite.getTransform().addRotation(dt * 100f));
         context.attach(colorizeLogo);
 
-        context.attach(WipeTransition.reveal(context, COLORIZE_COLOR, 1.5f));
+        context.attach(new WipeTransition(WipeTransition.DIAMOND, COLORIZE_COLOR, 1.5f, true));
     }
 
     private void sendHttpRequest(Network network) {
+        Headers headers = new Headers(Tuple.of(HttpHeaders.ACCEPT, "text/plain"));
         PostData data = PostData.create("message", "1234");
-        network.post(EXAMPLE_URL, new Headers(), data, response -> {
-            LOGGER.info("Received response from HTTP request:");
-            LOGGER.info("Content-Type is " + response.getContentType().orElse("?"));
-            LOGGER.info(response.getBody().replace("\n", ""));
-        });
+
+        Text info = new Text("Network request pending", font, Align.RIGHT);
+        info.setPosition(context.getCanvas().getWidth() - 20, context.getCanvas().getHeight() - 100);
+        context.getStage().getLayer("hud").add(info);
+
+        network.post(EXAMPLE_URL, headers, data).then(response -> {
+            List<String> text = new ArrayList<>();
+            text.add("Network request succeeded");
+            text.add("Content-Type: " + response.getContentType().orElse("?"));
+            text.addAll(Splitter.on("\n").omitEmptyStrings().splitToList(response.getBody()));
+            info.setText(text);
+        }).thenCatch(e -> info.setText("Failed to send network request"));
     }
 
     private void toggleBackgroundColor() {
@@ -211,6 +218,21 @@ public class Demo2D implements Scene {
         // defaultLayer.setShader(defaultLayer.getShader() == null ? sepiaShader : null);
     }
 
+    /**
+     * This method will intentionally produce an exception, so that the demo
+     * application can be used for testing the error handler.
+     */
+    private void causeError() {
+        throw new RuntimeException("Intentional error");
+    }
+
+    @Override
+    public void onError(SceneContext context, Exception cause) {
+        Text errorText = new Text("Error:\n\n" + cause.getMessage(), font, Align.CENTER);
+        errorText.setPosition(context.getCanvas().getCenter());
+        context.getStage().getLayer("hud").add(errorText);
+    }
+
     @Override
     public void update(SceneContext context, float deltaTime) {
         InputDevice inputDevice = context.getInputDevice();
@@ -222,26 +244,16 @@ public class Demo2D implements Scene {
             updateMario(mario, deltaTime);
         }
 
-        updateHUD();
+        List<String> info = context.getDebugInformation();
+        info.add("Keyboard:  " + inputDevice.isKeyboardAvailable());
+        info.add("Touch:  " + inputDevice.isTouchAvailable());
+        hud.setText(info);
     }
 
     private void updateMario(Mario mario, float deltaTime) {
         mario.update(deltaTime);
         mario.sprite.setPosition(mario.position);
         mario.sprite.setTransform(mario.mask ? MASK_TRANSFORM : null);
-    }
-
-    private void updateHUD() {
-        FrameStats stats = context.getFrameStats();
-        Canvas canvas = context.getCanvas();
-
-        hud.setText(
-            "Canvas:  " + canvas,
-            "Framerate:  " + Math.round(stats.getFramerate()),
-            "Update time:  " + stats.getUpdateTime() + "ms",
-            "Render time:  " + stats.getRenderTime() + "ms",
-            "Sprites:  " + marios.size()
-        );
     }
 
     private void checkLogoClick(InputDevice input) {
@@ -281,6 +293,12 @@ public class Demo2D implements Scene {
             context.getCanvas().changeStrategy(false);
         } else if (input.isKeyReleased(KeyCode.N2)) {
             context.getCanvas().changeStrategy(true);
+        } else if (input.isKeyReleased(KeyCode.N9)) {
+            if (context.getStage().getBackgroundColor().equals(BACKGROUND_COLOR)) {
+                context.getStage().setBackgroundColor(ColorRGB.WHITE);
+            } else {
+                context.getStage().setBackgroundColor(BACKGROUND_COLOR);
+            }
         }
     }
 
@@ -300,31 +318,36 @@ public class Demo2D implements Scene {
         }
     }
 
-    public void addMarios(Stage stage, int amount) {
+    public void addMarios(Stage stage) {
+        int amount = marios.size() >= 100 ? 100 : 20;
+
         for (int i = 0; i < amount; i++) {
             Sprite marioSprite = createMarioSprite();
             Mario mario = new Mario(marioSprite,
                 new Rect(0, 0, context.getCanvas().getWidth(), context.getCanvas().getHeight()));
             marios.add(mario);
             updateMario(mario, 0f);
-            stage.add(marioSprite);
+            stage.getDefaultLayer().add(marioSprite);
         }
     }
 
     private Sprite createMarioSprite() {
         Sprite marioSprite = new Sprite();
+
         for (String direction : DIRECTIONS) {
             List<Image> frames = marioSpriteSheet.get(List.of(direction + "_0",
                 direction + "_1", direction + "_2", direction + "_3", direction + "_4"));
             Animation anim = new Animation(frames, 0.1f, true);
             marioSprite.addState(direction, anim);
         }
+
         return marioSprite;
     }
 
     private void removeMarios(int amount) {
         for (int i = 0; i < amount && !marios.isEmpty(); i++) {
-            marios.remove(marios.size() - 1);
+            Mario removed = marios.remove(marios.size() - 1);
+            context.getStage().remove(removed.sprite);
         }
     }
 

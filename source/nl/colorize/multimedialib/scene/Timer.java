@@ -18,26 +18,15 @@ public class Timer implements Updatable {
 
     private float position;
     private float duration;
-    private Runnable action;
 
     /**
-     * Creates a new timer with the specified duration in seconds, that will
-     * perform the requested action when completed.
+     * Creates a new timer with the specified duration in seconds.
      */
-    public Timer(float duration, Runnable action) {
+    public Timer(float duration) {
         Preconditions.checkArgument(duration >= 0f, "Invalid duration: " + duration);
 
         this.position = 0f;
         this.duration = duration;
-        this.action = action;
-    }
-
-    /**
-     * Creates a new timer with the specified duration in seconds, with the
-     * timer performing no action when completed.
-     */
-    public Timer(float duration) {
-        this(duration, null);
     }
 
     @Override
@@ -75,10 +64,20 @@ public class Timer implements Updatable {
     }
 
     /**
-     * Returns a no-op timer that has a zero duration.
+     * Factory method that creates a no-op timer with a zero duration.
      */
     public static Timer none() {
         Timer timer = new Timer(0f);
+        timer.end();
+        return timer;
+    }
+
+    /**
+     * Factory method that creates a timer which starts in the ended state,
+     * and needs to be reset before it can be used.
+     */
+    public static Timer ended(float duration) {
+        Timer timer = new Timer(duration);
         timer.end();
         return timer;
     }

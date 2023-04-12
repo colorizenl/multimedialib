@@ -13,7 +13,9 @@ import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.teavm.Browser;
+import nl.colorize.multimedialib.renderer.teavm.TeaGraphics;
 import nl.colorize.multimedialib.renderer.teavm.TeaImage;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontStyle;
@@ -23,7 +25,6 @@ import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.StageObserver;
-import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.util.LogHelper;
@@ -37,14 +38,14 @@ import java.util.logging.Logger;
  * library. Depending on the platform and browser, PixiJS will either use WebGL
  * or fall back to the HTML canvas API.
  */
-public class PixiGraphics implements StageVisitor, StageObserver {
+public class PixiGraphics implements TeaGraphics, StageObserver {
 
     private Canvas canvas;
     private PixiInterface pixi;
-    private Map<Graphic2D, PixiDisplayObject> displayObjects;
+    private Map<Graphic2D, Pixi.DisplayObject> displayObjects;
 
     private Graphic2D currentGraphic;
-    private PixiDisplayObject currentDisplayObject;
+    private Pixi.DisplayObject currentDisplayObject;
     private int zIndex;
 
     private static final Logger LOGGER = LogHelper.getLogger(PixiGraphics.class);
@@ -52,9 +53,32 @@ public class PixiGraphics implements StageVisitor, StageObserver {
     public PixiGraphics(Canvas canvas) {
         this.canvas = canvas;
         this.displayObjects = new HashMap<>();
-        this.pixi = Browser.initPixiInterface();
+        this.pixi = Browser.getPixiInterface();
+    }
 
+    @Override
+    public void init() {
+        pixi.init();
         pixi.createLayer(Stage.DEFAULT_LAYER);
+    }
+
+    private Pixi.Rectangle getScreen() {
+        return pixi.getPixiApp().getScreen();
+    }
+
+    @Override
+    public int getDisplayWidth() {
+        return Math.round(getScreen().getWidth());
+    }
+
+    @Override
+    public int getDisplayHeight() {
+        return Math.round(getScreen().getHeight());
+    }
+
+    @Override
+    public float getDevicePixelRatio() {
+        return 1f;
     }
 
     @Override
@@ -91,24 +115,29 @@ public class PixiGraphics implements StageVisitor, StageObserver {
 
     @Override
     public void drawSprite(Sprite sprite) {
+        Pixi.DisplayObject[] containerContents = currentDisplayObject.getChildren();
+        if (containerContents.length == 0) {
+            // Sprite texture is still loading, try again next frame.
+            return;
+        }
+
+        Pixi.DisplayObject spriteDisplayObject = containerContents[0];
+        TeaImage image = getImage(sprite);
+        Pixi.Texture texture = spriteDisplayObject.getTexture();
         Transform transform = sprite.getTransform();
 
-        currentDisplayObject.setX(toScreenX(sprite.getPosition()));
-        currentDisplayObject.setY(toScreenY(sprite.getPosition()));
-        currentDisplayObject.setAlpha(transform.getAlpha() / 100f);
-        currentDisplayObject.setAngle(transform.getRotation());
-        currentDisplayObject.getScale().setX(transform.getScaleX() / 100f);
-        currentDisplayObject.getScale().setY(transform.getScaleY() / 100f);
+        spriteDisplayObject.setX(toScreenX(sprite.getPosition()));
+        spriteDisplayObject.setY(toScreenY(sprite.getPosition()));
+        spriteDisplayObject.setAlpha(transform.getAlpha() / 100f);
+        spriteDisplayObject.setAngle(transform.getRotation());
+        spriteDisplayObject.getScale().setX(transform.getScaleX() / 100f);
+        spriteDisplayObject.getScale().setY(transform.getScaleY() / 100f);
 
-        TeaImage image = getImage(sprite);
-        if (image.getRegion() != null) {
-            PixiTexture texture = currentDisplayObject.getTexture();
-            updateTextureRegion(texture, image.getRegion());
-            updateTint(sprite.getTransform().getMask());
-        }
+        updateTextureRegion(texture, image.getRegion());
+        updateTint(sprite.getTransform().getMask());
     }
 
-    private void updateTextureRegion(PixiTexture texture, Region region) {
+    private void updateTextureRegion(Pixi.Texture texture, Region region) {
         texture.getFrame().setX(region.x());
         texture.getFrame().setY(region.y());
         texture.getFrame().setWidth(region.width());
@@ -181,9 +210,11 @@ public class PixiGraphics implements StageVisitor, StageObserver {
 
     @Override
     public void drawText(Text text) {
+        float offset = -0.4f * text.getLineHeight();
+
         currentDisplayObject.setText(text.getText());
         currentDisplayObject.setX(toScreenX(text.getPosition()));
-        currentDisplayObject.setY(toScreenY(text.getPosition()));
+        currentDisplayObject.setY(toScreenY(text.getPosition().getY() + offset));
         currentDisplayObject.setAlpha(text.getAlpha() / 100f);
     }
 
@@ -211,35 +242,45 @@ public class PixiGraphics implements StageVisitor, StageObserver {
     @Override
     public void onGraphicAdded(Layer2D layer, Graphic2D graphic) {
         zIndex++;
-        PixiDisplayObject displayObject = createDisplayObject(layer, graphic);
+        Pixi.DisplayObject displayObject = createDisplayObject(graphic);
         displayObject.setZIndex(zIndex);
+        pixi.addDisplayObject(layer.getName(), displayObject);
         displayObjects.put(graphic, displayObject);
     }
 
-    private PixiDisplayObject createDisplayObject(Layer2D layer, Graphic2D graphic) {
+    private Pixi.DisplayObject createDisplayObject(Graphic2D graphic) {
         if (graphic instanceof Sprite sprite) {
-            return createSpriteDisplayObject(layer, sprite);
+            return createSpriteDisplayObject(sprite);
         } else if (graphic instanceof Primitive) {
-            return pixi.createGraphics(layer.getName());
+            return pixi.createGraphics();
         } else if (graphic instanceof Text text) {
-            FontStyle style = text.getFont().scale(canvas).getStyle();
-            return pixi.createText(layer.getName(), style.family(), style.size(), style.bold(),
-                text.getAlign().toString(), text.getLineHeight(), style.color().getRGB());
+            return createTextDisplayObject(text);
         } else {
             throw new IllegalArgumentException("Unknown graphics type: " + graphic);
         }
     }
 
-    private PixiDisplayObject createSpriteDisplayObject(Layer2D layer, Sprite sprite) {
+    private Pixi.DisplayObject createSpriteDisplayObject(Sprite sprite) {
         TeaImage image = getImage(sprite);
-        Region region = image.getRegion();
+        Pixi.DisplayObject spriteContainer = pixi.createContainer();
 
-        if (region == null) {
-            LOGGER.warning("Unknown region for " + sprite);
-        }
+        image.getImagePromise().then(img -> {
+            Region region = image.getRegion();
 
-        return pixi.createSprite(layer.getName(), image.getId(),
-            region.x(), region.y(), region.width(), region.height());
+            Pixi.DisplayObject spriteDisplayObject = pixi.createSprite(img,
+                region.x(), region.y(), region.width(), region.height());
+
+            spriteContainer.addChild(spriteDisplayObject);
+        });
+
+        return spriteContainer;
+    }
+
+    private Pixi.DisplayObject createTextDisplayObject(Text text) {
+        FontStyle style = text.getFont().scale(canvas).getStyle();
+
+        return pixi.createText(style.family(), style.size(), style.bold(),
+            text.getAlign().toString(), text.getLineHeight(), style.color().getRGB());
     }
 
     private TeaImage getImage(Sprite sprite) {
@@ -248,7 +289,7 @@ public class PixiGraphics implements StageVisitor, StageObserver {
 
     @Override
     public void onGraphicRemoved(Layer2D layer, Graphic2D graphic) {
-        PixiDisplayObject displayObject = displayObjects.get(graphic);
+        Pixi.DisplayObject displayObject = displayObjects.get(graphic);
         if (displayObject != null) {
             pixi.removeDisplayObject(layer.getName(), displayObject);
         }
@@ -257,5 +298,10 @@ public class PixiGraphics implements StageVisitor, StageObserver {
     @Override
     public void onStageCleared() {
         pixi.clearStage();
+    }
+
+    @Override
+    public GraphicsMode getGraphicsMode() {
+        return GraphicsMode.MODE_2D;
     }
 }

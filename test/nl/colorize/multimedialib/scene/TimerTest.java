@@ -1,3 +1,9 @@
+//-----------------------------------------------------------------------------
+// Colorize MultimediaLib
+// Copyright 2009-2023 Colorize
+// Apache license (http://www.apache.org/licenses/LICENSE-2.0)
+//-----------------------------------------------------------------------------
+
 package nl.colorize.multimedialib.scene;
 
 import org.junit.jupiter.api.Test;

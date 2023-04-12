@@ -44,6 +44,11 @@ public class Effect implements Scene {
     private List<Graphic2D> linkedGraphics;
     private boolean completed;
 
+    // We keep a reference to the context so that it can be accessed by
+    // subclasses, without having to handle the context argument for
+    // every single handler that is registered.
+    private SceneContext effectContext;
+
     public Effect() {
         this.startHandlers = new ArrayList<>();
         this.frameHandlers = new ArrayList<>();
@@ -66,12 +71,17 @@ public class Effect implements Scene {
             InputDevice input = context.getInputDevice();
             if (input.isPointerReleased(bounds)) {
                 handler.run();
+                input.clearPointerReleased();
             }
         });
     }
 
     public void addClickHandler(Graphic2D graphic, Runnable handler) {
         addClickHandler(graphic.getBounds(), handler);
+    }
+
+    public void addClickHandler(Group group, Runnable handler) {
+        addClickHandler(group.getBounds(), handler);
     }
 
     public void addCompletionHandler(Runnable handler) {
@@ -134,12 +144,15 @@ public class Effect implements Scene {
     }
 
     @Override
-    public void start(SceneContext context) {
+    public final void start(SceneContext context) {
+        effectContext = context;
         startHandlers.forEach(Runnable::run);
     }
 
     @Override
-    public void update(SceneContext context, float deltaTime) {
+    public final void update(SceneContext context, float deltaTime) {
+        effectContext = context;
+
         if (!completed) {
             frameHandlers.forEach(handler -> handler.update(deltaTime));
             clickHandlers.forEach(handler -> handler.accept(context));
@@ -147,9 +160,10 @@ public class Effect implements Scene {
     }
 
     @Override
-    public void end(SceneContext context) {
+    public final void end(SceneContext context) {
         linkedGraphics.forEach(graphic -> context.getStage().remove(graphic));
         completionHandlers.forEach(Runnable::run);
+        effectContext = null;
     }
 
     public void complete() {
@@ -157,12 +171,17 @@ public class Effect implements Scene {
     }
 
     @Override
-    public boolean isCompleted() {
+    public final boolean isCompleted() {
         return completed;
     }
 
     public void withLinkedGraphics(Consumer<Graphic2D> callback) {
         linkedGraphics.forEach(callback);
+    }
+
+    protected SceneContext getContext() {
+        Preconditions.checkState(effectContext != null, "Effect is inactive");
+        return effectContext;
     }
 
     /**

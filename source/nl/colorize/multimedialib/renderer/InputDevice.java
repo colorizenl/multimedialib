@@ -49,9 +49,7 @@ public interface InputDevice {
      * Returns true if any of the currently active pointers were released,
      * regardless of their location.
      */
-    default boolean isPointerReleased() {
-        return isPointerReleased(getCanvas().getBounds());
-    }
+    public boolean isPointerReleased();
 
     /**
      * Clears the state of the pointer, so that the pointer released event
@@ -105,6 +103,4 @@ public interface InputDevice {
      */
     @Deprecated
     public String requestTextInput(String label, String initialValue);
-
-    public Canvas getCanvas();
 }

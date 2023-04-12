@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.stage;
 
 import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.MediaAsset;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 
 /**
@@ -15,7 +16,7 @@ import nl.colorize.multimedialib.renderer.MediaLoader;
  * variants with a different size, style, or color can be derived from the font
  * instance.
  */
-public interface OutlineFont {
+public interface OutlineFont extends MediaAsset {
 
     public FontStyle getStyle();
 

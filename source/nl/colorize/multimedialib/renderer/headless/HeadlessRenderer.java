@@ -10,18 +10,18 @@ import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
+import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
-import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
+import nl.colorize.multimedialib.renderer.RenderCapabilities;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.java2d.Java2DRenderer;
 import nl.colorize.multimedialib.renderer.java2d.StandardNetwork;
-import nl.colorize.multimedialib.renderer.ErrorHandler;
+import nl.colorize.multimedialib.scene.RenderContext;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.multimedialib.stage.StageVisitor;
 
 import java.util.Collections;
 import java.util.List;
@@ -49,6 +49,7 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     public HeadlessRenderer(DisplayMode displayMode, boolean graphicsEnvironmentEnabled) {
         this.displayMode = displayMode;
         this.mediaLoader = new HeadlessMediaLoader(graphicsEnvironmentEnabled);
+        this.context = new RenderContext(this);
     }
 
     public HeadlessRenderer(Canvas canvas, int framerate) {
@@ -61,7 +62,7 @@ public class HeadlessRenderer implements Renderer, InputDevice {
 
     @Override
     public void start(Scene initialScene, ErrorHandler errorHandler) {
-        context = new SceneContext(this, initialScene);
+        context.changeScene(initialScene);
         doFrame();
     }
     
@@ -70,38 +71,10 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     }
 
     @Override
-    public GraphicsMode getGraphicsMode() {
-        return GraphicsMode.HEADLESS;
-    }
-
-    @Override
-    public DisplayMode getDisplayMode() {
-        return displayMode;
-    }
-
-    @Override
-    public StageVisitor accessGraphics() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public InputDevice accessInputDevice() {
-        return this;
-    }
-
-    @Override
-    public MediaLoader accessMediaLoader() {
-        return mediaLoader;
-    }
-
-    @Override
-    public Network accessNetwork() {
-        return new StandardNetwork();
-    }
-
-    @Override
-    public String takeScreenshot() {
-        throw new UnsupportedOperationException();
+    public RenderCapabilities getCapabilities() {
+        Network network = new StandardNetwork();
+        return new RenderCapabilities(GraphicsMode.HEADLESS, displayMode, null,
+            this, mediaLoader, network);
     }
 
     @Override
@@ -116,6 +89,11 @@ public class HeadlessRenderer implements Renderer, InputDevice {
 
     @Override
     public boolean isPointerReleased(Rect area) {
+        return false;
+    }
+
+    @Override
+    public boolean isPointerReleased() {
         return false;
     }
 
@@ -146,11 +124,6 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     @Override
     public String requestTextInput(String label, String initialValue) {
         return null;
-    }
-
-    @Override
-    public Canvas getCanvas() {
-        return displayMode.canvas();
     }
 
     public SceneContext getContext() {

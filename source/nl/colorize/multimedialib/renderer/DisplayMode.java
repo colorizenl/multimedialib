@@ -11,4 +11,12 @@ package nl.colorize.multimedialib.renderer;
  * resolution and the targeted framerate.
  */
 public record DisplayMode(Canvas canvas, int framerate) {
+
+    public float getFrameTime() {
+        return 1f / framerate;
+    }
+
+    public int getFrameTimeMS() {
+        return Math.round(1000f / framerate);
+    }
 }

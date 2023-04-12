@@ -6,7 +6,7 @@
 
 package nl.colorize.multimedialib.renderer;
 
-import nl.colorize.util.Callback;
+import nl.colorize.util.Promise;
 import nl.colorize.util.http.Headers;
 import nl.colorize.util.http.PostData;
 import nl.colorize.util.http.URLResponse;
@@ -18,7 +18,26 @@ import nl.colorize.util.http.URLResponse;
  */
 public interface Network {
 
-    public void get(String url, Headers headers, Callback<URLResponse> callback);
+    public Promise<URLResponse> get(String url, Headers headers);
 
-    public void post(String url, Headers headers, PostData body, Callback<URLResponse> callback);
+    public Promise<URLResponse> post(String url, Headers headers, PostData body);
+
+    /**
+     * Opens a peer-to-peer connection. This requires an ID to identify the
+     * peer. This ID is implementation-specific, IDs obtained on one platform
+     * will not work on another platform/
+     *
+     * @throws UnsupportedOperationException if the renderer and/or the current
+     *         platform do not support peer-to-peer connections.
+     */
+    default PeerConnection openPeerConnection(String id) {
+        throw new UnsupportedOperationException("Peer-to-peer connections not supported");
+    }
+
+    /**
+     * Returns true if the application is running in the local development
+     * environment. The definition of what such an environment entails depends
+     * on the renderer and platform.
+     */
+    public boolean isDevelopmentEnvironment();
 }

@@ -6,28 +6,47 @@
 
 package nl.colorize.multimedialib.renderer.three;
 
-import nl.colorize.multimedialib.stage.ColorRGB;
-import nl.colorize.multimedialib.stage.Primitive;
-import nl.colorize.multimedialib.stage.Sprite;
-import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.GraphicsMode;
+import nl.colorize.multimedialib.renderer.teavm.Browser;
+import nl.colorize.multimedialib.renderer.teavm.TeaGraphics;
+import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Layer2D;
-import nl.colorize.multimedialib.stage.StageVisitor;
+import nl.colorize.multimedialib.stage.Primitive;
+import nl.colorize.multimedialib.stage.Sprite;
+import nl.colorize.multimedialib.stage.Text;
 
 /**
  * Renders 2D and 3D graphics using the <a href="https://threejs.org">three.js</a>
  * JavaScript library. Using this renderer requires the browser to support WebGL.
  */
-public class ThreeGraphics implements StageVisitor {
+public class ThreeGraphics implements TeaGraphics {
 
     private Canvas canvas;
+    private ThreeInterface three;
 
     public ThreeGraphics(Canvas canvas) {
         this.canvas = canvas;
+        this.three = Browser.getThreeInterface();
+    }
+
+    @Override
+    public void init() {
+        three.init();
+    }
+
+    @Override
+    public int getDisplayWidth() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getDisplayHeight() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -67,5 +86,10 @@ public class ThreeGraphics implements StageVisitor {
     @Override
     public void drawText(Text text) {
         //TODO
+    }
+
+    @Override
+    public GraphicsMode getGraphicsMode() {
+        return GraphicsMode.MODE_3D;
     }
 }

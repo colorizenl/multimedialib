@@ -12,4 +12,31 @@ import org.teavm.jso.JSObject;
  * TeaVM interface for the {@code three-interface.js} JavaScript implementation.
  */
 public interface ThreeInterface extends JSObject {
+
+    public void init();
+
+    public void render();
+
+    public void loadTexture();
+
+    /**
+     *
+     * let clock = new THREE.Clock();
+     * let delta = 0;
+     * // 30 fps
+     * let interval = 1 / 30;
+     *
+     * function update() {
+     *   requestAnimationFrame(update);
+     *   delta += clock.getDelta();
+     *
+     *    if (delta  > interval) {
+     *        // The draw or time dependent code are here
+     *        render();
+     *
+     *        delta = delta % interval;
+     *    }
+     * }
+     *
+     */
 }

@@ -12,7 +12,7 @@ public class PixiShader implements Shader {
 
     private String vertexGLSL;
     private String fragmentGLSL;
-    private PixiFilter filter;
+    private Pixi.Filter filter;
 
     public PixiShader(String vertexGLSL, String fragmentGLSL) {
         this.vertexGLSL = vertexGLSL;
@@ -25,7 +25,7 @@ public class PixiShader implements Shader {
         }
     }
 
-    public PixiFilter getFilter() {
+    public Pixi.Filter getFilter() {
         return filter;
     }
 

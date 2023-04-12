@@ -11,17 +11,31 @@
 class PixiInterface {
 
     constructor() {
+        this.pixiApp = null;
+        this.container = null;
+        this.layers = {};
+    }
+
+    init() {
         this.pixiApp = new PIXI.Application({
-            view: canvas,
-            backgroundColor: 0x000000,
-            resizeTo: canvas
+            autoResize: true,
+            backgroundColor: 0x000000
         });
+
+        const canvasContainer = document.getElementById("multimediaLibContainer");
+        canvasContainer.appendChild(this.pixiApp.view);
 
         this.container = new PIXI.Container();
         this.pixiApp.stage.addChild(this.container);
 
         this.layers = {};
-        this.baseTextures = {};
+
+        this.resize();
+        window.addEventListener("resize", () => this.resize());
+    }
+
+    resize() {
+        this.pixiApp.renderer.resize(window.innerWidth, window.innerHeight);
     }
 
     createLayer(layerName) {
@@ -34,17 +48,28 @@ class PixiInterface {
         this.pixiApp.renderer.backgroundColor = backgroundColor;
     }
 
-    createSprite(layerName, imageId, regionX, regionY, regionWidth, regionHeight) {
-        if (!images[imageId]) {
-            throw "Trying to use image that has not been loaded yet as a texture: " + imageId;
-        }
+    addDisplayObject(layerName, displayObject) {
+        this.layers[layerName].addChild(displayObject);
+    }
 
-        let baseTexture = this.baseTextures[imageId];
-        if (baseTexture == null) {
-            baseTexture = new PIXI.BaseTexture(images[imageId]);
-            this.baseTextures[imageId] = baseTexture;
+    removeDisplayObject(layerName, displayObject) {
+        if (this.layers[layerName]) {
+            this.layers[layerName].removeChild(displayObject);
         }
+    }
 
+    clearStage() {
+        Object.keys(this.layers).forEach(layerName => this.layers[layerName].removeChildren());
+        this.container.removeChildren();
+        this.layers = {};
+    }
+
+    createContainer() {
+        return new PIXI.Container();
+    }
+
+    createSprite(image, regionX, regionY, regionWidth, regionHeight) {
+        const baseTexture = new PIXI.BaseTexture(image);
         const region = new PIXI.Rectangle(regionX, regionY, regionWidth, regionHeight);
         const texture = new PIXI.Texture(baseTexture, region);
 
@@ -52,17 +77,14 @@ class PixiInterface {
         sprite.convertToHeaven();
         sprite.anchor.set(0.5);
         sprite.tintEnabled = false;
-        this.layers[layerName].addChild(sprite);
         return sprite;
     }
 
-    createGraphics(layerName) {
-        const pixiGraphics = new PIXI.Graphics();
-        this.layers[layerName].addChild(pixiGraphics);
-        return pixiGraphics;
+    createGraphics() {
+        return new PIXI.Graphics();
     }
 
-    createText(layerName, family, size, bold, align, lineHeight, color) {
+    createText(family, size, bold, align, lineHeight, color) {
         const textAligns = {left: 0.0, center: 0.5, right: 1.0};
 
         const richText = new PIXI.Text("", {
@@ -72,19 +94,8 @@ class PixiInterface {
             fill: color,
             align: align.toLowerCase()
         });
-        richText.anchor.set(textAligns[align.toLowerCase()]);
-        this.layers[layerName].addChild(richText);
+        richText.anchor.set(textAligns[align.toLowerCase()], 0.0);
         return richText;
-    }
-
-    removeDisplayObject(layerName, displayObject) {
-        this.layers[layerName].removeChild(displayObject);
-    }
-
-    clearStage() {
-        Object.keys(this.layers).forEach(layerName => this.layers[layerName].removeChildren());
-        this.container.removeChildren();
-        this.layers = {};
     }
 
     applyTint(sprite, tint) {

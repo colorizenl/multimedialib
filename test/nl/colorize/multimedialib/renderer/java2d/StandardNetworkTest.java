@@ -6,7 +6,6 @@
 
 package nl.colorize.multimedialib.renderer.java2d;
 
-import nl.colorize.util.Callback;
 import nl.colorize.util.http.Headers;
 import org.junit.jupiter.api.Test;
 
@@ -24,8 +23,9 @@ public class StandardNetworkTest {
         List<Throwable> errors = new ArrayList<>();
 
         StandardNetwork internetAccess = new StandardNetwork();
-        internetAccess.get("http://www.colorize.nl", new Headers(),
-            Callback.from(response -> responses.add(response.getBody()), errors::add));
+        internetAccess.get("http://www.colorize.nl", new Headers())
+            .then(response -> responses.add(response.getBody()))
+            .thenCatch(errors::add);
 
         Thread.sleep(3000);
 

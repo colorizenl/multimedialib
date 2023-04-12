@@ -6,6 +6,7 @@
 
 package nl.colorize.multimedialib.renderer.teavm;
 
+import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Point2D;
@@ -13,46 +14,77 @@ import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontStyle;
-import nl.colorize.multimedialib.stage.Layer2D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
-import nl.colorize.multimedialib.stage.Stage;
-import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
+import nl.colorize.util.stats.Cache;
+import org.teavm.jso.browser.Window;
 import org.teavm.jso.canvas.CanvasImageSource;
 import org.teavm.jso.canvas.CanvasRenderingContext2D;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
+import org.teavm.jso.dom.html.HTMLDocument;
+import org.teavm.jso.dom.html.HTMLElement;
+import org.teavm.jso.dom.html.HTMLImageElement;
 
 /**
  * Renders graphics using the HTML canvas API. The current platform and browser
  * will influence which drawing operations are hardware-accelerated.
  */
-public class CanvasGraphics implements StageVisitor {
+public class HtmlCanvasGraphics implements TeaGraphics {
 
     private Canvas sceneCanvas;
     private HTMLCanvasElement htmlCanvas;
     private CanvasRenderingContext2D context;
 
+    private Cache<MaskImage, HTMLCanvasElement> maskImageCache;
+    private String currentCanvasFont;
+
     private static final String QUERY_STRING = Browser.getPageQueryString();
     private static final boolean BOUNDS_TRACING_ENABLED = QUERY_STRING.contains("bounds-tracing");
 
-    public CanvasGraphics(Canvas sceneCanvas) {
+    public HtmlCanvasGraphics(Canvas sceneCanvas) {
         this.sceneCanvas = sceneCanvas;
+
+        this.maskImageCache = Cache.from(this::createMaskImage, 256);
+        this.currentCanvasFont = "";
     }
 
     @Override
-    public void preVisitStage(Stage stage) {
-        if (context == null) {
-            htmlCanvas = Browser.getCanvas();
-            context = (CanvasRenderingContext2D) htmlCanvas.getContext("2d");
-        }
+    public void init() {
+        Window window = Window.current();
+        HTMLDocument document = window.getDocument();
+
+        htmlCanvas = (HTMLCanvasElement) document.createElement("canvas");
+        context = (CanvasRenderingContext2D) htmlCanvas.getContext("2d");
+
+        HTMLElement container = document.getElementById("multimediaLibContainer");
+        container.appendChild(htmlCanvas);
+        resizeCanvas(document, container);
+        window.addEventListener("resize", e -> resizeCanvas(document, container));
+    }
+
+    private void resizeCanvas(HTMLDocument document, HTMLElement container) {
+        int width = Math.round(container.getOffsetWidth());
+        int height = Math.round(document.getDocumentElement().getClientHeight());
+
+        htmlCanvas.getStyle().setProperty("width", width + "px");
+        htmlCanvas.getStyle().setProperty("height", height + "px");
+        htmlCanvas.setWidth(Math.round(width * getDevicePixelRatio()));
+        htmlCanvas.setHeight(Math.round(height * getDevicePixelRatio()));
     }
 
     @Override
-    public void prepareLayer(Layer2D layer) {
+    public int getDisplayWidth() {
+        return htmlCanvas.getWidth();
+    }
+
+    @Override
+    public int getDisplayHeight() {
+        return htmlCanvas.getHeight();
     }
 
     @Override
@@ -76,8 +108,12 @@ public class CanvasGraphics implements StageVisitor {
     }
 
     private void drawImage(TeaImage image, Region region, Point2D position, Transform transform) {
-        String mask = transform.getMask() != null ? transform.getMask().toHex() : null;
-        CanvasImageSource source = Browser.prepareImage(image.getId(), mask);
+        CanvasImageSource source = prepareImage(image, transform.getMask());
+
+        if (source == null) {
+            // Image is still loading, try again next frame.
+            return;
+        }
 
         context.setGlobalAlpha(transform.getAlpha() / 100f);
         context.translate(toScreenX(position), toScreenY(position));
@@ -88,6 +124,36 @@ public class CanvasGraphics implements StageVisitor {
             -region.width() / 2f, -region.height() / 2f, region.width(), region.height());
         context.setGlobalAlpha(1f);
         context.setTransform(1, 0, 0, 1, 0, 0);
+    }
+
+    private CanvasImageSource prepareImage(TeaImage image, ColorRGB mask) {
+        if (!image.isLoaded()) {
+            return null;
+        } else if (mask == null) {
+            return image.getImageElement().orElse(null);
+        } else {
+            MaskImage cacheKey = new MaskImage(image, mask);
+            return maskImageCache.get(cacheKey);
+        }
+    }
+
+    private HTMLCanvasElement createMaskImage(MaskImage key) {
+        Preconditions.checkState(key.image.isLoaded(), "Image is still loading");
+
+        HTMLDocument document = Window.current().getDocument();
+        HTMLImageElement img = key.image().getImageElement().get();
+
+        HTMLCanvasElement canvas = (HTMLCanvasElement) document.createElement("canvas");
+        canvas.setWidth(img.getWidth());
+        canvas.setHeight(img.getHeight());
+
+        CanvasRenderingContext2D maskContext = (CanvasRenderingContext2D) canvas.getContext("2d");
+        maskContext.drawImage(img, 0, 0, img.getWidth(), img.getHeight());
+        maskContext.setGlobalCompositeOperation("source-atop");
+        maskContext.setFillStyle(key.mask().toHex());
+        maskContext.fillRect(0, 0, img.getWidth(), img.getHeight());
+
+        return canvas;
     }
 
     @Override
@@ -145,18 +211,27 @@ public class CanvasGraphics implements StageVisitor {
     }
 
     private void drawText(Text text, FontStyle style) {
-        String fontString = (style.bold() ? "bold " : "") + style.size() + "px " + style.family();
         float lineHeight = text.getFont() != null ? text.getLineHeight() : style.size();
+
+        changeCanvasFont(style);
 
         context.setGlobalAlpha(text.getAlpha() / 100f);
         context.setFillStyle(style.color().toHex());
-        context.setFont(fontString);
         context.setTextAlign(text.getAlign().toString().toLowerCase());
         text.forLines((i, line) -> {
             float y = toScreenY(text.getPosition().getY() + i * lineHeight);
             context.fillText(line, toScreenX(text.getPosition()), y);
         });
         context.setGlobalAlpha(1f);
+    }
+
+    private void changeCanvasFont(FontStyle style) {
+        String fontString = (style.bold() ? "bold " : "") + style.size() + "px " + style.family();
+
+        if (!fontString.equals(currentCanvasFont)) {
+            context.setFont(fontString);
+            currentCanvasFont = fontString;
+        }
     }
 
     private float toScreenX(float x) {
@@ -173,5 +248,19 @@ public class CanvasGraphics implements StageVisitor {
 
     private float toScreenY(Point2D point) {
         return sceneCanvas.toScreenY(point.getY());
+    }
+
+    @Override
+    public GraphicsMode getGraphicsMode() {
+        return GraphicsMode.MODE_2D;
+    }
+
+    /**
+     * Used as a cache key for masking images, which is a pretty expensive
+     * operation. The entire image is masked, not just the image region. If we
+     * need a masked region, we just extract the corresponding region from the
+     * masked image.
+     */
+    private record MaskImage(TeaImage image, ColorRGB mask) {
     }
 }

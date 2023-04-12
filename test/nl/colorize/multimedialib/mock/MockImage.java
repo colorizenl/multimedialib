@@ -6,9 +6,10 @@
 
 package nl.colorize.multimedialib.mock;
 
+import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.math.Region;
+import nl.colorize.multimedialib.stage.Sprite;
 
 public class MockImage implements Image {
 
@@ -62,9 +63,8 @@ public class MockImage implements Image {
         return 100;
     }
 
-    @Override
-    public Image tint(ColorRGB color) {
-        return this;
+    public Sprite toSprite() {
+        return new Sprite(this);
     }
 
     @Override

@@ -70,7 +70,7 @@ public class MathUtilsTest {
     
     @Test
     public void testAverage() {
-        assertEquals(Float.NaN, MathUtils.average(ImmutableList.<Float>of()), EPSILON);
+        assertEquals(0f, MathUtils.average(ImmutableList.<Float>of()), EPSILON);
         assertEquals(2f, MathUtils.average(ImmutableList.of(2f)), EPSILON);
         assertEquals(2.1f, MathUtils.average(ImmutableList.of(2f, 2.2f)), EPSILON);
         assertEquals(3.733f, MathUtils.average(ImmutableList.of(2f, 2.2f, 7f)), EPSILON);

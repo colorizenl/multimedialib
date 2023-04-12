@@ -7,7 +7,6 @@
 package nl.colorize.multimedialib.renderer;
 
 import nl.colorize.multimedialib.scene.Scene;
-import nl.colorize.multimedialib.stage.StageVisitor;
 
 /**
  * The renderer acts as the entry point from the application to the underlying
@@ -38,21 +37,5 @@ public interface Renderer {
      */
     public void start(Scene initialScene, ErrorHandler errorHandler);
 
-    public GraphicsMode getGraphicsMode();
-
-    public DisplayMode getDisplayMode();
-
-    public StageVisitor accessGraphics();
-
-    public InputDevice accessInputDevice();
-
-    public MediaLoader accessMediaLoader();
-
-    public Network accessNetwork();
-
-    /**
-     * Takes a screenshots of the renderer's current graphics, and saves it to
-     * an image. The image is returned as a data URL for a PNG image.
-     */
-    public String takeScreenshot();
+    public RenderCapabilities getCapabilities();
 }

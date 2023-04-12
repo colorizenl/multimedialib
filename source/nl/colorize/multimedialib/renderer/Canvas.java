@@ -94,7 +94,7 @@ public class Canvas {
 
         float horizontalZoom = (float) screenWidth / (float) preferredWidth;
         float verticalZoom = (float) screenHeight / (float) preferredHeight;
-        return Math.min(horizontalZoom, verticalZoom);
+        return Math.max(horizontalZoom, verticalZoom);
     }
 
     public float toCanvasX(int screenX) {

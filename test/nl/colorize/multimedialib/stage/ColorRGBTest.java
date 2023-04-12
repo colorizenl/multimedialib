@@ -22,10 +22,10 @@ class ColorRGBTest {
         List<ColorRGB> colors = start.interpolate(target, 4);
 
         assertEquals(4, colors.size());
-        assertEquals(255, colors.get(0).getR());
-        assertEquals(170, colors.get(1).getR());
-        assertEquals(85, colors.get(2).getR());
-        assertEquals(0, colors.get(3).getR());
+        assertEquals(255, colors.get(0).r());
+        assertEquals(170, colors.get(1).r());
+        assertEquals(85, colors.get(2).r());
+        assertEquals(0, colors.get(3).r());
     }
 
     @Test

@@ -6,23 +6,22 @@
 
 package nl.colorize.multimedialib.renderer.teavm;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Multimap;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
-import nl.colorize.multimedialib.scene.Updatable;
-import nl.colorize.util.CSVRecord;
-import nl.colorize.util.PlatformFamily;
+import org.teavm.jso.browser.Window;
+import org.teavm.jso.dom.events.Event;
+import org.teavm.jso.dom.events.KeyboardEvent;
+import org.teavm.jso.dom.events.MouseEvent;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Captures browser events for various input methods, and makes them accessible
@@ -30,26 +29,13 @@ import java.util.Set;
  * buffer. When the frame update takes place, the buffer is processed to determine
  * the current state for each input device.
  */
-public class TeaInputDevice implements InputDevice, Updatable {
+public class TeaInputDevice implements InputDevice {
 
     private Canvas canvas;
-    private PlatformFamily platform;
-    private float pixelRatio;
+    private TeaGraphics graphics;
 
-    private Map<String, Pointer> pointers;
-    private Set<Integer> keysDown;
-    private Set<Integer> keysUp;
-
-    private static final Map<String, Integer> POINTER_EVENTS = new ImmutableMap.Builder<String, Integer>()
-        .put("mousedown", 1)
-        .put("mouseup", 2)
-        .put("mousemove", 0)
-        .put("mouseout", 2)
-        .put("touchstart", 1)
-        .put("touchend", 2)
-        .put("touchmove", 1)
-        .put("touchcancel", 2)
-        .build();
+    private Multimap<String, MouseEvent> mouseEvents;
+    private Multimap<Integer, KeyboardEvent> keyEvents;
 
     private static final Map<KeyCode, Integer> BROWSER_KEY_CODE_MAPPING =
         new ImmutableMap.Builder<KeyCode, Integer>()
@@ -113,156 +99,119 @@ public class TeaInputDevice implements InputDevice, Updatable {
             .put(KeyCode.F12, 123)
             .build();
 
-    public TeaInputDevice(Canvas canvas, PlatformFamily platform) {
+    public TeaInputDevice(Canvas canvas, TeaGraphics graphics) {
         this.canvas = canvas;
-        this.platform = platform;
-        this.pixelRatio = Browser.getDevicePixelRatio();
+        this.graphics = graphics;
 
-        this.pointers = new HashMap<>();
-        this.keysDown = new HashSet<>();
-        this.keysUp = new HashSet<>();
+        this.mouseEvents = ArrayListMultimap.create();
+        this.keyEvents = ArrayListMultimap.create();
     }
 
-    @Override
-    public void update(float deltaTime) {
-        updatePointerState();
-        updateKeyboardState();
+    public void bindEventHandlers() {
+        Window window = Window.current();
+        window.addEventListener("mousedown", this::onMouseEvent);
+        window.addEventListener("mouseup", this::onMouseEvent);
+        window.addEventListener("mousemove", this::onMouseEvent);
+        window.addEventListener("mouseout",this::onMouseEvent);
+        window.addEventListener("keydown", this::onKeyEvent);
+        window.addEventListener("keyup", this::onKeyEvent);
     }
 
-    private void updatePointerState() {
-        List<Pointer> snapshot = ImmutableList.copyOf(pointers.values());
+    private void onMouseEvent(Event event) {
+        MouseEvent mouseEvent = (MouseEvent) event;
+        mouseEvents.put("mouse", mouseEvent);
 
-        for (Pointer pointer : snapshot) {
-            if (pointer.state == 2) {
-                pointers.remove(pointer.identifier);
-            }
-        }
-
-        for (String pointerEvent : Browser.flushPointerEventBuffer()) {
-            CSVRecord data = CSVRecord.parseRecord(pointerEvent, ";");
-
-            Pointer pointer = getPointer(data.get(1));
-            pointer.location.set(Float.parseFloat(data.get(2)), Float.parseFloat(data.get(3)));
-
-            String eventType = data.get(0);
-            int eventState = getPointerEventState(eventType);
-            pointer.state = Math.max(pointer.state, eventState);
-        }
+        event.preventDefault();
+        event.stopPropagation();
     }
 
-    private Pointer getPointer(String identifier) {
-        Pointer pointer = pointers.get(identifier);
-        if (pointer == null) {
-            pointer = new Pointer(identifier);
-            pointers.put(identifier, pointer);
-        }
-        return pointer;
+    private void onKeyEvent(Event event) {
+        KeyboardEvent keyEvent = (KeyboardEvent) event;
+        keyEvents.put(keyEvent.getKeyCode(), keyEvent);
+
+        event.preventDefault();
+        event.stopPropagation();
     }
 
-    private int getPointerEventState(String eventType) {
-        Integer eventState = POINTER_EVENTS.get(eventType);
-        Preconditions.checkArgument(eventState != null, "Unknown pointer event type: " + eventType);
-        return eventState;
-    }
-
-    private void updateKeyboardState() {
-        for (KeyCode keyCode : KeyCode.values()) {
-            Integer browserKeyCode = BROWSER_KEY_CODE_MAPPING.get(keyCode);
-            int keyState = Math.round(Browser.getKeyState(browserKeyCode));
-
-            if (keyState == 1) {
-                keysDown.add(browserKeyCode);
-                keysUp.remove(browserKeyCode);
-            } else if (keysDown.contains(browserKeyCode)) {
-                keysDown.remove(browserKeyCode);
-                keysUp.add(browserKeyCode);
-            } else {
-                keysDown.remove(browserKeyCode);
-                keysUp.remove(browserKeyCode);
-            }
-        }
+    public void reset() {
+        mouseEvents.clear();
+        keyEvents.clear();
     }
 
     @Override
     public List<Point2D> getPointers() {
-        return pointers.values().stream()
-            .map(pointer -> pointer.getCanvasPosition(canvas, pixelRatio))
-            .toList();
+        List<Point2D> positions = new ArrayList<>();
+
+        for (String id : mouseEvents.keySet()) {
+            List<MouseEvent> events = (List<MouseEvent>) mouseEvents.get(id);
+            MouseEvent last = events.get(events.size() - 1);
+            positions.add(getPointerCanvasPosition(last));
+        }
+
+        return positions;
+    }
+
+    private Point2D getPointerCanvasPosition(MouseEvent event) {
+        int screenX = Math.round(event.getPageX() * graphics.getDevicePixelRatio());
+        int screenY = Math.round(event.getPageY() * graphics.getDevicePixelRatio());
+
+        float canvasX = canvas.toCanvasX(screenX);
+        float canvasY = canvas.toCanvasY(screenY);
+
+        return new Point2D(canvasX, canvasY);
     }
 
     @Override
     public boolean isPointerPressed(Rect area) {
-        return pointers.values().stream()
-            .filter(pointer -> pointer.state == 1)
-            .anyMatch(pointer -> area.contains(pointer.getCanvasPosition(canvas, pixelRatio)));
+        return mouseEvents.values().stream()
+            .filter(event -> event.getType().equals("mousedown"))
+            .map(this::getPointerCanvasPosition)
+            .anyMatch(canvasPosition -> area.contains(canvasPosition));
     }
 
     @Override
     public boolean isPointerReleased(Rect area) {
-        return pointers.values().stream()
-            .filter(pointer -> pointer.state == 2)
-            .anyMatch(pointer -> area.contains(pointer.getCanvasPosition(canvas, pixelRatio)));
+        return mouseEvents.values().stream()
+            .filter(event -> event.getType().equals("mouseup"))
+            .map(this::getPointerCanvasPosition)
+            .anyMatch(canvasPosition -> area.contains(canvasPosition));
+    }
+
+    @Override
+    public boolean isPointerReleased() {
+        return mouseEvents.values().stream()
+            .anyMatch(event -> event.getType().equals("mouseup"));
     }
 
     @Override
     public void clearPointerReleased() {
-        pointers.values().forEach(pointer -> pointer.state = 0);
+        mouseEvents.clear();
     }
 
     @Override
     public boolean isTouchAvailable() {
-        return platform.isMobile();
+        return Browser.isTouchSupported();
     }
 
     @Override
     public boolean isKeyboardAvailable() {
-        return !platform.isMobile();
+        return !isTouchAvailable();
     }
 
     @Override
     public boolean isKeyPressed(KeyCode keyCode) {
-        return keysDown.contains(BROWSER_KEY_CODE_MAPPING.get(keyCode));
+        return keyEvents.get(BROWSER_KEY_CODE_MAPPING.get(keyCode)).stream()
+            .anyMatch(event -> event.getType().equals("keydown"));
     }
 
     @Override
     public boolean isKeyReleased(KeyCode keyCode) {
-        return keysUp.contains(BROWSER_KEY_CODE_MAPPING.get(keyCode));
+        return keyEvents.get(BROWSER_KEY_CODE_MAPPING.get(keyCode)).stream()
+            .anyMatch(event -> event.getType().equals("keyup"));
     }
 
     @Override
     public String requestTextInput(String label, String initialValue) {
         return Browser.prompt(label, initialValue);
-    }
-
-    @Override
-    public Canvas getCanvas() {
-        return canvas;
-    }
-
-    public void setPixelRatio(float pixelRatio) {
-        this.pixelRatio = pixelRatio;
-    }
-
-    /**
-     * Groups information relates to the state of a pointer. There can be multiple
-     * pointers actively simultaneously in the case of multi-touch events.
-     */
-    private static class Pointer {
-
-        private String identifier;
-        private Point2D location;
-        private int state;
-
-        public Pointer(String identifier) {
-            this.identifier = identifier;
-            this.location = new Point2D(0f, 0f);
-            this.state = 0;
-        }
-
-        public Point2D getCanvasPosition(Canvas canvas, float pixelRatio) {
-            float canvasX = canvas.toCanvasX(Math.round(location.getX() * pixelRatio));
-            float canvasY = canvas.toCanvasY(Math.round(location.getY() * pixelRatio));
-            return new Point2D(canvasX, canvasY);
-        }
     }
 }

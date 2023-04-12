@@ -6,7 +6,8 @@
 
 package nl.colorize.multimedialib.renderer.teavm;
 
-import nl.colorize.multimedialib.renderer.Audio;
+import nl.colorize.multimedialib.stage.Audio;
+import org.teavm.jso.dom.html.HTMLAudioElement;
 
 /**
  * Plays audio clips using the HTML5 media API that is supported by all modern
@@ -17,24 +18,27 @@ import nl.colorize.multimedialib.renderer.Audio;
  */
 public class TeaAudio extends Audio {
 
-    private String id;
+    private HTMLAudioElement audioElement;
 
-    protected TeaAudio(String id) {
-        this.id = id;
+    protected TeaAudio(HTMLAudioElement audioElement) {
+        this.audioElement = audioElement;
     }
 
     @Override
     public void play() {
-        Browser.playAudio(id, getVolume() / 100f, isLoop());
+        audioElement.setVolume(getVolume() / 100f);
+        audioElement.setLoop(isLoop());
+        audioElement.play();
     }
 
     @Override
     public void pause() {
-        Browser.stopAudio(id, false);
+        audioElement.pause();
     }
 
     @Override
     public void stop() {
-        Browser.stopAudio(id, true);
+        audioElement.pause();
+        audioElement.setCurrentTime(0.0);
     }
 }

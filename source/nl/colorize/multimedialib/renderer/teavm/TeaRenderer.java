@@ -6,21 +6,15 @@
 
 package nl.colorize.multimedialib.renderer.teavm;
 
-import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
-import nl.colorize.multimedialib.renderer.GraphicsMode;
-import nl.colorize.multimedialib.renderer.InputDevice;
-import nl.colorize.multimedialib.renderer.MediaLoader;
-import nl.colorize.multimedialib.renderer.Network;
+import nl.colorize.multimedialib.renderer.FrameSync;
+import nl.colorize.multimedialib.renderer.RenderCapabilities;
 import nl.colorize.multimedialib.renderer.Renderer;
-import nl.colorize.multimedialib.renderer.pixi.PixiGraphics;
-import nl.colorize.multimedialib.renderer.three.ThreeGraphics;
+import nl.colorize.multimedialib.scene.RenderContext;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.StageObserver;
-import nl.colorize.multimedialib.stage.StageVisitor;
-import org.teavm.jso.browser.AnimationFrameCallback;
 import org.teavm.jso.browser.Window;
 
 /**
@@ -31,121 +25,87 @@ import org.teavm.jso.browser.Window;
  */
 public class TeaRenderer implements Renderer {
 
-    private Canvas canvas;
-    private StageVisitor graphics;
+    private DisplayMode displayMode;
+    private TeaGraphics graphics;
     private TeaInputDevice inputDevice;
     private TeaMediaLoader mediaLoader;
     private SceneContext context;
-    private ErrorHandler errorHandler;
+    private FrameSync frameSync;
 
-    private int framerate;
-    private float frameTime;
-    private double lastFrameTimestamp;
-
-    public TeaRenderer(DisplayMode displayMode, StageVisitor graphics) {
-        this.canvas = displayMode.canvas();
+    public TeaRenderer(DisplayMode displayMode, TeaGraphics graphics) {
+        this.displayMode = displayMode;
         this.graphics = graphics;
         this.mediaLoader = new TeaMediaLoader(graphics);
-        this.inputDevice = new TeaInputDevice(canvas, mediaLoader.getPlatformFamily());
-        errorHandler = ErrorHandler.DEFAULT;
-
-        this.framerate = displayMode.framerate();
-        this.frameTime = 1f / framerate;
-        this.lastFrameTimestamp = 0.0;
+        this.inputDevice = new TeaInputDevice(displayMode.canvas(), graphics);
+        this.frameSync = new FrameSync(displayMode);
     }
 
     @Override
     public void start(Scene initialScene, ErrorHandler errorHandler) {
-        this.errorHandler = errorHandler;
-        this.context = new SceneContext(this, initialScene);
+        context = new RenderContext(this);
+        context.changeScene(initialScene);
 
+        graphics.init();
         if (graphics instanceof StageObserver observer) {
             context.getStage().getObservers().add(observer);
         }
 
-        if (graphics instanceof PixiGraphics) {
-            inputDevice.setPixelRatio(1f);
-        }
+        inputDevice.bindEventHandlers();
 
-        AnimationFrameCallback callback = this::onAnimationFrame;
-        Window.requestAnimationFrame(callback);
+        Browser.prepareAnimationLoop();
+        Browser.registerErrorHandler(error -> handleError(errorHandler, error));
+        Window.requestAnimationFrame(this::onAnimationFrame);
     }
 
     /**
-     * Browser animation loop. Because {@code window.requestAnimationFrame}
-     * always matches the display refresh rate, the browser and the application
-     * might run at a different framerate.
+     * Callback function for the browser animation loop that is called using
+     * {@code requestAnimationFrame}. If the application canvas is not ready,
+     * this will skip frame logic and instead render an "empty" frame.
      */
     private void onAnimationFrame(double timestamp) {
-        try {
-            int canvasWidth = Math.round(Browser.getCanvasWidth());
-            int canvasHeight = Math.round(Browser.getCanvasHeight());
-            float deltaTime = (float) (timestamp - lastFrameTimestamp) / 1000f;
-
-            if (updateCanvas(canvasWidth, canvasHeight) && (framerate >= 60 || deltaTime >= frameTime)) {
+        if (prepareCanvas()) {
+            frameSync.requestFrame((long) timestamp, deltaTime -> {
                 context.getFrameStats().markFrameStart();
-                inputDevice.update(frameTime);
-                context.update(frameTime);
+                context.update(deltaTime);
                 context.getFrameStats().markFrameUpdate();
                 context.getStage().visit(graphics);
                 context.getFrameStats().markFrameRender();
-                lastFrameTimestamp = timestamp;
-            }
 
-            AnimationFrameCallback callback = this::onAnimationFrame;
-            Window.requestAnimationFrame(callback);
-        } catch (Exception e) {
-            errorHandler.onError(context, e);
-            // Need to rethrow the exception to get TeaVM's normal stack trace.
-            throw e;
+                inputDevice.reset();
+            });
         }
+
+        // Request the next frame. This is intentionally done *after*
+        // the frame update, to avoid an infinite error loop if an
+        // error occurs somewhere during the frame update.
+        Window.requestAnimationFrame(this::onAnimationFrame);
     }
 
-    private boolean updateCanvas(int width, int height) {
-        if (width > 0 && height > 0) {
-            canvas.resizeScreen(width, height);
-            return mediaLoader.checkLoadingProgress();
+    /**
+     * Resizes the canvas based on the requested dimensions and the current
+     * browser window. Returns true if the canvas is ready to be used.
+     */
+    private boolean prepareCanvas() {
+        int width = graphics.getDisplayWidth();
+        int height = graphics.getDisplayHeight();
+
+        if (width > 0 || height > 0) {
+            displayMode.canvas().resizeScreen(width, height);
+            return true;
         } else {
             return false;
         }
     }
 
     @Override
-    public String takeScreenshot() {
-        return Browser.takeScreenshot();
+    public RenderCapabilities getCapabilities() {
+        TeaNetwork network = new TeaNetwork();
+        return new RenderCapabilities(graphics.getGraphicsMode(), displayMode,
+            graphics, inputDevice, mediaLoader, network);
     }
 
-    @Override
-    public GraphicsMode getGraphicsMode() {
-        if (graphics instanceof ThreeGraphics) {
-            return GraphicsMode.MODE_3D;
-        } else {
-            return GraphicsMode.MODE_2D;
-        }
-    }
-
-    @Override
-    public DisplayMode getDisplayMode() {
-        return new DisplayMode(canvas, framerate);
-    }
-
-    @Override
-    public StageVisitor accessGraphics() {
-        return graphics;
-    }
-
-    @Override
-    public InputDevice accessInputDevice() {
-        return inputDevice;
-    }
-
-    @Override
-    public MediaLoader accessMediaLoader() {
-        return mediaLoader;
-    }
-
-    @Override
-    public Network accessNetwork() {
-        return new TeaNetwork();
+    private void handleError(ErrorHandler errorHandler, String error) {
+        RuntimeException cause = new RuntimeException("JavaScript error\n\n" + error);
+        errorHandler.onError(context, cause);
     }
 }

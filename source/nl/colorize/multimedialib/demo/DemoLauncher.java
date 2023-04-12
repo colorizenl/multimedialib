@@ -8,14 +8,13 @@ package nl.colorize.multimedialib.demo;
 
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
+import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.multimedialib.renderer.java2d.Java2DRenderer;
 import nl.colorize.multimedialib.renderer.libgdx.GDXRenderer;
-import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.scene.Scene;
-import nl.colorize.util.AppProperties;
 import nl.colorize.util.cli.CommandLineArgumentParser;
 import nl.colorize.util.swing.ApplicationMenuListener;
 import nl.colorize.util.swing.Popups;
@@ -39,18 +38,18 @@ public class DemoLauncher implements ApplicationMenuListener {
     private boolean canvasZoom;
 
     public static void main(String[] argv) {
-        AppProperties args = new CommandLineArgumentParser(DemoLauncher.class)
-            .addRequired("--renderer", "Either 'java2d' or 'gdx'")
-            .addRequired("--graphics", "Either '2d' or '3d'")
+        CommandLineArgumentParser args = new CommandLineArgumentParser(DemoLauncher.class)
+            .addOptional("--renderer", "Either 'java2d' or 'gdx'")
+            .addOptional("--graphics", "Either '2d' or '3d'")
             .addOptional("--framerate", "Demo framerate, default is 60 fps")
             .addFlag("--canvas", "Uses a fixed canvas size to display graphics")
             .parseArgs(argv);
 
         DemoLauncher demo = new DemoLauncher();
-        demo.rendererName = args.get("renderer");
-        demo.graphics = args.get("graphics");
-        demo.framerate = args.getInt("framerate", 60);
-        demo.canvasZoom = args.getBoolean("canvas");
+        demo.rendererName = args.get("renderer").getStringOr("java2d");
+        demo.graphics = args.get("graphics").getStringOr("2d");
+        demo.framerate = args.get("framerate").getIntOr(60);
+        demo.canvasZoom = args.get("canvas").getBool();
         demo.start();
     }
 
@@ -66,7 +65,7 @@ public class DemoLauncher implements ApplicationMenuListener {
         };
 
         Scene demo = createDemoScene();
-        renderer.start(demo, ErrorHandler.DEFAULT);
+        renderer.start(demo, (ErrorHandler) demo);
     }
 
     private Canvas initCanvas() {
