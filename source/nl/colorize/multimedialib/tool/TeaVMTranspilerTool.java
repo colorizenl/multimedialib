@@ -10,10 +10,12 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.xml.XmlEscapers;
 import nl.colorize.multimedialib.renderer.MediaException;
+import nl.colorize.util.DateParser;
 import nl.colorize.util.FileUtils;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.Stopwatch;
+import nl.colorize.util.cli.Arg;
 import nl.colorize.util.cli.CommandLineArgumentParser;
 import org.teavm.diagnostics.Problem;
 import org.teavm.tooling.ConsoleTeaVMToolLog;
@@ -28,6 +30,7 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,36 +43,25 @@ import java.util.stream.Collectors;
  */
 public class TeaVMTranspilerTool {
 
+    @Arg(name = "project")
     protected String projectName;
-    protected File resourceDir;
+
+    @Arg(name = "main", usage = "Main class that acts as application entry point")
     protected String mainClassName;
+
+    @Arg(name = "resources", usage = "Location of the application's resource files")
+    protected File resourceDir;
+
+    @Arg(name = "out")
     protected File outputDir;
+
+    @Arg(usage = "Minifies the generated JavaScript, off by default")
     protected boolean minify;
 
     private static final ResourceFile INDEX_FILE = new ResourceFile("browser/index.html");
-    private static final ResourceFile JS_LIBRARY_LIST = new ResourceFile("browser/lib/js-libraries.txt");
+    private static final ResourceFile RESOURCES_LIST = new ResourceFile("browser/browser-resources.txt");
+    private static final ResourceFile JS_LIST = new ResourceFile("browser/javascript-libraries.txt");
     private static final Logger LOGGER = LogHelper.getLogger(TeaVMTranspilerTool.class);
-
-    private static final List<String> FRAMEWORK_RESOURCES = List.of(
-        "colorize-logo.png",
-        "colorize-icon-32.png",
-        "colorize-icon-256.png",
-        "browser/multimedialib.js",
-        "browser/pixi-interface.js",
-        "browser/three-interface.js",
-        "browser/assets/multimedialib.css",
-        "browser/assets/favicon.png",
-        "browser/assets/apple-icon.png",
-        "browser/assets/loading.gif",
-        "browser/assets/OpenSans-Regular.ttf",
-        "effects/particle-circle.png",
-        "effects/particle-diamond.png",
-        "demo/demo.png",
-        "demo/demo.mp3",
-        "demo/colorize-logo.gltf",
-        "demo/sepia-vertex.glsl",
-        "demo/sepia-fragment.glsl"
-    );
 
     private static final List<String> TEXT_FILE_TYPES = List.of(
         ".atlas",
@@ -108,21 +100,9 @@ public class TeaVMTranspilerTool {
     );
 
     public static void main(String[] argv) {
-        CommandLineArgumentParser args = new CommandLineArgumentParser(TeaVMTranspilerTool.class)
-            .addRequired("--project", "Project name for the application")
-            .addRequired("--main", "Main class that acts as application entry point")
-            .addRequired("--resources", "Location of the application's resource files")
-            .addRequired("--out", "Output directory for the generated files")
-            .addFlag("--minify", "Minifies the generated JavaScript, off by default")
-            .parseArgs(argv);
-
-        TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
-        tool.projectName = args.get("project").getString();
-        tool.mainClassName = args.get("main").getString();
-        tool.resourceDir = args.get("resources").getDir();
-        tool.outputDir = args.get("out").getFile();
-        tool.minify = args.get("minify").getBool();
-        tool.run();
+        CommandLineArgumentParser argParser = new CommandLineArgumentParser(TeaVMTranspilerTool.class);
+        TeaVMTranspilerTool transpiler = argParser.parse(argv, TeaVMTranspilerTool.class);
+        transpiler.run();
     }
 
     protected void run() {
@@ -136,7 +116,7 @@ public class TeaVMTranspilerTool {
             copyResources();
             transpile();
             printSummary();
-        } catch (TeaVMToolException e) {
+        } catch (TeaVMToolException | IOException e) {
             LOGGER.log(Level.SEVERE, "Transpiling failed", e);
         }
     }
@@ -150,12 +130,14 @@ public class TeaVMTranspilerTool {
         }
     }
 
-    private void printSummary() {
+    private void printSummary() throws IOException {
         long htmlSize = new File(outputDir, "index.html").length();
         long jsSize = new File(outputDir, "classes.js").length();
+        long appFileSize = FileUtils.countDirectorySize(outputDir);
 
-        LOGGER.info("HTML file size:                     " + FileUtils.formatFileSize(htmlSize));
-        LOGGER.info("Transpiled JavaScript file size:    " + FileUtils.formatFileSize(jsSize));
+        LOGGER.info("HTML file size:                   " + FileUtils.formatFileSize(htmlSize));
+        LOGGER.info("Transpiled JavaScript file size:  " + FileUtils.formatFileSize(jsSize));
+        LOGGER.info("Total application file size:      " + FileUtils.formatFileSize(appFileSize));
         LOGGER.info("Results saved to " + outputDir.getAbsolutePath());
     }
 
@@ -181,7 +163,7 @@ public class TeaVMTranspilerTool {
             }
         }
 
-        LOGGER.info("Transpilation took " + String.format("%.1f", timer.tock() / 1000f) + "s");
+        LOGGER.info("Transpilation took " + Math.round(timer.tock() / 1000f) + "s");
     }
 
     private boolean shouldReport(Problem problem) {
@@ -200,8 +182,8 @@ public class TeaVMTranspilerTool {
 
     protected void copyResources() {
         List<ResourceFile> resourceFiles = new ArrayList<>();
-        FRAMEWORK_RESOURCES.forEach(path -> resourceFiles.add(new ResourceFile(path)));
-        resourceFiles.addAll(gatherResourceFiles());
+        resourceFiles.addAll(gatherFrameworkResourceFiles());
+        resourceFiles.addAll(gatherApplicationResourceFiles());
         resourceFiles.add(generateManifest(resourceFiles));
 
         LOGGER.info("Copying " + resourceFiles.size() + " resource files");
@@ -226,13 +208,15 @@ public class TeaVMTranspilerTool {
         File libDir = new File(outputDir, "libraries");
         libDir.mkdir();
 
-        for (String entry : JS_LIBRARY_LIST.readLines(Charsets.UTF_8)) {
-            ResourceFile file = new ResourceFile("browser/lib/" + entry);
-            File outputFile = new File(libDir, entry);
-            copyBinaryResourceFile(file, outputFile);
+        for (String line : JS_LIST.readLines(Charsets.UTF_8)) {
+            if (!line.isEmpty() && !line.startsWith("#")) {
+                ResourceFile file = new ResourceFile("browser/lib/" + line);
+                File outputFile = new File(libDir, line);
+                copyBinaryResourceFile(file, outputFile);
 
-            if (!entry.endsWith(".map")) {
-                fileNames.add(entry);
+                if (!line.endsWith(".map")) {
+                    fileNames.add(line);
+                }
             }
         }
 
@@ -251,6 +235,7 @@ public class TeaVMTranspilerTool {
             for (String line : file.readLines(Charsets.UTF_8)) {
                 line = line.replace("{project}", projectName);
                 line = line.replace("{js-libraries}", generateScriptTags(jsLibraries));
+                line = line.replace("{timestamp}", generateTimestampTag());
                 if (line.trim().equals("{resources}")) {
                     line = generateTextResourceFilesHTML(textFiles);
                 }
@@ -265,6 +250,11 @@ public class TeaVMTranspilerTool {
         return jsLibraries.stream()
             .map(file -> "<script src=\"libraries/" + file + "\"></script>")
             .collect(Collectors.joining("\n"));
+    }
+
+    private String generateTimestampTag() {
+        String timestamp = DateParser.format(new Date(), "yyyy-MM-dd HH:mm");
+        return "<!-- Generated by Colorize MultimediaLib @ " + timestamp + " -->";
     }
 
     private String generateTextResourceFilesHTML(List<ResourceFile> files) {
@@ -296,7 +286,14 @@ public class TeaVMTranspilerTool {
         copyBinaryResourceFile(file, outputFile);
     }
 
-    private List<ResourceFile> gatherResourceFiles() {
+    private List<ResourceFile> gatherFrameworkResourceFiles() {
+        return RESOURCES_LIST.readLines(Charsets.UTF_8).stream()
+            .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+            .map(ResourceFile::new)
+            .toList();
+    }
+
+    private List<ResourceFile> gatherApplicationResourceFiles() {
         try {
             return Files.walk(resourceDir.toPath())
                 .map(path -> path.toFile())
@@ -316,6 +313,8 @@ public class TeaVMTranspilerTool {
 
             List<String> entries = resourceFiles.stream()
                 .map(file -> normalizeFileName(file))
+                .filter(file -> !file.endsWith(".js"))
+                .distinct()
                 .sorted()
                 .toList();
 

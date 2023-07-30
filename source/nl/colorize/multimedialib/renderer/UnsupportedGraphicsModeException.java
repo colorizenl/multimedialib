@@ -7,8 +7,8 @@
 package nl.colorize.multimedialib.renderer;
 
 /**
- * Thrown when attempting to perform an operation that requires a graphics mode
- * which is not supported by the renderer.
+ * Thrown when attempting to perform an operation which is not supported by
+ * the renderer's graphics mode.
  */
 public class UnsupportedGraphicsModeException extends RuntimeException {
 

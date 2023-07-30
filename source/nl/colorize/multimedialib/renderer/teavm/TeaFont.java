@@ -9,13 +9,20 @@ package nl.colorize.multimedialib.renderer.teavm;
 import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.OutlineFont;
+import nl.colorize.util.Promise;
 
 public class TeaFont implements OutlineFont {
 
+    private Promise<Boolean> fontPromise;
     private FontStyle style;
 
-    protected TeaFont(FontStyle style) {
+    protected TeaFont(Promise<Boolean> fontPromise, FontStyle style) {
+        this.fontPromise = fontPromise;
         this.style = style;
+    }
+
+    public boolean isLoaded() {
+        return fontPromise.getValue().isPresent();
     }
 
     @Override
@@ -28,6 +35,6 @@ public class TeaFont implements OutlineFont {
         Preconditions.checkArgument(style.family().equals(newStyle.family()),
             "Font family mismatch: expected " + style.family());
 
-        return new TeaFont(newStyle);
+        return new TeaFont(fontPromise, newStyle);
     }
 }

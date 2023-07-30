@@ -38,6 +38,10 @@ public class Timer implements Updatable {
         return position;
     }
 
+    public float getTimeRemaining() {
+        return duration - position;
+    }
+
     public float getDuration() {
         return duration;
     }
@@ -70,6 +74,13 @@ public class Timer implements Updatable {
         Timer timer = new Timer(0f);
         timer.end();
         return timer;
+    }
+
+    /**
+     * Factory method that creates a timer which will never reach his duration.
+     */
+    public static Timer infinite() {
+        return new Timer(Float.MAX_VALUE);
     }
 
     /**

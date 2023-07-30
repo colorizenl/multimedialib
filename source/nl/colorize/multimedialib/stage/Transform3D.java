@@ -6,7 +6,7 @@
 
 package nl.colorize.multimedialib.stage;
 
-import com.google.common.base.Preconditions;
+import lombok.Data;
 import nl.colorize.multimedialib.math.Point3D;
 
 /**
@@ -17,79 +17,58 @@ import nl.colorize.multimedialib.math.Point3D;
  * Rotation is expressed in the number of degrees. Scale is represented
  * relative to the model's original scale, with 1.0 being the original scale.
  */
+@Data
 public class Transform3D {
 
     private Point3D position;
-    private float[] rotation;
-    private float[] scale;
+    private float rotationX;
+    private float rotationY;
+    private float rotationZ;
+    private float scaleX;
+    private float scaleY;
+    private float scaleZ;
 
     public Transform3D() {
         this.position = new Point3D(0f, 0f, 0f);
-        this.rotation = new float[] {0f, 0f, 0f};
-        this.scale = new float[] {1f, 1f, 1f};
-    }
-
-    public void setPosition(Point3D p) {
-        position.set(p);
+        this.rotationX = 0f;
+        this.rotationY = 0f;
+        this.rotationZ = 0f;
+        this.scaleX = 1f;
+        this.scaleY = 1f;
+        this.scaleZ = 1f;
     }
 
     public void setPosition(float x, float y, float z) {
-        position.set(x, y, z);
+        position = new Point3D(x, y, z);
     }
 
-    public Point3D getPosition() {
-        return position;
+    public void addPosition(float deltaX, float deltaY, float deltaZ) {
+        position = new Point3D(
+            position.getX() + deltaX,
+            position.getY() + deltaY,
+            position.getZ() + deltaZ
+        );
     }
 
     public void setRotation(float x, float y, float z) {
-        rotation[0] = x;
-        rotation[1] = y;
-        rotation[2] = z;
+        rotationX = x;
+        rotationY = y;
+        rotationZ = z;
     }
 
-    public float getRotationX() {
-        return rotation[0];
+    public void addRotation(float x, float y, float z) {
+        rotationX += x;
+        rotationY += y;
+        rotationZ += z;
     }
 
-    public float getRotationY() {
-        return rotation[1];
-    }
-
-    public float getRotationZ() {
-        return rotation[2];
-    }
-
-    public void setScale(float scaleX, float scaleY, float scaleZ) {
-        Preconditions.checkArgument(scaleX > 0f, "Invalid X scale: " + scaleX);
-        Preconditions.checkArgument(scaleY > 0f, "Invalid Y scale: " + scaleY);
-        Preconditions.checkArgument(scaleZ > 0f, "Invalid Z scale: " + scaleZ);
-
-        scale[0] = scaleX;
-        scale[1] = scaleY;
-        scale[2] = scaleZ;
+    public void setScale(float x, float y, float z) {
+        this.scaleX = x;
+        this.scaleY = y;
+        this.scaleZ = z;
     }
 
     public void setScale(float scale) {
         setScale(scale, scale, scale);
-    }
-
-    public float getScaleX() {
-        return scale[0];
-    }
-
-    public float getScaleY() {
-        return scale[1];
-    }
-
-    public float getScaleZ() {
-        return scale[2];
-    }
-
-    public Transform3D copy() {
-        Transform3D copy = new Transform3D();
-        copy.setPosition(position);
-        copy.setRotation(rotation[0], rotation[1], rotation[2]);
-        copy.setScale(scale[0], scale[1], scale[2]);
-        return copy;
     }
 }

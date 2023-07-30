@@ -23,13 +23,13 @@ to the dependencies section in `pom.xml`:
     <dependency>
         <groupId>nl.colorize</groupId>
         <artifactId>multimedialib</artifactId>
-        <version>2023.1.1</version>
+        <version>2023.4</version>
     </dependency>  
     
 The library can also be used in Gradle projects:
 
     dependencies {
-        implementation "nl.colorize:multimedialib:2023.1.1"
+        implementation "nl.colorize:multimedialib:2023.4"
     }
     
 Supported platforms
@@ -42,22 +42,28 @@ initializes the application with the correct renderer.
 
 The following renderer implementations are available:
 
-| Renderer                                                                             | Desktop | iOS | Android | Web | Graphics |
-|--------------------------------------------------------------------------------------|---------|-----|---------|-----|----------|
-| Java2D renderer                                                                      | ✓       | ×   | ×       | ×   | 2D       |
-| [libGDX](https://libgdx.badlogicgames.com) / [LWJGL](https://www.lwjgl.org) renderer | ✓       | ×   | ×       | ×   | 2D + 3D  |
-| HTML5 canvas renderer (via [TeaVM](https://teavm.org))                               | ✓       | ✓   | ✓       | ✓   | 2D       |
-| [PixiJS](https://www.pixijs.com) renderer (via [TeaVM](https://teavm.org))           | ✓       | ✓   | ✓       | ✓   | 2D       |
-| [three.js](https://threejs.org) renderer (via [TeaVM](https://teavm.org))            | ✓       | ✓   | ✓       | ✓   | 2D + 3D  |
+| Renderer                                                   | Graphics | Platforms                      |
+|------------------------------------------------------------|----------|--------------------------------|
+| Java2D renderer                                            | 2D       | Windows, Mac                   |
+| [libGDX](https://libgdx.badlogicgames.com) renderer        | 2D + 3D  | Windows, Mac, Android          |
+| HTML5 canvas renderer                                      | 2D       | Browser, iOS, Android, Windows |
+| WebGL 2D renderer (*experimental*)                         | 2D       | Browser, iOS, Android, Windows |
+| [PixiJS](https://www.pixijs.com) renderer                  | 2D       | Browser, iOS, Android, Windows |
+| [three.js](https://threejs.org) renderer (*experimental*)  | 2D + 3D  | Browser, iOS, Android, Windows |
 
-When using a browser-based renderer, the application needs to be transpiled to JavaScript in order
-for it to run in the browser. MultimediaLib comes with a
+When using a browser-based renderer, the application needs to be transpiled to JavaScript
+using via [TeaVM](https://teavm.org) in order for it to run. MultimediaLib comes with a
 [command line tool](#transpiling-applications-to-htmljavascript) that can be used to transpile
-the application as part of the build.
+the application as part of the build. The browser-based version can also be embedded inside
+a mobile app and run as a [PWA](https://en.wikipedia.org/wiki/Progressive_web_app).
 
 Both Java applications and browser applications can be wrapped to native distributions for various
 platforms. Refer to the [documentation on distributing applications](#distributing-applications)
 for instructions on how to provide a more native distribution for each platform.
+
+Not every renderer supports every feature on every platform. For more information, refer to the
+[renderer compatibility table](_development/renderer-compatibility.md) that contains a more
+detailed overview.
 
 Architecture
 ------------
@@ -70,9 +76,10 @@ terminology and in terms of how applications are structured.
 
 Applications are split into *scenes*. Only one scene can be active at the same time, but complex
 scenes can consist of multiple sub-scenes, each responsible for a certain part of the scene. 
-The currently active scene has access to the *stage*, which contains the graphics and audio for
-the current scenes. Graphics are split into multiple 2D layers, plus one layer for 3D graphics
-for renderers that support 3D.
+
+The scene has access to the *stage*, which contains the graphics for the currently active scene.
+The stage is structured as a [scene graph](https://en.wikipedia.org/wiki/Scene_graph). Depending
+on the renderer and platform, the stage can contain 2D and/or 3D graphics.
 
 Scene logic is intentionally separate from the contents of the stage. This allows each scene to
 function as an [Entity Component System](https://en.wikipedia.org/wiki/Entity_component_system). 

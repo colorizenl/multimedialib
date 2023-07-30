@@ -7,48 +7,33 @@
 package nl.colorize.multimedialib.math;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
+import lombok.Value;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
- * Describes a two-dimensional convex polygon with float precision coordinates.
- * The polygon is described by an array of points, e.g. [x0, y0, x1, y1, ...].
+ * A two-dimensional convex polygon with float precision coordinates. The
+ * polygon is described by an array of points, e.g. [x0, y0, x1, y1, ...].
  */
+@Value
 public class Polygon implements Shape {
 
     private float[] points;
 
     public Polygon(float... points) {
-        setPoints(points);
-    }
-    
-    public Polygon(List<Point2D> points) {
-        setPoints(points);
-    }
-    
-    public Polygon(Point2D... points) {
-        setPoints(points);
-    }
-
-    public void setPoints(float... points) {
         Preconditions.checkArgument(points.length >= 6,
-            "Convex polygon must have at least 3 points");
+            "Convex polygon must have at least 3 points, got " + points.length);
+
         Preconditions.checkArgument(points.length % 2 != 1,
-            "Points array must have equal number of X and Y coordinates: " + Arrays.toString(points));
+            "Points array must have equal number of X and Y coordinates: " + points.length);
 
         this.points = points;
     }
-    
-    public void setPoints(List<Point2D> points) {
-        setPoints(points.toArray(new Point2D[0]));
-    }
-    
-    public void setPoints(Point2D... points) {
+
+    public Polygon(Point2D... points) {
         Preconditions.checkArgument(points.length >= 3, 
-            "Convex polygon must have at least 3 points");
+            "Convex polygon must have at least 3 points, got" + points.length);
         
         this.points = new float[points.length * 2];
         int offset = 0;
@@ -60,40 +45,8 @@ public class Polygon implements Shape {
         }
     }
 
-    /**
-     * Returns a list of all coordinates in all points that make up this polygon.
-     * In application code you would normally prefer to use {@link #getPointsList()}
-     * instead. This method is provided because some renderer implementations
-     * operate directly on the underlying vertices array.
-     */
-    public float[] getVertices() {
-        return points;
-    }
-
-    /**
-     * Returns a list of all coordinates in all points.
-     * @deprecated Use either {@link #getVertices()} or {@link #getPointsList()}
-     *             instead.
-     */
-    @Deprecated
-    public float[] getPoints() {
-        return points;
-    }
-    
-    public List<Point2D> getPointsList() {
-        List<Point2D> result = new ArrayList<>();
-        for (int i = 0; i < getNumPoints(); i++) {
-            result.add(getPoint(i));
-        }
-        return result;
-    }
-    
     public int getNumPoints() {
         return points.length / 2;
-    }
-    
-    public Point2D getPoint(int n) {
-        return new Point2D(getPointX(n), getPointY(n));
     }
     
     public float getPointX(int n) {
@@ -102,13 +55,6 @@ public class Polygon implements Shape {
     
     public float getPointY(int n) {
         return points[2 * n + 1];
-    }
-
-    public void move(float dx, float dy) {
-        for (int i = 0; i < points.length; i += 2) {
-            points[i] += dx;
-            points[i + 1] += dy;
-        }
     }
 
     @Override
@@ -241,7 +187,7 @@ public class Polygon implements Shape {
      */
     public List<Polygon> subdivide() {
         if (points.length == 6) {
-            return ImmutableList.of(copy());
+            return List.of(reposition(new Point2D(0f, 0f)));
         }
 
         List<Point2D> vertices = subdivideVertices();
@@ -262,13 +208,13 @@ public class Polygon implements Shape {
             vertices.add(new Point2D(points[i], points[i + 1]));
 
             if (i >= 2) {
-                vertices.add(center.copy());
+                vertices.add(center);
                 vertices.add(new Point2D(points[i], points[i + 1]));
             }
 
             if (i == points.length - 2) {
                 vertices.add(new Point2D(points[0], points[1]));
-                vertices.add(center.copy());
+                vertices.add(center);
             }
         }
 
@@ -276,51 +222,20 @@ public class Polygon implements Shape {
     }
 
     @Override
-    public Polygon copy() {
-        float[] pointsCopy = new float[points.length];
-        for (int i = 0; i < points.length; i++) {
-            pointsCopy[i] = points[i];
-        }
-        return new Polygon(pointsCopy);
-    }
-
-    @Override
     public Polygon reposition(Point2D offset) {
-        Polygon result = copy();
-        for (int i = 0; i < result.points.length; i += 2) {
-            result.points[i] += offset.getX();
-            result.points[i + 1] += offset.getY();
+        float[] newPoints = new float[points.length];
+
+        for (int i = 0; i < points.length; i += 2) {
+            newPoints[i] = points[i] + offset.getX();
+            newPoints[i + 1] = points[i + 1] + offset.getY();
         }
-        return result;
-    }
 
-    @Override
-    public boolean equals(Object o) {
-        if (o instanceof Polygon other) {
-            if (points.length != other.points.length) {
-                return false;
-            }
-
-            for (int i = 0; i < points.length; i++) {
-                if (Math.abs(points[i] - other.points[i]) > EPSILON) {
-                    return false;
-                }
-            }
-
-            return true;
-        } else {
-            return false;
-        }
-    }
-    
-    @Override
-    public int hashCode() {
-        return Arrays.hashCode(points);
+        return new Polygon(newPoints);
     }
 
     @Override
     public String toString() {
-        return Arrays.toString(points);
+        return "Polygon";
     }
 
     /**
@@ -330,14 +245,14 @@ public class Polygon implements Shape {
     public static Polygon createCircle(Point2D origin, float radius, int numPoints) {
         Preconditions.checkArgument(numPoints >= 4,
             "Circle polygon must consist of at least 4 points, got " + numPoints);
-        Preconditions.checkArgument(radius > EPSILON, "Invalid radius: " + radius);
+
+        Preconditions.checkArgument(radius > EPSILON,
+            "Invalid radius: " + radius);
 
         float[] points = new float[numPoints * 2];
-        Vector vector = new Vector(0f, radius);
 
         for (int i = 0; i < numPoints; i++) {
-            vector.setDirection(i * (360f / numPoints));
-
+            Vector vector = new Vector(i * (360f / numPoints), radius);
             points[i * 2] = origin.getX() + vector.getX();
             points[i * 2 + 1] = origin.getY() + vector.getY();
         }
@@ -355,10 +270,14 @@ public class Polygon implements Shape {
         Preconditions.checkArgument(length > 0f, "Invalid length: " + length);
 
         Vector left = new Vector((angle % 360) - arc / 2f, length);
+        Vector center = new Vector((angle % 360), length);
         Vector right = new Vector((angle % 360) + arc / 2f, length);
 
-        return new Polygon(origin.getX(), origin.getY(),
+        return new Polygon(
+            origin.getX(), origin.getY(),
             origin.getX() + left.getX(), origin.getY() + left.getY(),
-            origin.getX() + right.getX(), origin.getY() + right.getY());
+            origin.getX() + center.getX(), origin.getY() + center.getY(),
+            origin.getX() + right.getX(), origin.getY() + right.getY()
+        );
     }
 }

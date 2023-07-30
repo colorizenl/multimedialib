@@ -8,14 +8,12 @@ package nl.colorize.multimedialib.renderer.libgdx;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
-import nl.colorize.multimedialib.scene.Updatable;
 import nl.colorize.util.Platform;
 import nl.colorize.util.swing.Popups;
 import nl.colorize.util.swing.SwingUtils;
@@ -27,9 +25,10 @@ import java.awt.BorderLayout;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
-public class GDXInput implements InputDevice, Updatable {
+public class GDXInput implements InputDevice {
 
     private Canvas canvas;
 
@@ -119,7 +118,10 @@ public class GDXInput implements InputDevice, Updatable {
     }
 
     private void updatePointer() {
-        pointer.set(canvas.toCanvasX(Gdx.input.getX()), canvas.toCanvasY(Gdx.input.getY()));
+        pointer = new Point2D(
+            canvas.toCanvasX(Gdx.input.getX()),
+            canvas.toCanvasY(Gdx.input.getY())
+        );
 
         if (Gdx.input.isTouched()) {
             pointerPressed = true;
@@ -151,13 +153,18 @@ public class GDXInput implements InputDevice, Updatable {
     }
 
     @Override
-    public List<Point2D> getPointers() {
-        return ImmutableList.of(pointer.copy());
+    public Optional<Point2D> getPointer() {
+        return Optional.of(pointer);
     }
 
     @Override
     public boolean isPointerPressed(Rect area) {
         return pointerPressed && area.contains(pointer);
+    }
+
+    @Override
+    public boolean isPointerPressed() {
+        return pointerPressed;
     }
 
     @Override

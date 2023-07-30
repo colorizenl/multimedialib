@@ -7,20 +7,18 @@
 package nl.colorize.multimedialib.stage;
 
 import nl.colorize.multimedialib.math.Region;
-import nl.colorize.multimedialib.renderer.MediaAsset;
-import nl.colorize.multimedialib.renderer.MediaLoader;
 
 /**
- * Represents an image based on raster graphics. Images be loaded from PNG
- * or JPEG files using a {@link MediaLoader}.
+ * Describes image data for an image that has been loaded by the renderer. It
+ * is not possible to add {@link Image} instances directly to the stage. This
+ * class represents the image contents, a {@link Sprite} can then be used to
+ * add an <em>instance</em> of the image to the stage.
  * <p>
- * Instances of an {@code Image} may represent either the entire underlying
- * image, or a rectangular region within the source image. That is, instances
- * do not always map directly to an image file. This aligns with the common
- * practice of including multiple images within a larger image, either as a
- * sprite sheet (for 2D graphics) or a texture (for 3D graphics).
+ * Instances of this class can represent either the entire underlying image,
+ * or a rectangular region within the source image. This class allows both
+ * situations to be used interchangeably.
  */
-public interface Image extends MediaAsset {
+public interface Image {
 
     public Region getRegion();
 

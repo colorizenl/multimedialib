@@ -6,39 +6,52 @@
 
 package nl.colorize.multimedialib.renderer.teavm;
 
+import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.stage.Audio;
+import nl.colorize.util.Promise;
 import org.teavm.jso.dom.html.HTMLAudioElement;
 
 /**
  * Plays audio clips using the HTML5 media API that is supported by all modern
- * browsers.
+ * browsers. Since the {@code <audio>} element is loaded asynchronously,
+ * playing the audio clip is only possible after the browser has loaded the
+ * audio clip.
  * <p>
- * Supported audio formats depend on the browser. All browsers support OGG,
- * all browsers except Firefox support MP3.
+ * Supported audio formats depend on the browser. All browsers support OGG.
+ * Older Firefox versions used to not support MP3, but this is now changes and
+ * all browsers now also support MP3.
  */
-public class TeaAudio extends Audio {
+public class TeaAudio implements Audio {
 
-    private HTMLAudioElement audioElement;
+    private Promise<HTMLAudioElement> audioPromise;
 
-    protected TeaAudio(HTMLAudioElement audioElement) {
-        this.audioElement = audioElement;
+    protected TeaAudio(Promise<HTMLAudioElement> audioPromise) {
+        this.audioPromise = audioPromise;
     }
 
     @Override
-    public void play() {
-        audioElement.setVolume(getVolume() / 100f);
-        audioElement.setLoop(isLoop());
-        audioElement.play();
-    }
+    public void play(int volume, boolean loop) {
+        Preconditions.checkArgument(volume >= 0 && volume <= 100, "Invalid volume: " + volume);
 
-    @Override
-    public void pause() {
-        audioElement.pause();
+        audioPromise.getValue().ifPresent(audioElement -> {
+            audioElement.setVolume(volume / 100f);
+            audioElement.setLoop(loop);
+            audioElement.play();
+        });
     }
 
     @Override
     public void stop() {
-        audioElement.pause();
-        audioElement.setCurrentTime(0.0);
+        audioPromise.getValue().ifPresent(audioElement -> {
+            audioElement.pause();
+            audioElement.setCurrentTime(0.0);
+        });
+    }
+
+    @Override
+    public String toString() {
+        return audioPromise.getValue()
+            .map(HTMLAudioElement::getSrc)
+            .orElse("<loading>");
     }
 }

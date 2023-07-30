@@ -13,7 +13,6 @@ import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.OutlineFont;
 import nl.colorize.multimedialib.stage.PolygonModel;
-import nl.colorize.multimedialib.stage.Shader;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
 
 import java.util.List;
@@ -29,20 +28,20 @@ import java.util.Properties;
 public interface MediaLoader {
 
     /**
-     * Loads an image from a file. JPEG and PNG images are guaranteed to be
-     * supported, though other image formats may also be supported depending
-     * on the platform.
+     * Loads an image from a file. Images in JPEG and PNG format are supported
+     * by all renderers.
      *
-     * @throws MediaException if the image format is not supported by the
-     *         renderer or by the platform, or if the file does not exist.
+     * @throws MediaException if the format is not supported by the renderer.
      */
     public Image loadImage(FilePointer file);
 
     /**
      * Loads a sprite atlas based on the libGDX {@code .atlas} file format.
+     * This will parse the {@code .atlas} file, and will then load all images
+     * used within the sprite atlas.
      *
-     * @throws MediaException if the image format is not supported by the
-     *        renderer or by the platform, or if the file does not exist.
+     * @throws MediaException if one of the images used in the sprite atlas
+     *         uses a format that is not supported by the renderer,
      */
     default SpriteAtlas loadAtlas(FilePointer file) {
         SpriteAtlasLoader atlasLoader = new SpriteAtlasLoader(this);
@@ -50,12 +49,10 @@ public interface MediaLoader {
     }
 
     /**
-     * Loads an audio clip from a file. OGG and MP3 files are guaranteed to
-     * be supported, though other audio formats may be also be supported
-     * depending on the platform.
+     * Loads an audio clip from a file. MP3 files are supported by all
+     * renderers.
      *
-     * @throws MediaException if the audio format is not supported by the
-     *         renderer or by the platform, or if the file does not exist.
+     * @throws MediaException if the format is not supported by the renderer.
      */
     public Audio loadAudio(FilePointer file);
 
@@ -64,8 +61,7 @@ public interface MediaLoader {
      * can be used by the renderer. The loaded font will be attached to the
      * font family name specified in the font style.
      *
-     * @throws MediaException if the file does not exist, or if the font
-     *         cannot be loaded on the current platform.
+     * @throws MediaException if the format is not supported by the renderer.
      */
     public OutlineFont loadFont(FilePointer file, FontStyle style);
 
@@ -84,9 +80,9 @@ public interface MediaLoader {
      * guaranteed to be supported, other file formats are only supported by
      * specific renderers.
      *
-     * @throws MediaException if the model cannot be loaded.
-     * @throws UnsupportedGraphicsModeException if the current renderer does
-     *         not support 3D graphics.
+     * @throws MediaException if the format is not supported by the renderer.
+     * @throws UnsupportedGraphicsModeException if the renderer does not
+     *         support 3D graphics.
      */
     public PolygonModel loadModel(FilePointer file);
 
@@ -94,19 +90,10 @@ public interface MediaLoader {
      * Provides access to a {@link GeometryBuilder} instance that can be used
      * to create simple 3D geometry in a programmatic way.
      *
-     * @throws UnsupportedGraphicsModeException if the current renderer does
-     *         not support 3D graphics.
+     * @throws UnsupportedGraphicsModeException if the renderer does not
+     *         support 3D graphics.
      */
     public GeometryBuilder getGeometryBuilder();
-
-    /**
-     * Loads a GLSL shader based on two {@code .glsl} files, one for the vertex
-     * shader and one for the fragment shader. If the renderer does not support
-     * shaders, this will return a no-op shader implementation.
-     *
-     * @throws MediaException if the shader cannot be parsed.
-     */
-    public Shader loadShader(FilePointer vertexShaderFile, FilePointer fragmentShaderFile);
 
     /**
      * Loads a text-based resource file using UTF-8 encoding.
@@ -131,20 +118,17 @@ public interface MediaLoader {
     public boolean containsResourceFile(FilePointer file);
 
     /**
-     * Loads application data for the application with the specified name. If no
-     * such file exists, new application data will be created. The file will be
-     * loaded from the platform's standard location for application data.
-     *
-     * @throws MediaException if the file cannot be loaded.
+     * Loads the application data for the application with the specified name.
+     * Application data is limited to key/value properties, as this type of
+     * data is supported by all platforms. Returns an empty {@link Properties}
+     * when no application data exists.
      */
-    public Properties loadApplicationData(String appName, String fileName);
+    public Properties loadApplicationData(String appName);
 
     /**
-     * Saves application data for the application with the specified name. The
-     * file will be stored to the platform's standard location for application
-     * data.
-     *
-     * @throws MediaException if the file could not be saved.
+     * Saves the application data for the application with the specified name.
+     * Application data is limited to key/value properties, as this type of
+     * data is supported by all platforms.
      */
-    public void saveApplicationData(Properties data, String appName, String fileName);
+    public void saveApplicationData(String appName, Properties data);
 }

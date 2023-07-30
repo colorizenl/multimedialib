@@ -11,7 +11,6 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.TextureData;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import nl.colorize.multimedialib.math.Region;
-import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Image;
 
@@ -21,29 +20,27 @@ import nl.colorize.multimedialib.stage.Image;
  */
 public class GDXImage implements Image {
 
-    private FilePointer origin;
     private Texture texture;
     private TextureRegion textureRegion;
     private Pixmap textureData;
     private Region bounds;
 
-    protected GDXImage(FilePointer origin, Texture texture, Region bounds) {
+    public GDXImage(Texture texture, Region bounds) {
         float u1 = bounds.x() / (float) texture.getWidth();
         float v1 = bounds.y() / (float) texture.getHeight();
         float u2 = bounds.x1() / (float) texture.getWidth();
         float v2 = bounds.y1() / (float) texture.getHeight();
 
-        this.origin = origin;
         this.texture = texture;
         this.textureRegion = new TextureRegion(texture, u1, v1, u2, v2);
         this.bounds = bounds;
     }
 
-    protected GDXImage(FilePointer origin, Texture texture) {
-        this(origin, texture, new Region(0, 0, texture.getWidth(), texture.getHeight()));
+    public GDXImage(Texture texture) {
+        this(texture, new Region(0, 0, texture.getWidth(), texture.getHeight()));
     }
 
-    protected TextureRegion getTextureRegion() {
+    public TextureRegion getTextureRegion() {
         return textureRegion;
     }
 
@@ -54,7 +51,7 @@ public class GDXImage implements Image {
 
     @Override
     public Image extractRegion(Region region) {
-        return new GDXImage(origin, texture, region);
+        return new GDXImage(texture, region);
     }
 
     private void loadTextureData() {

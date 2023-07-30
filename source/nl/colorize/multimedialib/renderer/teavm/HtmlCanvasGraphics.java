@@ -6,29 +6,24 @@
 
 package nl.colorize.multimedialib.renderer.teavm;
 
-import com.google.common.base.Preconditions;
-import nl.colorize.multimedialib.math.Circle;
-import nl.colorize.multimedialib.math.Line;
-import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.math.Polygon;
-import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.multimedialib.math.Region;
+import nl.colorize.multimedialib.math.*;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.FontStyle;
+import nl.colorize.multimedialib.stage.Graphic2D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
+import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
-import nl.colorize.util.stats.Cache;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.canvas.CanvasImageSource;
 import org.teavm.jso.canvas.CanvasRenderingContext2D;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
 import org.teavm.jso.dom.html.HTMLDocument;
 import org.teavm.jso.dom.html.HTMLElement;
-import org.teavm.jso.dom.html.HTMLImageElement;
 
 /**
  * Renders graphics using the HTML canvas API. The current platform and browser
@@ -37,44 +32,21 @@ import org.teavm.jso.dom.html.HTMLImageElement;
 public class HtmlCanvasGraphics implements TeaGraphics {
 
     private Canvas sceneCanvas;
+    private BrowserDOM dom;
     private HTMLCanvasElement htmlCanvas;
     private CanvasRenderingContext2D context;
 
-    private Cache<MaskImage, HTMLCanvasElement> maskImageCache;
-    private String currentCanvasFont;
-
-    private static final String QUERY_STRING = Browser.getPageQueryString();
-    private static final boolean BOUNDS_TRACING_ENABLED = QUERY_STRING.contains("bounds-tracing");
-
     public HtmlCanvasGraphics(Canvas sceneCanvas) {
         this.sceneCanvas = sceneCanvas;
-
-        this.maskImageCache = Cache.from(this::createMaskImage, 256);
-        this.currentCanvasFont = "";
+        this.dom = new BrowserDOM();
     }
 
     @Override
     public void init() {
-        Window window = Window.current();
-        HTMLDocument document = window.getDocument();
-
-        htmlCanvas = (HTMLCanvasElement) document.createElement("canvas");
-        context = (CanvasRenderingContext2D) htmlCanvas.getContext("2d");
-
+        HTMLDocument document = Window.current().getDocument();
         HTMLElement container = document.getElementById("multimediaLibContainer");
-        container.appendChild(htmlCanvas);
-        resizeCanvas(document, container);
-        window.addEventListener("resize", e -> resizeCanvas(document, container));
-    }
-
-    private void resizeCanvas(HTMLDocument document, HTMLElement container) {
-        int width = Math.round(container.getOffsetWidth());
-        int height = Math.round(document.getDocumentElement().getClientHeight());
-
-        htmlCanvas.getStyle().setProperty("width", width + "px");
-        htmlCanvas.getStyle().setProperty("height", height + "px");
-        htmlCanvas.setWidth(Math.round(width * getDevicePixelRatio()));
-        htmlCanvas.setHeight(Math.round(height * getDevicePixelRatio()));
+        htmlCanvas = dom.createCanvas(container);
+        context = (CanvasRenderingContext2D) htmlCanvas.getContext("2d");
     }
 
     @Override
@@ -88,8 +60,25 @@ public class HtmlCanvasGraphics implements TeaGraphics {
     }
 
     @Override
-    public void drawBackground(ColorRGB color) {
+    public void onGraphicAdded(Container parent, Graphic2D graphic) {
+    }
+
+    @Override
+    public void onGraphicRemoved(Container parent, Graphic2D graphic) {
+    }
+
+    @Override
+    public boolean visitGraphic(Graphic2D graphic) {
+        return graphic.getTransform().isVisible();
+    }
+
+    @Override
+    public void prepareStage(Stage stage) {
         context.clearRect(0f, 0f, htmlCanvas.getWidth(), htmlCanvas.getHeight());
+    }
+
+    @Override
+    public void drawBackground(ColorRGB color) {
         context.setFillStyle(color.toHex());
         context.fillRect(0f, 0f, htmlCanvas.getWidth(), htmlCanvas.getHeight());
     }
@@ -99,16 +88,13 @@ public class HtmlCanvasGraphics implements TeaGraphics {
         TeaImage teaImage = (TeaImage) sprite.getCurrentGraphics();
 
         if (teaImage.getWidth() > 0f && teaImage.getHeight() > 0f) {
-            drawImage(teaImage, teaImage.getRegion(), sprite.getPosition(), sprite.getTransform());
-
-            if (BOUNDS_TRACING_ENABLED) {
-                drawRect(sprite.getBounds(), ColorRGB.RED, 50f);
-            }
+            drawImage(teaImage, teaImage.getRegion(), sprite.getGlobalTransform());
         }
     }
 
-    private void drawImage(TeaImage image, Region region, Point2D position, Transform transform) {
-        CanvasImageSource source = prepareImage(image, transform.getMask());
+    private void drawImage(TeaImage image, Region region, Transform transform) {
+        CanvasImageSource source = prepareImage(image, transform.getMaskColor());
+        Point2D position = transform.getPosition();
 
         if (source == null) {
             // Image is still loading, try again next frame.
@@ -132,34 +118,14 @@ public class HtmlCanvasGraphics implements TeaGraphics {
         } else if (mask == null) {
             return image.getImageElement().orElse(null);
         } else {
-            MaskImage cacheKey = new MaskImage(image, mask);
-            return maskImageCache.get(cacheKey);
+            return dom.applyMask(image, mask);
         }
-    }
-
-    private HTMLCanvasElement createMaskImage(MaskImage key) {
-        Preconditions.checkState(key.image.isLoaded(), "Image is still loading");
-
-        HTMLDocument document = Window.current().getDocument();
-        HTMLImageElement img = key.image().getImageElement().get();
-
-        HTMLCanvasElement canvas = (HTMLCanvasElement) document.createElement("canvas");
-        canvas.setWidth(img.getWidth());
-        canvas.setHeight(img.getHeight());
-
-        CanvasRenderingContext2D maskContext = (CanvasRenderingContext2D) canvas.getContext("2d");
-        maskContext.drawImage(img, 0, 0, img.getWidth(), img.getHeight());
-        maskContext.setGlobalCompositeOperation("source-atop");
-        maskContext.setFillStyle(key.mask().toHex());
-        maskContext.fillRect(0, 0, img.getWidth(), img.getHeight());
-
-        return canvas;
     }
 
     @Override
     public void drawLine(Primitive graphic, Line line) {
         context.setStrokeStyle(graphic.getColor().toHex());
-        context.setLineWidth(line.getThickness());
+        context.setLineWidth(graphic.getStroke());
         context.beginPath();
         context.moveTo(toScreenX(line.getStart()), toScreenY(line.getStart()));
         context.lineTo(toScreenX(line.getEnd()), toScreenY(line.getEnd()));
@@ -167,22 +133,37 @@ public class HtmlCanvasGraphics implements TeaGraphics {
     }
 
     @Override
-    public void drawRect(Primitive graphic, Rect rect) {
-        drawRect(rect, graphic.getColor(), graphic.getAlpha());
+    public void drawSegmentedLine(Primitive graphic, SegmentedLine line) {
+        context.setStrokeStyle(graphic.getColor().toHex());
+        context.setLineWidth(graphic.getStroke());
+        context.beginPath();
+        context.moveTo(toScreenX(line.getHead()), toScreenY(line.getHead()));
+        for (Point2D p : line.getPoints()) {
+            context.lineTo(toScreenX(p), toScreenY(p));
+        }
+        context.stroke();
     }
 
-    private void drawRect(Rect rect, ColorRGB color, float alpha) {
-        context.setGlobalAlpha(alpha / 100f);
-        context.setFillStyle(color.toHex());
-        context.fillRect(toScreenX(rect.getX()), toScreenY(rect.getY()),
+    @Override
+    public void drawRect(Primitive graphic, Rect rect) {
+        Transform transform = graphic.getGlobalTransform();
+
+        context.setGlobalAlpha(transform.getAlpha() / 100f);
+        context.setFillStyle(graphic.getColor().toHex());
+        context.fillRect(
+            toScreenX(rect.getX()),
+            toScreenY(rect.getY()),
             rect.getWidth() * sceneCanvas.getZoomLevel(),
-            rect.getHeight() * sceneCanvas.getZoomLevel());
+            rect.getHeight() * sceneCanvas.getZoomLevel()
+        );
         context.setGlobalAlpha(1f);
     }
 
     @Override
     public void drawCircle(Primitive graphic, Circle circle) {
-        context.setGlobalAlpha(graphic.getAlpha() / 100f);
+        Transform transform = graphic.getGlobalTransform();
+
+        context.setGlobalAlpha(transform.getAlpha() / 100f);
         context.setFillStyle(graphic.getColor().toHex());
         context.beginPath();
         context.arc(toScreenX(circle.getCenterX()), toScreenY(circle.getCenterY()),
@@ -193,7 +174,9 @@ public class HtmlCanvasGraphics implements TeaGraphics {
 
     @Override
     public void drawPolygon(Primitive graphic, Polygon polygon) {
-        context.setGlobalAlpha(graphic.getAlpha() / 100f);
+        Transform transform = graphic.getGlobalTransform();
+
+        context.setGlobalAlpha(transform.getAlpha() / 100f);
         context.setFillStyle(graphic.getColor().toHex());
         context.beginPath();
         context.moveTo(toScreenX(polygon.getPointX(0)), toScreenY(polygon.getPointY(0)));
@@ -211,26 +194,27 @@ public class HtmlCanvasGraphics implements TeaGraphics {
     }
 
     private void drawText(Text text, FontStyle style) {
+        Transform transform = text.getGlobalTransform();
         float lineHeight = text.getFont() != null ? text.getLineHeight() : style.size();
 
         changeCanvasFont(style);
 
-        context.setGlobalAlpha(text.getAlpha() / 100f);
+        context.setGlobalAlpha(transform.getAlpha() / 100f);
         context.setFillStyle(style.color().toHex());
         context.setTextAlign(text.getAlign().toString().toLowerCase());
         text.forLines((i, line) -> {
-            float y = toScreenY(text.getPosition().getY() + i * lineHeight);
-            context.fillText(line, toScreenX(text.getPosition()), y);
+            float y = toScreenY(transform.getPosition().getY() + i * lineHeight);
+            context.fillText(line, toScreenX(transform.getPosition()), y);
         });
         context.setGlobalAlpha(1f);
     }
 
     private void changeCanvasFont(FontStyle style) {
-        String fontString = (style.bold() ? "bold " : "") + style.size() + "px " + style.family();
+        String fontStyle = style.bold() ? "bold " : "";
+        String fontString = fontStyle + style.size() + "px " + style.family();
 
-        if (!fontString.equals(currentCanvasFont)) {
+        if (!context.getFont().equals(fontString)) {
             context.setFont(fontString);
-            currentCanvasFont = fontString;
         }
     }
 
@@ -253,14 +237,5 @@ public class HtmlCanvasGraphics implements TeaGraphics {
     @Override
     public GraphicsMode getGraphicsMode() {
         return GraphicsMode.MODE_2D;
-    }
-
-    /**
-     * Used as a cache key for masking images, which is a pretty expensive
-     * operation. The entire image is masked, not just the image region. If we
-     * need a masked region, we just extract the corresponding region from the
-     * masked image.
-     */
-    private record MaskImage(TeaImage image, ColorRGB mask) {
     }
 }

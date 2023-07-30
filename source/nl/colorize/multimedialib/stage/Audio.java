@@ -6,48 +6,34 @@
 
 package nl.colorize.multimedialib.stage;
 
-import com.google.common.base.Preconditions;
-import nl.colorize.multimedialib.renderer.MediaAsset;
-import nl.colorize.multimedialib.renderer.MediaLoader;
-
 /**
- * Represents an audio clip. Audio can be loaded from one of the common file
- * formats (for example MP3 or OGG). The volume of audio clips can be set to
- * a value between 0 and 100, where 100 indicates the audio clip's original
- * volume. Audio clips stored in files are loaded using a {@link MediaLoader}.
+ * Describes an audio clip that has been loaded by the renderer. There is no
+ * difference between the audio data and audio playback, an instance of this
+ * class represents both. This is done because some renderers do not allow
+ * audio data to be reused.
  */
-public abstract class Audio implements MediaAsset {
+public interface Audio {
 
-    private int volume;
-    private boolean loop;
+    /**
+     * Starts playing this audio clip. {@code volume} is in the range 0-100,
+     * where 100 indicates the audio clip's normal volume and 0 indicates the
+     * audio clip is muted. Calling this method does nothing if playback of
+     * this audio clip is already in progress.
+     */
+    public void play(int volume, boolean loop);
 
-    public Audio() {
-        this.volume = 100;
-        this.loop = false;
+    /**
+     * Plays this audio clip once, at its normal volume. This method is a
+     * shorthand version of {@code play(100, false)}.
+     */
+    default void play() {
+        play(100, false);
     }
 
-    public abstract void play();
-
-    public abstract void pause();
-
-    public abstract void stop();
-
-    public void setVolume(int volume) {
-        Preconditions.checkArgument(volume >= 0 && volume <= 100,
-            "Volume out of range 0 - 100: " + volume);
-
-        this.volume = volume;
-    }
-
-    public int getVolume() {
-        return volume;
-    }
-
-    public void setLoop(boolean loop) {
-        this.loop = loop;
-    }
-
-    public boolean isLoop() {
-        return loop;
-    }
+    /**
+     * Stops playback of this audio clip and resets the playhead to the start
+     * of the audio clip. Calling this method does nothing if this audio clip
+     * is not currently playing.
+     */
+    public void stop();
 }

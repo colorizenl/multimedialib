@@ -7,13 +7,13 @@
 package nl.colorize.multimedialib.math;
 
 import com.google.common.base.Preconditions;
-
-import java.util.Objects;
+import lombok.Value;
 
 /**
- * Circle that is defined by its center point and a radius, defined with float
- * precision.
+ * Circle that is defined by its center point and a radius. Circles are
+ * immutable and are defined with float precision.
  */
+@Value
 public class Circle implements Shape {
 
     private Point2D center;
@@ -22,16 +22,12 @@ public class Circle implements Shape {
     public Circle(Point2D center, float radius) {
         Preconditions.checkArgument(radius > 0f, "Invalid radius: " + radius);
 
-        this.center = center.copy();
+        this.center = center;
         this.radius = radius;
     }
 
     public Circle(float x, float y, float radius) {
         this(new Point2D(x, y), radius);
-    }
-
-    public Point2D getCenter() {
-        return center;
     }
 
     public float getCenterX() {
@@ -40,14 +36,6 @@ public class Circle implements Shape {
 
     public float getCenterY() {
         return center.getY();
-    }
-
-    public float getRadius() {
-        return radius;
-    }
-
-    public float getDiameter() {
-        return radius * 2f;
     }
 
     @Override
@@ -81,30 +69,12 @@ public class Circle implements Shape {
     }
 
     @Override
-    public Circle copy() {
-        return new Circle(center.copy(), radius);
-    }
-
-    @Override
     public Circle reposition(Point2D offset) {
-        Circle result = copy();
-        result.center.add(offset);
-        return result;
+        return new Circle(center.getX() + offset.getX(), center.getY() + offset.getY(), radius);
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (o instanceof Circle other) {
-            return Math.abs(center.getX() - other.center.getX()) < EPSILON &&
-                Math.abs(center.getY() - other.center.getY()) < EPSILON &&
-                Math.abs(radius - other.radius) < EPSILON;
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(center.getX(), center.getY(), radius);
+    public String toString() {
+        return "Circle";
     }
 }

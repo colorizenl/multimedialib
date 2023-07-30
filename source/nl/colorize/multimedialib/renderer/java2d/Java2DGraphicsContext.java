@@ -11,13 +11,16 @@ import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.math.SegmentedLine;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.FontStyle;
-import nl.colorize.multimedialib.stage.Layer2D;
+import nl.colorize.multimedialib.stage.Graphic2D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
+import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
@@ -48,7 +51,6 @@ public class Java2DGraphicsContext implements StageVisitor {
     private Cache<MaskImage, BufferedImage> maskCache;
     private Cache<CircleImage, BufferedImage> circleCache;
 
-    private static final Transform NULL_TRANSFORM = new Transform();
     private static final int CACHE_CAPACITY = 1000;
 
     public Java2DGraphicsContext(Canvas canvas) {
@@ -74,13 +76,21 @@ public class Java2DGraphicsContext implements StageVisitor {
         }
     }
 
-    public void clear(int windowWidth, int windowHeight) {
-        g2.setColor(Color.BLACK);
-        g2.fillRect(0, 0, windowWidth, windowHeight);
+    @Override
+    public void prepareStage(Stage stage) {
     }
 
     @Override
-    public void prepareLayer(Layer2D layer) {
+    public void onGraphicAdded(Container parent, Graphic2D graphic) {
+    }
+
+    @Override
+    public void onGraphicRemoved(Container parent, Graphic2D graphic) {
+    }
+
+    @Override
+    public boolean visitGraphic(Graphic2D graphic) {
+        return graphic.getTransform().isVisible();
     }
 
     @Override
@@ -99,20 +109,43 @@ public class Java2DGraphicsContext implements StageVisitor {
         float x1 = canvas.toScreenX(line.getEnd().getX());
         float y1 = canvas.toScreenY(line.getEnd().getY());
 
-        g2.setStroke(new BasicStroke(line.getThickness()));
+        Composite originalComposite = g2.getComposite();
+        applyAlphaComposite(graphic.getTransform().getAlpha());
+        g2.setStroke(new BasicStroke(graphic.getStroke()));
         g2.setColor(colorCache.get(graphic.getColor()));
         g2.drawLine(Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1));
+        g2.setComposite(originalComposite);
+    }
+
+    @Override
+    public void drawSegmentedLine(Primitive graphic, SegmentedLine line) {
+        Composite originalComposite = g2.getComposite();
+        applyAlphaComposite(graphic.getTransform().getAlpha());
+        g2.setStroke(new BasicStroke(graphic.getStroke()));
+        g2.setColor(colorCache.get(graphic.getColor()));
+
+        for (Line segment : line.getSegments()) {
+            float x0 = canvas.toScreenX(segment.getStart().getX());
+            float y0 = canvas.toScreenY(segment.getStart().getY());
+            float x1 = canvas.toScreenX(segment.getEnd().getX());
+            float y1 = canvas.toScreenY(segment.getEnd().getY());
+
+            g2.drawLine(Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1));
+        }
+
+        g2.setComposite(originalComposite);
     }
 
     @Override
     public void drawRect(Primitive graphic, Rect rect) {
+        Transform transform = graphic.getGlobalTransform();
         float screenX = canvas.toScreenX(rect.getX());
         float screenY = canvas.toScreenY(rect.getY());
         float screenWidth = canvas.toScreenX(rect.getEndX()) - screenX;
         float screenHeight = canvas.toScreenY(rect.getEndY()) - screenY;
 
         Composite originalComposite = g2.getComposite();
-        applyAlphaComposite(graphic.getAlpha());
+        applyAlphaComposite(transform.getAlpha());
         g2.setColor(colorCache.get(graphic.getColor()));
         g2.fillRect(Math.round(screenX), Math.round(screenY), Math.round(screenWidth),
             Math.round(screenHeight));
@@ -125,13 +158,15 @@ public class Java2DGraphicsContext implements StageVisitor {
         BufferedImage image = circleCache.get(key);
 
         Transform transform = new Transform();
-        transform.setAlpha(graphic.getAlpha());
+        transform.set(graphic.getGlobalTransform());
+        transform.setPosition(circle.getCenter());
 
-        drawImage(image, circle.getCenter(), transform);
+        drawImage(image, graphic.getGlobalTransform());
     }
 
     @Override
     public void drawPolygon(Primitive graphic, Polygon polygon) {
+        Transform transform = graphic.getGlobalTransform();
         int[] px = new int[polygon.getNumPoints()];
         int[] py = new int[polygon.getNumPoints()];
 
@@ -141,7 +176,7 @@ public class Java2DGraphicsContext implements StageVisitor {
         }
 
         Composite originalComposite = g2.getComposite();
-        applyAlphaComposite(graphic.getAlpha());
+        applyAlphaComposite(transform.getAlpha());
         g2.setColor(colorCache.get(graphic.getColor()));
         g2.fillPolygon(px, py, polygon.getNumPoints());
         g2.setComposite(originalComposite);
@@ -150,23 +185,18 @@ public class Java2DGraphicsContext implements StageVisitor {
     @Override
     public void drawSprite(Sprite sprite) {
         BufferedImage image = ((AWTImage) sprite.getCurrentGraphics()).getImage();
-        drawImage(image, sprite.getPosition(), sprite.getTransform());
+        drawImage(image, sprite.getGlobalTransform());
     }
 
-    private void drawImage(BufferedImage image, Point2D position, Transform transform) {
-        if (transform == null) {
-            transform = NULL_TRANSFORM;
-        }
-
+    private void drawImage(BufferedImage image, Transform transform) {
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(transform.getAlpha());
 
-        AffineTransform transform2D = applyTransform(position, image.getWidth(),
-            image.getHeight(), transform);
+        AffineTransform transform2D = applyTransform(transform, image.getWidth(), image.getHeight());
         g2.drawImage(image, transform2D, null);
 
-        if (transform.getMask() != null) {
-            MaskImage key = new MaskImage(image, colorCache.get(transform.getMask()));
+        if (transform.getMaskColor() != null) {
+            MaskImage key = new MaskImage(image, colorCache.get(transform.getMaskColor()));
             g2.drawImage(maskCache.get(key), transform2D, null);
         }
 
@@ -177,13 +207,14 @@ public class Java2DGraphicsContext implements StageVisitor {
     public void drawText(Text text) {
         Font font = ((AWTFont) text.getFont().scale(canvas)).getFont();
         FontStyle style = text.getFont().getStyle();
+        Transform transform = text.getGlobalTransform();
 
         Composite originalComposite = g2.getComposite();
-        applyAlphaComposite(text.getAlpha());
+        applyAlphaComposite(transform.getAlpha());
 
         g2.setColor(colorCache.get(style.color()));
         g2.setFont(font);
-        drawLines(text.getLines(), text.getPosition(), text.getAlign(), text.getLineHeight());
+        drawLines(text.getLines(), transform.getPosition(), text.getAlign(), text.getLineHeight());
         g2.setComposite(originalComposite);
     }
 
@@ -203,9 +234,9 @@ public class Java2DGraphicsContext implements StageVisitor {
         }
     }
 
-    private AffineTransform applyTransform(Point2D position, int width, int height, Transform transform) {
-        float screenX = canvas.toScreenX(position.getX());
-        float screenY = canvas.toScreenY(position.getY());
+    private AffineTransform applyTransform(Transform transform, int width, int height) {
+        float screenX = canvas.toScreenX(transform.getPosition());
+        float screenY = canvas.toScreenY(transform.getPosition());
 
         float scaleX = canvas.getZoomLevel() * (transform.getScaleX() / 100f);
         float scaleY = canvas.getZoomLevel() * (transform.getScaleY() / 100f);

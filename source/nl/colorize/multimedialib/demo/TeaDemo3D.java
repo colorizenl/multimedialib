@@ -10,7 +10,6 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.renderer.teavm.TeaRenderer;
-import nl.colorize.multimedialib.renderer.three.ThreeGraphics;
 
 /**
  * Entry point for transpiling the 3D graphics demo to JavaScript using TeaVM.
@@ -18,10 +17,10 @@ import nl.colorize.multimedialib.renderer.three.ThreeGraphics;
 public class TeaDemo3D {
 
     public static void main(String[] args) {
-        Canvas canvas = Canvas.forSize(Demo3D.CANVAS_WIDTH, Demo3D.CANVAS_HEIGHT);
+        Canvas canvas = Canvas.scale(Demo3D.CANVAS_WIDTH, Demo3D.CANVAS_HEIGHT);
         DisplayMode displayMode = new DisplayMode(canvas, 60);
 
-        TeaRenderer renderer = new TeaRenderer(displayMode, new ThreeGraphics(canvas));
+        TeaRenderer renderer = TeaRenderer.withThree(displayMode);
         renderer.start(new Demo3D(), ErrorHandler.DEFAULT);
     }
 }

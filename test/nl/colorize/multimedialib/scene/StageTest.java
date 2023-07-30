@@ -12,18 +12,16 @@ import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.math.SegmentedLine;
 import nl.colorize.multimedialib.mock.MockImage;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
-import nl.colorize.multimedialib.renderer.headless.HeadlessFont;
 import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Graphic2D;
-import nl.colorize.multimedialib.stage.Layer2D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
-import nl.colorize.multimedialib.stage.StageObserver;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
 import org.junit.jupiter.api.Test;
@@ -37,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StageTest {
 
-    private static final Canvas CANVAS = Canvas.forNative(800, 600);
+    private static final Canvas CANVAS = Canvas.flexible(800, 600);
 
     @Test
     void visitStage() {
@@ -47,17 +45,31 @@ class StageTest {
         Sprite spriteB = new Sprite();
         spriteB.addState("b", new MockImage());
 
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS, new FrameStats());
-        stage.getDefaultLayer().add(spriteA);
-        stage.getDefaultLayer().add(Primitive.of(new Rect(10, 20, 30, 40), ColorRGB.RED));
-        stage.getDefaultLayer().add(spriteB);
-        stage.getDefaultLayer().add(new Text("abc", new HeadlessFont()));
+        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
+        stage.getRoot().addChild(spriteA);
+        stage.getRoot().addChild(new Primitive(new Rect(10, 20, 30, 40), ColorRGB.RED));
+        stage.getRoot().addChild(spriteB);
+        stage.getRoot().addChild(new Text("abc", null));
 
         List<String> visited = new ArrayList<>();
 
         stage.visit(new StageVisitor() {
             @Override
-            public void prepareLayer(Layer2D layer) {
+            public void prepareStage(Stage stage) {
+
+            }
+
+            @Override
+            public void onGraphicAdded(Container parent, Graphic2D graphic) {
+            }
+
+            @Override
+            public void onGraphicRemoved(Container parent, Graphic2D graphic) {
+            }
+
+            @Override
+            public boolean visitGraphic(Graphic2D graphic) {
+                return true;
             }
 
             @Override
@@ -72,6 +84,11 @@ class StageTest {
             @Override
             public void drawLine(Primitive graphic, Line line) {
                 visited.add("line");
+            }
+
+            @Override
+            public void drawSegmentedLine(Primitive graphic, SegmentedLine line) {
+                visited.add("segmentedline");
             }
 
             @Override
@@ -101,82 +118,64 @@ class StageTest {
     @Test
     void hitTestConsidersShapeSizeAndPosition() {
         Rect rect = new Rect(100, 200, 100, 100);
-        Primitive primitive = Primitive.of(rect, ColorRGB.RED);
+        Primitive primitive = new Primitive(rect, ColorRGB.RED);
 
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS, new FrameStats());
-        stage.getDefaultLayer().add(primitive);
+        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
+        stage.getRoot().addChild(primitive);
 
-        assertFalse(primitive.hitTest(new Point2D(0, 200)));
-        assertTrue(primitive.hitTest(new Point2D(100, 200)));
-        assertTrue(primitive.hitTest(new Point2D(200, 200)));
-        assertFalse(primitive.hitTest(new Point2D(300, 200)));
+        assertFalse(primitive.getStageBounds().contains(new Point2D(0, 200)));
+        assertTrue(primitive.getStageBounds().contains(new Point2D(100, 200)));
+        assertTrue(primitive.getStageBounds().contains(new Point2D(200, 200)));
+        assertFalse(primitive.getStageBounds().contains(new Point2D(300, 200)));
 
-        primitive.setPosition(100f, 0f);
+        primitive.getTransform().setPosition(100f, 0f);
 
-        assertFalse(primitive.hitTest(new Point2D(0, 200)));
-        assertFalse(primitive.hitTest(new Point2D(100, 200)));
-        assertTrue(primitive.hitTest(new Point2D(200, 200)));
-        assertTrue(primitive.hitTest(new Point2D(300, 200)));
-        assertFalse(primitive.hitTest(new Point2D(400, 200)));
-    }
-
-    @Test
-    void observerAlsoListensForLayerChanges() {
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS, new FrameStats());
-        Layer2D layer = stage.addLayer("test");
-
-        List<Graphic2D> added1 = new ArrayList<>();
-        stage.getObservers().add(createObserver(added1));
-
-        layer.add(Primitive.of(new Rect(10, 10, 100, 100), ColorRGB.RED));
-
-        List<Graphic2D> added2 = new ArrayList<>();
-        stage.getObservers().add(createObserver(added2));
-
-        layer.add(Primitive.of(new Rect(10, 10, 100, 100), ColorRGB.GREEN));
-
-        assertEquals(2, added1.size());
-        assertEquals(1, added2.size());
+        assertFalse(primitive.getStageBounds().contains(new Point2D(0, 200)));
+        assertFalse(primitive.getStageBounds().contains(new Point2D(100, 200)));
+        assertTrue(primitive.getStageBounds().contains(new Point2D(200, 200)));
+        assertTrue(primitive.getStageBounds().contains(new Point2D(300, 200)));
+        assertFalse(primitive.getStageBounds().contains(new Point2D(400, 200)));
     }
 
     @Test
     void stringForm() {
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS, new FrameStats());
-        Layer2D layer = stage.addLayer("test");
-        layer.add(new Sprite(new MockImage()));
-        layer.add(Primitive.of(new Rect(10, 10, 200, 200), ColorRGB.RED));
-        layer.add(new Text("test", null));
+        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
+        Container layer = stage.addContainer();
+        layer.addChild(new Sprite(new MockImage()));
+        layer.addChild(new Primitive(new Rect(10, 10, 200, 200), ColorRGB.RED));
+        layer.addChild(new Text("test", null));
 
         String expected = """
             Stage
-                2D graphics layer [test]
-                    Text [test]
-                    Primitive [10, 10, 200, 200]
-                    Sprite [MockImage @ (0, 0)]
-                2D graphics layer [$$default]
+                Container
+                    Container
+                        Sprite [MockImage]
+                        Primitive [(10, 10, 200, 200)]
+                        Text [test]
             """;
 
         assertEquals(expected, stage.toString());
     }
 
-    private StageObserver createObserver(List<Graphic2D> added) {
-        return new StageObserver() {
-            @Override
-            public void onLayerAdded(Layer2D layer) {
-            }
+    @Test
+    void spriteBoundsShouldConsiderCurrentGraphicsAndTransform() {
+        Sprite sprite = new Sprite();
+        sprite.addState("a", new MockImage(100, 100));
+        sprite.addState("b", new MockImage(200, 200));
+        sprite.changeState("a");
 
-            @Override
-            public void onGraphicAdded(Layer2D layer, Graphic2D graphic) {
-                added.add(graphic);
-            }
+        assertEquals("(-50, -50, 100, 100)", sprite.getStageBounds().toString());
 
-            @Override
-            public void onGraphicRemoved(Layer2D layer, Graphic2D graphic) {
-            }
+        sprite.getTransform().setPosition(10, 20);
 
-            @Override
-            public void onStageCleared() {
-            }
-        };
+        assertEquals("(-40, -30, 100, 100)", sprite.getStageBounds().toString());
+
+        sprite.changeState("b");
+
+        assertEquals("(-90, -80, 200, 200)", sprite.getStageBounds().toString());
+
+        sprite.getTransform().setScale(200f);
+
+        assertEquals("(-190, -180, 400, 400)", sprite.getStageBounds().toString());
     }
 }

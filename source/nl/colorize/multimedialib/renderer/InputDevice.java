@@ -8,8 +8,9 @@ package nl.colorize.multimedialib.renderer;
 
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.scene.Updatable;
 
-import java.util.List;
+import java.util.Optional;
 
 /**
  * Used to poll the status of the platform's input devices. Depending on the
@@ -22,22 +23,28 @@ import java.util.List;
  * event. In contrast, the "released" state is only active for a single frame
  * after the event has ended.
  */
-public interface InputDevice {
+public interface InputDevice extends Updatable {
 
     /**
-     * Returns the current locations of all currently active pointers. When using
-     * a mouse, this will always return a list with a single element. For touch
-     * controls, the list could also have multiple elements (during multi-touch
-     * gestures) or the list could be empty (unlike mouse events, touch coordinates
-     * are only available during the event itself).
+     * Returns the pointer device's current location relative to the canvas.
+     * If the platform uses a mouse or trackpad, this will always return a
+     * result based on the current location of the cursor. If the platform
+     * uses touch controls, this will only return a result if touch events
+     * are currently in progress.
      */
-    public List<Point2D> getPointers();
+    public Optional<Point2D> getPointer();
 
     /**
-     * Returns true if any of the currently active pointers have been pressed and
-     * located within the specified area during the current frame.
+     * Returns true if any of the currently active pointers have been pressed
+     * and located within the specified area during the current frame.
      */
     public boolean isPointerPressed(Rect area);
+
+    /**
+     * Returns true if any of the currently active pointers were pressed,
+     * regardless of their location.
+     */
+    public boolean isPointerPressed();
 
     /**
      * Returns true if any of the currently active pointers were released and
@@ -66,7 +73,7 @@ public interface InputDevice {
 
     /**
      * Returns if the current device supports touch input. If true, the values
-     * returned by {@link #getPointers()}, {@link #isPointerPressed(Rect)}, and
+     * returned by {@link #getPointer()}, {@link #isPointerPressed(Rect)}, and
      * {@link #isPointerReleased(Rect)} will be based on touch input. If false,
      * they will be based on mouse or trackpad input.
      */

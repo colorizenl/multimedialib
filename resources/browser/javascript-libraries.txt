@@ -1,0 +1,10 @@
+# MultimediaLib browser JavaScript libraries
+#
+# Lists JavaScript libraries that will be automatically added when
+# transpiling the application to JavaScript using TeaVM.
+
+pixi.min.js
+pixi.min.js.map
+three.min.js
+peerjs.min.js
+peerjs.min.js.map

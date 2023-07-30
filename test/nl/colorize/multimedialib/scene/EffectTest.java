@@ -10,6 +10,7 @@ import nl.colorize.multimedialib.mock.MockImage;
 import nl.colorize.multimedialib.mock.MockScene;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
 import nl.colorize.multimedialib.stage.Sprite;
+import nl.colorize.util.Stopwatch;
 import nl.colorize.util.animation.Timeline;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,29 +31,8 @@ public class EffectTest {
 
     @BeforeEach
     public void before() {
-        context = new RenderContext(new HeadlessRenderer());
+        context = new SceneContext(new HeadlessRenderer(), new Stopwatch());
         context.changeScene(new MockScene());
-    }
-
-    @Test
-    public void testForSpriteX() {
-        Sprite sprite = new Sprite();
-        sprite.addState("mock", new MockImage());
-
-        Timeline timeline = new Timeline();
-        timeline.addKeyFrame(0f, 10f);
-        timeline.addKeyFrame(2f, 20f);
-
-        Effect effect = Effect.forSpriteX(sprite, timeline);
-        context.attach(effect);
-
-        assertEquals(0f, sprite.getPosition().getX(), EPSILON);
-        effect.update(context, 0.00001f);
-        assertEquals(10f, sprite.getPosition().getX(), EPSILON);
-        effect.update(context, 1f);
-        assertEquals(15f, sprite.getPosition().getX(), EPSILON);
-        effect.update(context, 1f);
-        assertEquals(20f, sprite.getPosition().getX(), EPSILON);
     }
 
     @Test

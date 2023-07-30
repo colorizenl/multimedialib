@@ -39,35 +39,26 @@ public class VectorTest {
     }
 
     @Test
-    public void testEqualsConsidersEpsilon() {
-        assertTrue(new Vector(0f, 1f).equals(new Vector(0f, 1f)));
-        assertTrue(new Vector(0f, 1f).equals(new Vector(0f, 1.00001f)));
-        assertFalse(new Vector(0f, 1f).equals(new Vector(0f, 1.01f)));
-    }
-
-    @Test
     void setToPoint() {
-        Vector vector = new Vector(0f, 0f);
-
-        vector.setToPoint(new Point2D(0f, 0f));
+        Vector vector = Vector.fromPoint(new Point2D(0f, 0f));
         assertEquals("[ 0 0 ]", vector.toString());
 
-        vector.setToPoint(new Point2D(10f, 0f));
+        vector = Vector.fromPoint(new Point2D(10f, 0f));
         assertEquals("[ 0 10 ]", vector.toString());
 
-        vector.setToPoint(new Point2D(-10f, 0f));
+        vector = Vector.fromPoint(new Point2D(-10f, 0f));
         assertEquals("[ 180 10 ]", vector.toString());
 
-        vector.setToPoint(new Point2D(0f, 10f));
+        vector = Vector.fromPoint(new Point2D(0f, 10f));
         assertEquals("[ 90 10 ]", vector.toString());
 
-        vector.setToPoint(new Point2D(0f, -10f));
+        vector = Vector.fromPoint(new Point2D(0f, -10f));
         assertEquals("[ -90 10 ]", vector.toString());
 
-        vector.setToPoint(new Point2D(10f, 10f));
+        vector = Vector.fromPoint(new Point2D(10f, 10f));
         assertEquals("[ 45 14 ]", vector.toString());
 
-        vector.setToPoint(new Point2D(-10f, -10f));
+        vector = Vector.fromPoint(new Point2D(-10f, -10f));
         assertEquals("[ -135 14 ]", vector.toString());
     }
 }

@@ -6,6 +6,8 @@
 
 package nl.colorize.multimedialib.renderer.headless;
 
+import com.google.common.annotations.VisibleForTesting;
+import lombok.Data;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
@@ -15,41 +17,61 @@ import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Network;
-import nl.colorize.multimedialib.renderer.RenderCapabilities;
 import nl.colorize.multimedialib.renderer.Renderer;
-import nl.colorize.multimedialib.renderer.java2d.Java2DRenderer;
 import nl.colorize.multimedialib.renderer.java2d.StandardNetwork;
-import nl.colorize.multimedialib.scene.RenderContext;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.stage.StageVisitor;
+import nl.colorize.util.Stopwatch;
 
-import java.util.Collections;
+import java.io.File;
 import java.util.List;
+import java.util.Optional;
 
 /**
- * Headless renderer implementation that uses {@link Java2DRenderer} for platform
- * access, but does not draw any graphics. The renderer does not run an animation
- * loop, frame updates need to be performed manually by calling {@link #doFrame()}.
- * This is primarily intended for testing, or for simulating in situations where
- * a graphics environment is not available.
+ * Headless renderer implementation intended for testing or simulating on
+ * platforms without a graphics environment. The renderer does not actually
+ * run an animation loop, frame updates need to be performed manually by
+ * calling {@link #doFrame()}. Graphics and input can be simulated using the
+ * methods provided by this class.
  * <p>
- * By default, the renderer will not *draw* images, but it will still *load* them
- * using {@link HeadlessMediaLoader}.
+ * Although the headless renderer does not display graphics, it is capable
+ * of loading images. See {@link HeadlessMediaLoader} for more information.
  */
+@VisibleForTesting
+@Data
 public class HeadlessRenderer implements Renderer, InputDevice {
 
+    private final GraphicsMode graphicsMode;
     private DisplayMode displayMode;
+    private StageVisitor graphics;
     private HeadlessMediaLoader mediaLoader;
+    private Network network;
     private SceneContext context;
-    
+
+    private boolean touchAvailable;
+    private boolean keyboardAvailable;
+    private Point2D pointer;
+    private boolean pointerPressed;
+    private boolean pointerReleased;
+
     public static final int DEFAULT_WIDTH = 800;
     public static final int DEFAULT_HEIGHT = 600;
     public static final int DEFAULT_FRAMERATE = 30;
 
     public HeadlessRenderer(DisplayMode displayMode, boolean graphicsEnvironmentEnabled) {
+        this.graphicsMode = GraphicsMode.HEADLESS;
         this.displayMode = displayMode;
+        this.graphics = null;
         this.mediaLoader = new HeadlessMediaLoader(graphicsEnvironmentEnabled);
-        this.context = new RenderContext(this);
+        this.network = new StandardNetwork();
+        this.context = new SceneContext(this, new Stopwatch());
+
+        this.touchAvailable = false;
+        this.keyboardAvailable = false;
+        this.pointer = new Point2D(0f, 0f);
+        this.pointerPressed = false;
+        this.pointerReleased = false;
     }
 
     public HeadlessRenderer(Canvas canvas, int framerate) {
@@ -57,7 +79,7 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     }
     
     public HeadlessRenderer() {
-        this(Canvas.forNative(DEFAULT_WIDTH, DEFAULT_HEIGHT), DEFAULT_FRAMERATE);
+        this(Canvas.flexible(DEFAULT_WIDTH, DEFAULT_HEIGHT), DEFAULT_FRAMERATE);
     }
 
     @Override
@@ -66,49 +88,56 @@ public class HeadlessRenderer implements Renderer, InputDevice {
         doFrame();
     }
     
+    @Override
+    public void takeScreenshot(File outputFile) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void terminate() {
+        throw new UnsupportedOperationException();
+    }
+
+    //-------------------------------------------------------------------------
+    // Simulate animation loop
+    //-------------------------------------------------------------------------
+
     public void doFrame() {
         context.update(1f / displayMode.framerate());
     }
 
     @Override
-    public RenderCapabilities getCapabilities() {
-        Network network = new StandardNetwork();
-        return new RenderCapabilities(GraphicsMode.HEADLESS, displayMode, null,
-            this, mediaLoader, network);
+    public void update(float deltaTime) {
+    }
+
+    //-------------------------------------------------------------------------
+    // Simulate input
+    //-------------------------------------------------------------------------
+
+    @Override
+    public InputDevice getInput() {
+        return this;
     }
 
     @Override
-    public List<Point2D> getPointers() {
-        return Collections.emptyList();
+    public Optional<Point2D> getPointer() {
+        return Optional.ofNullable(pointer);
     }
 
     @Override
     public boolean isPointerPressed(Rect area) {
-        return false;
+        return pointerPressed;
     }
 
     @Override
     public boolean isPointerReleased(Rect area) {
-        return false;
-    }
-
-    @Override
-    public boolean isPointerReleased() {
-        return false;
+        return pointerReleased;
     }
 
     @Override
     public void clearPointerReleased() {
-    }
-
-    @Override
-    public boolean isTouchAvailable() {
-        return false;
-    }
-
-    @Override
-    public boolean isKeyboardAvailable() {
-        return true;
+        pointerPressed = false;
+        pointerReleased = false;
     }
 
     @Override
@@ -124,9 +153,5 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     @Override
     public String requestTextInput(String label, String initialValue) {
         return null;
-    }
-
-    public SceneContext getContext() {
-        return context;
     }
 }

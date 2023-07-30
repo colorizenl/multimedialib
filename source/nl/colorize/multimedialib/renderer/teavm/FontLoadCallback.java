@@ -4,11 +4,14 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.renderer;
+package nl.colorize.multimedialib.renderer.teavm;
 
-/**
- * Marker interface for media types that can be loaded by the renderer using
- * its {@link MediaLoader}.
- */
-public interface MediaAsset {
+import org.teavm.jso.JSFunctor;
+import org.teavm.jso.JSObject;
+
+@JSFunctor
+@FunctionalInterface
+public interface FontLoadCallback extends JSObject {
+
+    public void onFontLoad(boolean success);
 }

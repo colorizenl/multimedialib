@@ -6,42 +6,58 @@
 
 package nl.colorize.multimedialib.stage;
 
+import com.google.common.base.Preconditions;
+import lombok.Data;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
-import nl.colorize.multimedialib.math.MathUtils;
-import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.math.SegmentedLine;
 import nl.colorize.multimedialib.math.Shape;
+
+import java.util.Map;
 
 /**
  * Draws a graphical primitive to the screen. The on-screen position of the
  * primitive is determined by both the coordinates in the original shape and
  * by the primitive's position.
+ * <p>
+ * {@link Primitive}s have a stroke property, but its value is only used if
+ * the instance describes an outline shape. The stroke property has no effect
+ * for filled shapes.
  */
+@Data
 public class Primitive implements Graphic2D {
 
+    private final StageLocation location;
     private Shape shape;
     private ColorRGB color;
-    private Point2D position;
-    private float alpha;
-    private boolean visible;
+    private float stroke;
 
     public static final int TYPE_LINE = 1;
     public static final int TYPE_RECT = 2;
     public static final int TYPE_CIRCLE = 3;
     public static final int TYPE_POLYGON = 4;
+    public static final int TYPE_SEGMENTED_LINE = 5;
 
-    private Primitive(Shape shape, ColorRGB color) {
+    private static final Map<Class<? extends Shape>, Integer> TYPE_MAPPING = Map.of(
+        Line.class, TYPE_LINE,
+        Rect.class, TYPE_RECT,
+        Circle.class, TYPE_CIRCLE,
+        Polygon.class, TYPE_POLYGON,
+        SegmentedLine.class, TYPE_SEGMENTED_LINE
+    );
+
+    public Primitive(Shape shape, ColorRGB color) {
+        this.location = new StageLocation();
         this.shape = shape;
         this.color = color;
-        this.position = new Point2D(0f, 0f);
-        this.alpha = 100f;
-        this.visible = true;
+        this.stroke = 1f;
     }
 
-    public Shape getShape() {
-        return shape;
+    public Primitive(Shape shape, ColorRGB color, float alpha) {
+        this(shape, color);
+        getTransform().setAlpha(alpha);
     }
 
     /**
@@ -49,42 +65,9 @@ public class Primitive implements Graphic2D {
      * the {@code TYPE_X} constants.
      */
     public int getShapeType() {
-        if (shape instanceof Line) return TYPE_LINE;
-        if (shape instanceof Rect) return TYPE_RECT;
-        if (shape instanceof Circle) return TYPE_CIRCLE;
-        if (shape instanceof Polygon) return TYPE_POLYGON;
-        throw new IllegalStateException("Unknown shape: " + shape.getClass());
-    }
-
-    public void setColor(ColorRGB color) {
-        this.color = color;
-    }
-
-    public ColorRGB getColor() {
-        return color;
-    }
-
-    public void setAlpha(float alpha) {
-        this.alpha = MathUtils.clamp(alpha, 0f, 100f);
-    }
-
-    public float getAlpha() {
-        return alpha;
-    }
-
-    @Override
-    public void setVisible(boolean visible) {
-        this.visible = visible;
-    }
-
-    @Override
-    public boolean isVisible() {
-        return visible;
-    }
-
-    @Override
-    public Point2D getPosition() {
-        return position;
+        Integer type = TYPE_MAPPING.get(shape.getClass());
+        Preconditions.checkState(type != null, "Unknown shape: " + shape.getClass());
+        return type;
     }
 
     @Override
@@ -92,35 +75,13 @@ public class Primitive implements Graphic2D {
     }
 
     @Override
-    public Rect getBounds() {
-        return shape.reposition(position).getBoundingBox();
-    }
-
-    @Override
-    public boolean hitTest(Point2D point) {
-        return shape.reposition(position).contains(point);
+    public Rect getStageBounds() {
+        Transform globalTransform = getGlobalTransform();
+        return shape.reposition(globalTransform.getPosition()).getBoundingBox();
     }
 
     @Override
     public String toString() {
         return "Primitive [" + shape.toString() + "]";
-    }
-
-    /**
-     * Factory method that creates a {@link Primitive} instance with a type based
-     * on the provided shape.
-     */
-    public static Primitive of(Shape shape, ColorRGB color) {
-        return new Primitive(shape, color);
-    }
-
-    /**
-     * Factory method that creates a {@link Primitive} instance with a type based
-     * on the provided shape.
-     */
-    public static Primitive of(Shape shape, ColorRGB color, float alpha) {
-        Primitive result = of(shape, color);
-        result.setAlpha(alpha);
-        return result;
     }
 }

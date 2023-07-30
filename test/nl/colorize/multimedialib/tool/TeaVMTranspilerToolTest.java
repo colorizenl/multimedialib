@@ -123,20 +123,17 @@ public class TeaVMTranspilerToolTest {
             colorize-icon-32.png
             colorize-logo.gltf
             colorize-logo.png
-            demo.mp3
+            demo-sound.mp3
             demo.png
             favicon.png
             loading.gif
             multimedialib.css
-            multimedialib.js
             particle-circle.png
             particle-diamond.png
-            pixi-interface.js
             sepia-fragment.glsl
             sepia-vertex.glsl
             test1.txt
             test2.txt
-            three-interface.js
             </div>
             """;
 

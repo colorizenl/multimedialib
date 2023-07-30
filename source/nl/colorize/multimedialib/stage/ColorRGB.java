@@ -71,7 +71,7 @@ public record ColorRGB(int r, int g, int b) {
 
     private String toHex(int component) {
         String str = Integer.toHexString(component);
-        return (str.length() > 1) ? str : "0" + str;
+        return str.length() > 1 ? str : "0" + str;
     }
 
     /**
@@ -112,16 +112,17 @@ public record ColorRGB(int r, int g, int b) {
      * @throws IllegalArgumentException if {@code hex} is not a valid color.
      */
     public static ColorRGB parseHex(String hex) {
-        if (hex.length() != 6 && hex.length() != 7) {
-            throw new IllegalArgumentException("Invalid hexadecimal color: " + hex);
-        }
-        
+        Preconditions.checkArgument(hex.length() == 6 || hex.length() == 7,
+            "Invalid hexadecimal color: " + hex);
+
         if (hex.startsWith("#")) {
             hex = hex.substring(1);
         }
         
-        return new ColorRGB(Integer.parseInt(hex.substring(0, 2), 16),
-                Integer.parseInt(hex.substring(2, 4), 16),
-                Integer.parseInt(hex.substring(4, 6), 16));
+        return new ColorRGB(
+            Integer.parseInt(hex.substring(0, 2), 16),
+            Integer.parseInt(hex.substring(2, 4), 16),
+            Integer.parseInt(hex.substring(4, 6), 16)
+        );
     }
 }

@@ -94,26 +94,4 @@ public class SpriteTest {
         assertEquals("a", sprite.getActiveState());
         assertEquals("b", copy.getActiveState());
     }
-
-    @Test
-    void spriteBoundsShouldConsiderCurrentGraphicsAndTransform() {
-        Sprite sprite = new Sprite();
-        sprite.addState("a", new MockImage(100, 100));
-        sprite.addState("b", new MockImage(200, 200));
-        sprite.changeState("a");
-
-        assertEquals("-50, -50, 100, 100", sprite.getBounds().toString());
-
-        sprite.getPosition().set(10, 20);
-
-        assertEquals("-40, -30, 100, 100", sprite.getBounds().toString());
-
-        sprite.changeState("b");
-
-        assertEquals("-90, -80, 200, 200", sprite.getBounds().toString());
-
-        sprite.getTransform().setScale(200f);
-
-        assertEquals("-190, -180, 400, 400", sprite.getBounds().toString());
-    }
 }

@@ -12,19 +12,16 @@ import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.UnsupportedGraphicsModeException;
-import nl.colorize.multimedialib.renderer.pixi.PixiGraphics;
-import nl.colorize.multimedialib.renderer.pixi.PixiShader;
 import nl.colorize.multimedialib.renderer.three.ThreeGraphics;
-import nl.colorize.multimedialib.renderer.three.ThreeShader;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.OutlineFont;
 import nl.colorize.multimedialib.stage.PolygonModel;
-import nl.colorize.multimedialib.stage.Shader;
 import nl.colorize.multimedialib.stage.StageVisitor;
-import nl.colorize.util.LoadUtils;
+import nl.colorize.util.LogHelper;
 import nl.colorize.util.Promise;
+import org.teavm.jso.browser.Storage;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.dom.html.HTMLAudioElement;
 import org.teavm.jso.dom.html.HTMLDocument;
@@ -34,7 +31,7 @@ import org.teavm.jso.dom.html.HTMLImageElement;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import java.util.stream.Collectors;
+import java.util.logging.Logger;
 
 /**
  * Delegates media loading to the browser. Images, audio, and fonts are loaded
@@ -49,6 +46,7 @@ public class TeaMediaLoader implements MediaLoader {
 
     private static final FilePointer MANIFEST_FILE = new FilePointer("resource-file-manifest");
     private static final Splitter LINE_SPLITTER = Splitter.on("\n").trimResults().omitEmptyStrings();
+    private static final Logger LOGGER = LogHelper.getLogger(TeaMediaLoader.class);
 
     protected TeaMediaLoader(StageVisitor graphics) {
         this.document = Window.current().getDocument();
@@ -58,62 +56,50 @@ public class TeaMediaLoader implements MediaLoader {
 
     @Override
     public Image loadImage(FilePointer file) {
-        HTMLImageElement img = (HTMLImageElement) document.createElement("img");
-        Promise<HTMLImageElement> imgPromise = new Promise<>();
-        img.addEventListener("load", event -> imgPromise.resolve(img));
-        img.setSrc("resources/" + normalizeFilePath(file, false));
-        return new TeaImage(imgPromise, null);
+        HTMLImageElement imageElement = (HTMLImageElement) document.createElement("img");
+        Promise<HTMLImageElement> imagePromise = new Promise<>();
+        imageElement.addEventListener("load", event -> imagePromise.resolve(imageElement));
+        imageElement.setSrc("resources/" + normalizeFilePath(file, false));
+        return new TeaImage(imagePromise, null);
     }
 
     @Override
     public Audio loadAudio(FilePointer file) {
         HTMLAudioElement audioElement = (HTMLAudioElement) document.createElement("audio");
+        Promise<HTMLAudioElement> audioPromise = new Promise<>();
+        audioElement.addEventListener("loadeddata", event -> audioPromise.resolve(audioElement));
         audioElement.setSrc("resources/" + normalizeFilePath(file, false));
-        return new TeaAudio(audioElement);
+        return new TeaAudio(audioPromise);
     }
 
     @Override
     public OutlineFont loadFont(FilePointer file, FontStyle style) {
-        String css = "";
-        css += "@font-face {\n";
-        css += "    font-family: '" + style.family() + "';\n";
-        css += "    font-style: normal;\n";
-        css += "    font-weight: 400;\n";
-        css += "    src: url('resources/" + normalizeFilePath(file, false) + "') format('truetype');\n";
-        css += "};\n";
+        Promise<Boolean> fontPromise = new Promise<>();
+        String url = "resources/" + normalizeFilePath(file, false);
+        FontLoadCallback callback = success -> fontPromise.resolve(success);
 
-        HTMLElement styleElement = document.createElement("style");
-        styleElement.appendChild(document.createTextNode(css));
+        Browser.preloadFontFace(style.family(), url, callback);
 
-        HTMLElement fontContainer = document.getElementById("fontContainer");
-        fontContainer.appendChild(styleElement);
-
-        return new TeaFont(style);
+        return new TeaFont(fontPromise, style);
     }
 
     @Override
     public PolygonModel loadModel(FilePointer file) {
-        //TODO
-        throw new UnsupportedGraphicsModeException();
+        if (graphics instanceof ThreeGraphics three) {
+            //TODO
+            throw new UnsupportedGraphicsModeException();
+        } else {
+            throw new UnsupportedGraphicsModeException();
+        }
     }
 
     @Override
     public GeometryBuilder getGeometryBuilder() {
-        //TODO
-        throw new UnsupportedGraphicsModeException();
-    }
-
-    @Override
-    public Shader loadShader(FilePointer vertexShaderFile, FilePointer fragmentShaderFile) {
-        String vertexGLSL = loadText(vertexShaderFile);
-        String fragmentGLSL = loadText(fragmentShaderFile);
-
-        if (graphics instanceof PixiGraphics) {
-            return new PixiShader(vertexGLSL, fragmentGLSL);
-        } else if (graphics instanceof ThreeGraphics) {
-            return new ThreeShader(vertexGLSL, fragmentGLSL);
+        if (graphics instanceof ThreeGraphics three) {
+            //TODO
+            throw new UnsupportedGraphicsModeException();
         } else {
-            return Shader.NO_OP;
+            throw new UnsupportedGraphicsModeException();
         }
     }
 
@@ -143,7 +129,7 @@ public class TeaMediaLoader implements MediaLoader {
 
         manifest = LINE_SPLITTER.splitToList(loadText(MANIFEST_FILE)).stream()
             .map(path -> new FilePointer(path))
-            .collect(Collectors.toList());
+            .toList();
 
         return manifest;
     }
@@ -160,19 +146,25 @@ public class TeaMediaLoader implements MediaLoader {
     }
 
     @Override
-    public Properties loadApplicationData(String appName, String fileName) {
-        String value = Browser.getLocalStorage(appName + "." + fileName);
+    public Properties loadApplicationData(String appName) {
+        Storage localStorage = Storage.getLocalStorage();
+        Properties data = new Properties();
 
-        if (value != null && !value.isEmpty()) {
-            return LoadUtils.loadProperties(value);
-        } else {
-            return new Properties();
+        for (int i = 0; i < localStorage.getLength(); i++) {
+            String name = localStorage.key(i);
+            String value = localStorage.getItem(name);
+            data.setProperty(name, value);
         }
+
+        return data;
     }
 
     @Override
-    public void saveApplicationData(Properties data, String appName, String fileName) {
-        String serializedData = LoadUtils.serializeProperties(data);
-        Browser.setLocalStorage(appName + "." + fileName, serializedData);
+    public void saveApplicationData(String appName, Properties data) {
+        Storage localStorage = Storage.getLocalStorage();
+
+        for (String name : data.stringPropertyNames()) {
+            localStorage.setItem(name, data.getProperty(name, ""));
+        }
     }
 }

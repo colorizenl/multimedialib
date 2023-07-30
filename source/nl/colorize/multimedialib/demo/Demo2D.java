@@ -8,6 +8,7 @@ package nl.colorize.multimedialib.demo;
 
 import com.google.common.base.Splitter;
 import com.google.common.net.HttpHeaders;
+import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.RandomGenerator;
@@ -22,27 +23,27 @@ import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.scene.Effect;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.scene.SwipeTracker;
 import nl.colorize.multimedialib.scene.Updatable;
 import nl.colorize.multimedialib.scene.WipeTransition;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.Animation;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.stage.Layer2D;
 import nl.colorize.multimedialib.stage.OutlineFont;
 import nl.colorize.multimedialib.stage.Primitive;
-import nl.colorize.multimedialib.stage.Shader;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
-import nl.colorize.util.stats.Tuple;
 import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
 import nl.colorize.util.http.Headers;
 import nl.colorize.util.http.PostData;
+import nl.colorize.util.stats.Tuple;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,6 +63,8 @@ import java.util.List;
 public class Demo2D implements Scene, ErrorHandler {
 
     private SceneContext context;
+    private Container contentLayer;
+    private Container hudLayer;
 
     private SpriteAtlas marioSpriteSheet;
     private OutlineFont font;
@@ -69,13 +72,12 @@ public class Demo2D implements Scene, ErrorHandler {
     private Effect colorizeLogo;
     private Audio audioClip;
     private Text hud;
-    private Shader sepiaShader;
 
     public static final int DEFAULT_CANVAS_WIDTH = 800;
     public static final int DEFAULT_CANVAS_HEIGHT = 600;
 
     private static final FilePointer MARIO_SPRITES_FILE = new FilePointer("demo/demo.png");
-    private static final FilePointer AUDIO_FILE = new FilePointer("demo/demo.mp3");
+    private static final FilePointer AUDIO_FILE = new FilePointer("demo/demo-sound.mp3");
     private static final FilePointer COLORIZE_LOGO = new FilePointer("colorize-logo.png");
     private static final FilePointer FRAGMENT_SHADER = new FilePointer("demo/sepia-fragment.glsl");
     private static final FilePointer VERTEX_SHADER = new FilePointer("demo/sepia-vertex.glsl");
@@ -87,27 +89,30 @@ public class Demo2D implements Scene, ErrorHandler {
     private static final ColorRGB GREEN_BUTTON = ColorRGB.parseHex("#72A725");
     private static final ColorRGB PINK_BUTTON = ColorRGB.parseHex("#B75797");
     private static final ColorRGB BACKGROUND_COLOR = ColorRGB.parseHex("#343434");
-    private static final Transform MASK_TRANSFORM = Transform.withMask(ColorRGB.WHITE);
+    private static final ColorRGB ALT_BACKGROUND_COLOR = ColorRGB.parseHex("#EBEBEB");
     private static final ColorRGB COLORIZE_COLOR = ColorRGB.parseHex("#e45d61");
     private static final String EXAMPLE_URL = "https://dashboard.clrz.nl/rest/echo";
 
     @Override
     public void start(SceneContext context) {
         this.context = context;
+        this.contentLayer = context.getStage().addContainer();
+        this.hudLayer = context.getStage().addContainer();
+
         MediaLoader mediaLoader = context.getMediaLoader();
 
         context.getStage().setBackgroundColor(BACKGROUND_COLOR);
 
         initMarioSprites(mediaLoader);
         marios = new ArrayList<>();
-        addMarios(context.getStage());
+        addMarios();
 
         font = mediaLoader.loadDefaultFont(12, ColorRGB.WHITE);
         audioClip = mediaLoader.loadAudio(AUDIO_FILE);
-        sepiaShader = context.getMediaLoader().loadShader(VERTEX_SHADER, FRAGMENT_SHADER);
 
-        initHUD(context);
+        initHUD();
         initEffects();
+        attachSwipeTracker();
         sendHttpRequest(context.getNetwork());
     }
 
@@ -124,43 +129,39 @@ public class Demo2D implements Scene, ErrorHandler {
         }
     }
 
-    private void initHUD(SceneContext context) {
-        Stage stage = context.getStage();
-        Layer2D hudLayer = stage.addLayer("hud");
-
+    private void initHUD() {
         hud = new Text("", font);
-        hud.getPosition().set(20, 20);
+        hud.getTransform().setPosition(20, 20);
         hud.setLineHeight(20);
-        stage.add("hud", hud);
+        hudLayer.addChild(hud);
 
-        createButton(context, "Add sprites", RED_BUTTON, 0, () -> addMarios(stage));
+        createButton(context, "Add sprites", RED_BUTTON, 0, this::addMarios);
         createButton(context, "Remove sprites", RED_BUTTON, 30, () -> removeMarios(10));
         createButton(context, "Play sound", GREEN_BUTTON, 60, audioClip::play);
         createButton(context, "Background", GREEN_BUTTON, 90, this::toggleBackgroundColor);
-        createButton(context, "Toggle shader", PINK_BUTTON, 120, this::toggleShader);
-        createButton(context, "Cause error", PINK_BUTTON, 150, this::causeError);
+        createButton(context, "Cause error", PINK_BUTTON, 120, this::causeError);
 
         Polygon hexagon = new Polygon(80, 70, 120, 70, 135, 100, 120, 130, 80, 130, 65, 100);
-        Primitive hexagonPrimitive = Primitive.of(hexagon, COLORIZE_COLOR);
-        hexagonPrimitive.setAlpha(50f);
-        hudLayer.add(hexagonPrimitive);
+        Primitive hexagonPrimitive = new Primitive(hexagon, COLORIZE_COLOR);
+        hexagonPrimitive.getTransform().setAlpha(50f);
+        hudLayer.addChild(hexagonPrimitive);
 
         Effect effect = new Effect();
         effect.addFrameHandler(deltaTime -> {
-            hexagonPrimitive.setPosition(50f, stage.getCanvas().getHeight() - 150f);
+            hexagonPrimitive.setPosition(50f, context.getCanvas().getHeight() - 150f);
         });
         context.attach(effect);
     }
 
     private void createButton(SceneContext context, String label, ColorRGB color, int y, Runnable click) {
-        Primitive bounds = Primitive.of(new Rect(
+        Primitive bounds = new Primitive(new Rect(
             context.getCanvas().getWidth() - BUTTON_WIDTH - 2, y + 2,
             BUTTON_WIDTH, BUTTON_HEIGHT), color);
-        context.getStage().getLayer("hud").add(bounds);
+        hudLayer.addChild(bounds);
 
         Text text = new Text(label, font, Align.CENTER);
-        text.getPosition().set(context.getCanvas().getWidth() - BUTTON_WIDTH / 2f, y + 19);
-        context.getStage().getLayer("hud").add(text);
+        text.setPosition(context.getCanvas().getWidth() - BUTTON_WIDTH / 2f, y + 19);
+        hudLayer.addChild(text);
 
         Effect effect = new Effect();
         effect.addClickHandler(bounds, click);
@@ -174,7 +175,7 @@ public class Demo2D implements Scene, ErrorHandler {
         timeline.addKeyFrame(4f, 0f);
 
         Sprite sprite = new Sprite(context.getMediaLoader().loadImage(COLORIZE_LOGO));
-        context.getStage().getLayer("hud").add(sprite);
+        hudLayer.addChild(sprite);
 
         colorizeLogo = new Effect();
         colorizeLogo.addTimelineHandler(timeline, value -> {
@@ -184,7 +185,33 @@ public class Demo2D implements Scene, ErrorHandler {
         colorizeLogo.addFrameHandler(dt -> sprite.getTransform().addRotation(dt * 100f));
         context.attach(colorizeLogo);
 
-        context.attach(new WipeTransition(WipeTransition.DIAMOND, COLORIZE_COLOR, 1.5f, true));
+        Image diamond = context.getMediaLoader().loadImage(WipeTransition.DIAMOND);
+        WipeTransition wipe = new WipeTransition(diamond, COLORIZE_COLOR, 1.5f, true);
+        hudLayer.addChild(wipe.getContainer());
+        context.attach(wipe);
+    }
+
+    private void attachSwipeTracker() {
+        SwipeTracker swipeTracker = new SwipeTracker(50f);
+        context.attach(swipeTracker);
+
+        context.attach(deltaTime -> {
+            for (Line swipe : swipeTracker.getSwipes().flush()) {
+                drawSwipeMarker(swipe);
+            }
+        });
+    }
+
+    private void drawSwipeMarker(Line swipe) {
+        Primitive swipeMarker = new Primitive(swipe, ColorRGB.WHITE);
+        hudLayer.addChild(swipeMarker);
+
+        Timeline timeline = new Timeline()
+            .addKeyFrame(0f, 100f)
+            .addKeyFrame(1f, 100f)
+            .addKeyFrame(1.5f, 0f);
+
+        context.attach(Effect.forPrimitiveAlpha(swipeMarker, timeline));
     }
 
     private void sendHttpRequest(Network network) {
@@ -193,7 +220,7 @@ public class Demo2D implements Scene, ErrorHandler {
 
         Text info = new Text("Network request pending", font, Align.RIGHT);
         info.setPosition(context.getCanvas().getWidth() - 20, context.getCanvas().getHeight() - 100);
-        context.getStage().getLayer("hud").add(info);
+        hudLayer.addChild(info);
 
         network.post(EXAMPLE_URL, headers, data).then(response -> {
             List<String> text = new ArrayList<>();
@@ -206,16 +233,12 @@ public class Demo2D implements Scene, ErrorHandler {
 
     private void toggleBackgroundColor() {
         Stage stage = context.getStage();
+
         if (stage.getBackgroundColor().equals(BACKGROUND_COLOR)) {
-            stage.setBackgroundColor(ColorRGB.WHITE);
+            stage.setBackgroundColor(ALT_BACKGROUND_COLOR);
         } else {
             stage.setBackgroundColor(BACKGROUND_COLOR);
         }
-    }
-
-    private void toggleShader() {
-        //TODO Layer2D defaultLayer = context.getStage().getLayer(Layer2D.DEFAULT_LAYER_NAME);
-        // defaultLayer.setShader(defaultLayer.getShader() == null ? sepiaShader : null);
     }
 
     /**
@@ -229,13 +252,13 @@ public class Demo2D implements Scene, ErrorHandler {
     @Override
     public void onError(SceneContext context, Exception cause) {
         Text errorText = new Text("Error:\n\n" + cause.getMessage(), font, Align.CENTER);
-        errorText.setPosition(context.getCanvas().getCenter());
-        context.getStage().getLayer("hud").add(errorText);
+        errorText.getTransform().setPosition(context.getCanvas().getCenter());
+        hudLayer.addChild(errorText);
     }
 
     @Override
     public void update(SceneContext context, float deltaTime) {
-        InputDevice inputDevice = context.getInputDevice();
+        InputDevice inputDevice = context.getInput();
         handleClick(inputDevice, context.getStage());
         checkLogoClick(inputDevice);
         handleSystemControls(inputDevice);
@@ -245,6 +268,7 @@ public class Demo2D implements Scene, ErrorHandler {
         }
 
         List<String> info = context.getDebugInformation();
+        info.add("Sprites:  " + marios.size());
         info.add("Keyboard:  " + inputDevice.isKeyboardAvailable());
         info.add("Touch:  " + inputDevice.isTouchAvailable());
         hud.setText(info);
@@ -252,8 +276,8 @@ public class Demo2D implements Scene, ErrorHandler {
 
     private void updateMario(Mario mario, float deltaTime) {
         mario.update(deltaTime);
-        mario.sprite.setPosition(mario.position);
-        mario.sprite.setTransform(mario.mask ? MASK_TRANSFORM : null);
+        mario.sprite.getTransform().setPosition(mario.position);
+        mario.sprite.getTransform().setMaskColor(mario.mask ? ColorRGB.WHITE : null);
     }
 
     private void checkLogoClick(InputDevice input) {
@@ -273,14 +297,14 @@ public class Demo2D implements Scene, ErrorHandler {
             return;
         }
 
-        if (inputDevice.isPointerReleased(stage.getCanvas().getBounds())) {
-            createTouchMarker(inputDevice.getPointers());
+        if (inputDevice.isPointerReleased()) {
+            inputDevice.getPointer().ifPresent(this::createTouchMarker);
         }
     }
 
     private boolean checkMarioClick(InputDevice inputDevice) {
         for (Mario mario : marios) {
-            if (inputDevice.isPointerReleased(mario.sprite.getBounds())) {
+            if (inputDevice.isPointerReleased(mario.sprite.getStageBounds())) {
                 mario.mask = !mario.mask;
                 return true;
             }
@@ -289,36 +313,28 @@ public class Demo2D implements Scene, ErrorHandler {
     }
 
     private void handleSystemControls(InputDevice input) {
-        if (input.isKeyReleased(KeyCode.N1)) {
-            context.getCanvas().changeStrategy(false);
-        } else if (input.isKeyReleased(KeyCode.N2)) {
-            context.getCanvas().changeStrategy(true);
-        } else if (input.isKeyReleased(KeyCode.N9)) {
-            if (context.getStage().getBackgroundColor().equals(BACKGROUND_COLOR)) {
-                context.getStage().setBackgroundColor(ColorRGB.WHITE);
-            } else {
-                context.getStage().setBackgroundColor(BACKGROUND_COLOR);
-            }
+        if (input.isKeyReleased(KeyCode.N9) || input.isKeyReleased(KeyCode.B)) {
+            toggleBackgroundColor();
+        } else if (input.isKeyReleased(KeyCode.F12)) {
+            context.takeScreenshot();
         }
     }
 
-    private void createTouchMarker(List<Point2D> positions) {
-        for (Point2D position : positions) {
-            Timeline timeline = new Timeline();
-            timeline.addKeyFrame(0f, 100f);
-            timeline.addKeyFrame(1f, 100f);
-            timeline.addKeyFrame(1.5f, 0f);
+    private void createTouchMarker(Point2D position) {
+        Timeline timeline = new Timeline()
+            .addKeyFrame(0f, 100f)
+            .addKeyFrame(1f, 100f)
+            .addKeyFrame(1.5f, 0f);
 
-            Text text = new Text(Math.round(position.getX()) + ", " + Math.round(position.getY()),
-                font, Align.LEFT);
-            text.setPosition(position);
-            context.getStage().getLayer("hud").add(text);
+        Text text = new Text(Math.round(position.getX()) + ", " + Math.round(position.getY()),
+            font, Align.LEFT);
+        text.getTransform().setPosition(position);
+        hudLayer.addChild(text);
 
-            context.attach(Effect.forTextAlpha(text, timeline));
-        }
+        context.attach(Effect.forTextAlpha(text, timeline));
     }
 
-    public void addMarios(Stage stage) {
+    public void addMarios() {
         int amount = marios.size() >= 100 ? 100 : 20;
 
         for (int i = 0; i < amount; i++) {
@@ -327,7 +343,7 @@ public class Demo2D implements Scene, ErrorHandler {
                 new Rect(0, 0, context.getCanvas().getWidth(), context.getCanvas().getHeight()));
             marios.add(mario);
             updateMario(mario, 0f);
-            stage.getDefaultLayer().add(marioSprite);
+            contentLayer.addChild(marioSprite);
         }
     }
 
@@ -347,7 +363,7 @@ public class Demo2D implements Scene, ErrorHandler {
     private void removeMarios(int amount) {
         for (int i = 0; i < amount && !marios.isEmpty(); i++) {
             Mario removed = marios.remove(marios.size() - 1);
-            context.getStage().remove(removed.sprite);
+            contentLayer.removeChild(removed.sprite);
         }
     }
 
@@ -378,13 +394,13 @@ public class Demo2D implements Scene, ErrorHandler {
             sprite.changeState(DIRECTIONS.get(direction));
             sprite.update(deltaTime);
 
-            switch (direction) {
-                case 0 : position.add(0, -speed * deltaTime); break;
-                case 1 : position.add(speed * deltaTime, 0); break;
-                case 2 : position.add(0, speed * deltaTime); break;
-                case 3 : position.add(-speed * deltaTime, 0); break;
-                default : throw new AssertionError();
-            }
+            position = switch (direction) {
+                case 0 -> new Point2D(position.getX(), position.getY() - speed * deltaTime);
+                case 1 -> new Point2D(position.getX() + speed * deltaTime, position.getY());
+                case 2 -> new Point2D(position.getX(), position.getY() + speed * deltaTime);
+                case 3 -> new Point2D(position.getX() - speed * deltaTime, position.getY());
+                default -> position;
+            };
 
             checkBounds();
         }

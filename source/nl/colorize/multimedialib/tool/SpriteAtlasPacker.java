@@ -10,6 +10,7 @@ import com.badlogic.gdx.tools.texturepacker.TexturePacker;
 import com.google.common.base.Preconditions;
 import nl.colorize.util.FileUtils;
 import nl.colorize.util.LogHelper;
+import nl.colorize.util.cli.Arg;
 import nl.colorize.util.cli.CommandLineArgumentParser;
 
 import java.io.File;
@@ -26,31 +27,28 @@ import java.util.logging.Logger;
  */
 public class SpriteAtlasPacker {
 
+    @Arg(name = "input")
     protected File inputDir;
+
+    @Arg(name = "output")
     protected File outputDir;
+
+    @Arg(required = false, usage = "File name for generated sprite atlas, defaults to directory name")
     protected String atlasName;
+
+    @Arg(usage = "Creates a separate sprite atlas for each subdirectory")
     protected boolean nested;
+
+    @Arg(usage = "Base region name on file name only instead of relative path")
     protected boolean flatten;
 
     private static final List<String> IMAGE_FILE_EXTENSIONS = List.of("png", "jpg");
     private static final Logger LOGGER = LogHelper.getLogger(SpriteAtlasPacker.class);
 
     public static void main(String[] argv) {
-        CommandLineArgumentParser args = new CommandLineArgumentParser(SpriteAtlasPacker.class)
-            .addRequired("--input", "Input directory containing images to process.")
-            .addRequired("--output", "Output directory for saving the generated texture atlas.")
-            .addOptional("--name", "File name for generated sprite atlas, defaults to directory name")
-            .addFlag("--nested", "Creates a separate sprite atlas for each subdirectory.")
-            .addFlag("--flatten", "Base region name on file name only, instead of relative path.")
-            .parseArgs(argv);
-
-        SpriteAtlasPacker tool = new SpriteAtlasPacker();
-        tool.inputDir = args.get("input").getDir();
-        tool.outputDir = args.get("output").getDir();
-        tool.atlasName = args.get("name").getStringOr("");
-        tool.nested = args.get("nested").getBool();
-        tool.flatten = args.get("flatten").getBool();
-        tool.run();
+        CommandLineArgumentParser argParser = new CommandLineArgumentParser(SpriteAtlasPacker.class);
+        SpriteAtlasPacker spriteAtlasPacker = argParser.parse(argv, SpriteAtlasPacker.class);
+        spriteAtlasPacker.run();
     }
 
     protected void run() {

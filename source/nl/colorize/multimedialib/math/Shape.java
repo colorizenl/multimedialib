@@ -7,30 +7,27 @@
 package nl.colorize.multimedialib.math;
 
 /**
- * Shared interface for all two-dimensional shapes.
+ * Shared interface for all two-dimensional shapes. Shapes use coordinates
+ * with float precision, and instances are immutable.
  */
 public interface Shape {
 
     public static final float EPSILON = MathUtils.EPSILON;
 
+    /**
+     * Returns whether this shape contains the specified point.
+     */
     public boolean contains(Point2D p);
 
     /**
-     * Returns the smallest possible rectanglular bounding box capable of
-     * containing this shape.
+     * Returns the smallest possible rectangular bounding box that can fit
+     * this shape.
      */
     public Rect getBoundingBox();
 
     /**
-     * Creates a deep copy of the shape, so that any modifications made to the
-     * copy will not affect the original instance.
-     */
-    public Shape copy();
-
-    /**
-     * Returns a new instance that is repositioned by the specified X and Y
-     * offset. Any changes made to the new instance will not affect the
-     * original.
+     * Returns a new {@link Shape} instance that is repositioned by the
+     * specified X and Y offset.
      */
     public Shape reposition(Point2D offset);
 }

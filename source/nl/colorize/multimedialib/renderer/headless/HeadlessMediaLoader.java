@@ -7,11 +7,16 @@
 package nl.colorize.multimedialib.renderer.headless;
 
 import com.google.common.annotations.VisibleForTesting;
+import nl.colorize.multimedialib.math.Region;
+import nl.colorize.multimedialib.stage.Audio;
+import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.OutlineFont;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
+
+import java.util.UUID;
 
 /**
  * Media loader implementation that can be used in headless environments,
@@ -32,17 +37,70 @@ public class HeadlessMediaLoader extends StandardMediaLoader {
     public Image loadImage(FilePointer file) {
         if (graphicsEnvironmentEnabled) {
             return super.loadImage(file);
-        } else {
+        } else if (file == null) {
             return new HeadlessImage();
+        } else {
+            return new HeadlessImage(file.path());
         }
     }
 
     @Override
+    public Audio loadAudio(FilePointer file) {
+        return new HeadlessAudio();
+    }
+
+    @Override
     public OutlineFont loadFont(FilePointer file, FontStyle style) {
-        if (graphicsEnvironmentEnabled) {
-            return super.loadFont(file, style);
-        } else {
-            return new HeadlessFont(style);
+        return super.loadFont(file, style);
+    }
+
+    /**
+     * A "fake" image that is only used when the graphics environment is
+     * completely disabled in the {@link HeadlessMediaLoader}.
+     */
+    private static class HeadlessImage implements Image {
+
+        private String name;
+        private int width;
+        private int height;
+
+        public HeadlessImage(String name, int width, int height) {
+            this.name = name;
+            this.width = width;
+            this.height = height;
+        }
+
+        public HeadlessImage(String name) {
+            this(name, 100, 100);
+        }
+
+        public HeadlessImage() {
+            this("HeadlessImage-" + UUID.randomUUID(), 100, 100);
+        }
+
+        @Override
+        public Region getRegion() {
+            return new Region(0, 0, width, height);
+        }
+
+        @Override
+        public Image extractRegion(Region region) {
+            return new HeadlessImage(name + "[" + region + "]", region.width(), region.height());
+        }
+
+        @Override
+        public ColorRGB getColor(int x, int y) {
+            return ColorRGB.BLACK;
+        }
+
+        @Override
+        public int getAlpha(int x, int y) {
+            return 100;
+        }
+
+        @Override
+        public String toString() {
+            return name;
         }
     }
 }

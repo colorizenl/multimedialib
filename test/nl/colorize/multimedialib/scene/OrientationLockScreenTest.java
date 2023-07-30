@@ -22,11 +22,12 @@ class OrientationLockScreenTest {
 
         Sprite sprite = new MockImage("orientation lock").toSprite();
         OrientationLockScreen orientationLockScreen = new OrientationLockScreen(sprite);
+        context.getStage().getRoot().addChild(orientationLockScreen.getContainer());
         orientationLockScreen.update(context, 1f);
 
         String expected = """
             Stage
-                2D graphics layer [$$default]
+                Container
             """;
 
         assertEquals(expected, context.getStage().toString());
@@ -40,13 +41,14 @@ class OrientationLockScreenTest {
 
         Sprite sprite = new MockImage("orientation lock").toSprite();
         OrientationLockScreen orientationLockScreen = new OrientationLockScreen(sprite);
+        context.getStage().getRoot().addChild(orientationLockScreen.getContainer());
         orientationLockScreen.update(context, 1f);
 
         String expected = """
             Stage
-                2D graphics layer [$$OrientationLockScreen]
-                    Sprite [orientation lock @ (100, 300)]
-                2D graphics layer [$$default]
+                Container
+                    Container
+                        Sprite [orientation lock]
             """;
 
         assertEquals(expected, context.getStage().toString());
@@ -59,6 +61,7 @@ class OrientationLockScreenTest {
 
         Sprite sprite = new MockImage("orientation lock").toSprite();
         OrientationLockScreen orientationLockScreen = new OrientationLockScreen(sprite);
+        context.getStage().getRoot().addChild(orientationLockScreen.getContainer());
         orientationLockScreen.update(context, 1f);
         context.getCanvas().resizeScreen(200, 600);
         orientationLockScreen.update(context, 1f);
@@ -67,8 +70,7 @@ class OrientationLockScreenTest {
 
         String expected = """
             Stage
-                2D graphics layer [$$OrientationLockScreen]
-                2D graphics layer [$$default]
+                Container
             """;
 
         assertEquals(expected, context.getStage().toString());

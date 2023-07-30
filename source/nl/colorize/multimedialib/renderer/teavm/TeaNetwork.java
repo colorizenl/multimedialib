@@ -57,7 +57,9 @@ public class TeaNetwork implements Network {
 
     private void addRequestHeaders(XMLHttpRequest request, Headers headers) {
         request.setRequestHeader("X-Requested-With", "MultimediaLib");
-        headers.forEach(request::setRequestHeader);
+        if (headers != null) {
+            headers.forEach(request::setRequestHeader);
+        }
     }
 
     private void handleResponse(XMLHttpRequest request, Promise<URLResponse> promise) {
@@ -85,8 +87,8 @@ public class TeaNetwork implements Network {
             if (line.contains(": ")) {
                 String name = line.substring(0, line.indexOf(": "));
                 String value = line.substring(line.indexOf(": ") + 2);
-                headers = headers.append(name, value);
-            } else {
+                headers = headers.concat(name, value);
+            } else if (!line.isEmpty()) {
                 LOGGER.warning("Malformed HTTP response header: " + line);
             }
         }
@@ -96,6 +98,6 @@ public class TeaNetwork implements Network {
 
     @Override
     public boolean isDevelopmentEnvironment() {
-        return Browser.getPageURL().contains("local=true");
+        return BrowserDOM.getQueryString().contains("local");
     }
 }

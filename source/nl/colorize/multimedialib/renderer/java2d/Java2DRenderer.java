@@ -10,14 +10,16 @@ import nl.colorize.multimedialib.math.MathUtils;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
-import nl.colorize.multimedialib.renderer.FrameSync;
+import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
-import nl.colorize.multimedialib.renderer.RenderCapabilities;
+import nl.colorize.multimedialib.renderer.InputDevice;
+import nl.colorize.multimedialib.renderer.MediaLoader;
+import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.WindowOptions;
-import nl.colorize.multimedialib.scene.RenderContext;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.ResourceFile;
@@ -27,11 +29,14 @@ import nl.colorize.util.swing.SwingUtils;
 import nl.colorize.util.swing.Utils2D;
 
 import javax.swing.JFrame;
+import java.awt.AWTException;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Insets;
+import java.awt.Rectangle;
+import java.awt.Robot;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
@@ -39,6 +44,9 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.image.BufferStrategy;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -55,21 +63,18 @@ public class Java2DRenderer implements Renderer {
 
     private DisplayMode displayMode;
     private Canvas canvas;
-    private FrameSync frameSync;
-    private SceneContext context;
-    private StandardMediaLoader mediaLoader;
-    private AWTInput inputDevice;
     private WindowOptions windowOptions;
 
     private JFrame window;
     private Java2DGraphicsContext graphicsContext;
+    private AWTInput input;
+    private StandardMediaLoader mediaLoader;
     private AtomicBoolean canvasDirty;
     private AtomicBoolean terminated;
+    private SceneContext context;
 
     private static final boolean ANTI_ALIASING = true;
     private static final boolean BILINEAR_SCALING = true;
-    private static final long MIN_SLEEP_TIME = 1L;
-    private static final long MAX_SLEEP_TIME = 50L;
     private static final Logger LOGGER = LogHelper.getLogger(Java2DRenderer.class);
 
     public Java2DRenderer(DisplayMode displayMode, WindowOptions windowOptions) {
@@ -77,8 +82,6 @@ public class Java2DRenderer implements Renderer {
 
         this.displayMode = displayMode;
         this.canvas = displayMode.canvas();
-        this.frameSync = new FrameSync(displayMode);
-        this.mediaLoader = new StandardMediaLoader();
         this.windowOptions = windowOptions;
 
         // Makes sure the canvas and graphics context are initialized during
@@ -90,9 +93,11 @@ public class Java2DRenderer implements Renderer {
     @Override
     public void start(Scene initialScene, ErrorHandler errorHandler) {
         window = initializeWindow(windowOptions);
+        input = initializeInput();
         graphicsContext = new Java2DGraphicsContext(canvas);
+        mediaLoader = new StandardMediaLoader();
 
-        context = new RenderContext(this);
+        context = new SceneContext(this, new Stopwatch());
         context.changeScene(initialScene);
 
         Runnable animationLoop = () -> runAnimationLoop(errorHandler);
@@ -116,11 +121,6 @@ public class Java2DRenderer implements Renderer {
         window.setVisible(true);
         window.createBufferStrategy(2);
 
-        inputDevice = new AWTInput(canvas);
-        window.addKeyListener(inputDevice);
-        window.addMouseListener(inputDevice);
-        window.addMouseMotionListener(inputDevice);
-
         if (Platform.isMac()) {
             MacIntegration.setApplicationMenuListener(windowOptions.appMenuListener());
         }
@@ -130,6 +130,14 @@ public class Java2DRenderer implements Renderer {
         }
 
         return window;
+    }
+
+    private AWTInput initializeInput() {
+        AWTInput input = new AWTInput(canvas);
+        window.addKeyListener(input);
+        window.addMouseListener(input);
+        window.addMouseMotionListener(input);
+        return input;
     }
 
     private ComponentListener createResizeListener() {
@@ -164,62 +172,57 @@ public class Java2DRenderer implements Renderer {
     }
 
     /**
-     * Main entry point for the rendering thread. This will keep running the
-     * animation loop for as long as the application is active.
+     * Main entry point for the rendering thread. This will keep running
+     * the animation loop for as long as the application is active.
      * <p>
      * After every frame, this method will sleep the rendering thread to
      * synchronize the animation loop as close to the targeted framerate as
-     * possible.
+     * possible. This mechanism is slightly different from the frame
+     * synchronization performed by {@link SceneContext}, as the Java2D
+     * renderer does not use vsync and needs to manually manage the
+     * framerate.
      */
     private void runAnimationLoop(ErrorHandler errorHandler) {
         Stopwatch timer = new Stopwatch();
 
         try {
             while (!terminated.get()) {
-                long timestamp = timer.value();
-                long elapsed = timer.tick();
+                long oversleep = Math.max(timer.tick() - displayMode.getFrameTimeMS(), 0L);
 
                 if (canvasDirty.get()) {
                     canvasDirty.set(false);
                     prepareCanvas();
                 }
 
-                frameSync.requestFrame(timestamp, this::doFrame);
+                context.syncFrame();
+                renderFrame();
 
-                long sleepTime = Math.max(elapsed - displayMode.getFrameTimeMS(), 0) - timer.tock();
+                long frameTime = timer.tock();
+                long sleepTime = displayMode.getFrameTimeMS() - frameTime - oversleep;
                 Thread.yield();
-                Thread.sleep(MathUtils.clamp(sleepTime, MIN_SLEEP_TIME, MAX_SLEEP_TIME));
+                Thread.sleep(MathUtils.clamp(sleepTime, 1L, 100L));
             }
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error during animation loop", e);
             errorHandler.onError(context, e);
-            quit();
+            terminate();
         }
     }
 
-    /**
-     * Performs an application frame update. This method is called from the
-     * application loop, but might be called at different intervals than the
-     * native display refresh rate.
-     */
-    private void doFrame(float deltaTime) {
-        context.getFrameStats().markFrameStart();
-        inputDevice.update(deltaTime);
-        context.update(deltaTime);
-        context.getFrameStats().markFrameUpdate();
-        drawFrame();
-        context.getFrameStats().markFrameRender();
-    }
-
-    private void drawFrame() {
+    private void renderFrame() {
         BufferStrategy windowBuffer = prepareWindowBuffer();
         Graphics bufferGraphics = accessWindowGraphics(windowBuffer);
 
         if (bufferGraphics != null) {
+            context.getFrameStats().markStart(FrameStats.PHASE_FRAME_RENDER);
+
             Graphics2D g2 = Utils2D.createGraphics(bufferGraphics, ANTI_ALIASING, BILINEAR_SCALING);
-            drawFrame(g2);
+            graphicsContext.bind(g2);
+            context.getStage().visit(graphicsContext);
             blitGraphicsContext(windowBuffer);
             graphicsContext.dispose();
+
+            context.getFrameStats().markEnd(FrameStats.PHASE_FRAME_RENDER);
         }
     }
 
@@ -230,12 +233,6 @@ public class Java2DRenderer implements Renderer {
             LOGGER.warning("Window buffer graphics not available: " + e.getMessage());
             return null;
         }
-    }
-
-    private void drawFrame(Graphics2D g2) {
-        graphicsContext.bind(g2);
-        graphicsContext.clear(window.getWidth(), window.getHeight() + 50);
-        context.getStage().visit(graphicsContext);
     }
 
     private void prepareCanvas() {
@@ -262,7 +259,7 @@ public class Java2DRenderer implements Renderer {
         if (!windowBuffer.contentsLost()) {
             windowBuffer.show();
             // Linux used to have problems with BufferStrategy, this
-            // will make sure the window's graphics are up to date.
+            // will make sure the window's graphics are up-to-date.
             if (Platform.isLinux()) {
                 window.getToolkit().sync();
             }
@@ -270,16 +267,60 @@ public class Java2DRenderer implements Renderer {
     }
 
     @Override
-    public RenderCapabilities getCapabilities() {
-        StandardNetwork network = new StandardNetwork();
-        return new RenderCapabilities(GraphicsMode.MODE_2D, displayMode,
-            graphicsContext, inputDevice, mediaLoader, network);
+    public GraphicsMode getGraphicsMode() {
+        return GraphicsMode.MODE_2D;
     }
 
-    public void quit() {
-        terminated.set(true);
-        if (window != null) {
-            window.dispose();
+    @Override
+    public DisplayMode getDisplayMode() {
+        return displayMode;
+    }
+
+    @Override
+    public StageVisitor getGraphics() {
+        return graphicsContext;
+    }
+
+    @Override
+    public InputDevice getInput() {
+        return input;
+    }
+
+    @Override
+    public MediaLoader getMediaLoader() {
+        return mediaLoader;
+    }
+
+    @Override
+    public Network getNetwork() {
+        return new StandardNetwork();
+    }
+
+    @Override
+    public void takeScreenshot(File outputFile) {
+        try {
+            Rectangle windowBounds = window.getBounds();
+            Insets insets = window.getInsets();
+
+            Rectangle bounds = new Rectangle(
+                windowBounds.x + insets.left,
+                windowBounds.y + insets.top,
+                windowBounds.width - insets.left - insets.right,
+                windowBounds.height - insets.top - insets.bottom
+            );
+
+            Robot robot = new Robot();
+            BufferedImage screenshot = robot.createScreenCapture(bounds);
+            Utils2D.savePNG(screenshot, outputFile);
+        } catch (AWTException e) {
+            LOGGER.warning("AWT Robot not supported");
+        } catch (IOException e) {
+            LOGGER.warning("Failed to write screenshot to " + outputFile.getAbsolutePath());
         }
+    }
+
+    @Override
+    public void terminate() {
+        System.exit(0);
     }
 }

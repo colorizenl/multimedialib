@@ -7,13 +7,9 @@
 package nl.colorize.multimedialib.scene;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Graphic2D;
-import nl.colorize.multimedialib.stage.Layer2D;
-import nl.colorize.multimedialib.stage.Stage;
-
-import java.util.List;
 
 /**
  * Displays an image and/or message to inform the user to change their device
@@ -27,46 +23,31 @@ import java.util.List;
  * scene will continue to play in the background. Which approach should be
  * preferred depends on the type of application.
  */
-public class OrientationLockScreen extends Effect {
+public class OrientationLockScreen implements InteractiveObject {
 
-    private boolean active;
-    private List<Graphic2D> graphics;
-
-    private static final String LAYER = "$$OrientationLockScreen";
+    private Container container;
 
     public OrientationLockScreen(Graphic2D... graphics) {
         Preconditions.checkArgument(graphics.length > 0,
             "Orientation lock screen must have graphics");
 
-        this.active = false;
-        this.graphics = ImmutableList.copyOf(graphics);
+        this.container = new Container();
 
-        addFrameHandler(this::update);
+        for (Graphic2D graphic : graphics) {
+            container.addChild(graphic);
+        }
     }
 
-    private void update(float deltaTime) {
-        Canvas canvas = getContext().getCanvas();
-        Stage stage = getContext().getStage();
-
-        if (active && !shouldBeActive(canvas)) {
-            Layer2D layer = stage.retrieveLayer(LAYER);
-            graphics.forEach(layer::remove);
-            active = false;
-        } else if (!active && shouldBeActive(canvas)) {
-            Layer2D layer = stage.retrieveLayer(LAYER);
-            graphics.forEach(layer::add);
-            active = true;
-        }
-
+    @Override
+    public void update(SceneContext context, float deltaTime) {
+        Canvas canvas = context.getCanvas();
+        container.getTransform().setVisible(canvas.getWidth() < canvas.getHeight());
         // Reposition all graphics because the canvas might have changed.
-        if (active) {
-            for (Graphic2D graphic : graphics) {
-                graphic.setPosition(canvas.getCenter());
-            }
-        }
+        container.getTransform().setPosition(canvas.getCenter());
     }
 
-    private boolean shouldBeActive(Canvas canvas) {
-        return canvas.getWidth() < canvas.getHeight();
+    @Override
+    public Container getContainer() {
+        return container;
     }
 }

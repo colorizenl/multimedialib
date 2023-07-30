@@ -8,7 +8,9 @@ package nl.colorize.multimedialib.math;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RectTest {
 
@@ -79,12 +81,12 @@ public class RectTest {
         Rect original = new Rect(10, 20, 30, 40);
         Rect result = original.reposition(new Point2D(10, 20));
 
-        assertEquals("10, 20, 30, 40", original.toString());
-        assertEquals("20, 40, 30, 40", result.toString());
+        assertEquals("(10, 20, 30, 40)", original.toString());
+        assertEquals("(20, 40, 30, 40)", result.toString());
     }
 
     @Test
     void fromPoints() {
-        assertEquals("10, 20, 20, 30", Rect.fromPoints(10, 20, 30, 50).toString());
+        assertEquals("(10, 20, 20, 30)", Rect.fromPoints(10, 20, 30, 50).toString());
     }
 }

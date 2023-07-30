@@ -50,7 +50,7 @@ public class MockImage implements Image {
 
     @Override
     public Image extractRegion(Region region) {
-        return new MockImage(region.width(), region.height());
+        return new MockImage(name + "@" + region, region.width(), region.height());
     }
 
     @Override

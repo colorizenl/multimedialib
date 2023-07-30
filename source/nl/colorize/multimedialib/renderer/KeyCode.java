@@ -6,6 +6,8 @@
 
 package nl.colorize.multimedialib.renderer;
 
+import java.util.List;
+
 /**
  * Enumerates the keys on a conventional keyboard.
  */
@@ -72,4 +74,6 @@ public enum KeyCode {
     F10,
     F11,
     F12;
+
+    public static final List<KeyCode> ARROWS = List.of(LEFT, RIGHT, UP, DOWN);
 }

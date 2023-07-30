@@ -1,11 +1,9 @@
 {
     "name": "multimedialib",
-    "version": "1.0.0",
     "private": true,
     "dependencies": {
-        "pixi.js": "6.5.9",
-        "pixi-heaven": "0.3.3",
-        "three": "0.149.0",
+        "pixi.js": "7.2.4",
+        "three": "0.152.2",
         "peerjs": "1.4.7"
     }
 }

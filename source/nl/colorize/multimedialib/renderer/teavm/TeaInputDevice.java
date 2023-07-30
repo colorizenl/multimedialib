@@ -20,8 +20,11 @@ import org.teavm.jso.dom.events.KeyboardEvent;
 import org.teavm.jso.dom.events.MouseEvent;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Captures browser events for various input methods, and makes them accessible
@@ -34,8 +37,9 @@ public class TeaInputDevice implements InputDevice {
     private Canvas canvas;
     private TeaGraphics graphics;
 
-    private Multimap<String, MouseEvent> mouseEvents;
-    private Multimap<Integer, KeyboardEvent> keyEvents;
+    private List<MouseEvent> mouseEvents;
+    private Set<Integer> keysDown;
+    private Set<Integer> keysUp;
 
     private static final Map<KeyCode, Integer> BROWSER_KEY_CODE_MAPPING =
         new ImmutableMap.Builder<KeyCode, Integer>()
@@ -103,8 +107,9 @@ public class TeaInputDevice implements InputDevice {
         this.canvas = canvas;
         this.graphics = graphics;
 
-        this.mouseEvents = ArrayListMultimap.create();
-        this.keyEvents = ArrayListMultimap.create();
+        this.mouseEvents = new ArrayList<>();
+        this.keysDown = new HashSet<>();
+        this.keysUp = new HashSet<>();
     }
 
     public void bindEventHandlers() {
@@ -113,21 +118,29 @@ public class TeaInputDevice implements InputDevice {
         window.addEventListener("mouseup", this::onMouseEvent);
         window.addEventListener("mousemove", this::onMouseEvent);
         window.addEventListener("mouseout",this::onMouseEvent);
-        window.addEventListener("keydown", this::onKeyEvent);
-        window.addEventListener("keyup", this::onKeyEvent);
+        window.addEventListener("keydown", this::onKeyDown);
+        window.addEventListener("keyup", this::onKeyUp);
     }
 
     private void onMouseEvent(Event event) {
         MouseEvent mouseEvent = (MouseEvent) event;
-        mouseEvents.put("mouse", mouseEvent);
+        mouseEvents.add(mouseEvent);
 
         event.preventDefault();
         event.stopPropagation();
     }
 
-    private void onKeyEvent(Event event) {
-        KeyboardEvent keyEvent = (KeyboardEvent) event;
-        keyEvents.put(keyEvent.getKeyCode(), keyEvent);
+    private void onKeyDown(Event event) {
+        KeyboardEvent keyboardEvent = (KeyboardEvent) event;
+        keysDown.add(keyboardEvent.getKeyCode());
+
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    private void onKeyUp(Event event) {
+        KeyboardEvent keyboardEvent = (KeyboardEvent) event;
+        keysUp.add(keyboardEvent.getKeyCode());
 
         event.preventDefault();
         event.stopPropagation();
@@ -135,20 +148,19 @@ public class TeaInputDevice implements InputDevice {
 
     public void reset() {
         mouseEvents.clear();
-        keyEvents.clear();
+        keysDown.removeAll(keysUp);
+        keysUp.clear();
     }
 
     @Override
-    public List<Point2D> getPointers() {
-        List<Point2D> positions = new ArrayList<>();
-
-        for (String id : mouseEvents.keySet()) {
-            List<MouseEvent> events = (List<MouseEvent>) mouseEvents.get(id);
-            MouseEvent last = events.get(events.size() - 1);
-            positions.add(getPointerCanvasPosition(last));
+    public Optional<Point2D> getPointer() {
+        if (mouseEvents.isEmpty()) {
+            return Optional.empty();
         }
 
-        return positions;
+        MouseEvent lastEvent = mouseEvents.get(mouseEvents.size() - 1);
+        Point2D lastPosition = getPointerCanvasPosition(lastEvent);
+        return Optional.of(lastPosition);
     }
 
     private Point2D getPointerCanvasPosition(MouseEvent event) {
@@ -163,15 +175,21 @@ public class TeaInputDevice implements InputDevice {
 
     @Override
     public boolean isPointerPressed(Rect area) {
-        return mouseEvents.values().stream()
+        return mouseEvents.stream()
             .filter(event -> event.getType().equals("mousedown"))
             .map(this::getPointerCanvasPosition)
             .anyMatch(canvasPosition -> area.contains(canvasPosition));
     }
 
     @Override
+    public boolean isPointerPressed() {
+        return mouseEvents.stream()
+            .anyMatch(event -> event.getType().equals("mousedown"));
+    }
+
+    @Override
     public boolean isPointerReleased(Rect area) {
-        return mouseEvents.values().stream()
+        return mouseEvents.stream()
             .filter(event -> event.getType().equals("mouseup"))
             .map(this::getPointerCanvasPosition)
             .anyMatch(canvasPosition -> area.contains(canvasPosition));
@@ -179,7 +197,7 @@ public class TeaInputDevice implements InputDevice {
 
     @Override
     public boolean isPointerReleased() {
-        return mouseEvents.values().stream()
+        return mouseEvents.stream()
             .anyMatch(event -> event.getType().equals("mouseup"));
     }
 
@@ -200,18 +218,22 @@ public class TeaInputDevice implements InputDevice {
 
     @Override
     public boolean isKeyPressed(KeyCode keyCode) {
-        return keyEvents.get(BROWSER_KEY_CODE_MAPPING.get(keyCode)).stream()
-            .anyMatch(event -> event.getType().equals("keydown"));
+        int browserKeyCode = BROWSER_KEY_CODE_MAPPING.get(keyCode);
+        return keysDown.contains(browserKeyCode);
     }
 
     @Override
     public boolean isKeyReleased(KeyCode keyCode) {
-        return keyEvents.get(BROWSER_KEY_CODE_MAPPING.get(keyCode)).stream()
-            .anyMatch(event -> event.getType().equals("keyup"));
+        int browserKeyCode = BROWSER_KEY_CODE_MAPPING.get(keyCode);
+        return keysUp.contains(browserKeyCode);
     }
 
     @Override
     public String requestTextInput(String label, String initialValue) {
-        return Browser.prompt(label, initialValue);
+        return Window.prompt(label, initialValue);
+    }
+
+    @Override
+    public void update(float deltaTime) {
     }
 }

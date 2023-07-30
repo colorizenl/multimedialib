@@ -7,13 +7,14 @@
 package nl.colorize.multimedialib.math;
 
 import com.google.common.base.Preconditions;
+import lombok.Value;
 import nl.colorize.util.animation.Interpolation;
 
-import java.util.Objects;
-
 /**
- * Point with X and Y coordinates, defined with float precision.
+ * Describes a point with X and Y coordinates within a two-dimensional space.
+ * Point coordinates have float precision, and point instances are immutable.
  */
+@Value
 public class Point2D {
 
     private float x;
@@ -26,64 +27,16 @@ public class Point2D {
         this.y = y;
     }
 
-    public void setX(float x) {
-        this.x = x;
-    }
-
-    public float getX() {
-        return x;
-    }
-
-    public void setY(float y) {
-        this.y = y;
-    }
-
-    public float getY() {
-        return y;
-    }
-
-    public void set(float x, float y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    public void set(Point2D p) {
-        set(p.getX(), p.getY());
-    }
-
-    public void move(float deltaX, float deltaY) {
-        x += deltaX;
-        y += deltaY;
-    }
-
-    public void add(float deltaX, float deltaY) {
-        move(deltaX, deltaY);
-    }
-
-    public void add(Point2D p) {
-        add(p.getX(), p.getY());
-    }
-
-    public void add(Vector vector) {
-        add(vector.getX(), vector.getY());
-    }
-
-    public void multiply(float deltaX, float deltaY) {
-        x *= deltaX;
-        y *= deltaY;
+    public boolean isOrigin() {
+        return Math.abs(x) < EPSILON && Math.abs(y) < EPSILON;
     }
 
     /**
      * Returns the distance between this point and the specified other point.
      */
     public float distanceTo(Point2D other) {
-        if (equals(other)) {
-            return 0f;
-        }
-
         float deltaX = Math.abs(other.x - x);
         float deltaY = Math.abs(other.y - y);
-
         return (float) Math.sqrt(deltaX * deltaX + deltaY * deltaY);
     }
 
@@ -92,10 +45,6 @@ public class Point2D {
      * point. If the points are identical this will return an angle of 0.
      */
     public float angleTo(Point2D other) {
-        if (equals(other)) {
-            return 0f;
-        }
-
         double radians = Math.atan2(other.y - y, other.x - x);
         float angle = (float) Math.toDegrees(radians);
 
@@ -113,7 +62,6 @@ public class Point2D {
     public Point2D findCenter(Point2D other) {
         float averageX = (x + other.x) / 2f;
         float averageY = (y + other.y) / 2f;
-        
         return new Point2D(averageX, averageY);
     }
     
@@ -140,30 +88,16 @@ public class Point2D {
         return interpolate(other, delta, Interpolation.LINEAR);
     }
 
-    public boolean isOrigin() {
-        return Math.abs(x) < EPSILON && Math.abs(y) < EPSILON;
-    }
-
-    public Point2D copy() {
-        return new Point2D(x, y);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o instanceof Point2D other) {
-            return Math.abs(x - other.x) < EPSILON && Math.abs(y - other.y) < EPSILON;
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(x, y);
+    /**
+     * Returns a new point that starts from this point and then adds the
+     * specified offset.
+     */
+    public Point2D move(float deltaX, float deltaY) {
+        return new Point2D(x + deltaX, y + deltaY);
     }
 
     @Override
     public String toString() {
-        return "(" + Math.round(x) + ", " + Math.round(y) + ")";
+        return String.format("(%d, %d)", Math.round(x), Math.round(y));
     }
 }

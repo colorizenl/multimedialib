@@ -25,12 +25,6 @@ public class Browser {
     )
     public static native void log(String message);
 
-    @JSBody(script = "return window.location.href;")
-    public static native String getPageURL();
-
-    @JSBody(script = "return window.location.search.toString();")
-    public static native String getPageQueryString();
-
     @JSBody(script = "return navigator.userAgent;")
     public static native String getUserAgent();
 
@@ -46,29 +40,8 @@ public class Browser {
     @JSBody(script = "return window.screen.height;")
     public static native int getScreenHeight();
 
-    @JSBody(script = "return window.devicePixelRatio;")
-    public static native float getDevicePixelRatio();
-
-    @JSBody(script = "return window.ontouchstart !== undefined;")
+    @JSBody(script = "return (\"ontouchstart\" in window) || navigator.maxTouchPoints > 0")
     public static native boolean isTouchSupported();
-
-    @JSBody(
-        params = {"key", "value"},
-        script = "window.localStorage.setItem(key, value);"
-    )
-    public static native void setLocalStorage(String key, String value);
-
-    @JSBody(
-        params = {"key"},
-        script = "return window.localStorage.getItem(key);"
-    )
-    public static native String getLocalStorage(String key);
-
-    @JSBody(
-        params = {"label", "initialValue"},
-        script = "return window.prompt(label, initialValue);"
-    )
-    public static native String prompt(String label, String initialValue);
 
     @JSBody(script = "window.prepareAnimationLoop();")
     public static native void prepareAnimationLoop();
@@ -78,6 +51,12 @@ public class Browser {
         script = "window.registerErrorHandler(callback);"
     )
     public static native void registerErrorHandler(ErrorCallback callback);
+
+    @JSBody(
+        params = {"family", "url", "callback"},
+        script = "return window.preloadFontFace(family, url, callback);"
+    )
+    public static native void preloadFontFace(String family, String url, FontLoadCallback callback);
 
     // ----------------------------------------
     // JavaScript framework interfaces

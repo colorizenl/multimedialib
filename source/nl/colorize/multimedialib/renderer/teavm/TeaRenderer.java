@@ -8,14 +8,21 @@ package nl.colorize.multimedialib.renderer.teavm;
 
 import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
-import nl.colorize.multimedialib.renderer.FrameSync;
-import nl.colorize.multimedialib.renderer.RenderCapabilities;
+import nl.colorize.multimedialib.renderer.FrameStats;
+import nl.colorize.multimedialib.renderer.GraphicsMode;
+import nl.colorize.multimedialib.renderer.InputDevice;
+import nl.colorize.multimedialib.renderer.MediaLoader;
+import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Renderer;
-import nl.colorize.multimedialib.scene.RenderContext;
+import nl.colorize.multimedialib.renderer.pixi.PixiGraphics;
+import nl.colorize.multimedialib.renderer.three.ThreeGraphics;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.multimedialib.stage.StageObserver;
+import nl.colorize.multimedialib.stage.StageVisitor;
+import nl.colorize.util.Stopwatch;
 import org.teavm.jso.browser.Window;
+
+import java.io.File;
 
 /**
  * Renderer based on <a href="http://teavm.org">TeaVM</a> that is transpiled to
@@ -29,28 +36,30 @@ public class TeaRenderer implements Renderer {
     private TeaGraphics graphics;
     private TeaInputDevice inputDevice;
     private TeaMediaLoader mediaLoader;
+    private TeaNetwork network;
     private SceneContext context;
-    private FrameSync frameSync;
 
-    public TeaRenderer(DisplayMode displayMode, TeaGraphics graphics) {
+    /**
+     * Initializes the TeaVM renderer using the specified graphics library.
+     * Applications should use one of the factory methods rather than using
+     * this constructor directly.
+     */
+    private TeaRenderer(DisplayMode displayMode, TeaGraphics graphics) {
         this.displayMode = displayMode;
         this.graphics = graphics;
-        this.mediaLoader = new TeaMediaLoader(graphics);
         this.inputDevice = new TeaInputDevice(displayMode.canvas(), graphics);
-        this.frameSync = new FrameSync(displayMode);
     }
 
     @Override
     public void start(Scene initialScene, ErrorHandler errorHandler) {
-        context = new RenderContext(this);
+        mediaLoader = new TeaMediaLoader(graphics);
+        network = new TeaNetwork();
+
+        context = new SceneContext(this, new Stopwatch());
         context.changeScene(initialScene);
 
-        graphics.init();
-        if (graphics instanceof StageObserver observer) {
-            context.getStage().getObservers().add(observer);
-        }
-
         inputDevice.bindEventHandlers();
+        graphics.init();
 
         Browser.prepareAnimationLoop();
         Browser.registerErrorHandler(error -> handleError(errorHandler, error));
@@ -64,15 +73,10 @@ public class TeaRenderer implements Renderer {
      */
     private void onAnimationFrame(double timestamp) {
         if (prepareCanvas()) {
-            frameSync.requestFrame((long) timestamp, deltaTime -> {
-                context.getFrameStats().markFrameStart();
-                context.update(deltaTime);
-                context.getFrameStats().markFrameUpdate();
-                context.getStage().visit(graphics);
-                context.getFrameStats().markFrameRender();
-
+            if (context.syncFrame()) {
+                renderFrame();
                 inputDevice.reset();
-            });
+            }
         }
 
         // Request the next frame. This is intentionally done *after*
@@ -97,15 +101,74 @@ public class TeaRenderer implements Renderer {
         }
     }
 
-    @Override
-    public RenderCapabilities getCapabilities() {
-        TeaNetwork network = new TeaNetwork();
-        return new RenderCapabilities(graphics.getGraphicsMode(), displayMode,
-            graphics, inputDevice, mediaLoader, network);
+    private void renderFrame() {
+        context.getFrameStats().markStart(FrameStats.PHASE_FRAME_RENDER);
+        context.getStage().visit(graphics);
+        context.getFrameStats().markEnd(FrameStats.PHASE_FRAME_RENDER);
     }
 
     private void handleError(ErrorHandler errorHandler, String error) {
         RuntimeException cause = new RuntimeException("JavaScript error\n\n" + error);
         errorHandler.onError(context, cause);
+    }
+
+    @Override
+    public GraphicsMode getGraphicsMode() {
+        return graphics.getGraphicsMode();
+    }
+
+    @Override
+    public DisplayMode getDisplayMode() {
+        return displayMode;
+    }
+
+    @Override
+    public StageVisitor getGraphics() {
+        return graphics;
+    }
+
+    @Override
+    public InputDevice getInput() {
+        return inputDevice;
+    }
+
+    @Override
+    public MediaLoader getMediaLoader() {
+        return mediaLoader;
+    }
+
+    @Override
+    public Network getNetwork() {
+        return network;
+    }
+
+    @Override
+    public void takeScreenshot(File outputFile) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void terminate() {
+        throw new UnsupportedOperationException();
+    }
+
+    public static TeaRenderer withCanvas(DisplayMode displayMode) {
+        TeaGraphics graphics = new HtmlCanvasGraphics(displayMode.canvas());
+        return new TeaRenderer(displayMode, graphics);
+    }
+
+    public static TeaRenderer withWebGL(DisplayMode displayMode) {
+        TeaGraphics graphics = new WebGL(displayMode.canvas());
+        return new TeaRenderer(displayMode, graphics);
+    }
+
+    public static TeaRenderer withPixi(DisplayMode displayMode) {
+        TeaGraphics graphics = new PixiGraphics(displayMode.canvas());
+        return new TeaRenderer(displayMode, graphics);
+    }
+
+    public static TeaRenderer withThree(DisplayMode displayMode) {
+        TeaGraphics graphics = new ThreeGraphics(displayMode.canvas());
+        return new TeaRenderer(displayMode, graphics);
     }
 }

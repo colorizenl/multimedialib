@@ -21,15 +21,20 @@ public record WindowOptions(
     FilePointer iconFile,
     boolean fullscreen,
     ApplicationMenuListener appMenuListener,
-    boolean embedded) {
+    boolean embedded
+) {
 
-    public static final FilePointer DEFAULT_ICON = new FilePointer("colorize-icon-32.png");
+    private static final FilePointer DEFAULT_ICON = new FilePointer("colorize-icon-32.png");
 
     public WindowOptions(String title) {
         this(title, DEFAULT_ICON, false, null, false);
     }
 
-    public WindowOptions(String title, FilePointer iconFile, ApplicationMenuListener appMenuListener) {
-        this(title, iconFile, false, appMenuListener, false);
+    public WindowOptions(String title, FilePointer iconFile, ApplicationMenuListener appMenu) {
+        this(title, iconFile, false, appMenu, false);
+    }
+
+    public WindowOptions(String title, ApplicationMenuListener appMenu) {
+        this(title, DEFAULT_ICON, false, appMenu, false);
     }
 }

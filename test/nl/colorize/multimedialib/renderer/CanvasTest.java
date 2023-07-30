@@ -16,7 +16,7 @@ public class CanvasTest {
 
     @Test
     public void testFixedCanvas() {
-        Canvas canvas = Canvas.forNative(800, 600);
+        Canvas canvas = Canvas.flexible(800, 600);
         canvas.resizeScreen(1024, 768);
 
         assertEquals(0, canvas.toScreenX(0), EPSILON);
@@ -30,7 +30,7 @@ public class CanvasTest {
 
     @Test
     public void testOffset() {
-        Canvas canvas = Canvas.forSize(800, 600);
+        Canvas canvas = Canvas.scale(800, 600);
         canvas.resizeScreen(1024, 768);
         canvas.offsetScreen(0, 20);
 
@@ -45,7 +45,7 @@ public class CanvasTest {
 
     @Test
     void canvasNeedsToStretch() {
-        Canvas canvas = Canvas.forSize(800, 600);
+        Canvas canvas = Canvas.scale(800, 600);
         canvas.resizeScreen(1200, 900);
 
         assertEquals(0, canvas.toCanvasX(0), EPSILON);
@@ -59,7 +59,7 @@ public class CanvasTest {
 
     @Test
     void canvasNeedsToSquash() {
-        Canvas canvas = Canvas.forSize(800, 600);
+        Canvas canvas = Canvas.scale(800, 600);
         canvas.resizeScreen(400, 300);
 
         assertEquals(0, canvas.toCanvasX(0), EPSILON);
@@ -69,5 +69,25 @@ public class CanvasTest {
         assertEquals(0, canvas.toScreenX(0), EPSILON);
         assertEquals(200, canvas.toScreenX(400), EPSILON);
         assertEquals(400, canvas.toScreenX(800), EPSILON);
+    }
+
+    @Test
+    void scaleToDifferentAspectRatio() {
+        Canvas canvas = Canvas.scale(800, 600);
+        canvas.resizeScreen(600, 800);
+
+        assertEquals(0f, canvas.toScreenX(0), EPSILON);
+        assertEquals(533.3f, canvas.toScreenX(400), EPSILON);
+        assertEquals(1066.6, canvas.toScreenX(800), EPSILON);
+    }
+
+    @Test
+    void fitToDifferentAspectRatio() {
+        Canvas canvas = Canvas.fit(800, 600);
+        canvas.resizeScreen(600, 800);
+
+        assertEquals(0f, canvas.toScreenX(0), EPSILON);
+        assertEquals(300f, canvas.toScreenX(400), EPSILON);
+        assertEquals(600f, canvas.toScreenX(800), EPSILON);
     }
 }

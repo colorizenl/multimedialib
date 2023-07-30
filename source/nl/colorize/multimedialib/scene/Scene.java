@@ -7,12 +7,12 @@
 package nl.colorize.multimedialib.scene;
 
 /**
- * MultimediaLib applications are divided into a number of *scenes*. Each
- * scene represents a discrete part or phase of the application that is active
- * for some period of time. Only one scene can be active at any point in time,
- * but sub-scenes can be attached to split large or complex scenes. The
- * currently active scene and its sub-scenes will receive frame updates for as
- * long as the parent scene is active.
+ * MultimediaLib applications are split into a number of scenes, each
+ * representing a discrete phase of the application. Only one scene can be
+ * active at the same time, but sub-scenes can be attached to split large or
+ * complex scenes into different parts. The currently active scene, and its
+ * attached sub-scenes, will receive frame updates for as long as the parent
+ * scene is active.
  */
 @FunctionalInterface
 public interface Scene {
@@ -44,20 +44,15 @@ public interface Scene {
 
     /**
      * Indicates the scene has been completed and no longer wishes to receive
-     * frame updates. If this scene is the currently active scene, it might not
-     * actually end until a new scene is requested. If this scene is a completed
-     * sub-scene, meaning there is a parent scene which is still active, this
-     * sub-scene will end after the current frame.
+     * frame updates.
+     * <p>
+     * If this scene is the currently active scene, it might not actually end
+     * until a new scene is requested.
+     * <p>
+     * If this scene is a completed sub-scene, meaning there is a parent scene
+     * which is still active, this sub-scene will end after the current frame.
      */
     default boolean isCompleted() {
         return false;
-    }
-
-    /**
-     * Wraps a {@link Updatable} callback for receiving frame updates into a
-     * {@link Scene} instance.
-     */
-    public static Scene wrap(Updatable callback) {
-        return (context, deltaTime) -> callback.update(deltaTime);
     }
 }

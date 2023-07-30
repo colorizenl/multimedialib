@@ -20,7 +20,7 @@ import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.stage.Layer3D;
+import nl.colorize.multimedialib.stage.World3D;
 import nl.colorize.multimedialib.stage.OutlineFont;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.multimedialib.stage.Stage;
@@ -63,18 +63,19 @@ public class Demo3D implements Scene, ErrorHandler {
         font = mediaLoader.loadDefaultFont(12, ColorRGB.WHITE);
         logo = mediaLoader.loadImage(LOGO_FILE);
 
-        Layer3D stage = context.getStage().getLayer3D();
+        World3D stage = context.getStage().getWorld();
         createFloor(stage);
         createModels(stage, mediaLoader);
-        stage.moveCamera(new Point3D(0f, 30f, AREA_SIZE * 0.6f), new Point3D(0f, 0f, 0f));
+        stage.setCameraPosition(new Point3D(0f, 30f, AREA_SIZE * 0.6f));
+        stage.setCameraTarget(new Point3D(0f, 0f, 0f));
 
         hud = new Text("", font);
-        hud.getPosition().set(20, 20);
+        hud.setPosition(20, 20);
         hud.setLineHeight(20);
-        context.getStage().getDefaultLayer().add(hud);
+        context.getStage().getRoot().addChild(hud);
     }
 
-    private void createFloor(Layer3D stage) {
+    private void createFloor(World3D stage) {
         boolean white = true;
 
         for (int i = -5; i <= 5; i++) {
@@ -83,7 +84,7 @@ public class Demo3D implements Scene, ErrorHandler {
                 ColorRGB color = white ? ColorRGB.WHITE : new ColorRGB(50, 50, 50);
                 PolygonModel tile = createTile(tileSize, color, i == 0 && j == 0);
                 tile.getTransform().setPosition(i * tileSize, 0f, j * tileSize);
-                stage.add(tile);
+                stage.getChildren().add(tile);
 
                 white = !white;
             }
@@ -102,7 +103,7 @@ public class Demo3D implements Scene, ErrorHandler {
         }
     }
 
-    private void createModels(Layer3D stage, MediaLoader mediaLoader) {
+    private void createModels(World3D stage, MediaLoader mediaLoader) {
         models = new ArrayList<>();
         walkVectors = new ArrayList<>();
         PolygonModel template = mediaLoader.loadModel(MODEL_FILE);
@@ -111,7 +112,7 @@ public class Demo3D implements Scene, ErrorHandler {
             PolygonModel model = template.copy();
             model.getTransform().setPosition(generateRandomModelPosition());
             model.getTransform().setRotation(0f, -90f, 0f);
-            stage.add(model);
+            stage.getChildren().add(model);
             models.add(model);
             walkVectors.add(generateRandomWalkVector());
         }
@@ -131,10 +132,10 @@ public class Demo3D implements Scene, ErrorHandler {
 
     @Override
     public void update(SceneContext context, float deltaTime) {
-        InputDevice inputDevice = context.getInputDevice();
+        InputDevice inputDevice = context.getInput();
 
         if (inputDevice.isPointerReleased(context.getCanvas().getBounds())) {
-            pointer = inputDevice.getPointers().get(0);
+            pointer = inputDevice.getPointer().orElse(new Point2D(0f, 0f));
         }
 
         updateModels(context.getStage());
@@ -147,8 +148,9 @@ public class Demo3D implements Scene, ErrorHandler {
         for (int i = 0; i < models.size(); i++) {
             PolygonModel model = models.get(i);
             Point2D walkVector = walkVectors.get(i);
+            model.getTransform().addPosition(walkVector.getX(), 0f, walkVector.getY());
+
             Point3D position = model.getTransform().getPosition();
-            position.add(walkVector.getX(), 0f, walkVector.getY());
 
             if (!areaBounds.contains(position.getX(), position.getZ())) {
                 Point2D walk = new Point2D(-walkVectors.get(i).getX(), -walkVectors.get(i).getY());
@@ -169,7 +171,7 @@ public class Demo3D implements Scene, ErrorHandler {
     @Override
     public void onError(SceneContext context, Exception cause) {
         Text errorText = new Text("Error:\n\n" + cause.getMessage(), font, Align.CENTER);
-        errorText.setPosition(context.getCanvas().getCenter());
-        context.getStage().getDefaultLayer().add(errorText);
+        errorText.getTransform().setPosition(context.getCanvas().getCenter());
+        context.getStage().getRoot().addChild(errorText);
     }
 }

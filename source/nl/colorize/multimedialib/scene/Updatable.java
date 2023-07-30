@@ -7,15 +7,15 @@
 package nl.colorize.multimedialib.scene;
 
 /**
- * Defines a standardized interface for all objects that should be updated
- * every frame during the animation loop.
+ * Standardized interface for all objects that should be updated every frame
+ * during the animation loop.
  */
 @FunctionalInterface
 public interface Updatable {
 
     /**
      * Updates this object for the current frame. {@code deltaTime} indicates
-     * the elapsed time since the last frame, in seconds.
+     * the elapsed time since the last frame update, in seconds.
      */
     public void update(float deltaTime);
 }

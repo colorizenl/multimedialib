@@ -1,8 +1,8 @@
 plugins {
-    id "io.freefair.lombok" version "8.0.1"
-    id "com.github.node-gradle.node" version "3.5.1"
-    id "com.github.ben-manes.versions" version "0.46.0"
-    id "nl.colorize.gradle.application" version "2023.6"
+    id "io.freefair.lombok" version "8.1.0"
+    id "com.github.node-gradle.node" version "5.0.0"
+    id "com.github.ben-manes.versions" version "0.47.0"
+    id "nl.colorize.gradle.application" version "2023.7"
 }
 
 apply plugin: "java-library"
@@ -11,7 +11,7 @@ apply plugin: "maven-publish"
 apply plugin: "signing"
 
 group = "nl.colorize"
-version = "2023.2"
+version = "2023.4"
 sourceCompatibility = "17"
 targetCompatibility = "17"
 compileJava.options.encoding = "UTF-8"
@@ -22,21 +22,18 @@ sourceSets.test.java.srcDirs = ["test"]
 node.download = false
 npm_outdated.ignoreExitValue = true
 
-ext.libgdxVersion = "1.11.0"
-ext.teavmVersion = "0.8.0-dev-1"
+ext.libgdxVersion = "1.12.0"
+ext.teavmVersion = "0.8.1"
 
 repositories {
     mavenCentral()
-    maven {
-        url "https://teavm.org/maven/repository"
-    }
     maven {
         url "https://jitpack.io"
     }
 }
 
 dependencies {
-    api "nl.colorize:colorize-java-commons:2023.6"
+    api "nl.colorize:colorize-java-commons:2023.12"
 
     implementation "com.badlogicgames.gdx:gdx:${libgdxVersion}"
     implementation "com.badlogicgames.gdx:gdx-platform:${libgdxVersion}:natives-desktop"
@@ -44,19 +41,19 @@ dependencies {
     implementation "com.badlogicgames.gdx:gdx-lwjgl3-glfw-awt-macos:${libgdxVersion}"
     implementation "com.badlogicgames.gdx:gdx-freetype:${libgdxVersion}"
     implementation "com.badlogicgames.gdx:gdx-freetype-platform:${libgdxVersion}:natives-desktop"
-    implementation "com.badlogicgames.gdx:gdx-tools:${libgdxVersion}"
+
+    implementation("com.badlogicgames.gdx:gdx-tools:${libgdxVersion}") {
+        exclude group: "org.lwjgl.lwjgl"
+    }
 
     implementation "org.teavm:teavm-jso:${teavmVersion}"
     implementation "org.teavm:teavm-jso-apis:${teavmVersion}"
     implementation "org.teavm:teavm-classlib:${teavmVersion}"
     implementation "org.teavm:teavm-tooling:${teavmVersion}"
 
-    implementation "javazoom:jlayer:1.0.1"
-    implementation "org.java-websocket:Java-WebSocket:1.5.3"
-    implementation "org.slf4j:slf4j-jdk14:1.7.36"
     implementation "com.github.mgsx-dev.gdx-gltf:gltf:2.1.0"
-
-    testImplementation "org.junit.jupiter:junit-jupiter:5.9.2"
+    implementation "com.tagtraum:casampledsp-complete:0.9.29"
+    testImplementation "org.junit.jupiter:junit-jupiter:5.10.0"
 }
 
 java {
@@ -71,8 +68,15 @@ test {
 jacocoTestReport {
     afterEvaluate {
         classDirectories.from = files(classDirectories.files.collect {
-            fileTree(dir: it, exclude: ["**/java2d/**", "**/libgdx/**", "**/teavm/**",
-                                        "**/pixi/**", "**/three/**", "**/demo/**"])
+            fileTree(dir: it, exclude: [
+                "**/java2d/**",
+                "**/libgdx/**",
+                "**/teavm/**",
+                "**/webgl/**",
+                "**/pixi/**",
+                "**/three/**",
+                "**/demo/**"
+            ])
         })
     }
 }
@@ -102,23 +106,10 @@ xcode {
 }
 
 npmInstall.doLast {
-    def jsLibraryFiles = [
-        "node_modules/pixi.js/dist/browser/pixi.min.js",
-        "node_modules/pixi.js/dist/browser/pixi.min.js.map",
-        "node_modules/pixi-heaven/dist/pixi-heaven.umd.js",
-        "node_modules/pixi-heaven/dist/pixi-heaven.umd.js.map",
-        "node_modules/three/build/three.min.js",
-        "node_modules/peerjs/dist/peerjs.min.js",
-        "node_modules/peerjs/dist/peerjs.min.js.map"
-    ];
-
     copy {
-        from jsLibraryFiles
+        from "node_modules/pixi.js/dist", "node_modules/three/build", "node_modules/peerjs/dist"
         into "resources/browser/lib"
     }
-
-    file("resources/browser/lib/js-libraries.txt").text =
-        jsLibraryFiles.collect { it.split("/").last() }.join("\n")
 }
 
 createApplicationBundle.doLast {

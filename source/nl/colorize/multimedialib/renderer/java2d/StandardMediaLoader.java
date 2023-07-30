@@ -15,12 +15,12 @@ import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.UnsupportedGraphicsModeException;
+import nl.colorize.multimedialib.renderer.headless.HeadlessAudio;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.OutlineFont;
 import nl.colorize.multimedialib.stage.PolygonModel;
-import nl.colorize.multimedialib.stage.Shader;
 import nl.colorize.util.LoadUtils;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
@@ -53,6 +53,7 @@ public class StandardMediaLoader implements MediaLoader {
     private Function<FilePointer, ResourceFile> locator;
     private Set<String> classPathResources;
 
+    private static final String APPLICATION_DATA_FILE_NAME = "data.properties";
     private static final Logger LOGGER = LogHelper.getLogger(StandardMediaLoader.class);
 
     /**
@@ -95,8 +96,9 @@ public class StandardMediaLoader implements MediaLoader {
     public Image loadImage(FilePointer file) {
         try {
             ResourceFile source = toResourceFile(file);
-            BufferedImage loadedImage = Utils2D.loadImage(source.openStream());
-            return new AWTImage(loadedImage, file);
+            BufferedImage original = Utils2D.loadImage(source.openStream());
+            BufferedImage image = Utils2D.makeImageCompatible(original);
+            return new AWTImage(image, file);
         } catch (IOException e) {
             throw new MediaException("Cannot load image from " + file.path(), e);
         }
@@ -104,7 +106,12 @@ public class StandardMediaLoader implements MediaLoader {
 
     @Override
     public Audio loadAudio(FilePointer file) {
-        return new MP3(toResourceFile(file));
+        if (Platform.isMac()) {
+            return new JavaSoundPlayer(toResourceFile(file));
+        } else {
+            LOGGER.warning("Java Sound not supported on platform " + Platform.getPlatformName());
+            return new HeadlessAudio();
+        }
     }
 
     @Override
@@ -141,11 +148,6 @@ public class StandardMediaLoader implements MediaLoader {
     }
 
     @Override
-    public Shader loadShader(FilePointer vertexShaderFile, FilePointer fragmentShaderFile) {
-        return Shader.NO_OP;
-    }
-
-    @Override
     public boolean containsResourceFile(FilePointer file) {
         if (classPathResources.isEmpty()) {
             return toResourceFile(file).exists();
@@ -154,29 +156,35 @@ public class StandardMediaLoader implements MediaLoader {
         }
     }
 
-    @Override
-    public Properties loadApplicationData(String appName, String fileName) {
-        File file = Platform.getApplicationData(appName, fileName);
-
-        if (!file.exists()) {
-            return new Properties();
-        }
-
-        try {
-            return LoadUtils.loadProperties(file, Charsets.UTF_8);
-        } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Unable to load application data", e);
-            return new Properties();
-        }
+    protected File getApplicationDataFile(String appName) {
+        Preconditions.checkArgument(appName.length() >= 2, "Invalid application name");
+        return Platform.getApplicationData(appName, APPLICATION_DATA_FILE_NAME);
     }
 
     @Override
-    public void saveApplicationData(Properties data, String appName, String fileName) {
+    public Properties loadApplicationData(String appName) {
+        File dataFile = getApplicationDataFile(appName);
+
+        if (dataFile.exists()) {
+            try {
+                return LoadUtils.loadProperties(dataFile, Charsets.UTF_8);
+            } catch (IOException e) {
+                LOGGER.log(Level.WARNING, "Unable to load application data", e);
+            }
+        }
+
+        // Default to returning an empty Properties instance
+        // if the file cannot be loaded for whatever reason.
+        return new Properties();
+    }
+
+    @Override
+    public void saveApplicationData(String appName, Properties data) {
         try {
-            File file = Platform.getApplicationData(appName, fileName);
-            LoadUtils.saveProperties(data, file, Charsets.UTF_8);
+            File dataFile = getApplicationDataFile(appName);
+            LoadUtils.saveProperties(data, dataFile, Charsets.UTF_8);
         } catch (IOException e) {
-            throw new MediaException("Unable to save application data", e);
+            LOGGER.log(Level.WARNING, "Unable to save application data", e);
         }
     }
 

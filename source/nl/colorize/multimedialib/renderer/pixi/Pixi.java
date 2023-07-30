@@ -34,9 +34,6 @@ public interface Pixi extends JSObject {
         public void setY(float y);
 
         @JSProperty
-        public void setZIndex(int zIndex);
-
-        @JSProperty
         public void setAlpha(float alpha);
 
         @JSProperty
@@ -49,10 +46,10 @@ public interface Pixi extends JSObject {
         public void setText(String text);
 
         @JSProperty
-        public Texture getTexture();
+        public void setTexture(Texture texture);
 
         @JSProperty
-        public void setTint(int color);
+        public Texture getTexture();
 
         @JSProperty
         public void setTintEnabled(boolean tintEnabled);
@@ -61,10 +58,17 @@ public interface Pixi extends JSObject {
         public boolean isTintEnabled();
 
         @JSProperty
-        public void setFilters(Filter[] filters);
+        public Pixi.Texture getOriginalTexture();
+
+        @JSProperty
+        public void setOriginalTexture(Pixi.Texture texture);
 
         @JSProperty
         public DisplayObject[] getChildren();
+
+        public void addChild(DisplayObject child);
+
+        public void removeChild(DisplayObject child);
 
         public void beginFill(int color, float alpha);
 
@@ -83,8 +87,6 @@ public interface Pixi extends JSObject {
         public void moveTo(float x, float y);
 
         public void lineTo(float x, float y);
-
-        public void addChild(DisplayObject child);
     }
 
     public interface Rectangle extends JSObject {
@@ -119,11 +121,11 @@ public interface Pixi extends JSObject {
         @JSProperty
         public Rectangle getFrame();
 
+        @JSProperty
+        public String getTextureImageId();
+
         public void update();
 
         public void updateUvs();
-    }
-
-    public interface Filter extends JSObject {
     }
 }

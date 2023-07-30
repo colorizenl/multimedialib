@@ -7,12 +7,10 @@
 package nl.colorize.multimedialib.scene;
 
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.stage.Layer2D;
-import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.util.animation.Timeline;
@@ -26,100 +24,58 @@ import java.util.List;
  * where the particles slowly reveal the screen. Both effects would typically
  * be used on either side of the transition.
  */
-public class WipeTransition extends Effect {
+public class WipeTransition implements InteractiveObject {
 
-    private Timeline timeline;
+    private Container container;
     private boolean reverse;
     private Image particleImage;
     private float duration;
     private ColorRGB fillColor;
-    private List<List<Particle>> particles;
+    private List<Particle> particles;
 
     public static final FilePointer DIAMOND = new FilePointer("effects/particle-diamond.png");
     public static final FilePointer CIRCLE = new FilePointer("effects/particle-circle.png");
 
-    private static final String LAYER = "$$WipeTransition";
     private static final int PARTICLE_SIZE = 64;
+    private static final int PADDING = PARTICLE_SIZE / 2;
 
     /**
      * Creates a new wipe transition based on the specified particle image. If
      * {@code reverse} is true, the transition will start fully obscured and
      * will then play backwards, slowly revealing the stage.
      */
-    public WipeTransition(FilePointer imageFile, ColorRGB color, float duration, boolean reverse) {
-        this.timeline = new Timeline()
-            .addKeyFrame(0f, 0f)
-            .addKeyFrame(duration, 1f);
-
+    public WipeTransition(Image particleImage, ColorRGB color, float duration, boolean reverse) {
+        this.container = new Container();
         this.duration = duration;
+        this.particleImage = particleImage;
         this.fillColor = color;
         this.reverse = reverse;
         this.particles = new ArrayList<>();
-
-        addStartHandler(() -> initialize(imageFile));
-        addFrameHandler(timeline::movePlayhead);
-        addFrameHandler(this::updateParticles);
-        addFrameHandler(this::updateFill);
-        stopIf(timeline::isCompleted);
     }
 
-    /**
-     * Creates a new wipe transition based on diamond-shaped particles. If
-     * {@code reverse} is true, the transition will start fully obscured and
-     * will then play backwards, slowly revealing the stage.
-     */
-    public WipeTransition(ColorRGB color, float duration, boolean reverse) {
-        this(DIAMOND, color, duration, reverse);
-    }
+    @Override
+    public void start(SceneContext context) {
+        int columnIndex = 0;
+        int endX = context.getCanvas().getWidth() + PADDING;
+        int endY = context.getCanvas().getHeight() + PADDING;
 
-    private void initialize(FilePointer imageFile) {
-        SceneContext context = getContext();
-        particleImage = context.getMediaLoader().loadImage(imageFile);
+        for (int x = -PADDING; x <= endX; x += PARTICLE_SIZE) {
+            columnIndex++;
 
-        generateParticles(context.getCanvas());
-
-        particles.stream()
-            .flatMap(column -> column.stream())
-            .forEach(particle -> addParticleSprite(context, particle.sprite));
-    }
-
-    private void generateParticles(Canvas canvas) {
-        particles.clear();
-
-        for (int x = 0; x <= canvas.getWidth(); x += PARTICLE_SIZE) {
-            List<Particle> column = new ArrayList<>();
-            particles.add(column);
-
-            for (int y = 0; y <= canvas.getHeight(); y += PARTICLE_SIZE) {
-                float pDelay = (column.size() + 1) * 0.04f;
-                Particle particle = new Particle(x, y, pDelay, duration * 0.5f);
+            for (int y = -PADDING; y <= endY; y += PARTICLE_SIZE) {
+                Particle particle = new Particle(x, y, columnIndex * 0.04f, duration * 0.5f);
                 particle.sprite = new Sprite(particleImage);
-                column.add(particle);
+                particles.add(particle);
+                container.addChild(particle.sprite);
             }
         }
     }
 
-    private void addParticleSprite(SceneContext context, Sprite sprite) {
-        Layer2D layer = context.getStage().retrieveLayer(LAYER);
-        layer.add(sprite);
-        removeAfterwards(sprite);
-    }
-
-    private void updateParticles(float deltaTime) {
-        for (List<Particle> column : particles) {
-            for (Particle particle : column) {
-                particle.timeline.movePlayhead(deltaTime);
-                particle.sprite.setPosition(particle.position);
-                particle.sprite.setTransform(getParticleTransform(particle));
-            }
-        }
-    }
-
-    private void updateFill(float deltaTime) {
-        if (!reverse && fillColor != null && timeline.getDelta() >= 0.8f) {
-            Primitive fill = Primitive.of(getContext().getCanvas().getBounds(), fillColor);
-            getContext().getStage().retrieveLayer(LAYER).add(fill);
-            removeAfterwards(fill);
+    @Override
+    public void update(SceneContext context, float deltaTime) {
+        for (Particle particle : particles) {
+            particle.timeline.movePlayhead(deltaTime);
+            particle.sprite.getTransform().set(getParticleTransform(particle));
         }
     }
 
@@ -130,9 +86,21 @@ public class WipeTransition extends Effect {
         }
 
         Transform transform = new Transform();
+        transform.setPosition(particle.position);
         transform.setScale(Math.max(delta * 200f, 1f));
-        transform.setMask(fillColor);
+        transform.setMaskColor(fillColor);
         return transform;
+    }
+
+    @Override
+    public boolean isCompleted() {
+        return particles.stream()
+            .allMatch(particle -> particle.timeline.isCompleted());
+    }
+
+    @Override
+    public Container getContainer() {
+        return container;
     }
 
     /**

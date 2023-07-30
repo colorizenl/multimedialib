@@ -9,13 +9,11 @@ package nl.colorize.multimedialib.demo;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.Renderer;
-import nl.colorize.multimedialib.renderer.pixi.PixiGraphics;
 import nl.colorize.multimedialib.renderer.teavm.Browser;
-import nl.colorize.multimedialib.renderer.teavm.HtmlCanvasGraphics;
-import nl.colorize.multimedialib.renderer.teavm.TeaGraphics;
+import nl.colorize.multimedialib.renderer.teavm.BrowserDOM;
 import nl.colorize.multimedialib.renderer.teavm.TeaRenderer;
-import nl.colorize.multimedialib.renderer.three.ThreeGraphics;
 import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.util.http.PostData;
 
 /**
  * Launcher for the TeaVM version of the demo application. This class will be
@@ -31,20 +29,23 @@ public class TeaDemo2D {
         Browser.log("Page size: " + Math.round(Browser.getPageWidth()) + "x" +
             Math.round(Browser.getPageHeight()));
 
-        Canvas canvas = Canvas.forSize(Demo2D.DEFAULT_CANVAS_WIDTH, Demo2D.DEFAULT_CANVAS_HEIGHT);
+        Canvas canvas = Canvas.scale(Demo2D.DEFAULT_CANVAS_WIDTH, Demo2D.DEFAULT_CANVAS_HEIGHT);
         DisplayMode displayMode = new DisplayMode(canvas, BROWSER_FRAMERATE);
-
-        Renderer renderer = new TeaRenderer(displayMode, initGraphics(canvas));
+        Renderer renderer = initRenderer(displayMode);
         renderer.start(new Demo2D(), TeaDemo2D::logError);
     }
 
-    private static TeaGraphics initGraphics(Canvas canvas) {
-        if (Browser.getPageQueryString().contains("pixi")) {
-            return new PixiGraphics(canvas);
-        } else if (Browser.getPageQueryString().contains("three")) {
-            return new ThreeGraphics(canvas);
+    private static TeaRenderer initRenderer(DisplayMode displayMode) {
+        PostData queryString = BrowserDOM.getQueryString();
+
+        if (queryString.contains("webgl")) {
+            return TeaRenderer.withWebGL(displayMode);
+        } else if (queryString.contains("pixi")) {
+            return TeaRenderer.withPixi(displayMode);
+        } else if (queryString.contains("three")) {
+            return TeaRenderer.withThree(displayMode);
         } else {
-            return new HtmlCanvasGraphics(canvas);
+            return TeaRenderer.withCanvas(displayMode);
         }
     }
 

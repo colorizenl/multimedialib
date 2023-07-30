@@ -15,13 +15,13 @@ import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.multimedialib.renderer.java2d.Java2DRenderer;
 import nl.colorize.multimedialib.renderer.libgdx.GDXRenderer;
 import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.util.cli.Arg;
 import nl.colorize.util.cli.CommandLineArgumentParser;
 import nl.colorize.util.swing.ApplicationMenuListener;
 import nl.colorize.util.swing.Popups;
 
 import static nl.colorize.multimedialib.demo.Demo2D.DEFAULT_CANVAS_HEIGHT;
 import static nl.colorize.multimedialib.demo.Demo2D.DEFAULT_CANVAS_WIDTH;
-import static nl.colorize.multimedialib.renderer.WindowOptions.DEFAULT_ICON;
 
 /**
  * Launches one of the demo applications from the command line. The behavior of
@@ -32,36 +32,33 @@ import static nl.colorize.multimedialib.renderer.WindowOptions.DEFAULT_ICON;
  */
 public class DemoLauncher implements ApplicationMenuListener {
 
-    private String rendererName;
-    private String graphics;
-    private int framerate;
-    private boolean canvasZoom;
+    @Arg(name = "-renderer", usage = "Either 'java2d' or 'gdx'")
+    protected String rendererName;
+
+    @Arg(usage = "Either '2d' or '3d'")
+    protected String graphics;
+
+    @Arg(defaultValue = "60", usage = "Framerate, default is 60 fps")
+    protected int framerate;
+
+    @Arg(name = "zoom", usage = "Uses a fixed canvas size to display graphics")
+    protected boolean canvasZoom;
 
     public static void main(String[] argv) {
-        CommandLineArgumentParser args = new CommandLineArgumentParser(DemoLauncher.class)
-            .addOptional("--renderer", "Either 'java2d' or 'gdx'")
-            .addOptional("--graphics", "Either '2d' or '3d'")
-            .addOptional("--framerate", "Demo framerate, default is 60 fps")
-            .addFlag("--canvas", "Uses a fixed canvas size to display graphics")
-            .parseArgs(argv);
-
-        DemoLauncher demo = new DemoLauncher();
-        demo.rendererName = args.get("renderer").getStringOr("java2d");
-        demo.graphics = args.get("graphics").getStringOr("2d");
-        demo.framerate = args.get("framerate").getIntOr(60);
-        demo.canvasZoom = args.get("canvas").getBool();
-        demo.start();
+        CommandLineArgumentParser argParser = new CommandLineArgumentParser(DemoLauncher.class);
+        DemoLauncher launcher = argParser.parse(argv, DemoLauncher.class);
+        launcher.start();
     }
 
     private void start() {
         Canvas canvas = initCanvas();
         DisplayMode displayMode = new DisplayMode(canvas, framerate);
-        WindowOptions window = new WindowOptions("MultimediaLib - Demo", DEFAULT_ICON, this);
+        WindowOptions window = new WindowOptions("MultimediaLib - Demo", this);
 
         Renderer renderer = switch (rendererName) {
             case "java2d" -> new Java2DRenderer(displayMode, window);
             case "libgdx", "gdx" -> new GDXRenderer(getGraphicsMode(), displayMode, window);
-            default -> throw new UnsupportedOperationException("Unsupported renderer: " + rendererName);
+            default -> throw new UnsupportedOperationException("Unknown renderer: " + rendererName);
         };
 
         Scene demo = createDemoScene();
@@ -70,9 +67,9 @@ public class DemoLauncher implements ApplicationMenuListener {
 
     private Canvas initCanvas() {
         if (canvasZoom) {
-            return Canvas.forSize(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT);
+            return Canvas.scale(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT);
         } else {
-            return Canvas.forNative(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT);
+            return Canvas.flexible(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT);
         }
     }
 
@@ -80,7 +77,7 @@ public class DemoLauncher implements ApplicationMenuListener {
         return switch (graphics) {
             case "2d" -> GraphicsMode.MODE_2D;
             case "3d" -> GraphicsMode.MODE_3D;
-            default -> throw new UnsupportedOperationException("Unknown graphics mode: " + graphics);
+            default -> throw new UnsupportedOperationException("Unknown graphics mode");
         };
     }
 
@@ -88,7 +85,7 @@ public class DemoLauncher implements ApplicationMenuListener {
         return switch (graphics) {
             case "2d" -> new Demo2D();
             case "3d" -> new Demo3D();
-            default -> throw new UnsupportedOperationException("Unknown graphics mode: " + graphics);
+            default -> throw new UnsupportedOperationException("Unknown graphics mode");
         };
     }
 

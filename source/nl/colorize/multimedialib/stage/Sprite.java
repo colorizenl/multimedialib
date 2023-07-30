@@ -6,6 +6,7 @@
 
 package nl.colorize.multimedialib.stage;
 
+import lombok.Getter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.FiniteStateMachine;
@@ -27,18 +28,14 @@ import java.util.stream.Collectors;
  */
 public class Sprite implements Graphic2D {
 
+    @Getter private StageLocation location;
     private FiniteStateMachine<Animation> stateMachine;
-    private boolean visible;
-    private Point2D position;
-    private Transform transform;
 
     private static final String DEFAULT_STATE = "$$default";
 
     public Sprite() {
+        this.location = new StageLocation();
         this.stateMachine = new FiniteStateMachine<>();
-        this.visible = true;
-        this.position = new Point2D(0, 0);
-        this.transform = new Transform();
     }
 
     public Sprite(Animation anim) {
@@ -129,61 +126,12 @@ public class Sprite implements Graphic2D {
     }
 
     @Override
-    public void setVisible(boolean visible) {
-        this.visible = visible;
-    }
-
-    @Override
-    public boolean isVisible() {
-        return visible;
-    }
-
-    @Override
-    public void setPosition(Point2D p) {
-        position.set(p);
-    }
-
-    @Override
-    public void setPosition(float x, float y) {
-        position.set(x, y);
-    }
-
-    @Override
-    public Point2D getPosition() {
-        return position;
-    }
-
-    public void setTransform(Transform transform) {
-        if (transform == null) {
-            transform = new Transform();
-        }
-        this.transform = transform;
-    }
-
-    public Transform getTransform() {
-        return transform;
-    }
-
-    @Override
-    public Rect getBounds() {
-        float width = Math.max(getCurrentWidth() * (transform.getScaleX() / 100f), 1f);
-        float height = Math.max(getCurrentHeight() * (transform.getScaleY() / 100f), 1f);
+    public Rect getStageBounds() {
+        Transform globalTransform = getGlobalTransform();
+        Point2D position = globalTransform.getPosition();
+        float width = Math.max(getCurrentWidth() * (globalTransform.getScaleX() / 100f), 1f);
+        float height = Math.max(getCurrentHeight() * (globalTransform.getScaleY() / 100f), 1f);
         return new Rect(position.getX() - width / 2f, position.getY() - height / 2f, width, height);
-    }
-
-    /**
-     * Scales this sprite to the specified dimensions, based on the sprite's
-     * current graphics.
-     */
-    public void scaleTo(float width, float height) {
-        float scaleX = width / (float) getCurrentWidth() * 100f;
-        float scaleY = height / (float) getCurrentHeight() * 100f;
-        transform.setScale(scaleX, scaleY);
-    }
-
-    @Override
-    public boolean hitTest(Point2D point) {
-        return getBounds().contains(point);
     }
 
     /**
@@ -196,13 +144,12 @@ public class Sprite implements Graphic2D {
             copy.addState(state.name(), state.properties());
         }
         copy.changeState(stateMachine.getActiveState().name());
-        copy.setPosition(position.copy());
-        copy.setTransform(transform.copy());
+        copy.getTransform().set(getTransform());
         return copy;
     }
 
     @Override
     public String toString() {
-        return "Sprite [" + getCurrentGraphics() + " @ " + position + "]";
+        return "Sprite [" + getCurrentGraphics() + "]";
     }
 }

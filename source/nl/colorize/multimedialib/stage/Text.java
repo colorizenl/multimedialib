@@ -7,7 +7,7 @@
 package nl.colorize.multimedialib.stage;
 
 import com.google.common.collect.ImmutableList;
-import nl.colorize.multimedialib.math.MathUtils;
+import lombok.Data;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.util.TextUtils;
@@ -19,28 +19,25 @@ import java.util.function.BiConsumer;
 /**
  * Draws text to the screen using the specified TrueType font.
  */
+@Data
 public class Text implements Graphic2D {
 
+    private final StageLocation location;
     private String text;
     private List<String> lines;
     private OutlineFont font;
     private Align align;
     private float lineHeight;
 
-    private boolean visible;
-    private Point2D position;
-    private float alpha;
-
     public Text(String text, OutlineFont font, Align align) {
+        this.location = new StageLocation();
         this.text = text;
         this.lines = TextUtils.LINE_SPLITTER.splitToList(text);
         this.font = font;
         this.align = align;
-        this.lineHeight = 0f;
-
-        this.visible = true;
-        this.position = new Point2D(0f, 0f);
-        this.alpha = 100f;
+        //TODO the font shouldn't be null, but we used this
+        //     in some of the tests.
+        this.lineHeight = font == null ? 10f : Math.round(font.getStyle().size() * 1.8f);
     }
 
     public Text(String text, OutlineFont font) {
@@ -48,11 +45,7 @@ public class Text implements Graphic2D {
     }
 
     public void setText(String... lines) {
-        if (lines.length == 1) {
-            setText(TextUtils.LINE_SPLITTER.splitToList(text));
-        } else {
-            setText(ImmutableList.copyOf(lines));
-        }
+        setText(ImmutableList.copyOf(lines));
     }
 
     public void setText(List<String> lines) {
@@ -68,69 +61,10 @@ public class Text implements Graphic2D {
         }
     }
 
-    public String getText() {
-        return text;
-    }
-
-    public List<String> getLines() {
-        return lines;
-    }
-
     public void forLines(BiConsumer<Integer, String> callback) {
         for (int i = 0; i < lines.size(); i++) {
             callback.accept(i, lines.get(i));
         }
-    }
-
-    public void setFont(OutlineFont font) {
-        this.font = font;
-    }
-
-    public OutlineFont getFont() {
-        return font;
-    }
-
-    public void setAlign(Align align) {
-        this.align = align;
-    }
-
-    public Align getAlign() {
-        return align;
-    }
-
-    public void setLineHeight(float lineHeight) {
-        this.lineHeight = lineHeight;
-    }
-
-    public float getLineHeight() {
-        if (lineHeight > 0f) {
-            return lineHeight;
-        } else {
-            return Math.round(font.getStyle().size() * 1.8f);
-        }
-    }
-
-    @Override
-    public void setVisible(boolean visible) {
-        this.visible = visible;
-    }
-
-    @Override
-    public boolean isVisible() {
-        return visible;
-    }
-
-    @Override
-    public Point2D getPosition() {
-        return position;
-    }
-
-    public void setAlpha(float alpha) {
-        this.alpha = MathUtils.clamp(alpha, 0f, 100f);
-    }
-
-    public float getAlpha() {
-        return alpha;
     }
 
     @Override
@@ -138,19 +72,20 @@ public class Text implements Graphic2D {
     }
 
     @Override
-    public Rect getBounds() {
+    public Rect getStageBounds() {
+        Transform globalTransform = getGlobalTransform();
+        Point2D position = globalTransform.getPosition();
         float approximateWidth = font.getStyle().size() * text.length();
         float approximateHeight = lineHeight * lines.size();
         return new Rect(position.getX(), position.getY(), approximateWidth, approximateHeight);
     }
 
     @Override
-    public boolean hitTest(Point2D point) {
-        return false;
-    }
-
-    @Override
     public String toString() {
-        return "Text [" + text.replace("\n", " ") + "]";
+        String displayText = text.replace("\n", " ");
+        if (displayText.length() > 20) {
+            displayText = displayText.substring(0, 20) + "...";
+        }
+        return "Text [" + displayText + "]";
     }
 }

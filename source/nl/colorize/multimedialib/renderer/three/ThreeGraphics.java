@@ -6,18 +6,17 @@
 
 package nl.colorize.multimedialib.renderer.three;
 
-import nl.colorize.multimedialib.math.Circle;
-import nl.colorize.multimedialib.math.Line;
-import nl.colorize.multimedialib.math.Polygon;
-import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.math.*;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.teavm.Browser;
 import nl.colorize.multimedialib.renderer.teavm.TeaGraphics;
 import nl.colorize.multimedialib.stage.ColorRGB;
-import nl.colorize.multimedialib.stage.Layer2D;
+import nl.colorize.multimedialib.stage.Container;
+import nl.colorize.multimedialib.stage.Graphic2D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
+import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
 
 /**
@@ -50,7 +49,24 @@ public class ThreeGraphics implements TeaGraphics {
     }
 
     @Override
-    public void prepareLayer(Layer2D layer) {
+    public void prepareStage(Stage stage) {
+        //TODO
+    }
+
+    @Override
+    public void onGraphicAdded(Container parent, Graphic2D graphic) {
+        //TODO
+    }
+
+    @Override
+    public void onGraphicRemoved(Container parent, Graphic2D graphic) {
+        //TODO
+    }
+
+    @Override
+    public boolean visitGraphic(Graphic2D graphic) {
+        //TODO
+        return true;
     }
 
     @Override
@@ -65,6 +81,11 @@ public class ThreeGraphics implements TeaGraphics {
 
     @Override
     public void drawLine(Primitive graphic, Line line) {
+        //TODO
+    }
+
+    @Override
+    public void drawSegmentedLine(Primitive graphic, SegmentedLine line) {
         //TODO
     }
 

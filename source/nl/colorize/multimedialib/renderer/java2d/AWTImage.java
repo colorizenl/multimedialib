@@ -70,4 +70,12 @@ public class AWTImage implements Image {
         int alpha = (rgba >> 24) & 0xFF;
         return Math.round(alpha / 2.55f);
     }
+
+    @Override
+    public String toString() {
+        if (origin == null) {
+            return "AWTImage";
+        }
+        return "AWTImage[" + origin + "]";
+    }
 }

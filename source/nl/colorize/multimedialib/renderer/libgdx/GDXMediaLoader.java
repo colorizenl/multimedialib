@@ -7,8 +7,8 @@
 package nl.colorize.multimedialib.renderer.libgdx;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.assets.loaders.resolvers.InternalFileHandleResolver;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
@@ -19,7 +19,6 @@ import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
 import com.badlogic.gdx.graphics.g3d.loader.G3dModelLoader;
-import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.UBJsonReader;
 import net.mgsx.gltf.loaders.gltf.GLTFLoader;
@@ -28,7 +27,6 @@ import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
-import nl.colorize.multimedialib.renderer.java2d.MP3;
 import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.ColorRGB;
@@ -36,9 +34,6 @@ import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.OutlineFont;
 import nl.colorize.multimedialib.stage.PolygonModel;
-import nl.colorize.multimedialib.stage.Shader;
-import nl.colorize.util.Platform;
-import nl.colorize.util.ResourceFile;
 import nl.colorize.util.stats.Cache;
 
 import java.util.ArrayList;
@@ -56,14 +51,16 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
 
     private List<Disposable> loaded;
     private Cache<FontCacheKey, BitmapFont> fontCache;
+    private StandardMediaLoader appDataDelegate;
 
-    private static final Texture.TextureFilter TEXTURE_FILTER = Texture.TextureFilter.Nearest;
+    private static final Texture.TextureFilter TEXTURE_FILTER = Texture.TextureFilter.Linear;
     private static final int FONT_CACHE_SIZE = 100;
     private static final String CHARSET = "UTF-8";
 
     public GDXMediaLoader() {
         this.loaded = new ArrayList<>();
         this.fontCache = Cache.from(this::generateBitmapFont, FONT_CACHE_SIZE);
+        this.appDataDelegate = new StandardMediaLoader();
     }
 
     @Override
@@ -71,12 +68,14 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
         Texture texture = new Texture(getFileHandle(file));
         texture.setFilter(TEXTURE_FILTER, TEXTURE_FILTER);
         loaded.add(texture);
-        return new GDXImage(file, texture);
+        return new GDXImage(texture);
     }
 
     @Override
     public Audio loadAudio(FilePointer file) {
-        return new MP3(new ResourceFile(file.path()));
+        Sound sound = Gdx.audio.newSound(getFileHandle(file));
+        loaded.add(sound);
+        return new GDXAudio(sound);
     }
 
     @Override
@@ -140,54 +139,18 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
     }
 
     @Override
-    public Shader loadShader(FilePointer vertexShaderFile, FilePointer fragmentShaderFile) {
-        String vertexGLSL = getFileHandle(vertexShaderFile).readString(CHARSET);
-        String fragmentGLSL = getFileHandle(fragmentShaderFile).readString(CHARSET);
-
-        ShaderProgram shaderProgram = new ShaderProgram(vertexGLSL, fragmentGLSL);
-        loaded.add(shaderProgram);
-
-        if (!shaderProgram.isCompiled()) {
-            throw new MediaException("Failed to compile shader");
-        }
-
-        return new GDXShader(shaderProgram);
-    }
-
-    @Override
     public boolean containsResourceFile(FilePointer file) {
         return getFileHandle(file).exists();
     }
 
     @Override
-    public Properties loadApplicationData(String appName, String fileName) {
-        if (Platform.isWindows() || Platform.isMac()) {
-            StandardMediaLoader delegate = new StandardMediaLoader();
-            return delegate.loadApplicationData(appName, fileName);
-        } else {
-            Preferences preferences = Gdx.app.getPreferences(appName + "." + fileName);
-            Properties properties = new Properties();
-
-            for (String key : preferences.get().keySet()) {
-                properties.setProperty(key, preferences.getString(key));
-            }
-
-            return properties;
-        }
+    public Properties loadApplicationData(String appName) {
+        return appDataDelegate.loadApplicationData(appName);
     }
 
     @Override
-    public void saveApplicationData(Properties data, String appName, String fileName) {
-        if (Platform.isWindows() || Platform.isMac()) {
-            StandardMediaLoader delegate = new StandardMediaLoader();
-            delegate.saveApplicationData(data, appName, fileName);
-        } else {
-            Preferences preferences = Gdx.app.getPreferences(appName);
-            for (String property : data.stringPropertyNames()) {
-                preferences.putString(property, data.getProperty(property));
-            }
-            preferences.flush();
-        }
+    public void saveApplicationData(String appName, Properties data) {
+        appDataDelegate.saveApplicationData(appName, data);
     }
 
     private FileHandle getFileHandle(FilePointer file) {

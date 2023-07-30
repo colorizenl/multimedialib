@@ -6,14 +6,12 @@
 
 package nl.colorize.multimedialib.renderer.java2d;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
-import nl.colorize.multimedialib.scene.Updatable;
 import nl.colorize.util.swing.Popups;
 import nl.colorize.util.swing.SwingUtils;
 
@@ -29,12 +27,13 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Input device that uses AWT to capture mouse and keyboard events.
  */
-public class AWTInput implements InputDevice, Updatable, KeyListener, MouseListener, MouseMotionListener {
+public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseMotionListener {
 
     private Canvas canvas;
     private List<InputEvent> eventsBuffer;
@@ -248,14 +247,19 @@ public class AWTInput implements InputDevice, Updatable, KeyListener, MouseListe
     }
 
     @Override
-    public List<Point2D> getPointers() {
-        return ImmutableList.of(getMousePosition());
+    public Optional<Point2D> getPointer() {
+        return Optional.of(getMousePosition());
     }
 
     @Override
     public boolean isPointerPressed(Rect area) {
         Point2D mousePosition = getMousePosition();
         return mouseState == MOUSE_STATE_PRESSED && area.contains(mousePosition);
+    }
+
+    @Override
+    public boolean isPointerPressed() {
+        return mouseState == MOUSE_STATE_PRESSED;
     }
 
     @Override
