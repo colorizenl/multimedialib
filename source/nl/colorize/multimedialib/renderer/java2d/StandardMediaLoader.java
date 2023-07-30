@@ -97,8 +97,12 @@ public class StandardMediaLoader implements MediaLoader {
         try {
             ResourceFile source = toResourceFile(file);
             BufferedImage original = Utils2D.loadImage(source.openStream());
-            BufferedImage image = Utils2D.makeImageCompatible(original);
-            return new AWTImage(image, file);
+
+            if (Platform.isWindows() || Platform.isMac()) {
+                return new AWTImage(Utils2D.makeImageCompatible(original), file);
+            } else {
+                return new AWTImage(original, file);
+            }
         } catch (IOException e) {
             throw new MediaException("Cannot load image from " + file.path(), e);
         }
