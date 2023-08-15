@@ -10,9 +10,9 @@ jobs:
       - name: Compile
         run: gradle compileJava
       - name: Unit tests
-        run: gradle -Djava.awt.headless=true npmInstall coverage --info
+        run: gradle -Djava.awt.headless=true coverage --info
       - name: Transpile TeaVM demo applications
-        run: gradle npmInstall transpileDemoApplication2D transpileDemoApplication3D
+        run: gradle transpileDemoApplication2D transpileDemoApplication3D
     env:
       ORG_GRADLE_PROJECT_githubPackagesOwner: "colorizenl"
       ORG_GRADLE_PROJECT_githubPackagesToken: "${{ secrets.TEAVM_PACKAGES_TOKEN }}"
