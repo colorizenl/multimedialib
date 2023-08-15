@@ -33,13 +33,11 @@ import java.util.function.Supplier;
  * example during frame updates or after the effect is marked as completed.
  * <p>
  * Effects can influence graphics in two different ways. The first is by
- * adding graphics to the effect itself. Effects implement the
- * {@link InteractiveObject} interface, so effects can be attached to the
- * stage, and graphics can then be added to the effect. The second way
- * allows the effect to influence graphics that are on stage but are not
- * part of the effect itself. Using {@link #linkGraphics(Graphic2D...)}
- * will "link" these eisting graphics to the effect, meaning they will be
- * removed when the effect has completed.
+ * adding graphics to the effect itself. The second  allows the effect to
+ * influence graphics that are on stage but are not part of the effect itself.
+ * Using {@link #linkGraphics(Graphic2D...)} will "link" these eisting
+ * graphics to the effect, meaning they will be removed when the effect has
+ * completed.
  */
 public final class Effect implements Scene {
 
@@ -225,6 +223,7 @@ public final class Effect implements Scene {
      * @deprecated This method is identical to {@link #delay(float, Runnable)},
      *             use that instead because of its more descriptive name.
      */
+    @Deprecated
     public static Effect forTimer(float duration, Runnable action) {
         return delay(duration, action);
     }

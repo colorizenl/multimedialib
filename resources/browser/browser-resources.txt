@@ -16,6 +16,8 @@ effects/particle-diamond.png
 browser/multimedialib.js
 browser/pixi-interface.js
 browser/three-interface.js
+browser/vertex-shader.glsl
+browser/fragment-shader.glsl
 browser/assets/multimedialib.css
 browser/assets/favicon.png
 browser/assets/apple-icon.png

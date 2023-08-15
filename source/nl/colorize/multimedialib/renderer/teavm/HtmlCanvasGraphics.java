@@ -6,12 +6,18 @@
 
 package nl.colorize.multimedialib.renderer.teavm;
 
-import nl.colorize.multimedialib.math.*;
+import lombok.Getter;
+import nl.colorize.multimedialib.math.Circle;
+import nl.colorize.multimedialib.math.Line;
+import nl.colorize.multimedialib.math.Point2D;
+import nl.colorize.multimedialib.math.Polygon;
+import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.math.Region;
+import nl.colorize.multimedialib.math.SegmentedLine;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
-import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Graphic2D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
@@ -33,7 +39,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
 
     private Canvas sceneCanvas;
     private BrowserDOM dom;
-    private HTMLCanvasElement htmlCanvas;
+    @Getter private HTMLCanvasElement htmlCanvas;
     private CanvasRenderingContext2D context;
 
     public HtmlCanvasGraphics(Canvas sceneCanvas) {
@@ -42,10 +48,10 @@ public class HtmlCanvasGraphics implements TeaGraphics {
     }
 
     @Override
-    public void init() {
+    public void init(TeaMediaLoader mediaLoader) {
         HTMLDocument document = Window.current().getDocument();
         HTMLElement container = document.getElementById("multimediaLibContainer");
-        htmlCanvas = dom.createCanvas(container);
+        htmlCanvas = dom.createFullScreenCanvas(container);
         context = (CanvasRenderingContext2D) htmlCanvas.getContext("2d");
     }
 
@@ -166,7 +172,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
         context.setGlobalAlpha(transform.getAlpha() / 100f);
         context.setFillStyle(graphic.getColor().toHex());
         context.beginPath();
-        context.arc(toScreenX(circle.getCenterX()), toScreenY(circle.getCenterY()),
+        context.arc(toScreenX(circle.getCenter().getX()), toScreenY(circle.getCenter().getY()),
             circle.getRadius() * sceneCanvas.getZoomLevel(), 0f, 2f * Math.PI);
         context.fill();
         context.setGlobalAlpha(1f);
@@ -189,33 +195,18 @@ public class HtmlCanvasGraphics implements TeaGraphics {
 
     @Override
     public void drawText(Text text) {
-        FontStyle style = text.getFont().scale(sceneCanvas).getStyle();
-        drawText(text, style);
-    }
-
-    private void drawText(Text text, FontStyle style) {
+        TeaFont font = (TeaFont) text.getFont().scale(sceneCanvas);
         Transform transform = text.getGlobalTransform();
-        float lineHeight = text.getFont() != null ? text.getLineHeight() : style.size();
-
-        changeCanvasFont(style);
 
         context.setGlobalAlpha(transform.getAlpha() / 100f);
-        context.setFillStyle(style.color().toHex());
+        context.setFont(font.getFontString());
+        context.setFillStyle(font.getStyle().color().toHex());
         context.setTextAlign(text.getAlign().toString().toLowerCase());
         text.forLines((i, line) -> {
-            float y = toScreenY(transform.getPosition().getY() + i * lineHeight);
+            float y = toScreenY(transform.getPosition().getY() + i * text.getLineHeight());
             context.fillText(line, toScreenX(transform.getPosition()), y);
         });
         context.setGlobalAlpha(1f);
-    }
-
-    private void changeCanvasFont(FontStyle style) {
-        String fontStyle = style.bold() ? "bold " : "";
-        String fontString = fontStyle + style.size() + "px " + style.family();
-
-        if (!context.getFont().equals(fontString)) {
-            context.setFont(fontString);
-        }
     }
 
     private float toScreenX(float x) {

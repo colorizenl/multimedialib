@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableList;
 import nl.colorize.multimedialib.mock.MockScene;
 import nl.colorize.multimedialib.mock.MockStopwatch;
 import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
 import nl.colorize.util.Stopwatch;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SceneContextTest {
 
-    private static final HeadlessRenderer RENDERER = new HeadlessRenderer(Canvas.scale(800, 600), 10);
+    private static final Canvas CANVAS = new Canvas(800, 600, ScaleStrategy.scale());
+    private static final HeadlessRenderer RENDERER = new HeadlessRenderer(CANVAS, 10);
 
     @Test
     public void testInitialScene() {

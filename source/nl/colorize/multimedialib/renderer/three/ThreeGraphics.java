@@ -11,6 +11,7 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.teavm.Browser;
 import nl.colorize.multimedialib.renderer.teavm.TeaGraphics;
+import nl.colorize.multimedialib.renderer.teavm.TeaMediaLoader;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Graphic2D;
@@ -34,7 +35,7 @@ public class ThreeGraphics implements TeaGraphics {
     }
 
     @Override
-    public void init() {
+    public void init(TeaMediaLoader mediaLoader) {
         three.init();
     }
 

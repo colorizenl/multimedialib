@@ -7,7 +7,8 @@
 package nl.colorize.multimedialib.stage;
 
 import com.google.common.base.Preconditions;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Polygon;
@@ -26,7 +27,8 @@ import java.util.Map;
  * the instance describes an outline shape. The stroke property has no effect
  * for filled shapes.
  */
-@Data
+@Getter
+@Setter
 public class Primitive implements Graphic2D {
 
     private final StageLocation location;

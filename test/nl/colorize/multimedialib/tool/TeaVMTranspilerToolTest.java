@@ -126,6 +126,7 @@ public class TeaVMTranspilerToolTest {
             demo-sound.mp3
             demo.png
             favicon.png
+            fragment-shader.glsl
             loading.gif
             multimedialib.css
             particle-circle.png
@@ -134,6 +135,7 @@ public class TeaVMTranspilerToolTest {
             sepia-vertex.glsl
             test1.txt
             test2.txt
+            vertex-shader.glsl
             </div>
             """;
 

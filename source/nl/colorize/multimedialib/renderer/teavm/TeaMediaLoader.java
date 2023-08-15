@@ -75,7 +75,7 @@ public class TeaMediaLoader implements MediaLoader {
     @Override
     public OutlineFont loadFont(FilePointer file, FontStyle style) {
         Promise<Boolean> fontPromise = new Promise<>();
-        String url = "resources/" + normalizeFilePath(file, false);
+        String url = "url('resources/" + normalizeFilePath(file, false) + "')";
         FontLoadCallback callback = success -> fontPromise.resolve(success);
 
         Browser.preloadFontFace(style.family(), url, callback);

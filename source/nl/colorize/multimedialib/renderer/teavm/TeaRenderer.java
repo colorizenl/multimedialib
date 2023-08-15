@@ -16,6 +16,7 @@ import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.pixi.PixiGraphics;
 import nl.colorize.multimedialib.renderer.three.ThreeGraphics;
+import nl.colorize.multimedialib.renderer.webgl.WebGL;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.StageVisitor;
@@ -59,7 +60,7 @@ public class TeaRenderer implements Renderer {
         context.changeScene(initialScene);
 
         inputDevice.bindEventHandlers();
-        graphics.init();
+        graphics.init(mediaLoader);
 
         Browser.prepareAnimationLoop();
         Browser.registerErrorHandler(error -> handleError(errorHandler, error));

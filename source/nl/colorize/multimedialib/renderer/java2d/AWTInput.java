@@ -12,6 +12,7 @@ import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
+import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.util.swing.Popups;
 import nl.colorize.util.swing.SwingUtils;
 
@@ -249,6 +250,14 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
     @Override
     public Optional<Point2D> getPointer() {
         return Optional.of(getMousePosition());
+    }
+
+    @Override
+    public List<Pointer> getPointers() {
+        Pointer pointer = new Pointer("mouse", getMousePosition());
+        pointer.setPressed(isPointerPressed());
+        pointer.setReleased(isPointerReleased());
+        return List.of(pointer);
     }
 
     @Override

@@ -165,4 +165,13 @@ public class RandomGenerator {
         
         return shuffled;
     }
+
+    /**
+     * Picks a random point somewhere within the specified rectangle.
+     */
+    public static Point2D pickPoint(Rect bounds) {
+        float x = getFloat(bounds.getX(), bounds.getEndX());
+        float y = getFloat(bounds.getY(), bounds.getEndY());
+        return new Point2D(x, y);
+    }
 }

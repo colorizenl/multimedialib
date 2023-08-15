@@ -7,7 +7,8 @@
 package nl.colorize.multimedialib.stage;
 
 import com.google.common.collect.ImmutableList;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.util.TextUtils;
@@ -19,7 +20,8 @@ import java.util.function.BiConsumer;
 /**
  * Draws text to the screen using the specified TrueType font.
  */
-@Data
+@Getter
+@Setter
 public class Text implements Graphic2D {
 
     private final StageLocation location;
@@ -75,9 +77,15 @@ public class Text implements Graphic2D {
     public Rect getStageBounds() {
         Transform globalTransform = getGlobalTransform();
         Point2D position = globalTransform.getPosition();
-        float approximateWidth = font.getStyle().size() * text.length();
-        float approximateHeight = lineHeight * lines.size();
-        return new Rect(position.getX(), position.getY(), approximateWidth, approximateHeight);
+
+        int longestLine = lines.stream()
+            .mapToInt(String::length)
+            .max()
+            .orElse(1);
+
+        float approximateWidth = font.getStyle().size() * longestLine;
+        float approximateHeight = font.getStyle().size() * lines.size();
+        return Rect.around(position, approximateWidth, approximateHeight);
     }
 
     @Override

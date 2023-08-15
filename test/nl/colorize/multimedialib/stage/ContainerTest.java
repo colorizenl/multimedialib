@@ -17,8 +17,11 @@ class ContainerTest {
 
     @Test
     void flushAddedAndRemoved() {
-        Container container = new Container();
         List<String> events = new ArrayList<>();
+
+        Container container = new Container();
+        container.getAddedChildren().subscribe(e -> events.add("add-" + e));
+        container.getRemovedChildren().subscribe(e -> events.add("remove-" + e));
 
         Text a = new Text("a", null);
         Text b = new Text("b", null);
@@ -28,18 +31,12 @@ class ContainerTest {
         container.addChild(a);
         container.addChild(b);
 
-        container.getAddedChildren().flush(e -> events.add("add-" + e));
-        container.getRemovedChildren().flush(e -> events.add("remove-" + e));
-
         assertEquals("[Text [a], Text [b]]", container.getChildren().toString());
         assertEquals("[add-Text [a], add-Text [b]]", events.toString());
 
         container.addChild(x);
         container.removeChild(b);
         container.removeChild(c);
-
-        container.getAddedChildren().flush(e -> events.add("add-" + e));
-        container.getRemovedChildren().flush(e -> events.add("remove-" + e));
 
         assertEquals("[Text [a], Text [x]]", container.getChildren().toString());
         assertEquals("[add-Text [a], add-Text [b], add-Text [x], remove-Text [b]]", events.toString());

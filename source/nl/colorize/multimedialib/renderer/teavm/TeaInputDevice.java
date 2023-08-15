@@ -6,20 +6,20 @@
 
 package nl.colorize.multimedialib.renderer.teavm;
 
-import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Multimap;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
+import nl.colorize.multimedialib.renderer.Pointer;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.dom.events.Event;
 import org.teavm.jso.dom.events.KeyboardEvent;
 import org.teavm.jso.dom.events.MouseEvent;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +37,7 @@ public class TeaInputDevice implements InputDevice {
     private Canvas canvas;
     private TeaGraphics graphics;
 
-    private List<MouseEvent> mouseEvents;
+    private Map<String, Pointer> pointers;
     private Set<Integer> keysDown;
     private Set<Integer> keysUp;
 
@@ -107,7 +107,7 @@ public class TeaInputDevice implements InputDevice {
         this.canvas = canvas;
         this.graphics = graphics;
 
-        this.mouseEvents = new ArrayList<>();
+        this.pointers = new HashMap<>();
         this.keysDown = new HashSet<>();
         this.keysUp = new HashSet<>();
     }
@@ -120,11 +120,34 @@ public class TeaInputDevice implements InputDevice {
         window.addEventListener("mouseout",this::onMouseEvent);
         window.addEventListener("keydown", this::onKeyDown);
         window.addEventListener("keyup", this::onKeyUp);
+        window.addEventListener("custom:touchstart", this::onCustomTouchEvent, true);
+        window.addEventListener("custom:touchmove", this::onCustomTouchEvent, true);
+        window.addEventListener("custom:touchend", this::onCustomTouchEvent, true);
+        window.addEventListener("custom:touchcancel", this::onCustomTouchEvent, true);
     }
 
     private void onMouseEvent(Event event) {
+        if (event.getType().equals("mouseout")) {
+            pointers.remove("mouse");
+            return;
+        }
+
         MouseEvent mouseEvent = (MouseEvent) event;
-        mouseEvents.add(mouseEvent);
+        Pointer mousePointer = pointers.get("mouse");
+
+        if (mousePointer == null) {
+            mousePointer = new Pointer("mouse");
+            pointers.put("mouse", mousePointer);
+        }
+
+        Point2D position = getPointerCanvasPosition(mouseEvent.getPageX(), mouseEvent.getPageY());
+        mousePointer.setPosition(position);
+
+        switch (event.getType()) {
+            case "mousedown" -> mousePointer.setPressed(true);
+            case "mouseup" -> mousePointer.setReleased(true);
+            default -> {}
+        }
 
         event.preventDefault();
         event.stopPropagation();
@@ -146,26 +169,60 @@ public class TeaInputDevice implements InputDevice {
         event.stopPropagation();
     }
 
+    private void onCustomTouchEvent(Event event) {
+        CustomTouchEvent customTouchEvent = (CustomTouchEvent) event;
+        String identifier = String.valueOf(customTouchEvent.getDetail().getIdentifier());
+        Pointer touchPointer = pointers.get(identifier);
+
+        if (event.getType().equals("custom:touchcancel")) {
+            pointers.remove(identifier);
+            return;
+        }
+
+        if (touchPointer == null) {
+            touchPointer = new Pointer(identifier);
+            pointers.put(identifier, touchPointer);
+        }
+
+        Point2D position = getPointerCanvasPosition(customTouchEvent.getDetail().getPageX(),
+            customTouchEvent.getDetail().getPageY());
+        touchPointer.setPosition(position);
+
+        switch (event.getType()) {
+            case "custom:touchstart" -> touchPointer.setPressed(true);
+            case "custom:touchend" -> touchPointer.setReleased(true);
+            default -> {}
+        }
+
+        customTouchEvent.preventDefault();
+        customTouchEvent.stopPropagation();
+    }
+
     public void reset() {
-        mouseEvents.clear();
+        pointers.keySet().removeIf(id -> pointers.get(id).isReleased());
         keysDown.removeAll(keysUp);
         keysUp.clear();
     }
 
     @Override
     public Optional<Point2D> getPointer() {
-        if (mouseEvents.isEmpty()) {
+        List<Pointer> pointers = getPointers();
+        if (pointers.isEmpty()) {
             return Optional.empty();
         }
-
-        MouseEvent lastEvent = mouseEvents.get(mouseEvents.size() - 1);
-        Point2D lastPosition = getPointerCanvasPosition(lastEvent);
-        return Optional.of(lastPosition);
+        return Optional.of(pointers.get(0).getPosition());
     }
 
-    private Point2D getPointerCanvasPosition(MouseEvent event) {
-        int screenX = Math.round(event.getPageX() * graphics.getDevicePixelRatio());
-        int screenY = Math.round(event.getPageY() * graphics.getDevicePixelRatio());
+    @Override
+    public List<Pointer> getPointers() {
+        //TODO cannot use List.copyOf() because it is not yet
+        //     supported by TeaVM.
+        return ImmutableList.copyOf(pointers.values());
+    }
+
+    private Point2D getPointerCanvasPosition(int pageX, int pageY) {
+        int screenX = Math.round(pageX * graphics.getDevicePixelRatio());
+        int screenY = Math.round(pageY * graphics.getDevicePixelRatio());
 
         float canvasX = canvas.toCanvasX(screenX);
         float canvasY = canvas.toCanvasY(screenY);
@@ -175,35 +232,31 @@ public class TeaInputDevice implements InputDevice {
 
     @Override
     public boolean isPointerPressed(Rect area) {
-        return mouseEvents.stream()
-            .filter(event -> event.getType().equals("mousedown"))
-            .map(this::getPointerCanvasPosition)
-            .anyMatch(canvasPosition -> area.contains(canvasPosition));
+        List<Pointer> pointers = getPointers();
+        return !pointers.isEmpty() && pointers.get(0).isPressed(area);
     }
 
     @Override
     public boolean isPointerPressed() {
-        return mouseEvents.stream()
-            .anyMatch(event -> event.getType().equals("mousedown"));
+        List<Pointer> pointers = getPointers();
+        return !pointers.isEmpty() && pointers.get(0).isPressed();
     }
 
     @Override
     public boolean isPointerReleased(Rect area) {
-        return mouseEvents.stream()
-            .filter(event -> event.getType().equals("mouseup"))
-            .map(this::getPointerCanvasPosition)
-            .anyMatch(canvasPosition -> area.contains(canvasPosition));
+        List<Pointer> pointers = getPointers();
+        return !pointers.isEmpty() && pointers.get(0).isReleased(area);
     }
 
     @Override
     public boolean isPointerReleased() {
-        return mouseEvents.stream()
-            .anyMatch(event -> event.getType().equals("mouseup"));
+        List<Pointer> pointers = getPointers();
+        return !pointers.isEmpty() && pointers.get(0).isReleased();
     }
 
     @Override
     public void clearPointerReleased() {
-        mouseEvents.clear();
+        pointers.clear();
     }
 
     @Override

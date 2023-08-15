@@ -6,7 +6,8 @@
 
 package nl.colorize.multimedialib.stage;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import nl.colorize.multimedialib.math.Point3D;
 import nl.colorize.multimedialib.scene.Updatable;
 
@@ -18,7 +19,8 @@ import java.util.List;
  * renderer that supports 3D graphics. If both 2D and 3D graphics are used,
  * the 3D graphics will appear "below" all 2D graphics.
  */
-@Data
+@Getter
+@Setter
 public class World3D implements Updatable {
 
     private Point3D cameraPosition;

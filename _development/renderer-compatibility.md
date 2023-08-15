@@ -14,8 +14,8 @@ The compatibility table uses the following notation:
 - Red (🔴) means the feature is *not* supported by the renderer.
 - Purple (🟣) means the feature is not yet supported, but *will* be supported in a future version. 
 
-| Feature / Renderer       | Java2D | libGDX | HTML Canvas | WebGL   | Pixi   | Three  | 
-|--------------------------|--------|--------|-------------|---------|--------|--------|
+| Feature / Renderer       | Java2D | libGDX | HTML Canvas | WebGL  | Pixi   | Three  | 
+|--------------------------|--------|--------|-------------|--------|--------|--------|
 | **Animation loop**       |
 | Canvas size              | 🟢     | 🟢     | 🟢          | 🟢     | 🟢     | 🟣     |
 | Resize events            | 🟢     | 🟢     | 🟢          | 🟢     | 🟢     | 🟣     |
@@ -23,30 +23,30 @@ The compatibility table uses the following notation:
 | **Sprites**              | 
 | Sprites                  | 🟢     | 🟢     | 🟢          | 🟢     | 🟢     | 🟣     |
 | Image translucency       | 🟢     | 🟢     | 🟢          | 🟢     | 🟢     | 🟣     |
-| Image region             | 🟢     | 🟢     | 🟢          | 🟣     | 🟢     | 🟣     |
-| Rotation                 | 🟢     | 🟢     | 🟢          | 🟣     | 🟢     | 🟣     |
-| Scale                    | 🟢     | 🟢     | 🟢          | 🟣     | 🟢     | 🟣     |
-| Independent X/Y scale    | 🟢     | 🟢     | 🟢          | 🟣     | 🟢     | 🟣     |
-| Alpha                    | 🟢     | 🟢     | 🟢          | 🟣     | 🟢     | 🟣     |
-| Flip horizontal/vertical | 🟢     | 🟢     | 🟢          | 🟣     | 🟢     | 🟣     |
+| Image region             | 🟢     | 🟢     | 🟢          | 🟢     | 🟢     | 🟣     |
+| Rotation                 | 🟢     | 🟢     | 🟢          | 🟠     | 🟢     | 🟣     |
+| Scale                    | 🟢     | 🟢     | 🟢          | 🟢     | 🟢     | 🟣     |
+| Independent X/Y scale    | 🟢     | 🟢     | 🟢          | 🟢     | 🟢     | 🟣     |
+| Alpha                    | 🟢     | 🟢     | 🟢          | 🟢     | 🟢     | 🟣     |
+| Flip horizontal/vertical | 🟢     | 🟢     | 🟢          | 🟢     | 🟢     | 🟣     |
 | Retrieve pixel data      | 🟢     | 🟢     | 🟢          | 🟢     | 🟢     | 🟢     |
 | **2D Graphics**          |
-| Rectangles               | 🟢     | 🟢     | 🟢          | 🟣     | 🟢     | 🟣     |
-| Lines                    | 🟢     | 🟠 (3) | 🟢          | 🟣     | 🟢     | 🟣     |
-| Segmented lines          | 🟢     | 🟢     | 🟢          | 🟣     | 🟢     | 🟣     |
-| Circles                  | 🟡 (2) | 🟢     | 🟢          | 🟣     | 🟢     | 🟣     |
-| Polygons                 | 🟢     | 🟢     | 🟢          | 🟣     | 🟢     | 🟣     |
-| Alpha                    | 🟢     | 🟢     | 🟢          | 🟣     | 🟢     | 🟣     |
+| Lines                    | 🟢     | 🟠 (3) | 🟢          | 🟡     | 🟢     | 🟣     |
+| Segmented lines          | 🟢     | 🟢     | 🟢          | 🟡     | 🟢     | 🟣     |
+| Rectangles               | 🟢     | 🟢     | 🟢          | 🟢     | 🟢     | 🟣     |
+| Circles                  | 🟡 (2) | 🟢     | 🟢          | 🟡     | 🟢     | 🟣     |
+| Polygons                 | 🟢     | 🟢     | 🟢          | 🟡     | 🟢     | 🟣     |
+| Alpha                    | 🟢     | 🟢     | 🟢          | 🟡     | 🟢     | 🟣     |
 | **Text**                 |
-| TrueType fonts           | 🟢     | 🟢     | 🟢          | 🟣     | 🟢     | 🟣     |
-| Text alignment           | 🟢     | 🟢     | 🟢          | 🟣     | 🟢     | 🟣     |
-| Text alpha               | 🟢     | 🟢     | 🟢          | 🟣     | 🟢     | 🟣     |
+| TrueType fonts           | 🟢     | 🟢     | 🟢          | 🟡     | 🟢     | 🟣     |
+| Text alignment           | 🟢     | 🟢     | 🟢          | 🟡     | 🟢     | 🟣     |
+| Text alpha               | 🟢     | 🟢     | 🟢          | 🟡     | 🟢     | 🟣     |
 | **Media**                |
 | PNG images               | 🟢     | 🟢     | 🟢          | 🟢     | 🟢     | 🟢     |
 | MP3 audio                | 🟠 (1) | 🟢     | 🟢          | 🟢     | 🟢     | 🟢     |
 | **Input**                |
 | Keyboard controls        | 🟢     | 🟢     | 🟢          | 🟢     | 🟢     | 🟢     |
-| Mouse/touch controls     | 🟢     | 🟢     | 🟢 (4)      | 🟠 (4) | 🟠 (4) | 🟠 (4) |
+| Mouse/touch controls     | 🟢     | 🟢     | 🟠 (4)      | 🟠 (4) | 🟠 (4) | 🟠 (4) |
 | **Network**              |
 | HTTP requests            | 🟢     | 🟢     | 🟢          | 🟢     | 🟢     | 🟢     |
 

@@ -10,6 +10,7 @@ import com.google.common.base.Preconditions;
 import lombok.Value;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -187,14 +188,15 @@ public class Polygon implements Shape {
      */
     public List<Polygon> subdivide() {
         if (points.length == 6) {
-            return List.of(reposition(new Point2D(0f, 0f)));
+            return Collections.singletonList(this);
         }
 
         List<Point2D> vertices = subdivideVertices();
         List<Polygon> triangles = new ArrayList<>();
 
         for (int i = 0; i < vertices.size(); i += 3) {
-            triangles.add(new Polygon(vertices.get(i), vertices.get(i + 1), vertices.get(i + 2)));
+            Polygon triangle = new Polygon(vertices.get(i), vertices.get(i + 1), vertices.get(i + 2));
+            triangles.add(triangle);
         }
 
         return triangles;

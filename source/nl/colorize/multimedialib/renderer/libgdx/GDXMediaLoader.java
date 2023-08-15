@@ -55,6 +55,7 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
 
     private static final Texture.TextureFilter TEXTURE_FILTER = Texture.TextureFilter.Linear;
     private static final int FONT_CACHE_SIZE = 100;
+    private static final int BITMAP_FONT_SCALE = 2;
     private static final String CHARSET = "UTF-8";
 
     public GDXMediaLoader() {
@@ -91,11 +92,14 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
     private BitmapFont generateBitmapFont(FontCacheKey cacheKey) {
         FreeTypeFontGenerator.FreeTypeFontParameter config =
             new FreeTypeFontGenerator.FreeTypeFontParameter();
-        config.size = cacheKey.style.size();
+        config.size = cacheKey.style.size() * BITMAP_FONT_SCALE;
         config.color = toColor(cacheKey.style.color());
+        config.minFilter = TEXTURE_FILTER;
+        config.magFilter = TEXTURE_FILTER;
 
         FreeTypeFontGenerator fontGenerator = new FreeTypeFontGenerator(cacheKey.source());
         BitmapFont bitmapFont = fontGenerator.generateFont(config);
+        bitmapFont.getData().setScale(1f / BITMAP_FONT_SCALE);
         fontGenerator.dispose();
         return bitmapFont;
     }

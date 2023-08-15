@@ -264,8 +264,22 @@ public final class SceneContext implements Updatable {
      * parent. This avoids having to register logic and graphics separately.
      */
     public void attach(InteractiveObject subScene, Container parent) {
-        attach(subScene);
+        attach((Scene) subScene);
         parent.addChild(subScene);
+    }
+
+    /**
+     * Convenience method that attaches a {@link InteractiveObject} to the
+     * currently active scene ands adds its graphics to the stage root. Using
+     * this method is equivalent to {@code attach(subScene, stage.getRoot())}.
+     *
+     * @deprecated Prefer {@link #attach(InteractiveObject, Container)} to
+     *             have more explicit behavior on where the object's graphics
+     *             should appear in relation to other graphics.
+     */
+    @Deprecated
+    public void attach(InteractiveObject subScene) {
+        attach(subScene, stage.getRoot());
     }
 
     /**

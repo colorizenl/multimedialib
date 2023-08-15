@@ -10,6 +10,7 @@ import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.Updatable;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -31,31 +32,58 @@ public interface InputDevice extends Updatable {
      * result based on the current location of the cursor. If the platform
      * uses touch controls, this will only return a result if touch events
      * are currently in progress.
+     *
+     * @deprecated Use {@link #getPointers()} instead, since that method is
+     *             also able to process multi-touch input.
      */
+    @Deprecated
     public Optional<Point2D> getPointer();
+
+    /**
+     * Returns all currently active pointers. Depending on the device these
+     * pointers could be mouse input, or a trackpad, or touch controls.
+     * <p>
+     * The mouse pointer is always included in the results, since the mouse
+     * cursor is permanently visible. Touch controls are only available while
+     * the touch input is in progress. If the device supports multi-touch
+     * input, multiple touch pointers can be active simultaneously.
+     */
+    public List<Pointer> getPointers();
 
     /**
      * Returns true if any of the currently active pointers have been pressed
      * and located within the specified area during the current frame.
+     *
+     * @deprecated Use {@link #getPointers()} instead.
      */
+    @Deprecated
     public boolean isPointerPressed(Rect area);
 
     /**
      * Returns true if any of the currently active pointers were pressed,
      * regardless of their location.
+     *
+     * @deprecated Use {@link #getPointers()} instead.
      */
+    @Deprecated
     public boolean isPointerPressed();
 
     /**
      * Returns true if any of the currently active pointers were released and
      * located within the specified area during the current frame.
+     *
+     * @deprecated Use {@link #getPointers()} instead.
      */
+    @Deprecated
     public boolean isPointerReleased(Rect area);
 
     /**
      * Returns true if any of the currently active pointers were released,
      * regardless of their location.
+     *
+     * @deprecated Use {@link #getPointers()} instead.
      */
+    @Deprecated
     public boolean isPointerReleased();
 
     /**

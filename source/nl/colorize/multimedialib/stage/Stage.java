@@ -6,7 +6,8 @@
 
 package nl.colorize.multimedialib.stage;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Polygon;
@@ -37,7 +38,8 @@ import static nl.colorize.multimedialib.stage.Primitive.TYPE_SEGMENTED_LINE;
  * outlive the scene itself: at the end of the scene the contents of the
  * stage are cleared so that the next stage can take over.
  */
-@Data
+@Getter
+@Setter
 public class Stage implements Updatable {
 
     private final Canvas canvas;

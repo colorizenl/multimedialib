@@ -3,8 +3,6 @@
 # Lists JavaScript libraries that will be automatically added when
 # transpiling the application to JavaScript using TeaVM.
 
-pixi.min.js
-pixi.min.js.map
-three.min.js
-peerjs.min.js
-peerjs.min.js.map
+https://unpkg.com/pixi.js@7.2.4/dist/pixi.min.js
+https://unpkg.com/three@0.149.0/build/three.min.js
+https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js

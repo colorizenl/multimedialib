@@ -30,14 +30,6 @@ public class Circle implements Shape {
         this(new Point2D(x, y), radius);
     }
 
-    public float getCenterX() {
-        return center.getX();
-    }
-
-    public float getCenterY() {
-        return center.getY();
-    }
-
     @Override
     public boolean contains(Point2D p) {
         return calculateDistance(p) <= radius;
@@ -70,7 +62,8 @@ public class Circle implements Shape {
 
     @Override
     public Circle reposition(Point2D offset) {
-        return new Circle(center.getX() + offset.getX(), center.getY() + offset.getY(), radius);
+        Point2D newCenter = center.move(offset.getX(), offset.getY());
+        return new Circle(newCenter, radius);
     }
 
     @Override

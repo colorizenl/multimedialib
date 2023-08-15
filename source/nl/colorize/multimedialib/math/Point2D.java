@@ -10,6 +10,8 @@ import com.google.common.base.Preconditions;
 import lombok.Value;
 import nl.colorize.util.animation.Interpolation;
 
+import static nl.colorize.multimedialib.math.MathUtils.EPSILON;
+
 /**
  * Describes a point with X and Y coordinates within a two-dimensional space.
  * Point coordinates have float precision, and point instances are immutable.
@@ -20,7 +22,7 @@ public class Point2D {
     private float x;
     private float y;
 
-    public static final float EPSILON = MathUtils.EPSILON;
+    public static final Point2D ORIGIN = new Point2D(0f, 0f);
 
     public Point2D(float x, float y) {
         this.x = x;

@@ -8,7 +8,7 @@ package nl.colorize.multimedialib.scene;
 
 import org.junit.jupiter.api.Test;
 
-import static nl.colorize.multimedialib.math.Point2D.EPSILON;
+import static nl.colorize.multimedialib.math.MathUtils.EPSILON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FiniteStateMachineTest {

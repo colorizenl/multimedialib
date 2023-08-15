@@ -17,6 +17,8 @@ import nl.colorize.util.ResourceFile;
 import nl.colorize.util.Stopwatch;
 import nl.colorize.util.cli.Arg;
 import nl.colorize.util.cli.CommandLineArgumentParser;
+import nl.colorize.util.http.URLLoader;
+import nl.colorize.util.http.URLResponse;
 import org.teavm.diagnostics.Problem;
 import org.teavm.tooling.ConsoleTeaVMToolLog;
 import org.teavm.tooling.TeaVMTargetType;
@@ -96,7 +98,8 @@ public class TeaVMTranspilerTool {
         "[java.lang.System.exit(I)V]",
         "[java.lang.reflect.TypeVariable]",
         "[java.lang.Class.getGenericSuperclass()Ljava/lang/reflect/Type;]",
-        "[java.util.Properties.load(Ljava/io/Reader;)V]"
+        "[java.util.Properties.load(Ljava/io/Reader;)V]",
+        "[java.util.concurrent.CopyOnWriteArrayList]"
     );
 
     public static void main(String[] argv) {
@@ -157,13 +160,18 @@ public class TeaVMTranspilerTool {
         transpiler.setTargetType(TeaVMTargetType.JAVASCRIPT);
         transpiler.generate();
 
-        for (Problem problem : transpiler.getProblemProvider().getProblems()) {
-            if (shouldReport(problem)) {
-                LOGGER.log(Level.WARNING, "Error while transpiling: " + format(problem));
-            }
-        }
+        checkTranspilerOutput(transpiler);
 
         LOGGER.info("Transpilation took " + Math.round(timer.tock() / 1000f) + "s");
+    }
+
+    private void checkTranspilerOutput(TeaVMTool transpiler) {
+        for (Problem problem : transpiler.getProblemProvider().getProblems()) {
+            if (shouldReport(problem)) {
+                String details = format(problem);
+                throw new UnsupportedOperationException("TeaVM transpiler error:\n" + details);
+            }
+        }
     }
 
     private boolean shouldReport(Problem problem) {
@@ -203,24 +211,26 @@ public class TeaVMTranspilerTool {
     }
 
     private List<String> copyJavaScriptLibraries() {
-        List<String> fileNames = new ArrayList<>();
+        return JS_LIST.readLines(Charsets.UTF_8).stream()
+            .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+            .map(line -> copyJavaScriptLibrary(line).getName())
+            .toList();
+    }
 
+    private File copyJavaScriptLibrary(String url) {
         File libDir = new File(outputDir, "libraries");
         libDir.mkdir();
 
-        for (String line : JS_LIST.readLines(Charsets.UTF_8)) {
-            if (!line.isEmpty() && !line.startsWith("#")) {
-                ResourceFile file = new ResourceFile("browser/lib/" + line);
-                File outputFile = new File(libDir, line);
-                copyBinaryResourceFile(file, outputFile);
+        try {
+            URLLoader request = URLLoader.get(url);
+            URLResponse response = request.send();
 
-                if (!line.endsWith(".map")) {
-                    fileNames.add(line);
-                }
-            }
+            File outputFile = new File(libDir, url.substring(url.lastIndexOf("/") + 1));
+            FileUtils.write(response.body(), outputFile);
+            return outputFile;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to download " + url, e);
         }
-
-        return fileNames;
     }
 
     private boolean isFileType(ResourceFile needle, List<String> haystack) {
@@ -277,7 +287,7 @@ public class TeaVMTranspilerTool {
             byte[] contents = stream.readAllBytes();
             FileUtils.write(contents, outputFile);
         } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Cannot copy file " + file, e);
+            throw new RuntimeException("Cannot copy file: " + file, e);
         }
     }
 

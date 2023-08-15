@@ -7,7 +7,7 @@
 package nl.colorize.multimedialib.stage;
 
 import lombok.Getter;
-import nl.colorize.multimedialib.math.Buffer;
+import nl.colorize.multimedialib.math.ObservableQueue;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.InteractiveObject;
@@ -24,19 +24,24 @@ import java.util.function.Consumer;
  * Containers have their own {@link Transform}, and this is inherited by their
  * children. In other words, the child display object's position is relative
  * to its parent container's position, not relative to the stage.
+ * <p>
+ * Containers keep track of added and removed children. This information can
+ * be retrieved in two ways: by registering observers that are notified
+ * whenever a child is added or removed, or via a queue that can be polled on
+ * a frame-by-frame basis.
  */
 public class Container implements Graphic2D {
 
     @Getter private StageLocation location;
     private List<Graphic2D> children;
-    @Getter private Buffer<Graphic2D> addedChildren;
-    @Getter private Buffer<Graphic2D> removedChildren;
+    @Getter private ObservableQueue<Graphic2D> addedChildren;
+    @Getter private ObservableQueue<Graphic2D> removedChildren;
 
     public Container() {
         this.location = new StageLocation();
         this.children = new ArrayList<>();
-        this.addedChildren = new Buffer<>();
-        this.removedChildren = new Buffer<>();
+        this.addedChildren = new ObservableQueue<>();
+        this.removedChildren = new ObservableQueue<>();
     }
 
     public void addChild(Graphic2D child) {
@@ -69,7 +74,7 @@ public class Container implements Graphic2D {
     public void clearChildren() {
         children.forEach(removedChildren::push);
         children.clear();
-        addedChildren.clear();
+        addedChildren.flush();
     }
 
     public Iterable<Graphic2D> getChildren() {

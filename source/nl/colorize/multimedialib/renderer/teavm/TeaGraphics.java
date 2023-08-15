@@ -18,7 +18,7 @@ public interface TeaGraphics extends StageVisitor {
 
     public GraphicsMode getGraphicsMode();
 
-    public void init();
+    public void init(TeaMediaLoader mediaLoader);
 
     public int getDisplayWidth();
 

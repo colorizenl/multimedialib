@@ -11,6 +11,9 @@ import lombok.Value;
 
 /**
  * Two-dimensional rectangle with coordinates defined with float precision.
+ * Rectangles are specified using their top-left coordinate, width, and
+ * height. Methods are provided for obtaining the rectangle's X1 and Y1
+ * coordinates and its center.
  */
 @Value
 public class Rect implements Shape {

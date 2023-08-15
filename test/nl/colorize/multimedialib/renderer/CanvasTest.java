@@ -9,6 +9,8 @@ package nl.colorize.multimedialib.renderer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CanvasTest {
 
@@ -16,7 +18,7 @@ public class CanvasTest {
 
     @Test
     public void testFixedCanvas() {
-        Canvas canvas = Canvas.flexible(800, 600);
+        Canvas canvas = new Canvas(800, 600, ScaleStrategy.flexible());
         canvas.resizeScreen(1024, 768);
 
         assertEquals(0, canvas.toScreenX(0), EPSILON);
@@ -30,7 +32,7 @@ public class CanvasTest {
 
     @Test
     public void testOffset() {
-        Canvas canvas = Canvas.scale(800, 600);
+        Canvas canvas = new Canvas(800, 600, ScaleStrategy.scale());
         canvas.resizeScreen(1024, 768);
         canvas.offsetScreen(0, 20);
 
@@ -45,7 +47,7 @@ public class CanvasTest {
 
     @Test
     void canvasNeedsToStretch() {
-        Canvas canvas = Canvas.scale(800, 600);
+        Canvas canvas = new Canvas(800, 600, ScaleStrategy.scale());
         canvas.resizeScreen(1200, 900);
 
         assertEquals(0, canvas.toCanvasX(0), EPSILON);
@@ -59,7 +61,7 @@ public class CanvasTest {
 
     @Test
     void canvasNeedsToSquash() {
-        Canvas canvas = Canvas.scale(800, 600);
+        Canvas canvas = new Canvas(800, 600, ScaleStrategy.scale());
         canvas.resizeScreen(400, 300);
 
         assertEquals(0, canvas.toCanvasX(0), EPSILON);
@@ -73,7 +75,7 @@ public class CanvasTest {
 
     @Test
     void scaleToDifferentAspectRatio() {
-        Canvas canvas = Canvas.scale(800, 600);
+        Canvas canvas = new Canvas(800, 600, ScaleStrategy.scale());
         canvas.resizeScreen(600, 800);
 
         assertEquals(0f, canvas.toScreenX(0), EPSILON);
@@ -83,11 +85,23 @@ public class CanvasTest {
 
     @Test
     void fitToDifferentAspectRatio() {
-        Canvas canvas = Canvas.fit(800, 600);
+        Canvas canvas = new Canvas(800, 600, ScaleStrategy.fit());
         canvas.resizeScreen(600, 800);
 
         assertEquals(0f, canvas.toScreenX(0), EPSILON);
         assertEquals(300f, canvas.toScreenX(400), EPSILON);
         assertEquals(600f, canvas.toScreenX(800), EPSILON);
+    }
+
+    @Test
+    void screenOrientation() {
+        Canvas horizontal = new Canvas(800, 600, ScaleStrategy.flexible());
+        Canvas vertical = new Canvas(300, 400, ScaleStrategy.flexible());
+
+        assertTrue(horizontal.isLandscape());
+        assertFalse(horizontal.isPortait());
+
+        assertFalse(vertical.isLandscape());
+        assertTrue(vertical.isPortait());
     }
 }

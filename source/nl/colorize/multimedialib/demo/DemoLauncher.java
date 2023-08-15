@@ -11,6 +11,7 @@ import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.Renderer;
+import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.multimedialib.renderer.java2d.Java2DRenderer;
 import nl.colorize.multimedialib.renderer.libgdx.GDXRenderer;
@@ -66,11 +67,8 @@ public class DemoLauncher implements ApplicationMenuListener {
     }
 
     private Canvas initCanvas() {
-        if (canvasZoom) {
-            return Canvas.scale(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT);
-        } else {
-            return Canvas.flexible(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT);
-        }
+        ScaleStrategy scaleStrategy = canvasZoom ? ScaleStrategy.scale() : ScaleStrategy.flexible();
+        return new Canvas(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT, scaleStrategy);
     }
 
     private GraphicsMode getGraphicsMode() {
@@ -97,14 +95,5 @@ public class DemoLauncher implements ApplicationMenuListener {
     @Override
     public void onAbout() {
         Popups.message(null, "MultimediaLib - demo application");
-    }
-
-    @Override
-    public boolean hasPreferencesMenu() {
-        return false;
-    }
-
-    @Override
-    public void onPreferences() {
     }
 }

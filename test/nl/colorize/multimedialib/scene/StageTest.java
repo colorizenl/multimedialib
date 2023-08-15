@@ -16,6 +16,7 @@ import nl.colorize.multimedialib.math.SegmentedLine;
 import nl.colorize.multimedialib.mock.MockImage;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
+import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Graphic2D;
@@ -35,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StageTest {
 
-    private static final Canvas CANVAS = Canvas.flexible(800, 600);
+    private static final Canvas CANVAS = new Canvas(800, 600, ScaleStrategy.flexible());
 
     @Test
     void visitStage() {

@@ -7,7 +7,8 @@
 package nl.colorize.multimedialib.renderer.headless;
 
 import com.google.common.annotations.VisibleForTesting;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
@@ -17,7 +18,9 @@ import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Network;
+import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.multimedialib.renderer.Renderer;
+import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.renderer.java2d.StandardNetwork;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
@@ -39,7 +42,8 @@ import java.util.Optional;
  * of loading images. See {@link HeadlessMediaLoader} for more information.
  */
 @VisibleForTesting
-@Data
+@Getter
+@Setter
 public class HeadlessRenderer implements Renderer, InputDevice {
 
     private final GraphicsMode graphicsMode;
@@ -79,7 +83,7 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     }
     
     public HeadlessRenderer() {
-        this(Canvas.flexible(DEFAULT_WIDTH, DEFAULT_HEIGHT), DEFAULT_FRAMERATE);
+        this(new Canvas(DEFAULT_WIDTH, DEFAULT_HEIGHT, ScaleStrategy.flexible()), DEFAULT_FRAMERATE);
     }
 
     @Override
@@ -122,6 +126,14 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     @Override
     public Optional<Point2D> getPointer() {
         return Optional.ofNullable(pointer);
+    }
+
+    @Override
+    public List<Pointer> getPointers() {
+        Pointer pointerObject = new Pointer("headless", pointer);
+        pointerObject.setPressed(pointerPressed);
+        pointerObject.setReleased(pointerReleased);
+        return List.of(pointerObject);
     }
 
     @Override

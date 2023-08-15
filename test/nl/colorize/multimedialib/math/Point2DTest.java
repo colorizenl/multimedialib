@@ -8,13 +8,12 @@ package nl.colorize.multimedialib.math;
 
 import org.junit.jupiter.api.Test;
 
+import static nl.colorize.multimedialib.math.MathUtils.EPSILON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Point2DTest {
-
-    private static final float EPSILON = Point2D.EPSILON;
 
     @Test
     public void testCalculateDistance() {

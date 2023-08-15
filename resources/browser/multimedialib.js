@@ -56,26 +56,23 @@ window.preloadFontFace = function(family, url, callback) {
 }
 
 /**
- * TeaVM does not yet provide bindings to touch events, so we have to convert
- * them to mouse events in order to support touch.
+ * TeaVM does not yet provide bindings for touch events, so this generates
+ * custom events based on the original touch events. These custom events
+ * are then processed in order to support touch input.
  */
 function handleTouchEvent(touchEvent) {
-    const eventMapping = {
-        touchstart: "mousedown",
-        touchmove: "mousemove",
-        touchend: "mouseup"
-    };
-
-    const type = eventMapping[touchEvent.type];
-
-    if (type) {
-        const touch = touchEvent.changedTouches[0];
-        const simulatedEvent = document.createEvent("MouseEvent");
-        simulatedEvent.initMouseEvent(type, true, true, window, 1,
-            touch.screenX, touch.screenY, touch.clientX, touch.clientY,
-            false, false, false, false, 0, null);
-
-        touch.target.dispatchEvent(simulatedEvent);
-        touchEvent.preventDefault();
+    for (let i = 0; i < touchEvent.changedTouches.length; i++) {
+        touchEvent.target.dispatchEvent(new CustomEvent("custom:" + touchEvent.type, {
+            bubbles: false,
+            cancelable: true,
+            composed: false,
+            detail: {
+                identifier: touchEvent.changedTouches[i].identifier,
+                pageX: touchEvent.changedTouches[i].clientX,
+                pageY: touchEvent.changedTouches[i].clientY
+            }
+        }));
     }
+
+    touchEvent.preventDefault();
 }

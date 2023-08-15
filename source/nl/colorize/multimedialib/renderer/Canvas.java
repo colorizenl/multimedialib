@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.renderer;
 
 import com.google.common.base.Preconditions;
+import lombok.Getter;
 import nl.colorize.multimedialib.math.MathUtils;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
@@ -19,24 +20,35 @@ import nl.colorize.multimedialib.math.Rect;
  * resolution of the device. This allows applications to have a reasonably
  * consistent user interface across devices with different screen sizes, as
  * the canvas can be scaled depending on the difference between preferred
- * canvas size and the actual screen size. This class is then used to convert
- * between the two coordinate systems.
+ * canvas size and the actual screen size. The canvas is then used to convert
+ * between the two coordinate systems. How this scaling behaves when faced
+ * with different screen sizes, resolutions, and aspect ratios is controlled
+ * by the canvas' {@link ScaleStrategy}.
  * <p>
  * In some cases no scaling is necessary, and the application will simply
  * use the native resolution of the screen. This is referred to as a
  * "flexible" or "native" canvas, which does not have a preferred size or
  * aspect ratio and will simply translate screen coordinates 1-to-1.
  */
-public abstract class Canvas {
+@Getter
+public class Canvas {
 
-    protected int screenWidth;
-    protected int screenHeight;
+    private int preferredWidth;
+    private int preferredHeight;
+    private ScaleStrategy scaleStrategy;
+
+    private int screenWidth;
+    private int screenHeight;
     private int offsetX;
     private int offsetY;
 
-    private Canvas(int preferredWidth, int preferredHeight) {
+    public Canvas(int preferredWidth, int preferredHeight, ScaleStrategy scaleStrategy) {
         Preconditions.checkArgument(preferredWidth > 0, "Invalid width");
         Preconditions.checkArgument(preferredHeight > 0, "Invalid height");
+
+        this.preferredWidth = preferredWidth;
+        this.preferredHeight = preferredHeight;
+        this.scaleStrategy = scaleStrategy;
 
         this.screenWidth = preferredWidth;
         this.screenHeight = preferredHeight;
@@ -80,14 +92,22 @@ public abstract class Canvas {
         return new Point2D(getWidth() / 2f, getHeight() / 2f);
     }
 
+    public boolean isLandscape() {
+        return screenWidth >= screenHeight;
+    }
+
+    public boolean isPortait() {
+        return !isLandscape();
+    }
+
     /**
      * Returns the zoom level that indicates how canvas pixels should be
-     * displayed relative to screen pixels. A value of 1.0 indicates native
-     * resolution: a pixel on the canvas will be exactly one pixel on screen.
-     * A zoom level of 2.0 indicates a pixel on the canvas will be displayed
-     * as 2x2 pixels on screen.
+     * displayed relative to screen pixels. This is based on the current
+     * screen size, the canvas' preferred size, and its {@link ScaleStrategy}.
      */
-    public abstract float getZoomLevel();
+    public float getZoomLevel() {
+        return scaleStrategy.getZoomLevel(this);
+    }
 
     public float toCanvasX(int screenX) {
         return (screenX - offsetX) / getZoomLevel();
@@ -125,71 +145,5 @@ public abstract class Canvas {
     public String toString() {
         float zoomLevel = getZoomLevel();
         return getWidth() + "x" + getHeight() + " @ " + MathUtils.format(zoomLevel, 1) + "x";
-    }
-
-    /**
-     * Creates a new canvas that will not perform any scaling, and will simply
-     * display graphics at the screen's native resolution. A preferred width
-     * and height still need to be provided for sitations where the platform
-     * allows or requires the application to define its preferred size.
-     */
-    public static Canvas flexible(int preferredWidth, int preferredHeight) {
-        return new Canvas(preferredWidth, preferredHeight) {
-            @Override
-            public float getZoomLevel() {
-                return 1f;
-            }
-        };
-    }
-
-    /**
-     * Creates a new canvas that will try to match the preferred size, scaling
-     * the canvas if necessary. This will generally produce better-looking
-     * results than {@link #fit(int, int)}. The downside is the canvas might
-     * not entirely fit when the actual aspect ratio is different from the
-     * preferred aspect ratio.
-     */
-    public static Canvas scale(int preferredWidth, int preferredHeight) {
-        return new Canvas(preferredWidth, preferredHeight) {
-            @Override
-            public float getZoomLevel() {
-                float horizontalZoom = (float) screenWidth / (float) preferredWidth;
-                float verticalZoom = (float) screenHeight / (float) preferredHeight;
-                return Math.max(horizontalZoom, verticalZoom);
-            }
-        };
-    }
-
-    /**
-     * Creates a new canvas that zooms out until it is able to fit its
-     * preferred size. Compared to {@link #scale(int, int)}, this ensures the
-     * entire canvas is visible at all times. The downside is that the canvas
-     * will appear extremely zoomed out when the actual aspect ratio is
-     * different from the preferred aspect ratio.
-     */
-    public static Canvas fit(int preferredWidth, int preferredHeight) {
-        return new Canvas(preferredWidth, preferredHeight) {
-            @Override
-            public float getZoomLevel() {
-                float horizontalZoom = (float) screenWidth / (float) preferredWidth;
-                float verticalZoom = (float) screenHeight / (float) preferredHeight;
-                return Math.min(horizontalZoom, verticalZoom);
-            }
-        };
-    }
-
-    /**
-     * Zooms the canvas in a way that tries to find a balance between
-     * {@link #fit(int, int)} and {@link #scale(int, int)}.
-     */
-    public static Canvas balanced(int preferredWidth, int preferredHeight) {
-        return new Canvas(preferredWidth, preferredHeight) {
-            @Override
-            public float getZoomLevel() {
-                float horizontalZoom = (float) screenWidth / (float) preferredWidth;
-                float verticalZoom = (float) screenHeight / (float) preferredHeight;
-                return (horizontalZoom + verticalZoom) / 2f;
-            }
-        };
     }
 }

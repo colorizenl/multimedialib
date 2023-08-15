@@ -8,10 +8,13 @@ package nl.colorize.multimedialib.scene;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
-import nl.colorize.multimedialib.math.Buffer;
 import nl.colorize.multimedialib.math.Line;
+import nl.colorize.multimedialib.math.ObservableQueue;
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.renderer.InputDevice;
+import nl.colorize.multimedialib.renderer.Pointer;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Sub-scene that can be used to track swipe gestures for both mouse pointers
@@ -24,46 +27,47 @@ import nl.colorize.multimedialib.renderer.InputDevice;
 public class SwipeTracker implements Scene {
 
     private float tolerance;
-    private Point2D currentSwipeStart;
-    @Getter private Buffer<Line> swipes;
+    private Map<String, Point2D> incompleteSwipes;
+    @Getter private ObservableQueue<Line> swipes;
 
     public SwipeTracker(float tolerance) {
         Preconditions.checkArgument(tolerance >= 10f, "Invalid tolerance: " + tolerance);
 
         this.tolerance = tolerance;
-        this.swipes = new Buffer<>();
+        this.incompleteSwipes = new HashMap<>();
+        this.swipes = new ObservableQueue<>();
     }
 
     @Override
     public void update(SceneContext context, float deltaTime) {
-        InputDevice input = context.getInput();
-        Point2D pointer = input.getPointer().orElse(null);
-
-        if (pointer == null) {
-            currentSwipeStart = null;
-        } else if (currentSwipeStart == null) {
-            checkSwipeStart(input, pointer);
-        } else {
-            updateCurrentSwipe(input, pointer);
+        for (Pointer pointer : context.getInput().getPointers()) {
+            if (incompleteSwipes.containsKey(pointer.getId())) {
+                updateCurrentSwipe(pointer);
+            } else {
+                checkSwipeStart(pointer);
+            }
         }
     }
 
-    private void checkSwipeStart(InputDevice input, Point2D pointer) {
-        if (input.isPointerPressed()) {
-            currentSwipeStart = pointer;
+    private void checkSwipeStart(Pointer pointer) {
+        if (pointer.isPressed()) {
+            incompleteSwipes.put(pointer.getId(), pointer.getPosition());
         }
     }
 
-    private void updateCurrentSwipe(InputDevice input, Point2D pointer) {
-        if (input.isPointerReleased()) {
-            if (currentSwipeStart.distanceTo(pointer) >= tolerance) {
-                Line completedSwipe = new Line(currentSwipeStart, pointer);
+    private void updateCurrentSwipe(Pointer pointer) {
+        if (pointer.isReleased()) {
+            Point2D start = incompleteSwipes.get(pointer.getId());
+            Point2D position = pointer.getPosition();
+
+            if (start.distanceTo(position) >= tolerance) {
+                Line completedSwipe = new Line(start, position);
                 swipes.push(completedSwipe);
             }
 
-            currentSwipeStart = null;
-        } else if (!input.isPointerPressed()) {
-            currentSwipeStart = null;
+            incompleteSwipes.remove(pointer.getId());
+        } else if (!pointer.isPressed()) {
+            incompleteSwipes.remove(pointer.getId());
         }
     }
 }

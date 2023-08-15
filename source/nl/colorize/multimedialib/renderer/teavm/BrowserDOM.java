@@ -37,7 +37,7 @@ public class BrowserDOM {
         this.maskImageCache = Cache.from(this::createMaskImage, IMAGE_CACHE_SIZE);
     }
 
-    public HTMLCanvasElement createCanvas(HTMLElement container) {
+    public HTMLCanvasElement createFullScreenCanvas(HTMLElement container) {
         Window window = Window.current();
         HTMLDocument document = window.getDocument();
 
@@ -53,6 +53,11 @@ public class BrowserDOM {
         HTMLDocument document = Window.current().getDocument();
         int width = container.getOffsetWidth();
         int height = document.getDocumentElement().getClientHeight();
+
+        resizeCanvas(canvas, width, height);
+    }
+
+    private void resizeCanvas(HTMLCanvasElement canvas, int width, int height) {
         float devicePixelRatio = (float) Window.current().getDevicePixelRatio();
 
         canvas.getStyle().setProperty("width", width + "px");
@@ -91,15 +96,31 @@ public class BrowserDOM {
         return canvas;
     }
 
+    public HTMLCanvasElement createColorCanvas(int width, int height, ColorRGB color) {
+        HTMLDocument document = Window.current().getDocument();
+        HTMLCanvasElement canvas = (HTMLCanvasElement) document.createElement("canvas");
+        resizeCanvas(canvas, width, height);
+
+        CanvasRenderingContext2D context = (CanvasRenderingContext2D) canvas.getContext("2d");
+        context.setFillStyle(color.toHex());
+        context.fillRect(0, 0, width, height);
+
+        return canvas;
+    }
+
+    /**
+     * Parses the current URL's query string visible in the browser, and
+     * returns the result as a {@link PostData} instance.
+     */
     public static PostData getQueryString() {
         String queryString = Window.current().getLocation().getSearch();
         return PostData.parse(queryString, Charsets.UTF_8);
     }
 
     /**
-     * Used as a cache key for masking images. The entire image is masked, not
-     * just the image region. If we need a masked region, we just extract the
-     * corresponding region from the masked image.
+     * Used as a cache key for masking images. The entire image is masked,
+     * not just the image region. If we need a masked region, we just extract
+     * the corresponding region from the masked image.
      */
     private record MaskImage(TeaImage image, ColorRGB mask) {
     }

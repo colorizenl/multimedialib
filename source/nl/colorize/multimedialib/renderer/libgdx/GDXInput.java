@@ -14,6 +14,7 @@ import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
+import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.util.Platform;
 import nl.colorize.util.swing.Popups;
 import nl.colorize.util.swing.SwingUtils;
@@ -31,11 +32,7 @@ import java.util.Set;
 public class GDXInput implements InputDevice {
 
     private Canvas canvas;
-
-    private Point2D pointer;
-    private boolean pointerPressed;
-    private boolean pointerReleased;
-
+    private Pointer pointer;
     private Set<KeyCode> keysDown;
     private Set<KeyCode> keysUp;
 
@@ -102,13 +99,9 @@ public class GDXInput implements InputDevice {
 
     protected GDXInput(Canvas canvas) {
         this.canvas = canvas;
-
-        pointer = new Point2D(0f, 0f);
-        pointerPressed = false;
-        pointerReleased = false;
-
-        keysUp = new HashSet<>();
-        keysDown = new HashSet<>();
+        this.pointer = new Pointer("mouse", new Point2D(0f, 0f));
+        this.keysUp = new HashSet<>();
+        this.keysDown = new HashSet<>();
     }
 
     @Override
@@ -118,20 +111,19 @@ public class GDXInput implements InputDevice {
     }
 
     private void updatePointer() {
-        pointer = new Point2D(
-            canvas.toCanvasX(Gdx.input.getX()),
-            canvas.toCanvasY(Gdx.input.getY())
-        );
+        float pointerX = canvas.toCanvasX(Gdx.input.getX());
+        float pointerY = canvas.toCanvasY(Gdx.input.getY());
+        pointer.setPosition(new Point2D(pointerX, pointerY));
 
         if (Gdx.input.isTouched()) {
-            pointerPressed = true;
-            pointerReleased = false;
-        } else if (pointerPressed) {
-            pointerPressed = false;
-            pointerReleased = true;
+            pointer.setPressed(true);
+            pointer.setReleased(false);
+        } else if (pointer.isPressed()) {
+            pointer.setPressed(false);
+            pointer.setReleased(true);
         } else {
-            pointerPressed = false;
-            pointerReleased = false;
+            pointer.setPressed(false);
+            pointer.setReleased(false);
         }
     }
 
@@ -154,32 +146,37 @@ public class GDXInput implements InputDevice {
 
     @Override
     public Optional<Point2D> getPointer() {
-        return Optional.of(pointer);
+        return Optional.of(pointer.getPosition());
+    }
+
+    @Override
+    public List<Pointer> getPointers() {
+        return List.of(pointer);
     }
 
     @Override
     public boolean isPointerPressed(Rect area) {
-        return pointerPressed && area.contains(pointer);
+        return pointer.isPressed() && area.contains(pointer.getPosition());
     }
 
     @Override
     public boolean isPointerPressed() {
-        return pointerPressed;
+        return pointer.isPressed();
     }
 
     @Override
     public boolean isPointerReleased(Rect area) {
-        return pointerReleased && area.contains(pointer);
+        return pointer.isReleased() && area.contains(pointer.getPosition());
     }
 
     @Override
     public boolean isPointerReleased() {
-        return pointerReleased;
+        return pointer.isReleased();
     }
 
     @Override
     public void clearPointerReleased() {
-        pointerReleased = false;
+        pointer.setReleased(false);
     }
 
     @Override

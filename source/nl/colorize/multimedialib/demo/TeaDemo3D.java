@@ -9,6 +9,7 @@ package nl.colorize.multimedialib.demo;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
+import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.renderer.teavm.TeaRenderer;
 
 /**
@@ -17,7 +18,8 @@ import nl.colorize.multimedialib.renderer.teavm.TeaRenderer;
 public class TeaDemo3D {
 
     public static void main(String[] args) {
-        Canvas canvas = Canvas.scale(Demo3D.CANVAS_WIDTH, Demo3D.CANVAS_HEIGHT);
+        Canvas canvas = new Canvas(Demo3D.CANVAS_WIDTH, Demo3D.CANVAS_HEIGHT,
+            ScaleStrategy.flexible());
         DisplayMode displayMode = new DisplayMode(canvas, 60);
 
         TeaRenderer renderer = TeaRenderer.withThree(displayMode);

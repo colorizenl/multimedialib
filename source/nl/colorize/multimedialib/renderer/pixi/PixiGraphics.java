@@ -16,10 +16,12 @@ import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.math.SegmentedLine;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
+import nl.colorize.multimedialib.renderer.RendererException;
 import nl.colorize.multimedialib.renderer.teavm.Browser;
 import nl.colorize.multimedialib.renderer.teavm.BrowserDOM;
 import nl.colorize.multimedialib.renderer.teavm.TeaGraphics;
 import nl.colorize.multimedialib.renderer.teavm.TeaImage;
+import nl.colorize.multimedialib.renderer.teavm.TeaMediaLoader;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.FontStyle;
@@ -64,7 +66,7 @@ public class PixiGraphics implements TeaGraphics {
     }
 
     @Override
-    public void init() {
+    public void init(TeaMediaLoader mediaLoader) {
         pixi.init();
     }
 
@@ -131,7 +133,7 @@ public class PixiGraphics implements TeaGraphics {
         } else if (graphic instanceof Text text) {
             return createTextDisplayObject(text);
         } else {
-            throw new IllegalArgumentException("Unknown graphics type: " + graphic);
+            throw new RendererException("Unknown graphics type: " + graphic);
         }
     }
 
@@ -308,8 +310,8 @@ public class PixiGraphics implements TeaGraphics {
         displayObject.clear();
         displayObject.beginFill(graphic.getColor().getRGB(), 1f);
         displayObject.drawCircle(
-            toScreenX(circle.getCenterX()),
-            toScreenY(circle.getCenterY()),
+            toScreenX(circle.getCenter().getX()),
+            toScreenY(circle.getCenter().getY()),
             circle.getRadius() * canvas.getZoomLevel()
         );
         displayObject.endFill();

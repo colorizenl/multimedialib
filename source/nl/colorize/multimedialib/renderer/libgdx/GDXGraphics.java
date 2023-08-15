@@ -24,58 +24,60 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector3;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Streams;
-import nl.colorize.multimedialib.math.*;
+import nl.colorize.multimedialib.math.Circle;
+import nl.colorize.multimedialib.math.Line;
+import nl.colorize.multimedialib.math.Point3D;
+import nl.colorize.multimedialib.math.Polygon;
+import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.math.SegmentedLine;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Graphic2D;
-import nl.colorize.multimedialib.stage.Stage;
-import nl.colorize.multimedialib.stage.World3D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
+import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
+import nl.colorize.multimedialib.stage.World3D;
+import nl.colorize.util.stats.Cache;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888;
+import static com.badlogic.gdx.utils.Align.center;
+import static com.badlogic.gdx.utils.Align.left;
+import static com.badlogic.gdx.utils.Align.right;
 
 public class GDXGraphics implements StageVisitor {
 
     private Canvas canvas;
 
+    private SpriteBatch spriteBatch;
+    private ShapeRenderer shapeBatch;
+    private Cache<MaskTexture, TextureRegion> maskCache;
+
     private PerspectiveCamera camera;
     private DirectionalLight light;
     private Environment environment;
-
-    private SpriteBatch spriteBatch;
-    private ShapeRenderer shapeBatch;
-    private Map<TextureRegion, TextureRegion> maskCache;
-
     private ModelBatch modelBatch;
 
     private static final int FIELD_OF_VIEW = 75;
     private static final float NEAR_PLANE = 1f;
     private static final float FAR_PLANE = 300f;
     private static final int CIRCLE_SEGMENTS = 32;
+    private static final int MASK_CACHE_SIZE = 1024;
 
     protected GDXGraphics(Canvas canvas) {
         this.canvas = canvas;
-
-        this.spriteBatch = new SpriteBatch();
-        this.shapeBatch = new ShapeRenderer();
-        this.maskCache = new HashMap<>();
-
-        this.modelBatch = new ModelBatch();
-
-        prepareEnvironment();
+        this.maskCache = Cache.from(this::createMask, MASK_CACHE_SIZE);
+        prepareWorld();
+        restartBatch();
     }
 
-    private void prepareEnvironment() {
+    private void prepareWorld() {
         camera = new PerspectiveCamera(FIELD_OF_VIEW, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera.near = NEAR_PLANE;
         camera.far = FAR_PLANE;
@@ -84,6 +86,12 @@ public class GDXGraphics implements StageVisitor {
         light = new DirectionalLight();
         environment = new Environment();
         environment.add(light);
+    }
+
+    protected void restartBatch() {
+        spriteBatch = new SpriteBatch();
+        shapeBatch = new ShapeRenderer();
+        modelBatch = new ModelBatch();
     }
 
     @Override
@@ -106,9 +114,8 @@ public class GDXGraphics implements StageVisitor {
     @Override
     public void drawBackground(ColorRGB backgroundColor) {
         switchMode(false, true);
-        shapeBatch.setColor(convertColor(backgroundColor, 100f));
-        shapeBatch.rect(toScreenX(0f), toScreenY(0f),
-            toScreenX(canvas.getWidth()), toScreenY(canvas.getHeight()));
+        shapeBatch.setColor(convertColor(backgroundColor));
+        shapeBatch.rect(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
     /**
@@ -166,8 +173,8 @@ public class GDXGraphics implements StageVisitor {
     @Override
     public void drawCircle(Primitive graphic, Circle circle) {
         Transform transform = graphic.getGlobalTransform();
-        float x = toScreenX(circle.getCenterX());
-        float y = toScreenY(circle.getCenterY());
+        float x = toScreenX(circle.getCenter().getX());
+        float y = toScreenY(circle.getCenter().getY());
         float radius = circle.getRadius() * canvas.getZoomLevel();
 
         switchMode(false, true);
@@ -210,7 +217,7 @@ public class GDXGraphics implements StageVisitor {
         float screenHeight = textureRegion.getRegionHeight() * canvas.getZoomLevel();
 
         if (transform.getMaskColor() != null) {
-            textureRegion = getMask(textureRegion, transform.getMaskColor());
+            textureRegion = maskCache.get(new MaskTexture(textureRegion, transform.getMaskColor()));
         }
 
         switchMode(true, false);
@@ -220,16 +227,8 @@ public class GDXGraphics implements StageVisitor {
             transform.getScaleX() / 100f, transform.getScaleY() / 100f, -transform.getRotation());
     }
 
-    private TextureRegion getMask(TextureRegion textureRegion, ColorRGB color) {
-        TextureRegion mask = maskCache.get(textureRegion);
-        if (mask == null) {
-            mask = createMask(textureRegion, color);
-            maskCache.put(textureRegion, mask);
-        }
-        return mask;
-    }
-
-    private TextureRegion createMask(TextureRegion original, ColorRGB color) {
+    private TextureRegion createMask(MaskTexture config) {
+        TextureRegion original = config.original;
         TextureData textureData = original.getTexture().getTextureData();
         textureData.prepare();
         Pixmap pixels = textureData.consumePixmap();
@@ -239,7 +238,7 @@ public class GDXGraphics implements StageVisitor {
         for (int x = 0; x < original.getRegionWidth(); x++) {
             for (int y = 0; y < original.getRegionHeight(); y++) {
                 int rgba = pixels.getPixel(original.getRegionX() + x, original.getRegionY() + y);
-                int maskRGBA = Color.rgba8888(convertColor(color, new Color(rgba).a * 100f));
+                int maskRGBA = Color.rgba8888(convertColor(config.color, new Color(rgba).a * 100f));
                 mask.drawPixel(x, y, maskRGBA);
             }
         }
@@ -264,16 +263,16 @@ public class GDXGraphics implements StageVisitor {
 
         text.forLines((i, line) -> {
             float lineY = transform.getPosition().getY() + i * text.getLineHeight();
-            float screenY = toScreenY(lineY - 0.4f * displayFont.getStyle().size());
+            float screenY = toScreenY(lineY - 0.75f * displayFont.getStyle().size());
             displayFont.getBitmapFont().draw(spriteBatch, line, screenX, screenY, 0, align, false);
         });
     }
 
     private int getTextAlign(Align align) {
         return switch (align) {
-            case LEFT -> com.badlogic.gdx.utils.Align.left;
-            case CENTER -> com.badlogic.gdx.utils.Align.center;
-            case RIGHT -> com.badlogic.gdx.utils.Align.right;
+            case LEFT -> left;
+            case CENTER -> center;
+            case RIGHT -> right;
             default -> throw new AssertionError();
         };
     }
@@ -377,5 +376,12 @@ public class GDXGraphics implements StageVisitor {
         spriteBatch.dispose();
         shapeBatch.dispose();
         modelBatch.dispose();
+    }
+
+    /**
+     * Masks the original texture or texture region by replacing every
+     * non-transparent pixel with a mask color.
+     */
+    private record MaskTexture(TextureRegion original, ColorRGB color) {
     }
 }

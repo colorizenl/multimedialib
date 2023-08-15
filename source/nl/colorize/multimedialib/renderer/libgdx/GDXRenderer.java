@@ -16,6 +16,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.glutils.HdpiMode;
+import com.badlogic.gdx.graphics.glutils.HdpiUtils;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
@@ -32,10 +33,8 @@ import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.LogHelper;
-import nl.colorize.util.Platform;
 import nl.colorize.util.Stopwatch;
 
-import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -77,21 +76,8 @@ public class GDXRenderer implements Renderer, ApplicationListener {
     public void start(Scene initialScene, ErrorHandler errorHandler) {
         this.initialScene = initialScene;
 
-        int windowWidth = Math.round(canvas.getWidth() * getDesktopScaleFactor());
-        int windowHeight = Math.round(canvas.getHeight() * getDesktopScaleFactor());
-
-        Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
-        config.setWindowedMode(windowWidth, windowHeight);
-        config.setDecorated(true);
-        config.setIdleFPS(framerate);
-        config.setForegroundFPS(framerate);
-        config.setHdpiMode(HdpiMode.Pixels);
-        config.setTitle(window.title());
-        if (window.iconFile() != null) {
-            config.setWindowIcon(Files.FileType.Internal, window.iconFile().path());
-        }
-
         try {
+            Lwjgl3ApplicationConfiguration config = configure();
             new Lwjgl3Application(this, config);
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error during animation loop", e);
@@ -99,39 +85,27 @@ public class GDXRenderer implements Renderer, ApplicationListener {
         }
     }
 
-    /**
-     * Returns the platform's user interface scale factor. On Mac, this always
-     * returns 1.0 because Mac OS applies a consistent scale factor to the
-     * entire desktop. On Windows, desktop resolution/scale factor and UI scale
-     * factor are two independent settings.
-     * <p>
-     * This method returns the UI scale factor for the <em>default</em> screen.
-     * This could be different from the screen that is going to display the
-     * application, but we don't know this yet because this method is called
-     * before the window is even created.
-     */
-    private float getDesktopScaleFactor() {
-        //TODO it is not ideal to depend on AWT and Swing for this,
-        //     but since libGDX does not provide this information
-        //     and we currently only use the libGDX renderer on
-        //     desktop it should be OK for now.
-        if (Platform.isWindows()) {
-            return (float) GraphicsEnvironment.getLocalGraphicsEnvironment()
-                .getDefaultScreenDevice()
-                .getDefaultConfiguration()
-                .getDefaultTransform().getScaleX();
-        } else {
-            return 1f;
+    private Lwjgl3ApplicationConfiguration configure() {
+        Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
+        config.setWindowedMode(canvas.getWidth(), canvas.getHeight());
+        config.setDecorated(true);
+        config.setIdleFPS(framerate);
+        config.setForegroundFPS(framerate);
+        config.setHdpiMode(HdpiMode.Logical);
+        config.setTitle(window.title());
+        if (window.iconFile() != null) {
+            config.setWindowIcon(Files.FileType.Internal, window.iconFile().path());
         }
+        return config;
     }
 
     @Override
     public void create() {
-        resize(canvas.getWidth(), canvas.getHeight());
-
         input = new GDXInput(canvas);
         mediaLoader = new GDXMediaLoader();
         graphicsContext = new GDXGraphics(canvas);
+
+        resize(canvas.getWidth(), canvas.getHeight());
 
         context = new SceneContext(this, new Stopwatch());
         context.changeScene(initialScene);
@@ -146,21 +120,20 @@ public class GDXRenderer implements Renderer, ApplicationListener {
     @Override
     public void resize(int width, int height) {
         canvas.resizeScreen(width, height);
+        HdpiUtils.glViewport(0, 0, width, height);
+        graphicsContext.restartBatch();
     }
 
     @Override
     public void pause() {
-        //TODO
     }
 
     @Override
     public void resume() {
-        //TODO
     }
 
     @Override
     public void render() {
-        Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 

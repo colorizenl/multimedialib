@@ -37,4 +37,12 @@ public class TeaFont implements OutlineFont {
 
         return new TeaFont(fontPromise, newStyle);
     }
+
+    /**
+     * Returns the CSS description of this font, as it would be described in
+     * the CSS {@code font} shorthand property.
+     */
+    public String getFontString() {
+        return (style.bold() ? "bold " : "") + style.size() + "px " + style.family();
+    }
 }
