@@ -7,11 +7,13 @@
 package nl.colorize.multimedialib.renderer.java2d;
 
 import com.google.common.base.Preconditions;
+import lombok.Getter;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.OutlineFont;
 
 import java.awt.Font;
 
+@Getter
 public class AWTFont implements OutlineFont {
 
     private Font font;
@@ -22,17 +24,8 @@ public class AWTFont implements OutlineFont {
         this.style = style;
     }
 
-    protected Font getFont() {
-        return font;
-    }
-
     @Override
-    public FontStyle getStyle() {
-        return style;
-    }
-
-    @Override
-    public OutlineFont derive(FontStyle newStyle) {
+    public AWTFont derive(FontStyle newStyle) {
         Preconditions.checkArgument(style.family().equals(newStyle.family()),
             "Font family mismatch: expected " + style.family());
 

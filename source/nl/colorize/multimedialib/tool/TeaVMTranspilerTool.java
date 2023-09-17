@@ -103,7 +103,7 @@ public class TeaVMTranspilerTool {
     );
 
     public static void main(String[] argv) {
-        CommandLineArgumentParser argParser = new CommandLineArgumentParser(TeaVMTranspilerTool.class);
+        CommandLineArgumentParser argParser = new CommandLineArgumentParser("TeaVMTranspilerTool");
         TeaVMTranspilerTool transpiler = argParser.parse(argv, TeaVMTranspilerTool.class);
         transpiler.run();
     }

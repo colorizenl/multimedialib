@@ -42,11 +42,11 @@ public class SpriteAtlasPacker {
     @Arg(usage = "Base region name on file name only instead of relative path")
     protected boolean flatten;
 
-    private static final List<String> IMAGE_FILE_EXTENSIONS = List.of("png", "jpg");
+    public static final List<String> IMAGE_FILE_EXTENSIONS = List.of("png", "jpg");
     private static final Logger LOGGER = LogHelper.getLogger(SpriteAtlasPacker.class);
 
     public static void main(String[] argv) {
-        CommandLineArgumentParser argParser = new CommandLineArgumentParser(SpriteAtlasPacker.class);
+        CommandLineArgumentParser argParser = new CommandLineArgumentParser("SpriteAtlasPacker");
         SpriteAtlasPacker spriteAtlasPacker = argParser.parse(argv, SpriteAtlasPacker.class);
         spriteAtlasPacker.run();
     }

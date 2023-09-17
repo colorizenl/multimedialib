@@ -8,11 +8,10 @@ package nl.colorize.multimedialib.math;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static nl.colorize.multimedialib.math.Shape.EPSILON;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class VectorTest {
-
-    private static final float EPSILON = Vector.EPSILON;
 
     @Test
     public void testGetXY() {

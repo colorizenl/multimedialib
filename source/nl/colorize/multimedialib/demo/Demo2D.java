@@ -356,7 +356,7 @@ public class Demo2D implements Scene, ErrorHandler {
             List<Image> frames = marioSpriteSheet.get(List.of(direction + "_0",
                 direction + "_1", direction + "_2", direction + "_3", direction + "_4"));
             Animation anim = new Animation(frames, 0.1f, true);
-            marioSprite.addState(direction, anim);
+            marioSprite.addGraphics(direction, anim);
         }
 
         return marioSprite;
@@ -391,7 +391,7 @@ public class Demo2D implements Scene, ErrorHandler {
 
         @Override
         public void update(float deltaTime) {
-            sprite.changeState(DIRECTIONS.get(direction));
+            sprite.changeGraphics(DIRECTIONS.get(direction));
             sprite.update(deltaTime);
 
             Point2D position = sprite.getTransform().getPosition();

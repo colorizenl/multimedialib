@@ -6,115 +6,130 @@
 
 package nl.colorize.multimedialib.stage;
 
+import com.google.common.base.Preconditions;
 import lombok.Getter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.multimedialib.scene.FiniteStateMachine;
-import nl.colorize.multimedialib.scene.State;
+import nl.colorize.multimedialib.scene.StateMachine;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
- * Static or animated two-dimensional image that can be composited into a larger
- * scene. Multiple sprites may use the same image data, the sprite is merely an
- * instance of the image that can be drawn by the renderer and does not modify
- * the image itself. Sprites can be transformed (positioned, rotated, scaled)
- * before they are displayed.
+ * Static or animated image that can be displayed on the stage. Multiple
+ * sprites can use the same image data, the sprite is merely an instance of
+ * the image that can be drawn by the renderer and does not modify the image
+ * itself. As they represent an instance of the original image, sprites can
+ * be transformed without affecting the underlying image data.
  * <p>
- * Sprites can have multiple possible graphical states, with each state being
- * represented by either a static image or by an animation. States are
- * identified by name, and are based around an internal {@link FiniteStateMachine}.
+ * Sprites support multiple graphical states, where each state can be
+ * identified by its name.
  */
 public class Sprite implements Graphic2D {
 
     @Getter private StageLocation location;
-    private FiniteStateMachine<Animation> stateMachine;
+    private Map<String, Animation> graphics;
+    private StateMachine<String> state;
 
     private static final String DEFAULT_STATE = "$$default";
 
     public Sprite() {
         this.location = new StageLocation();
-        this.stateMachine = new FiniteStateMachine<>();
+        this.graphics = new HashMap<>();
+        this.state = new StateMachine<>(DEFAULT_STATE);
     }
 
     public Sprite(Animation anim) {
         this();
-        addState(DEFAULT_STATE, anim);
+        addGraphics(DEFAULT_STATE, anim);
     }
 
     public Sprite(Image image) {
         this();
-        addState(DEFAULT_STATE, image);
+        addGraphics(DEFAULT_STATE, image);
     }
 
     /**
-     * Adds a new animation state to this sprite.
+     * Adds graphics to this sprite. If the sprite does not contain graphics
+     * yet, this will automatically change the sprite's current graphics.
+     * Otherwise, changing the sprite's graphics can be done later using the
+     * specified name.
      *
      * @throws IllegalArgumentException if a state with the same name has
      *         already been registered with this sprite.
      */
-    public void addState(String name, Animation graphics) {
-        stateMachine.register(State.of(name, graphics));
+    public void addGraphics(String stateName, Animation stateGraphics) {
+        Preconditions.checkArgument(!graphics.containsKey(stateName),
+            "Sprite already contains graphics for " + stateName);
+
+        graphics.put(stateName, stateGraphics);
+        if (graphics.size() == 1) {
+            changeGraphics(stateName);
+        }
     }
 
     /**
-     * Shorthand that adds a new state to this sprite that consists of a single
-     * static image.
+     * Adds graphics to this sprite. If the sprite does not contain graphics
+     * yet, this will automatically change the sprite's current graphics.
+     * Otherwise, changing the sprite's graphics can be done later using the
+     * specified name.
      *
      * @throws IllegalArgumentException if a state with the same name has
      *         already been registered with this sprite.
      */
-    public void addState(String name, Image stateGraphics) {
-        addState(name, new Animation(stateGraphics));
-    }
-
-    @Override
-    public void update(float deltaTime) {
-        stateMachine.update(deltaTime);
+    public void addGraphics(String stateName, Image stateGraphics) {
+        addGraphics(stateName, new Animation(stateGraphics));
     }
 
     /**
-     * Changes the sprite's graphics to the state with the specified name. If
-     * the sprite was already in that stae this method does nothing.
+     * Changes this sprite's graphics to the state identified by the specified
+     * name. If the sprite is already in that state, this method does nothing.
      */
-    public void changeState(String state) {
-        stateMachine.changeState(state);
+    public void changeGraphics(String stateName) {
+        Preconditions.checkArgument(graphics.containsKey(stateName),
+            "Sprite does not contain graphics for " + stateName);
+
+        state.changeState(stateName);
     }
 
     /**
      * Leaves the sprite in its current state, but resets the graphics for that
      * state to play from the beginning.
      */
-    public void resetState() {
-        stateMachine.resetActiveState();
+    public void resetCurrentGraphics() {
+        state.getActiveStateTimer().reset();
     }
 
+    @Deprecated
     public String getActiveState() {
-        return stateMachine.getActiveState().name();
+        return state.getActiveState();
     }
 
     public Set<String> getPossibleStates() {
-        return stateMachine.getPossibleStates().stream()
-            .map(State::name)
-            .collect(Collectors.toSet());
+        return graphics.keySet();
     }
 
-    public boolean hasState(String stateName) {
-        return stateMachine.hasPossibleState(stateName);
+    public boolean hasGraphics(String stateName) {
+        return graphics.containsKey(stateName);
     }
 
-    public Animation getStateGraphics(String stateName) {
-        return stateMachine.getPossibleState(stateName).properties();
+    public Animation getGraphics(String stateName) {
+        Animation stateGraphics = graphics.get(stateName);
+        Preconditions.checkArgument(stateGraphics != null,
+            "Sprite does not contain graphics for " + stateName);
+        return stateGraphics;
     }
-    
-    public Animation getActiveStateGraphics() {
-        return getStateGraphics(getActiveState());
+
+    @Deprecated
+    public Animation getCurrentStateGraphics() {
+        return graphics.get(state.getActiveState());
     }
 
     public Image getCurrentGraphics() {
-        Animation graphics = stateMachine.getActiveStateProperties();
-        return graphics.getFrameAtTime(stateMachine.getActiveStateTime());
+        Animation currentGraphics = graphics.get(state.getActiveState());
+        float time = state.getActiveStateTimer().getTime();
+        return currentGraphics.getFrameAtTime(time);
     }
 
     public int getCurrentWidth() {
@@ -123,6 +138,13 @@ public class Sprite implements Graphic2D {
 
     public int getCurrentHeight() {
         return getCurrentGraphics().getHeight();
+    }
+
+    @Override
+    public void update(float deltaTime) {
+        Preconditions.checkState(!graphics.isEmpty(), "Sprite does not contain any graphics");
+
+        state.update(deltaTime);
     }
 
     @Override
@@ -140,10 +162,10 @@ public class Sprite implements Graphic2D {
      */
     public Sprite copy() {
         Sprite copy = new Sprite();
-        for (State<Animation> state : stateMachine.getPossibleStates()) {
-            copy.addState(state.name(), state.properties());
+        for (Map.Entry<String, Animation> entry : graphics.entrySet()) {
+            copy.addGraphics(entry.getKey(), entry.getValue());
         }
-        copy.changeState(stateMachine.getActiveState().name());
+        copy.changeGraphics(state.getActiveState());
         copy.getTransform().set(getTransform());
         return copy;
     }

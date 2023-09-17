@@ -24,8 +24,8 @@ public class Rect implements Shape {
     private float height;
 
     public Rect(float x, float y, float width, float height) {
-        Preconditions.checkArgument(width >= 0f, "Invalid width: " + width);
-        Preconditions.checkArgument(height >= 0f, "Invalid height: " + height);
+        Preconditions.checkArgument(width >= 0f, "Invalid width: %s", width);
+        Preconditions.checkArgument(height >= 0f, "Invalid height: %s", height);
 
         this.x = x;
         this.y = y;

@@ -13,6 +13,11 @@ resources, such as graphics, audio, input, and network access. Other frameworks 
 approach, but tend to target mobile platforms, native applications (on mobile/desktop/both), or
 web applications. MultimediaLib's main strength is that applications will run on *all* those
 different platforms.
+
+MultimediaLib has been in use since all the way back to 2007. It used to support long-forgotten
+front-end technologies like [Java Web Start](https://en.wikipedia.org/wiki/Java_Web_Start). It
+later transitioned to browser-based technologies once [WebGL](https://en.wikipedia.org/wiki/WebGL)
+became widely supported, while still retaining its original support for desktop applications.
     
 Usage
 -----
@@ -23,13 +28,13 @@ to the dependencies section in `pom.xml`:
     <dependency>
         <groupId>nl.colorize</groupId>
         <artifactId>multimedialib</artifactId>
-        <version>2023.5</version>
+        <version>2023.6</version>
     </dependency>  
     
 The library can also be used in Gradle projects:
 
     dependencies {
-        implementation "nl.colorize:multimedialib:2023.5"
+        implementation "nl.colorize:multimedialib:2023.6"
     }
     
 Supported platforms

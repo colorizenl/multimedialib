@@ -22,13 +22,13 @@ public class SpriteTest {
         Image imageB = new MockImage(100, 100);
 
         Sprite sprite = new Sprite();
-        sprite.addState("a", imageA);
-        sprite.addState("b", imageB);
+        sprite.addGraphics("a", imageA);
+        sprite.addGraphics("b", imageB);
 
         assertEquals("a", sprite.getActiveState());
         assertEquals(imageA, sprite.getCurrentGraphics());
 
-        sprite.changeState("b");
+        sprite.changeGraphics("b");
 
         assertEquals("b", sprite.getActiveState());
         assertEquals(imageB, sprite.getCurrentGraphics());
@@ -37,10 +37,10 @@ public class SpriteTest {
     @Test
     public void testCannotAddSameStateTwice() {
         Sprite sprite = new Sprite();
-        sprite.addState("a", new MockImage(100, 100));
+        sprite.addGraphics("a", new MockImage(100, 100));
 
         assertThrows(IllegalArgumentException.class, () -> {
-            sprite.addState("a", new MockImage(100, 100));
+            sprite.addGraphics("a", new MockImage(100, 100));
         });
     }
 
@@ -52,16 +52,16 @@ public class SpriteTest {
         Animation animation = new Animation(ImmutableList.of(first, second, third), 1f, false);
 
         Sprite sprite = new Sprite();
-        sprite.addState("a", animation);
-        sprite.addState("b", new MockImage(100, 100));
+        sprite.addGraphics("a", animation);
+        sprite.addGraphics("b", new MockImage(100, 100));
 
         sprite.update(1f);
         sprite.update(1f);
 
         assertEquals(third, sprite.getCurrentGraphics());
 
-        sprite.changeState("b");
-        sprite.changeState("a");
+        sprite.changeGraphics("b");
+        sprite.changeGraphics("a");
 
         assertEquals(first, sprite.getCurrentGraphics());
     }
@@ -75,8 +75,8 @@ public class SpriteTest {
     @Test
     void getStateNames() {
         Sprite sprite = new Sprite();
-        sprite.addState("a", new MockImage());
-        sprite.addState("b", new MockImage());
+        sprite.addGraphics("a", new MockImage());
+        sprite.addGraphics("b", new MockImage());
 
         assertEquals(ImmutableSet.of("a", "b"), sprite.getPossibleStates());
     }
@@ -84,12 +84,12 @@ public class SpriteTest {
     @Test
     void copyShouldCreateDeepCopy() {
         Sprite sprite = new Sprite();
-        sprite.addState("a", new MockImage());
-        sprite.addState("b", new MockImage());
-        sprite.changeState("a");
+        sprite.addGraphics("a", new MockImage());
+        sprite.addGraphics("b", new MockImage());
+        sprite.changeGraphics("a");
 
         Sprite copy = sprite.copy();
-        copy.changeState("b");
+        copy.changeGraphics("b");
 
         assertEquals("a", sprite.getActiveState());
         assertEquals("b", copy.getActiveState());

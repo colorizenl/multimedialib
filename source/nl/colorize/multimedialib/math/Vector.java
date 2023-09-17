@@ -21,8 +21,6 @@ public class Vector {
     private float direction;
     private float magnitude;
 
-    public static final float EPSILON = Shape.EPSILON;
-
     public Vector(float direction, float magnitude) {
         this.direction = direction;
         this.magnitude = Math.max(magnitude, 0f);
@@ -37,7 +35,7 @@ public class Vector {
     }
 
     public boolean isOrigin() {
-        return magnitude < EPSILON;
+        return magnitude < MathUtils.EPSILON;
     }
 
     public Vector withDirection(float newDirection) {

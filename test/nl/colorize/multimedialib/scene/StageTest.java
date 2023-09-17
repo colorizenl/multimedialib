@@ -41,10 +41,10 @@ class StageTest {
     @Test
     void visitStage() {
         Sprite spriteA = new Sprite();
-        spriteA.addState("a", new MockImage());
+        spriteA.addGraphics("a", new MockImage());
 
         Sprite spriteB = new Sprite();
-        spriteB.addState("b", new MockImage());
+        spriteB.addGraphics("b", new MockImage());
 
         Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
         stage.getRoot().addChild(spriteA);
@@ -161,9 +161,9 @@ class StageTest {
     @Test
     void spriteBoundsShouldConsiderCurrentGraphicsAndTransform() {
         Sprite sprite = new Sprite();
-        sprite.addState("a", new MockImage(100, 100));
-        sprite.addState("b", new MockImage(200, 200));
-        sprite.changeState("a");
+        sprite.addGraphics("a", new MockImage(100, 100));
+        sprite.addGraphics("b", new MockImage(200, 200));
+        sprite.changeGraphics("a");
 
         assertEquals("(-50, -50, 100, 100)", sprite.getStageBounds().toString());
 
@@ -171,7 +171,7 @@ class StageTest {
 
         assertEquals("(-40, -30, 100, 100)", sprite.getStageBounds().toString());
 
-        sprite.changeState("b");
+        sprite.changeGraphics("b");
 
         assertEquals("(-90, -80, 200, 200)", sprite.getStageBounds().toString());
 
