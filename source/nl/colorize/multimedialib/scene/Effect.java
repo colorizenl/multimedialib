@@ -195,6 +195,15 @@ public final class Effect implements Scene {
     }
 
     /**
+     * Attaches this effect to the specified scene context. Using this method
+     * is identical to {@code sceneContext.attach(effect)}, but is more
+     * readable when creating effects in a declarative way.
+     */
+    public void attach(SceneContext context) {
+        context.attach(this);
+    }
+
+    /**
      * Creates an effect that will first wait for the specified period of
      * time, and will then perform an action.
      */
@@ -318,6 +327,13 @@ public final class Effect implements Scene {
             String visibleText = originalText.substring(0, (int) timeline.getValue());
             text.setText(visibleText);
         });
+        return effect;
+    }
+
+    public static Effect forClickHandler(Graphic2D graphic, Runnable handler) {
+        Effect effect = new Effect();
+        effect.linkGraphics(graphic);
+        effect.addClickHandler(graphic, handler);
         return effect;
     }
 }

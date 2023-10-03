@@ -9,30 +9,25 @@ package nl.colorize.multimedialib.renderer.libgdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.google.common.base.Preconditions;
+import lombok.Getter;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.OutlineFont;
+import nl.colorize.util.Platform;
 
 public class GDXBitmapFont implements OutlineFont {
 
     private GDXMediaLoader fontLoader;
     private FileHandle source;
-    private FontStyle style;
-    private BitmapFont bitmapFont;
+    @Getter private FontStyle style;
+    @Getter private BitmapFont bitmapFont;
+    @Getter private float lineOffset;
 
     protected GDXBitmapFont(GDXMediaLoader fontLoader, FileHandle source, FontStyle style) {
         this.fontLoader = fontLoader;
         this.source = source;
         this.style = style;
         this.bitmapFont = fontLoader.getBitmapFont(source, style);
-    }
-
-    protected BitmapFont getBitmapFont() {
-        return bitmapFont;
-    }
-
-    @Override
-    public FontStyle getStyle() {
-        return style;
+        this.lineOffset = style.size() * (Platform.isWindows() ? 0.375f : 0.75f);
     }
 
     @Override

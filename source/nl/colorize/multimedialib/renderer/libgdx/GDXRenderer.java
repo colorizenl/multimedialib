@@ -33,7 +33,9 @@ import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.LogHelper;
+import nl.colorize.util.Platform;
 import nl.colorize.util.Stopwatch;
+import nl.colorize.util.swing.SwingUtils;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -87,16 +89,32 @@ public class GDXRenderer implements Renderer, ApplicationListener {
 
     private Lwjgl3ApplicationConfiguration configure() {
         Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
-        config.setWindowedMode(canvas.getWidth(), canvas.getHeight());
-        config.setDecorated(true);
         config.setIdleFPS(framerate);
         config.setForegroundFPS(framerate);
         config.setHdpiMode(HdpiMode.Logical);
-        config.setTitle(window.title());
-        if (window.iconFile() != null) {
-            config.setWindowIcon(Files.FileType.Internal, window.iconFile().path());
-        }
+        config.setTitle(window.getTitle());
+        config.setWindowIcon(Files.FileType.Internal, window.getIconFile().path());
+        config.setDecorated(true);
+        configureDisplayMode(config);
         return config;
+    }
+
+    private void configureDisplayMode(Lwjgl3ApplicationConfiguration config) {
+        // There is an issue in LWJGL that causes the application
+        // to crash using LWJGL's own fullscreen display mode.
+        if (window.isFullscreen() && !Platform.isMac()) {
+            config.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayMode());
+        } else {
+            int width = canvas.getWidth();
+            int height = canvas.getHeight();
+
+            if (Platform.isWindows()) {
+                float uiScale = SwingUtils.getDesktopScaleFactor();
+                config.setWindowedMode(Math.round(width * uiScale), Math.round(height * uiScale));
+            } else {
+                config.setWindowedMode(width, height);
+            }
+        }
     }
 
     @Override

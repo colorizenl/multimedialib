@@ -56,9 +56,13 @@ public final class SceneContext implements Updatable {
     private Queue<SceneLogic> requestedSceneQueue;
     private List<Scene> globalScenes;
 
+    private int lastCanvasWidth;
+    private int lastCanvasHeight;
+
     private static final long FRAME_LEEWAY_MS = 5;
     private static final float MIN_FRAME_TIME = 0.01f;
     private static final float MAX_FRAME_TIME = 0.2f;
+    private static final int RESIZE_TOLERANCE = 20;
     private static final Logger LOGGER = LogHelper.getLogger(SceneContext.class);
 
     /**
@@ -79,6 +83,9 @@ public final class SceneContext implements Updatable {
         this.stage = new Stage(renderer.getGraphicsMode(), renderer.getCanvas());
         this.requestedSceneQueue = new LinkedList<>();
         this.globalScenes = new ArrayList<>();
+
+        this.lastCanvasWidth = renderer.getCanvas().getWidth();
+        this.lastCanvasHeight = renderer.getCanvas().getHeight();
     }
 
     /**
@@ -148,9 +155,13 @@ public final class SceneContext implements Updatable {
 
         updateSceneGraph(activeScene, deltaTime);
         updateGlobalScenes(deltaTime);
+
+        lastCanvasWidth = getCanvas().getWidth();
+        lastCanvasHeight = getCanvas().getHeight();
     }
 
     private void updateSceneGraph(SceneLogic current, float deltaTime) {
+        checkCanvasResize(current);
         current.scene.update(this, deltaTime);
 
         // Iterate the list of systems backwards to handle
@@ -167,6 +178,16 @@ public final class SceneContext implements Updatable {
                 subScene.update(this, deltaTime);
                 checkCompleted(current, subScene);
             }
+        }
+    }
+
+    private void checkCanvasResize(SceneLogic current) {
+        int width = getCanvas().getWidth();
+        int height = getCanvas().getHeight();
+
+        if (Math.abs(width - lastCanvasWidth) >= RESIZE_TOLERANCE ||
+                Math.abs(height - lastCanvasHeight) >= RESIZE_TOLERANCE) {
+            current.scene.resize(this, width, height);
         }
     }
 
@@ -255,6 +276,16 @@ public final class SceneContext implements Updatable {
      */
     public void attach(Updatable subScene) {
         Scene wrappedSubScene = (context, deltaTime) -> subScene.update(deltaTime);
+        attach(wrappedSubScene);
+    }
+
+    /**
+     * Wraps a {@code Runnable} so that is acts as a sub-scene for the
+     * currently active scene.  The sub-scene will remain active until
+     * it is detached or the parent scene ends.
+     */
+    public void attach(Runnable subScene) {
+        Scene wrappedSubScene = (context, deltaTime) -> subScene.run();
         attach(wrappedSubScene);
     }
 
@@ -394,10 +425,14 @@ public final class SceneContext implements Updatable {
      * consisting of both the scene itself plus all of its attached
      * sub-scenes.
      */
-    private record SceneLogic(Scene scene, List<Scene> subScenes) {
+    private static class SceneLogic {
+
+        private Scene scene;
+        private List<Scene> subScenes;
 
         public SceneLogic(Scene scene) {
-            this(scene, new ArrayList<>());
+            this.scene = scene;
+            this.subScenes = new ArrayList<>();
         }
 
         public void walk(Consumer<Scene> callback) {

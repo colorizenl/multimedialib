@@ -23,7 +23,7 @@ public class StateMachineTest {
     void changeState() {
         StateMachine<String> stateMachine = new StateMachine<>("a");
         assertEquals("a", stateMachine.getActiveState());
-        stateMachine.changeState("b");
+        stateMachine.requestState("b");
         assertEquals("b", stateMachine.getActiveState());
     }
 
@@ -32,9 +32,10 @@ public class StateMachineTest {
         StateMachine<String> stateMachine = new StateMachine<>("a");
         stateMachine.allowTransitions(TupleList.of(Tuple.of("a", "b")));
 
-        assertTrue(stateMachine.changeState("b"));
+        assertTrue(stateMachine.requestState("b"));
         assertEquals("b", stateMachine.getActiveState());
-        assertFalse(stateMachine.changeState("c"));
+        assertFalse(stateMachine.requestState("c"));
+        assertFalse(stateMachine.requestState("c", 2f));
         assertEquals("b", stateMachine.getActiveState());
     }
 
@@ -47,9 +48,9 @@ public class StateMachineTest {
         StateMachine<Updatable> stateMachine = new StateMachine<>(a);
         stateMachine.update(1f);
         stateMachine.update(1f);
-        stateMachine.changeState(b);
+        stateMachine.requestState(b);
         stateMachine.update(1f);
-        stateMachine.changeState(a);
+        stateMachine.requestState(a);
         stateMachine.update(1f);
 
         assertEquals("[a, a, b, a]", frames.toString());
@@ -60,17 +61,16 @@ public class StateMachineTest {
         List<String> frames = new ArrayList<>();
         Updatable a = deltaTime -> frames.add("a");
         Updatable b = deltaTime -> frames.add("b");
-        Updatable c = deltaTime -> frames.add("c");
 
         StateMachine<Updatable> stateMachine = new StateMachine<>(a);
         stateMachine.update(1f);
-        stateMachine.changeState(b, 2f, c);
+        stateMachine.requestState(b, 2f);
         stateMachine.update(1f);
         stateMachine.update(1f);
         stateMachine.update(1f);
         stateMachine.update(1f);
 
-        assertEquals("[a, b, b, c, c]", frames.toString());
+        assertEquals("[a, b, b, a, a]", frames.toString());
     }
 
     @Test
@@ -81,12 +81,78 @@ public class StateMachineTest {
 
         StateMachine<Updatable> stateMachine = new StateMachine<>(a);
         stateMachine.update(1f);
-        stateMachine.changeState(b, 2f);
+        stateMachine.requestState(b, 2f);
         stateMachine.update(1f);
         stateMachine.update(1f);
         stateMachine.update(1f);
         stateMachine.update(1f);
 
         assertEquals("[a, b, b, a, a]", frames.toString());
+    }
+
+    @Test
+    void queueStateImmediatelyChangesPermanentState() {
+        List<String> frames = new ArrayList<>();
+        Updatable a = deltaTime -> frames.add("a");
+        Updatable b = deltaTime -> frames.add("b");
+        Updatable c = deltaTime -> frames.add("c");
+
+        StateMachine<Updatable> stateMachine = new StateMachine<>(a);
+        stateMachine.update(1f);
+        stateMachine.requestState(b);
+        stateMachine.requestState(c);
+        stateMachine.update(1f);
+        stateMachine.update(1f);
+
+        assertEquals("[a, c, c]", frames.toString());
+    }
+
+    @Test
+    void queueStateWaitsForTemporaryStateToCompleteBeforeChanging() {
+        List<String> frames = new ArrayList<>();
+        Updatable a = deltaTime -> frames.add("a");
+        Updatable b = deltaTime -> frames.add("b");
+        Updatable c = deltaTime -> frames.add("c");
+
+        StateMachine<Updatable> stateMachine = new StateMachine<>(a);
+        stateMachine.update(1f);
+        stateMachine.requestState(b, 2f);
+        stateMachine.requestState(c);
+        stateMachine.update(1f);
+        stateMachine.update(1f);
+        stateMachine.update(1f);
+
+        assertEquals("[a, b, b, c]", frames.toString());
+    }
+
+    @Test
+    void forceState() {
+        List<String> frames = new ArrayList<>();
+        Updatable a = deltaTime -> frames.add("a");
+        Updatable b = deltaTime -> frames.add("b");
+        Updatable c = deltaTime -> frames.add("c");
+
+        StateMachine<Updatable> stateMachine = new StateMachine<>(a);
+        stateMachine.update(1f);
+        stateMachine.requestState(b);
+        stateMachine.forceState(c);
+        stateMachine.update(1f);
+
+        assertEquals("[a, c]", frames.toString());
+    }
+
+    @Test
+    void retainState() {
+        List<String> frames = new ArrayList<>();
+        Updatable a = deltaTime -> frames.add("a");
+        Updatable b = deltaTime -> frames.add("b");
+
+        StateMachine<Updatable> stateMachine = new StateMachine<>(a);
+        stateMachine.requestState(b);
+        stateMachine.update(1f);
+        stateMachine.update(1f);
+        stateMachine.update(1f);
+
+        assertEquals("[b, b, b]", frames.toString());
     }
 }

@@ -7,7 +7,7 @@
 package nl.colorize.multimedialib.renderer;
 
 import nl.colorize.util.Stopwatch;
-import nl.colorize.util.stats.Aggregates;
+import nl.colorize.util.stats.Aggregate;
 
 import java.util.Deque;
 import java.util.LinkedHashMap;
@@ -89,7 +89,7 @@ public class FrameStats {
      */
     public int getAverageTimeMS(String phase) {
         PhaseStats phaseStats = prepare(phase);
-        return (int) Aggregates.average(phaseStats.values);
+        return (int) Aggregate.AVERAGE.calc(phaseStats.values);
     }
 
     public List<String> getCustomStats() {

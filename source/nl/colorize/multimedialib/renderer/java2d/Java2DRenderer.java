@@ -113,7 +113,7 @@ public class Java2DRenderer implements Renderer {
         window.setFocusTraversalKeysEnabled(false);
         window.addWindowListener(createWindowCloseListener());
         window.addComponentListener(createResizeListener());
-        window.setTitle(windowOptions.title());
+        window.setTitle(windowOptions.getTitle());
         window.setIconImage(loadIcon(windowOptions));
         window.getContentPane().setPreferredSize(new Dimension(canvas.getWidth(), canvas.getHeight()));
         window.pack();
@@ -122,10 +122,10 @@ public class Java2DRenderer implements Renderer {
         window.createBufferStrategy(2);
 
         if (Platform.isMac()) {
-            MacIntegration.setApplicationMenuListener(windowOptions.appMenuListener());
+            MacIntegration.setApplicationMenuListener(windowOptions.getAppMenuListener());
         }
 
-        if (windowOptions.fullscreen()) {
+        if (windowOptions.isFullscreen()) {
             SwingUtils.goFullScreen(window);
         }
 
@@ -155,7 +155,7 @@ public class Java2DRenderer implements Renderer {
                 LOGGER.info("Closing window");
                 terminated.set(true);
 
-                if (!windowOptions.embedded()) {
+                if (!windowOptions.isEmbedded()) {
                     System.exit(0);
                 }
             }
@@ -163,12 +163,8 @@ public class Java2DRenderer implements Renderer {
     }
 
     private Image loadIcon(WindowOptions windowOptions) {
-        if (windowOptions.iconFile() != null) {
-            ResourceFile iconFile = new ResourceFile(windowOptions.iconFile().path());
-            return SwingUtils.loadIcon(iconFile).getImage();
-        } else {
-            return null;
-        }
+        ResourceFile iconFile = new ResourceFile(windowOptions.getIconFile().path());
+        return SwingUtils.loadIcon(iconFile).getImage();
     }
 
     /**

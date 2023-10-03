@@ -28,6 +28,15 @@ public interface Scene {
     }
 
     /**
+     * Called when the canvas size has changed, for example because the window
+     * has been resized or because the device orientation has changed. Note
+     * {@code canvasWidth} and {@code canvasHeight} are based on the current
+     * canvas size, which might be different from the "native" screen size.
+     */
+    default void resize(SceneContext context, int canvasWidth, int canvasHeight) {
+    }
+
+    /**
      * Called during every frame update for as long as the scene is active.
      * {@code deltaTime} indicates the elapsed time since the last frame, in
      * seconds.

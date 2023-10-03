@@ -122,9 +122,10 @@ public class TeaImage implements Image {
 
     @Override
     public String toString() {
-        return imagePromise
-            .thenMap(HTMLImageElement::getSrc)
-            .getValue()
-            .orElse("<loading>");
+        HTMLImageElement imageElement = imagePromise.getValue().orElse(null);
+        if (imageElement == null) {
+            return "<loading>";
+        }
+        return imageElement.getSrc();
     }
 }

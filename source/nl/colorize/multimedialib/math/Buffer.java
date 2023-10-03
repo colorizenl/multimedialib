@@ -7,34 +7,28 @@
 package nl.colorize.multimedialib.math;
 
 import com.google.common.collect.ImmutableList;
-import nl.colorize.util.Subject;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
 /**
- * Data structure that combines "pull" notifications (by polling the queue)
- * with "push" notifications (by registering observers). Neither approach is
- * unequivocally "better" for MultimediaLib applications. Although observers
- * are generally preferable, immediate notification does not alwys combine
- * well with the frame-by-frame of MultimediaLib application. In such
- * situations it is often easier to explicitly poll the queue at the
- * appropriate moment during each frame update.
+ * Data structure that can be flushed to obtain values that have accumulated
+ * over time. This is suitable for events that should be handled during each
+ * frame update, but that can occur at any point.
  *
  * @param <E> The type of element that is stored in the queue.
  */
-public class ObservableQueue<E> extends Subject<E> {
+public class Buffer<E> {
 
-    private Queue<E> elements;
+    private Queue<E> contents;
 
-    public ObservableQueue() {
-        this.elements = new LinkedList<>();
+    public Buffer() {
+        this.contents = new LinkedList<>();
     }
 
     public void push(E element) {
-        elements.add(element);
-        next(element);
+        contents.add(element);
     }
 
     /**
@@ -45,8 +39,8 @@ public class ObservableQueue<E> extends Subject<E> {
     public Iterable<E> flush() {
         //TODO cannot use List.copyOf() until the next version
         //     of TeaVM is released.
-        List<E> buffer = ImmutableList.copyOf(elements);
-        elements.clear();
+        List<E> buffer = ImmutableList.copyOf(contents);
+        contents.clear();
         return buffer;
     }
 }

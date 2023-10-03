@@ -263,7 +263,7 @@ public class GDXGraphics implements StageVisitor {
 
         text.forLines((i, line) -> {
             float lineY = transform.getPosition().getY() + i * text.getLineHeight();
-            float screenY = toScreenY(lineY - 0.75f * displayFont.getStyle().size());
+            float screenY = toScreenY(lineY - displayFont.getLineOffset());
             displayFont.getBitmapFont().draw(spriteBatch, line, screenX, screenY, 0, align, false);
         });
     }

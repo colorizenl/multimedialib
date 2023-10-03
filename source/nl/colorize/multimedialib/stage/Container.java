@@ -7,7 +7,7 @@
 package nl.colorize.multimedialib.stage;
 
 import lombok.Getter;
-import nl.colorize.multimedialib.math.ObservableQueue;
+import nl.colorize.multimedialib.math.Buffer;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.InteractiveObject;
@@ -34,14 +34,14 @@ public class Container implements Graphic2D {
 
     @Getter private StageLocation location;
     private List<Graphic2D> children;
-    @Getter private ObservableQueue<Graphic2D> addedChildren;
-    @Getter private ObservableQueue<Graphic2D> removedChildren;
+    @Getter private Buffer<Graphic2D> addedChildren;
+    @Getter private Buffer<Graphic2D> removedChildren;
 
     public Container() {
         this.location = new StageLocation();
         this.children = new ArrayList<>();
-        this.addedChildren = new ObservableQueue<>();
-        this.removedChildren = new ObservableQueue<>();
+        this.addedChildren = new Buffer<>();
+        this.removedChildren = new Buffer<>();
     }
 
     public void addChild(Graphic2D child) {

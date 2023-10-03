@@ -7,17 +7,21 @@
 package nl.colorize.multimedialib.scene;
 
 import com.google.common.base.Preconditions;
-import lombok.Getter;
 import nl.colorize.util.stats.Tuple;
 import nl.colorize.util.stats.TupleList;
 
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.function.BiPredicate;
 
 /**
  * Finite state machine that allows a number of possible states, but can
- * only have one currently active state at any point in time. The finite
- * state machine implements the {@link Updatable} interface, so it needs
- * to receive frame updates in order to function.
+ * only have one currently active state at any point in time.
+ * <p>
+ * The state machine implements the {@link Updatable} interface, so it needs
+ * to receive frame updates in order to function. Requested states are stored
+ * in a queue, with the actual state change only occurring during the frame
+ * update.
  * <p>
  * By default, every state is allowed to transition into every other state.
  * The state machine can optionally be configured to restrict allowed
@@ -31,75 +35,56 @@ import java.util.function.BiPredicate;
  */
 public class StateMachine<S> implements Updatable {
 
-    @Getter private S activeState;
-    @Getter private Timer activeStateTimer;
-    private S nextState;
+    private Deque<RequestedState<S>> stateQueue;
+    private S defaultState;
     private BiPredicate<S, S> allowedTransitions;
 
-    public StateMachine(S initialState) {
-        this.activeState = initialState;
-        this.activeStateTimer = Timer.infinite();
-        this.nextState = null;
+    public StateMachine(S defaultState) {
+        this.stateQueue = new LinkedList<>();
+        this.defaultState = defaultState;
         this.allowedTransitions = (a, b) -> true;
     }
 
-    private boolean isTransitionAllowed(S requestedState) {
-        return !activeState.equals(requestedState) &&
-            allowedTransitions.test(activeState, requestedState);
+    /**
+     * Requests the state machine to transition into the specified state at
+     * the earliest opportunity. Once active, the state will remain active
+     * until another state is requested.
+     * <p>
+     * Returns a boolean indicating if the state machine allows a transition
+     * from the preceding state in the queue into the requested state.
+     */
+    public boolean requestState(S nextState) {
+        return requestState(nextState, 0f);
     }
 
     /**
-     * Requests to change the currently active state. The new state will remain
-     * active until it is explicitly changed.
+     * Requests the state machine to transition into the specified state at
+     * the earliest opportunity. Once active, the state will remain active
+     * for the specified duration (in seconds).
      * <p>
-     * Returns true if the requested state change was accepted. Returns false
-     * if the transition from the current state to the new state is rejected.
+     * Returns a boolean indicating if the state machine allows a transition
+     * from the preceding state in the queue into the requested state.
      */
-    public boolean changeState(S requestedState) {
-        Preconditions.checkArgument(requestedState != null, "Requested state cannot be null");
-
-        if (!isTransitionAllowed(requestedState)) {
+    public boolean requestState(S nextState, float duration) {
+        if (!isTransitionAllowed(nextState)) {
             return false;
         }
 
-        activeState = requestedState;
-        activeStateTimer = Timer.infinite();
-        nextState = null;
+        boolean interruptible = duration == 0f;
+        Timer timer = interruptible ? Timer.infinite() : new Timer(duration);
+
+        RequestedState<S> stateInfo = new RequestedState<>(nextState, timer, interruptible);
+        stateQueue.offer(stateInfo);
         return true;
     }
 
     /**
-     * Requests to change the currently active state. The new state will only
-     * remain active for a limited duration (in seconds), after which the
-     * active state will transition back into the previously active state.
-     * <p>
-     * Returns true if the requested state change was accepted. Returns false
-     * if the transition from the current state to the new state is rejected.
+     * Forces this state machine into the specified state, clearing the queue
+     * so that the requested state becomes active during the next frame update.
      */
-    public boolean changeState(S requestedState, float duration) {
-        return changeState(requestedState, duration, activeState);
-    }
-
-    /**
-     * Requests to change the currently active state. The new state will only
-     * remain active for a limited duration (in seconds), after which the
-     * active state will transition into the requested next state.
-     * <p>
-     * Returns true if the requested state change was accepted. Returns false
-     * if the transition from the current state to the new state is rejected.
-     */
-    public boolean changeState(S requestedState, float duration, S next) {
-        Preconditions.checkArgument(requestedState != null, "Requested state cannot be null");
-        Preconditions.checkArgument(next != null, "Next state cannot be null");
-
-        if (!isTransitionAllowed(requestedState)) {
-            return false;
-        }
-
-        activeState = requestedState;
-        activeStateTimer = new Timer(duration);
-        nextState = next;
-        return true;
+    public void forceState(S nextState) {
+        stateQueue.clear();
+        requestState(nextState);
     }
 
     /**
@@ -121,16 +106,77 @@ public class StateMachine<S> implements Updatable {
         allowedTransitions = (a, b) -> allowed.contains(Tuple.of(a, b));
     }
 
+    private boolean isTransitionAllowed(S requestedState) {
+        if (stateQueue.isEmpty()) {
+            return !requestedState.equals(defaultState);
+        }
+
+        S precedingState = stateQueue.getLast().state;
+        return !requestedState.equals(precedingState) &&
+            allowedTransitions.test(precedingState, requestedState);
+    }
+
     @Override
     public void update(float deltaTime) {
-        if (activeState instanceof Updatable updatableState) {
+        if (isActiveStateCompleted()) {
+            stateQueue.pop();
+        }
+
+        if (stateQueue.isEmpty()) {
+            updateState(defaultState, deltaTime);
+            return;
+        }
+
+        RequestedState<S> active = stateQueue.peek();
+        updateState(active.state, deltaTime);
+        active.timer.update(deltaTime);
+
+        // We intentionally check the active state at the start
+        // *and* at the end of every frame, just to ensure the
+        // state machine is in the expected state at all times.
+        if (isActiveStateCompleted()) {
+            stateQueue.pop();
+        }
+    }
+
+    private void updateState(S state, float deltaTime) {
+        if (state instanceof Updatable updatableState) {
             updatableState.update(deltaTime);
         }
+    }
 
-        activeStateTimer.update(deltaTime);
-
-        if (activeStateTimer.isCompleted() && nextState != null) {
-            changeState(nextState);
+    public S getActiveState() {
+        if (stateQueue.isEmpty()) {
+            return defaultState;
         }
+
+        RequestedState<S> active = stateQueue.peek();
+        return active.state;
+    }
+
+    public Timer getActiveStateTimer() {
+        if (stateQueue.isEmpty()) {
+            return Timer.infinite();
+        }
+
+        RequestedState<S> active = stateQueue.peek();
+        return active.timer;
+    }
+
+    private boolean isActiveStateCompleted() {
+        if (stateQueue.isEmpty()) {
+            return false;
+        }
+
+        RequestedState<S> active = stateQueue.peek();
+        boolean hasNextState = stateQueue.size() >= 2;
+        return active.timer.isCompleted() || (active.interruptible && hasNextState);
+    }
+
+    /**
+     * Data structure indicating one of the states in the queue. Also keeps
+     * track of the state's progress while it is active.
+     */
+    private record RequestedState<S>(S state, Timer timer, boolean interruptible) {
     }
 }

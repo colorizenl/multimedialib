@@ -24,8 +24,7 @@ public class StandardNetworkTest {
 
         StandardNetwork internetAccess = new StandardNetwork();
         internetAccess.get("http://www.colorize.nl", new Headers())
-            .then(response -> responses.add(response.getBody()))
-            .thenCatch(errors::add);
+            .subscribe(response -> responses.add(response.getBody()), errors::add);
 
         Thread.sleep(3000);
 

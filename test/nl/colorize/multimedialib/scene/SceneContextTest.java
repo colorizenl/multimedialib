@@ -13,6 +13,7 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
 import nl.colorize.util.Stopwatch;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -26,6 +27,11 @@ public class SceneContextTest {
 
     private static final Canvas CANVAS = new Canvas(800, 600, ScaleStrategy.scale());
     private static final HeadlessRenderer RENDERER = new HeadlessRenderer(CANVAS, 10);
+
+    @BeforeEach
+    public void before() {
+        CANVAS.resizeScreen(800, 600);
+    }
 
     @Test
     public void testInitialScene() {
@@ -362,6 +368,35 @@ public class SceneContextTest {
         assertEquals(List.of("start", "0.10", "0.10"), b.frames);
     }
 
+    @Test
+    void trackResize() {
+        MockStopwatch timer = new MockStopwatch(1000, 1100, 1200, 1300, 1400);
+        Counter counter = new Counter();
+
+        SceneContext context = new SceneContext(RENDERER, timer);
+        context.changeScene(counter);
+        context.syncFrame();
+        CANVAS.resizeScreen(1000, 1000);
+        context.syncFrame();
+        context.syncFrame();
+
+        assertEquals(List.of("start", "0.10", "resize", "0.10", "0.10"), counter.frames);
+    }
+
+    @Test
+    void doNotTrackVerySmallResize() {
+        MockStopwatch timer = new MockStopwatch(1000, 1100, 1200, 1300, 1400);
+        Counter counter = new Counter();
+
+        SceneContext context = new SceneContext(RENDERER, timer);
+        context.changeScene(counter);
+        context.syncFrame();
+        CANVAS.resizeScreen(810, 610);
+        context.syncFrame();
+
+        assertEquals(List.of("start", "0.10", "0.10"), counter.frames);
+    }
+
     private record Counter(List<String> frames) implements Scene {
 
         public Counter() {
@@ -381,6 +416,11 @@ public class SceneContextTest {
         @Override
         public void update(SceneContext context, float deltaTime) {
             frames.add(String.format("%.2f", deltaTime));
+        }
+
+        @Override
+        public void resize(SceneContext context, int canvasWidth, int canvasHeight) {
+            frames.add("resize");
         }
     }
 }

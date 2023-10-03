@@ -30,14 +30,14 @@ public class Sprite implements Graphic2D {
 
     @Getter private StageLocation location;
     private Map<String, Animation> graphics;
-    private StateMachine<String> state;
+    private StateMachine<String> stateMachine;
 
     private static final String DEFAULT_STATE = "$$default";
 
     public Sprite() {
         this.location = new StageLocation();
         this.graphics = new HashMap<>();
-        this.state = new StateMachine<>(DEFAULT_STATE);
+        this.stateMachine = new StateMachine<>(DEFAULT_STATE);
     }
 
     public Sprite(Animation anim) {
@@ -90,7 +90,9 @@ public class Sprite implements Graphic2D {
         Preconditions.checkArgument(graphics.containsKey(stateName),
             "Sprite does not contain graphics for " + stateName);
 
-        state.changeState(stateName);
+        if (!stateMachine.getActiveState().equals(stateName)) {
+            stateMachine.forceState(stateName);
+        }
     }
 
     /**
@@ -98,12 +100,12 @@ public class Sprite implements Graphic2D {
      * state to play from the beginning.
      */
     public void resetCurrentGraphics() {
-        state.getActiveStateTimer().reset();
+        stateMachine.getActiveStateTimer().reset();
     }
 
     @Deprecated
     public String getActiveState() {
-        return state.getActiveState();
+        return stateMachine.getActiveState();
     }
 
     public Set<String> getPossibleStates() {
@@ -123,12 +125,12 @@ public class Sprite implements Graphic2D {
 
     @Deprecated
     public Animation getCurrentStateGraphics() {
-        return graphics.get(state.getActiveState());
+        return graphics.get(stateMachine.getActiveState());
     }
 
     public Image getCurrentGraphics() {
-        Animation currentGraphics = graphics.get(state.getActiveState());
-        float time = state.getActiveStateTimer().getTime();
+        Animation currentGraphics = graphics.get(stateMachine.getActiveState());
+        float time = stateMachine.getActiveStateTimer().getTime();
         return currentGraphics.getFrameAtTime(time);
     }
 
@@ -144,7 +146,7 @@ public class Sprite implements Graphic2D {
     public void update(float deltaTime) {
         Preconditions.checkState(!graphics.isEmpty(), "Sprite does not contain any graphics");
 
-        state.update(deltaTime);
+        stateMachine.update(deltaTime);
     }
 
     @Override
@@ -165,7 +167,7 @@ public class Sprite implements Graphic2D {
         for (Map.Entry<String, Animation> entry : graphics.entrySet()) {
             copy.addGraphics(entry.getKey(), entry.getValue());
         }
-        copy.changeGraphics(state.getActiveState());
+        copy.changeGraphics(stateMachine.getActiveState());
         copy.getTransform().set(getTransform());
         return copy;
     }

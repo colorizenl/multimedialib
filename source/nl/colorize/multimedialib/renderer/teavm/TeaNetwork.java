@@ -10,7 +10,7 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.util.LogHelper;
-import nl.colorize.util.Promise;
+import nl.colorize.util.Subscribable;
 import nl.colorize.util.http.Headers;
 import nl.colorize.util.http.PostData;
 import nl.colorize.util.http.URLResponse;
@@ -34,25 +34,25 @@ public class TeaNetwork implements Network {
     private static final Logger LOGGER = LogHelper.getLogger(TeaNetwork.class);
 
     @Override
-    public Promise<URLResponse> get(String url, Headers headers) {
+    public Subscribable<URLResponse> get(String url, Headers headers) {
         XMLHttpRequest request = XMLHttpRequest.create();
-        Promise<URLResponse> promise = new Promise<>();
-        request.setOnReadyStateChange(() -> handleResponse(request, promise));
+        Subscribable<URLResponse> subject = new Subscribable<>();
+        request.setOnReadyStateChange(() -> handleResponse(request, subject));
         request.open("GET", url, true);
         addRequestHeaders(request, headers);
         request.send();
-        return promise;
+        return subject;
     }
 
     @Override
-    public Promise<URLResponse> post(String url, Headers headers, PostData data) {
+    public Subscribable<URLResponse> post(String url, Headers headers, PostData data) {
         XMLHttpRequest request = XMLHttpRequest.create();
-        Promise<URLResponse> promise = new Promise<>();
-        request.setOnReadyStateChange(() -> handleResponse(request, promise));
+        Subscribable<URLResponse> subject = new Subscribable<>();
+        request.setOnReadyStateChange(() -> handleResponse(request, subject));
         request.open("POST", url, true);
         addRequestHeaders(request, headers);
         request.send(data.encode(UTF_8));
-        return promise;
+        return subject;
     }
 
     private void addRequestHeaders(XMLHttpRequest request, Headers headers) {
@@ -62,13 +62,13 @@ public class TeaNetwork implements Network {
         }
     }
 
-    private void handleResponse(XMLHttpRequest request, Promise<URLResponse> promise) {
+    private void handleResponse(XMLHttpRequest request, Subscribable<URLResponse> subject) {
         if (request.getReadyState() == XMLHttpRequest.DONE) {
             if (request.getStatus() >= 200 && request.getStatus() <= 204) {
                 URLResponse response = parseResponse(request);
-                promise.resolve(response);
+                subject.next(response);
             } else {
-                promise.reject(new IOException("AJAX request failed: " + request.getStatusText()));
+                subject.nextError(new IOException("AJAX request failed: " + request.getStatusText()));
             }
         }
     }

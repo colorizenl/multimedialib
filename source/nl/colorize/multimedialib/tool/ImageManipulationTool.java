@@ -16,16 +16,22 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static java.awt.image.BufferedImage.TYPE_INT_ARGB;
 
 /**
  * Command line tool for various forms of image manipulation that are not
  * available at runtime due to lack of platform support. This tool "bakes"
  * the effects into a new image, which can then be loaded and displayed at
  * runtime.
+ * <p>
+ * The following effects are supported:
+ * <ul>
+ *   <li>Generate variants with a horizontal offset to simulate texture animation.</li>
+ *   <li>Generate variants with a vertical offset to simulate texture animation.</li>
+ *   <li>Mirror the image horizontally and vertically so it can be used for tiling.</li>
+ * </ul>
  */
 public class ImageManipulationTool {
 
@@ -34,12 +40,16 @@ public class ImageManipulationTool {
 
     @Arg(name = "output")
     protected File outputDir;
-
     @Arg
     protected int horizontalOffset;
 
     @Arg
     protected int verticalOffset;
+
+    @Arg
+    protected boolean mirror;
+
+    private int counter;
 
     private static final Logger LOGGER = LogHelper.getLogger(ImageManipulationTool.class);
 
@@ -75,40 +85,68 @@ public class ImageManipulationTool {
         if (verticalOffset > 0) {
             applyVerticalOffset(original);
         }
+
+        if (mirror) {
+            mirrorImage(original);
+        }
     }
 
     private void applyHorizontalOffset(BufferedImage original) {
         for (int x = 0; x < original.getWidth(); x += horizontalOffset) {
-            BufferedImage image = createImage(original);
-            Graphics2D g2 = Utils2D.createGraphics(image, true, true);
-            g2.drawImage(original, x, 0, null);
-            g2.drawImage(original, x - original.getWidth(), 0, null);
-            g2.dispose();
-            writePNG(image, "h-" + x + ".png");
+            int offset = x;
+
+            generateVariant(original, g2 -> {
+                g2.drawImage(original, offset, 0, null);
+                g2.drawImage(original, offset - original.getWidth(), 0, null);
+            });
         }
     }
 
     private void applyVerticalOffset(BufferedImage original) {
         for (int y = 0; y < original.getHeight(); y += verticalOffset) {
-            BufferedImage image = createImage(original);
-            Graphics2D g2 = Utils2D.createGraphics(image, true, true);
-            g2.drawImage(original, 0, y, null);
-            g2.drawImage(original, 0, y - original.getHeight(), null);
-            g2.dispose();
-            writePNG(image, "v-" + y + ".png");
+            int offset = y;
+
+            generateVariant(original, g2 -> {
+                g2.drawImage(original, 0, offset, null);
+                g2.drawImage(original, 0, offset - original.getHeight(), null);
+            });
         }
     }
 
-    private BufferedImage createImage(BufferedImage original) {
-        return new BufferedImage(original.getWidth(), original.getHeight(), TYPE_INT_ARGB);
+    private void mirrorImage(BufferedImage original) {
+        int width = original.getWidth();
+        int height = original.getHeight();
+
+        generateVariant(original, g2 -> {
+            g2.drawImage(original, 0, 0, width / 2, height / 2, 0, 0, width, height, null);
+            g2.drawImage(original, width, 0, width / 2, height / 2, 0, 0, width, height, null);
+            g2.drawImage(original, 0, height, width / 2, height / 2, 0, 0, width, height, null);
+            g2.drawImage(original, width, height, width / 2, height / 2, 0, 0, width, height, null);
+        });
     }
 
-    private void writePNG(BufferedImage image, String name) {
-        File outputFile = new File(outputDir, name.endsWith(".png") ? name : name + ".png");
-        LOGGER.info("Creating " + outputFile.getAbsolutePath());
+    private void generateVariant(BufferedImage original, Consumer<Graphics2D> drawCallback) {
+        BufferedImage image = new BufferedImage(original.getWidth(), original.getHeight(),
+            BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = Utils2D.createGraphics(image, true, true);
+        drawCallback.accept(g2);
+        g2.dispose();
+        writePNG(image);
+    }
+
+    private void writePNG(BufferedImage image) {
+        counter++;
+        File outputFile = new File(outputDir, counter + ".png");
+
+        if (outputFile.exists()) {
+            LOGGER.warning(outputFile.getAbsolutePath() + " already exists");
+            return;
+        }
 
         try {
+            FileUtils.mkdir(outputDir);
             Utils2D.savePNG(image, outputFile);
+            LOGGER.info("Created " + outputFile.getAbsolutePath());
         } catch (IOException e) {
             throw new RuntimeException("Unable to write image: " + outputFile.getAbsolutePath());
         }

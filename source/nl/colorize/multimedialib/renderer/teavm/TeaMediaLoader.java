@@ -20,7 +20,7 @@ import nl.colorize.multimedialib.stage.OutlineFont;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.LogHelper;
-import nl.colorize.util.Promise;
+import nl.colorize.util.Subscribable;
 import org.teavm.jso.browser.Storage;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.dom.html.HTMLAudioElement;
@@ -57,30 +57,30 @@ public class TeaMediaLoader implements MediaLoader {
     @Override
     public Image loadImage(FilePointer file) {
         HTMLImageElement imageElement = (HTMLImageElement) document.createElement("img");
-        Promise<HTMLImageElement> imagePromise = new Promise<>();
-        imageElement.addEventListener("load", event -> imagePromise.resolve(imageElement));
+        Subscribable<HTMLImageElement> imagePromise = new Subscribable<>();
+        imageElement.addEventListener("load", event -> imagePromise.next(imageElement));
         imageElement.setSrc("resources/" + normalizeFilePath(file, false));
-        return new TeaImage(imagePromise, null);
+        return new TeaImage(imagePromise.toPromise(), null);
     }
 
     @Override
     public Audio loadAudio(FilePointer file) {
         HTMLAudioElement audioElement = (HTMLAudioElement) document.createElement("audio");
-        Promise<HTMLAudioElement> audioPromise = new Promise<>();
-        audioElement.addEventListener("loadeddata", event -> audioPromise.resolve(audioElement));
+        Subscribable<HTMLAudioElement> audioPromise = new Subscribable<>();
+        audioElement.addEventListener("loadeddata", event -> audioPromise.next(audioElement));
         audioElement.setSrc("resources/" + normalizeFilePath(file, false));
-        return new TeaAudio(audioPromise);
+        return new TeaAudio(audioPromise.toPromise());
     }
 
     @Override
     public OutlineFont loadFont(FilePointer file, FontStyle style) {
-        Promise<Boolean> fontPromise = new Promise<>();
+        Subscribable<Boolean> fontPromise = new Subscribable<>();
         String url = "url('resources/" + normalizeFilePath(file, false) + "')";
-        FontLoadCallback callback = success -> fontPromise.resolve(success);
+        FontLoadCallback callback = success -> fontPromise.next(success);
 
         Browser.preloadFontFace(style.family(), url, callback);
 
-        return new TeaFont(fontPromise, style);
+        return new TeaFont(fontPromise.toPromise(), style);
     }
 
     @Override

@@ -42,6 +42,9 @@ public class DemoLauncher implements ApplicationMenuListener {
     @Arg(defaultValue = "60", usage = "Framerate, default is 60 fps")
     protected int framerate;
 
+    @Arg(usage = "Starts the demo fullscreen instead of in a window")
+    protected boolean fullscreen;
+
     @Arg(name = "zoom", usage = "Uses a fixed canvas size to display graphics")
     protected boolean canvasZoom;
 
@@ -54,7 +57,10 @@ public class DemoLauncher implements ApplicationMenuListener {
     private void start() {
         Canvas canvas = initCanvas();
         DisplayMode displayMode = new DisplayMode(canvas, framerate);
-        WindowOptions window = new WindowOptions("MultimediaLib - Demo", this);
+
+        WindowOptions window = new WindowOptions("MultimediaLib - Demo");
+        window.setAppMenuListener(this);
+        window.setFullscreen(fullscreen);
 
         Renderer renderer = switch (rendererName) {
             case "java2d" -> new Java2DRenderer(displayMode, window);

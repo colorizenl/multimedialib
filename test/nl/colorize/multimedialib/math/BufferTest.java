@@ -9,16 +9,13 @@ package nl.colorize.multimedialib.math;
 import com.google.common.collect.Iterables;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class ObservableQueueTest {
+class BufferTest {
 
     @Test
     void flush() {
-        ObservableQueue<String> buffer = new ObservableQueue<>();
+        Buffer<String> buffer = new Buffer<>();
         buffer.push("a");
         buffer.push("b");
         buffer.push("c");
@@ -28,24 +25,11 @@ class ObservableQueueTest {
 
     @Test
     void resetAfterFlushing() {
-        ObservableQueue<String> buffer = new ObservableQueue<>();
+        Buffer<String> buffer = new Buffer<>();
         buffer.flush();
         buffer.push("c");
         buffer.push("d");
 
         assertEquals("[c, d]", Iterables.toString(buffer.flush()));
-    }
-
-    @Test
-    void observeChanges() {
-        List<String> observed = new ArrayList<>();
-
-        ObservableQueue<String> buffer = new ObservableQueue<>();
-        buffer.subscribe(observed::add);
-        buffer.push("a");
-        buffer.flush();
-        buffer.push("b");
-
-        assertEquals(List.of("a", "b"), observed);
     }
 }

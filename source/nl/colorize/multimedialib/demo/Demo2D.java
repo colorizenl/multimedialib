@@ -228,13 +228,13 @@ public class Demo2D implements Scene, ErrorHandler {
         info.setPosition(context.getCanvas().getWidth() - 20, context.getCanvas().getHeight() - 100);
         hudLayer.addChild(info);
 
-        network.post(EXAMPLE_URL, headers, data).then(response -> {
+        network.post(EXAMPLE_URL, headers, data).subscribe(response -> {
             List<String> text = new ArrayList<>();
             text.add("Network request succeeded");
             text.add("Content-Type: " + response.getContentType().orElse("?"));
             text.addAll(Splitter.on("\n").omitEmptyStrings().splitToList(response.getBody()));
             info.setText(text);
-        }).thenCatch(e -> info.setText("Failed to send network request"));
+        }, e -> info.setText("Failed to send network request"));
     }
 
     private void toggleBackgroundColor() {

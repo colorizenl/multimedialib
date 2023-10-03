@@ -28,13 +28,13 @@ to the dependencies section in `pom.xml`:
     <dependency>
         <groupId>nl.colorize</groupId>
         <artifactId>multimedialib</artifactId>
-        <version>2023.6</version>
+        <version>2023.7</version>
     </dependency>  
     
 The library can also be used in Gradle projects:
 
     dependencies {
-        implementation "nl.colorize:multimedialib:2023.6"
+        implementation "nl.colorize:multimedialib:2023.7"
     }
     
 Supported platforms

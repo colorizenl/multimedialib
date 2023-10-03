@@ -141,7 +141,7 @@ public class PixiGraphics implements TeaGraphics {
         TeaImage image = getImage(sprite);
         Pixi.DisplayObject spriteContainer = pixi.createContainer();
 
-        image.getImagePromise().then(imgElement -> {
+        image.getImagePromise().getSubject().subscribe(imgElement -> {
             Pixi.Texture texture = textureCache.get(image);
             Pixi.DisplayObject spriteDisplayObject = pixi.createSprite(texture);
             spriteContainer.addChild(spriteDisplayObject);

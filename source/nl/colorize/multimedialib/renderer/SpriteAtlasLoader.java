@@ -7,9 +7,10 @@
 package nl.colorize.multimedialib.renderer;
 
 import com.google.common.base.Splitter;
+import nl.colorize.multimedialib.math.Coordinate;
+import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
-import nl.colorize.multimedialib.math.Region;
 import nl.colorize.util.TextUtils;
 
 import java.util.List;
@@ -67,7 +68,7 @@ public class SpriteAtlasLoader {
     }
 
     private void flushEntry(ParserState state) {
-        Region region = new Region(state.xy.x, state.xy.y, state.size.x, state.size.y);
+        Region region = new Region(state.xy.x(), state.xy.y(), state.size.x(), state.size.y());
         state.atlas.add(state.name, state.currentImage, region);
 
         state.reset();
@@ -107,8 +108,5 @@ public class SpriteAtlasLoader {
             xy = null;
             size = null;
         }
-    }
-
-    private record Coordinate(int x, int y) {
     }
 }

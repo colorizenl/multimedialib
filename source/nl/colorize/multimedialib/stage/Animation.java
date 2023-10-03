@@ -113,12 +113,13 @@ public class Animation {
     }
     
     public void setFrameTimes(List<Float> frameTimes) {
-        Preconditions.checkArgument(frameTimes.size() == frames.size(), 
+        Preconditions.checkArgument(frameTimes.size() == 1 || frameTimes.size() == frames.size(),
             "Animation has " + frames.size() + " frame, but provided " + frameTimes.size());
         
-        for (int i = 0; i < frameTimes.size(); i++) {
+        for (int i = 0; i < frames.size(); i++) {
             FrameInfo frame = frames.get(i);
-            frames.set(i, new FrameInfo(frame.image, frameTimes.get(i)));
+            float time = frameTimes.get(frameTimes.size() == 1 ? 0 : i);
+            frames.set(i, new FrameInfo(frame.image, time));
         }
     }
 

@@ -1,9 +1,0 @@
-{
-    "name": "multimedialib",
-    "private": true,
-    "dependencies": {
-        "pixi.js": "7.2.4",
-        "three": "0.152.2",
-        "peerjs": "1.4.7"
-    }
-}
