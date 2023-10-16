@@ -397,6 +397,39 @@ public class SceneContextTest {
         assertEquals(List.of("start", "0.10", "0.10"), counter.frames);
     }
 
+    @Test
+    void avoidStartingAttachedSubSceneTwice() {
+        List<String> events = new ArrayList<>();
+
+        Scene child = new Scene() {
+            @Override
+            public void start(SceneContext context) {
+                events.add("child");
+            }
+
+            @Override
+            public void update(SceneContext context, float deltaTime) {
+            }
+        };
+
+        SceneContext context = new SceneContext(RENDERER, new Stopwatch());
+        context.changeScene(new Scene() {
+            @Override
+            public void start(SceneContext context) {
+                events.add("parent");
+                context.attach(child);
+            }
+
+            @Override
+            public void update(SceneContext context, float deltaTime) {
+            }
+        });
+        context.update(1f);
+        context.update(1f);
+
+        assertEquals(List.of("parent", "child"), events);
+    }
+
     private record Counter(List<String> frames) implements Scene {
 
         public Counter() {

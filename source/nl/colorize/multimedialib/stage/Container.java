@@ -6,11 +6,11 @@
 
 package nl.colorize.multimedialib.stage;
 
+import com.google.common.base.Preconditions;
 import lombok.Getter;
 import nl.colorize.multimedialib.math.Buffer;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.multimedialib.scene.InteractiveObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,23 +45,47 @@ public class Container implements Graphic2D {
     }
 
     public void addChild(Graphic2D child) {
+        Preconditions.checkArgument(!child.equals(this),
+            "Cannot add container to itself");
+
+        Preconditions.checkArgument(!child.getLocation().isAttached(),
+            "Graphic is already attached to a different parent");
+
         child.getLocation().attach(this);
         children.add(child);
         addedChildren.push(child);
     }
 
+    public void addChild(GraphicsProvider child) {
+        addChild(child.getContainer());
+    }
+
+    /**
+     * Convenience method that adds the specified graphics to this container,
+     * then moved the graphics' position to the specified offset.
+     */
     public void addChild(Graphic2D child, Point2D relativePosition) {
         addChild(child);
         child.getTransform().setPosition(relativePosition);
     }
 
+    /**
+     * Convenience method that adds the specified graphics to this container,
+     * then moved the graphics' position to the specified offset.
+     */
     public void addChild(Graphic2D child, float relativeX, float relativeY) {
         addChild(child);
         child.getTransform().setPosition(relativeX, relativeY);
     }
 
-    public void addChild(InteractiveObject object) {
-        addChild(object.getContainer());
+    /**
+     * Convenience method that creates a child container, adds it as a child
+     * to this container, then returns the created child container.
+     */
+    public Container addChildContainer() {
+        Container child = new Container();
+        addChild(child);
+        return child;
     }
 
     public void removeChild(Graphic2D child) {
@@ -100,6 +124,10 @@ public class Container implements Graphic2D {
         }
     }
 
+    /**
+     * Returns the smallest rectangle that can contain the bounds of all
+     * graphics within this container.
+     */
     @Override
     public Rect getStageBounds() {
         if (children.isEmpty()) {

@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.scene;
 
 import com.google.common.base.Preconditions;
+import lombok.Getter;
 import nl.colorize.multimedialib.math.MathUtils;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
@@ -16,7 +17,6 @@ import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Renderer;
-import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
@@ -49,9 +49,9 @@ public final class SceneContext implements Updatable {
     private Renderer renderer;
     private Stopwatch timer;
     private long elapsedTime;
-    private FrameStats stats;
+    @Getter private FrameStats frameStats;
+    @Getter private Stage stage;
 
-    private Stage stage;
     private SceneLogic activeScene;
     private Queue<SceneLogic> requestedSceneQueue;
     private List<Scene> globalScenes;
@@ -78,7 +78,7 @@ public final class SceneContext implements Updatable {
         this.renderer = renderer;
         this.timer = timer;
         this.elapsedTime = 0L;
-        this.stats = new FrameStats(renderer.getDisplayMode());
+        this.frameStats = new FrameStats(renderer.getDisplayMode());
 
         this.stage = new Stage(renderer.getGraphicsMode(), renderer.getCanvas());
         this.requestedSceneQueue = new LinkedList<>();
@@ -123,12 +123,12 @@ public final class SceneContext implements Updatable {
         // Only count the frame when calling this method actually leads
         // to a frame update. Otherwise, this would just count the
         // precision of the underlying animation loop.
-        stats.markEnd(FrameStats.PHASE_FRAME_TIME);
+        frameStats.markEnd(FrameStats.PHASE_FRAME_TIME);
 
         float deltaTime = MathUtils.clamp(elapsedTime / 1000f, MIN_FRAME_TIME, MAX_FRAME_TIME);
-        stats.markStart(FrameStats.PHASE_FRAME_UPDATE);
+        frameStats.markStart(FrameStats.PHASE_FRAME_UPDATE);
         update(deltaTime);
-        stats.markEnd(FrameStats.PHASE_FRAME_UPDATE);
+        frameStats.markEnd(FrameStats.PHASE_FRAME_UPDATE);
 
         elapsedTime = 0L;
         return true;
@@ -215,11 +215,12 @@ public final class SceneContext implements Updatable {
             stage.clear();
         }
 
-        SceneLogic requestedScene = requestedSceneQueue.poll();
+        SceneLogic requestedScene = requestedSceneQueue.peek();
 
         if (requestedScene != null) {
             activeScene = requestedScene;
             activeScene.walk(scene -> scene.start(this));
+            requestedSceneQueue.poll();
 
             if (!requestedSceneQueue.isEmpty()) {
                 activateRequestedScene();
@@ -254,18 +255,12 @@ public final class SceneContext implements Updatable {
      * remain active until it is detached or the parent scene ends.
      */
     public void attach(Scene subScene) {
-        // We iterate the list of sub-scenes backwards to allow for
-        // concurrent modification, but that means we need to store
-        // the list in reverse order to keep the expected behavior.
-        // This is a relatively expensive operation, but we expect
-        // iterating sub-scenes is done *much* more often than adding
-        // sub-scenes.
         if (requestedSceneQueue.isEmpty()) {
-            activeScene.subScenes.add(0, subScene);
+            activeScene.attachSubScene(subScene);
             subScene.start(this);
         } else {
             SceneLogic requestedScene = requestedSceneQueue.peek();
-            requestedScene.subScenes.add(0, subScene);
+            requestedScene.attachSubScene(subScene);
         }
     }
 
@@ -290,30 +285,6 @@ public final class SceneContext implements Updatable {
     }
 
     /**
-     * Convenience method that attaches a {@link InteractiveObject} to the
-     * currently active scene, as well as adding its graphics to the specified
-     * parent. This avoids having to register logic and graphics separately.
-     */
-    public void attach(InteractiveObject subScene, Container parent) {
-        attach((Scene) subScene);
-        parent.addChild(subScene);
-    }
-
-    /**
-     * Convenience method that attaches a {@link InteractiveObject} to the
-     * currently active scene ands adds its graphics to the stage root. Using
-     * this method is equivalent to {@code attach(subScene, stage.getRoot())}.
-     *
-     * @deprecated Prefer {@link #attach(InteractiveObject, Container)} to
-     *             have more explicit behavior on where the object's graphics
-     *             should appear in relation to other graphics.
-     */
-    @Deprecated
-    public void attach(InteractiveObject subScene) {
-        attach(subScene, stage.getRoot());
-    }
-
-    /**
      * Attaches a scene that is *not* tied to the currently active scene, and
      * will remain active for the rest of the application. Multiple global
      * scenes can be attached.
@@ -321,14 +292,6 @@ public final class SceneContext implements Updatable {
     public void attachGlobal(Scene globalScene) {
         globalScenes.add(globalScene);
         globalScene.start(this);
-    }
-
-    public Stage getStage() {
-        return stage;
-    }
-
-    public FrameStats getFrameStats() {
-        return stats;
     }
 
     /**
@@ -352,19 +315,21 @@ public final class SceneContext implements Updatable {
      * application appearance.
      */
     public List<String> getDebugInformation() {
+        int targetFPS = frameStats.getTargetFramerate();
+
         List<String> info = new ArrayList<>();
         info.add("Renderer:  " + getRendererName());
         info.add("Canvas:  " + getCanvas());
-        info.add("Framerate:  " + stats.getActualFramerate() + " / " + stats.getTargetFramerate());
-        info.add("Update time:  " + stats.getFrameUpdateTime() + "ms");
-        info.add("Render time:  " + stats.getFrameRenderTime() + "ms");
+        info.add("Framerate:  " + frameStats.getActualFramerate() + " / " + targetFPS);
+        info.add("Update time:  " + frameStats.getFrameUpdateTime() + "ms");
+        info.add("Render time:  " + frameStats.getFrameRenderTime() + "ms");
 
-        if (!stats.getCustomStats().isEmpty()) {
+        if (!frameStats.getCustomStats().isEmpty()) {
             info.add("--------");
         }
 
-        for (String customStat : stats.getCustomStats()) {
-            info.add(customStat + ":  " + stats.getAverageTimeMS(customStat) + "ms");
+        for (String customStat : frameStats.getCustomStats()) {
+            info.add(customStat + ":  " + frameStats.getAverageTimeMS(customStat) + "ms");
         }
 
         return info;
@@ -435,9 +400,19 @@ public final class SceneContext implements Updatable {
             this.subScenes = new ArrayList<>();
         }
 
+        public void attachSubScene(Scene subScene) {
+            // We iterate the sub-scenes backwards, but still want
+            // to preserve the expected order.
+            subScenes.add(0, subScene);
+        }
+
         public void walk(Consumer<Scene> callback) {
             callback.accept(scene);
-            subScenes.forEach(callback);
+            // We iterate the list backwards to avoid issues with
+            // concurrent modification.
+            for (int i = subScenes.size() - 1; i >= 0; i--) {
+                callback.accept(subScenes.get(i));
+            }
         }
     }
 }

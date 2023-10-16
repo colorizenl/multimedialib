@@ -6,6 +6,7 @@
 
 package nl.colorize.multimedialib.stage;
 
+import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.Updatable;
 
@@ -43,9 +44,12 @@ public interface Graphic2D extends Updatable {
         return getLocation().getLocalTransform();
     }
 
-    @Deprecated
     default void setPosition(float x, float y) {
         getTransform().setPosition(x, y);
+    }
+
+    default void setPosition(Point2D position) {
+        getTransform().setPosition(position);
     }
 
     /**

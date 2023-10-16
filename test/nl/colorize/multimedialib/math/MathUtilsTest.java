@@ -24,6 +24,6 @@ public class MathUtilsTest {
         assertEquals("1.0", MathUtils.format(1f, 1));
         assertEquals("1.4", MathUtils.format(1.4f, 1));
         assertEquals("1.5", MathUtils.format(1.5f, 1));
-        assertEquals("1.6", MathUtils.format(1.55f, 1));
+        assertEquals("1.5", MathUtils.format(1.55f, 1));
     }
 }

@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.demo;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.net.HttpHeaders;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
@@ -22,6 +23,7 @@ import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
+import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.multimedialib.scene.Effect;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
@@ -49,6 +51,11 @@ import nl.colorize.util.stats.Tuple;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static nl.colorize.multimedialib.stage.ColorRGB.BLUE;
+import static nl.colorize.multimedialib.stage.ColorRGB.GREEN;
+import static nl.colorize.multimedialib.stage.ColorRGB.RED;
+import static nl.colorize.multimedialib.stage.ColorRGB.YELLOW;
 
 /**
  * Simple demo application that displays a number of animated Mario sprites on
@@ -94,6 +101,8 @@ public class Demo2D implements Scene, ErrorHandler {
     private static final ColorRGB ALT_BACKGROUND_COLOR = ColorRGB.parseHex("#EBEBEB");
     private static final ColorRGB COLORIZE_COLOR = ColorRGB.parseHex("#e45d61");
     private static final String EXAMPLE_URL = "https://dashboard.clrz.nl/rest/echo";
+
+    private static final List<ColorRGB> SWIPE_COLORS = List.of(RED, GREEN, BLUE, YELLOW);
 
     @Override
     public void start(SceneContext context) {
@@ -148,11 +157,9 @@ public class Demo2D implements Scene, ErrorHandler {
         hexagonPrimitive.getTransform().setAlpha(50f);
         hudLayer.addChild(hexagonPrimitive);
 
-        Effect effect = new Effect();
-        effect.addFrameHandler(deltaTime -> {
+        Effect.forFrameHandler(deltaTime -> {
             hexagonPrimitive.setPosition(50f, context.getCanvas().getHeight() - 150f);
-        });
-        context.attach(effect);
+        }).attach(context);
     }
 
     private void createButton(SceneContext context, String label, ColorRGB color, int y, Runnable click) {
@@ -169,9 +176,7 @@ public class Demo2D implements Scene, ErrorHandler {
             text.getTransform().setPosition(context.getCanvas().getWidth() - BUTTON_WIDTH / 2f, y + 19);
         });
 
-        Effect effect = new Effect();
-        effect.addClickHandler(bounds, click);
-        context.attach(effect);
+        Effect.forClickHandler(bounds, click).attach(context);
     }
 
     private void initEffects() {
@@ -183,17 +188,16 @@ public class Demo2D implements Scene, ErrorHandler {
         Sprite sprite = new Sprite(context.getMediaLoader().loadImage(COLORIZE_LOGO));
         hudLayer.addChild(sprite);
 
-        colorizeLogo = new Effect();
-        colorizeLogo.addTimelineHandler(timeline, value -> {
+        Effect.forTimeline(timeline, value -> {
             sprite.setPosition(50, context.getCanvas().getHeight() - 50);
             sprite.getTransform().setScale(80 + value * 40f);
-        });
-        colorizeLogo.addFrameHandler(dt -> sprite.getTransform().addRotation(dt * 100f));
-        context.attach(colorizeLogo);
+        }).addFrameHandler(dt -> sprite.getTransform().addRotation(dt * 100f))
+        .attach(context);
 
         Image diamond = context.getMediaLoader().loadImage(WipeTransition.DIAMOND);
         WipeTransition wipe = new WipeTransition(diamond, COLORIZE_COLOR, 1.5f, true);
-        context.attach(wipe, hudLayer);
+        context.attach(wipe);
+        hudLayer.addChild(wipe);
     }
 
     private void attachSwipeTracker() {
@@ -201,14 +205,16 @@ public class Demo2D implements Scene, ErrorHandler {
         context.attach(swipeTracker);
 
         context.attach(deltaTime -> {
-            for (Line swipe : swipeTracker.getSwipes().flush()) {
-                drawSwipeMarker(swipe);
+            List<Line> swipes = ImmutableList.copyOf(swipeTracker.getSwipes().flush());
+
+            for (int i = 0; i < swipes.size(); i++) {
+                drawSwipeMarker(swipes.get(i), SWIPE_COLORS.get(i % SWIPE_COLORS.size()));
             }
         });
     }
 
-    private void drawSwipeMarker(Line swipe) {
-        Primitive swipeMarker = new Primitive(swipe, ColorRGB.WHITE);
+    private void drawSwipeMarker(Line swipe, ColorRGB color) {
+        Primitive swipeMarker = new Primitive(swipe, color);
         swipeMarker.setStroke(2f);
         hudLayer.addChild(swipeMarker);
 
@@ -283,28 +289,32 @@ public class Demo2D implements Scene, ErrorHandler {
     private void checkLogoClick(InputDevice input) {
         Rect area = new Rect(0f, context.getCanvas().getHeight() - 80f, 80f, 80f);
 
-        if (input.isPointerReleased(area)) {
-            colorizeLogo.withLinkedGraphics(g -> {
-                Sprite sprite = (Sprite) g;
-                Transform transform = sprite.getTransform();
-                transform.setFlipHorizontal(!transform.isFlipHorizontal());
-            });
+        for (Pointer pointer : input.getPointers()) {
+            if (pointer.isReleased(area)) {
+                colorizeLogo.withLinkedGraphics(g -> {
+                    Sprite sprite = (Sprite) g;
+                    Transform transform = sprite.getTransform();
+                    transform.setFlipHorizontal(!transform.isFlipHorizontal());
+                });
+            }
         }
     }
 
-    private void handleClick(InputDevice inputDevice, Stage stage) {
-        if (checkMarioClick(inputDevice)) {
-            return;
-        }
+    private void handleClick(InputDevice input, Stage stage) {
+        for (Pointer pointer : input.getPointers()) {
+            if (checkMarioClick(pointer)) {
+                return;
+            }
 
-        if (inputDevice.isPointerReleased()) {
-            inputDevice.getPointer().ifPresent(this::createTouchMarker);
+            if (pointer.isReleased()) {
+                createTouchMarker(pointer.getPosition());
+            }
         }
     }
 
-    private boolean checkMarioClick(InputDevice inputDevice) {
+    private boolean checkMarioClick(Pointer pointer) {
         for (Mario mario : marios) {
-            if (inputDevice.isPointerReleased(mario.sprite.getStageBounds())) {
+            if (pointer.isReleased(mario.sprite.getStageBounds())) {
                 mario.mask = !mario.mask;
                 return true;
             }

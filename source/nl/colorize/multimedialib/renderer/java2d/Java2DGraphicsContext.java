@@ -184,8 +184,8 @@ public class Java2DGraphicsContext implements StageVisitor {
 
     @Override
     public void drawSprite(Sprite sprite) {
-        BufferedImage image = ((AWTImage) sprite.getCurrentGraphics()).getImage();
-        drawImage(image, sprite.getGlobalTransform());
+        AWTImage image = (AWTImage) sprite.getCurrentGraphics();
+        drawImage(image.getImage(), sprite.getGlobalTransform());
     }
 
     private void drawImage(BufferedImage image, Transform transform) {

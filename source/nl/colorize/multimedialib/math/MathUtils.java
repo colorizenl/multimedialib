@@ -22,6 +22,10 @@ public final class MathUtils {
     private MathUtils() {
     }
 
+    public static int signum(float n) {
+        return Float.compare(n, 0f);
+    }
+
     public static int floor(float n) {
         return (int) n;
     }
@@ -36,6 +40,20 @@ public final class MathUtils {
     
     public static long clamp(long value, long min, long max) {
         return Math.min(Math.max(value, min), max);
+    }
+
+    /**
+     * Shorthand to call {@code Math.sin} with float precision.
+     */
+    public static float sin(float value) {
+        return (float) Math.sin(value);
+    }
+
+    /**
+     * Shorthand to call {@code Math.cos} with float precision.
+     */
+    public static float cos(float value) {
+        return (float) Math.cos(value);
     }
 
     /**
@@ -62,7 +80,7 @@ public final class MathUtils {
         NumberFormat format = NumberFormat.getInstance();
         format.setMinimumFractionDigits(decimals);
         format.setMaximumFractionDigits(decimals);
-        format.setRoundingMode(RoundingMode.UP);
+        format.setRoundingMode(RoundingMode.HALF_UP);
         return format.format(n);
     }
 }

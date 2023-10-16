@@ -44,7 +44,7 @@ public class HeadlessMediaLoader extends StandardMediaLoader {
             // that relies on the graphics environment and does not
             // work headless.
             BufferedImage image = Utils2D.loadImage(new ResourceFile(file.path()));
-            return new AWTImage(image);
+            return new AWTImage(image, file);
         } else if (file == null) {
             return new HeadlessImage();
         } else {

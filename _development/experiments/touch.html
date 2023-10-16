@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <title>MultimediaLib | Touch events</title>
+    <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no"/>
+    <style>
+        html, body {
+            margin: 0px;
+            padding: 0px;
+            touch-action: none;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas" width="300" height="300"></canvas>
+    <textarea id="buffer" cols="38" rows="30"></textarea>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", event => {
+            const canvas = document.getElementById("canvas");
+            const context = canvas.getContext("2d");
+            const pointers = {};
+            const colors = ["#FF0000", "#00FF00", "#0000BB", "#FFFF00"];
+
+            window.addEventListener("mousedown", handleMouseEvent);
+            window.addEventListener("mouseup", handleMouseEvent);
+            window.addEventListener("mousemove", handleMouseEvent);
+            window.addEventListener("mouseout", handleMouseEvent);
+            window.addEventListener("touchstart", handleTouchEvent, true);
+            window.addEventListener("touchmove", handleTouchEvent, true);
+            window.addEventListener("touchend", handleTouchEvent, true);
+            window.addEventListener("touchcancel", handleTouchEvent, true);
+
+            function handleMouseEvent(mouseEvent) {
+                if (mouseEvent.type == "mousedown") {
+                    pointers["mouse"] = [mouseEvent.pageX, mouseEvent.pageY];
+                } else if (pointers["mouse"] != null && mouseEvent.type == "mousemove") {
+                    pointers["mouse"] = [mouseEvent.pageX, mouseEvent.pageY];
+                } else if (mouseEvent.type == "mouseup" || mouseEvent.type == "mouseout") {
+                    delete pointers["mouse"];
+                }
+
+                draw();
+            }
+
+            function handleTouchEvent(touchEvent) {
+                document.getElementById("buffer").value += touchEvent.type + " / " + touchEvent.changedTouches[0].identifier + "/" + touchEvent.changedTouches[0].clientX + " / " + touchEvent.changedTouches[0].clientY + "\n";
+                for (let i = 0; i < touchEvent.changedTouches.length; i++) {
+                    const touch = touchEvent.changedTouches[i];
+                    document.getElementById("buffer").value += i + "\n";
+
+                    if (touchEvent.type == "touchend" || touchEvent.type == "touchcancel") {
+                        delete pointers[touch.identifier];
+                    } else {
+                        pointers[String(touch.identifier)] = [touch.clientX, touch.clientY];
+                    }
+                }
+
+                touchEvent.stopPropagation();
+                touchEvent.preventDefault();
+                draw();
+            }
+
+            function draw() {
+                context.fillStyle = "#323232";
+                context.fillRect(0, 0, canvas.width, canvas.height);
+
+                const names = Object.keys(pointers);
+                const pointerPositions = Object.values(pointers);
+
+                for (let i = 0; i < pointerPositions.length; i++) {
+                    const position = pointerPositions[i];
+                    const color = names[i] == "mouse" ? "#FFFFFF" : colors[i % colors.length];
+                    context.fillStyle = color;
+                    context.fillRect(position[0] - 35, position[1] - 35, 70, 70);
+                }
+            }
+
+            draw();
+        });
+    </script>
+</body>
+</html>

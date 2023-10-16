@@ -7,9 +7,11 @@
 package nl.colorize.multimedialib.scene;
 
 import com.google.common.base.Preconditions;
+import lombok.Getter;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Graphic2D;
+import nl.colorize.multimedialib.stage.GraphicsProvider;
 
 /**
  * Displays an image and/or message to inform the user to change their device
@@ -23,9 +25,9 @@ import nl.colorize.multimedialib.stage.Graphic2D;
  * scene will continue to play in the background. Which approach should be
  * preferred depends on the type of application.
  */
-public class OrientationLockScreen implements InteractiveObject {
+public class OrientationLockScreen implements Scene, GraphicsProvider {
 
-    private Container container;
+    @Getter private Container container;
 
     public OrientationLockScreen(Graphic2D... graphics) {
         Preconditions.checkArgument(graphics.length > 0,
@@ -44,10 +46,5 @@ public class OrientationLockScreen implements InteractiveObject {
         container.getTransform().setVisible(canvas.getWidth() < canvas.getHeight());
         // Reposition all graphics because the canvas might have changed.
         container.getTransform().setPosition(canvas.getCenter());
-    }
-
-    @Override
-    public Container getContainer() {
-        return container;
     }
 }

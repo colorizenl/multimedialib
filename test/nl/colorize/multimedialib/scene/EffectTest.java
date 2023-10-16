@@ -8,7 +8,10 @@ package nl.colorize.multimedialib.scene;
 
 import nl.colorize.multimedialib.mock.MockImage;
 import nl.colorize.multimedialib.mock.MockScene;
+import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
+import nl.colorize.multimedialib.stage.Animation;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.util.Stopwatch;
 import nl.colorize.util.animation.Timeline;
@@ -43,10 +46,9 @@ public class EffectTest {
 
         AtomicInteger counter = new AtomicInteger();
 
-        Effect effect = new Effect();
-        effect.addTimelineHandler(timeline, value -> {});
-        effect.addCompletionHandler(counter::incrementAndGet);
-        context.attach(effect);
+        Effect.forTimeline(timeline, value -> {})
+            .addCompletionHandler(counter::incrementAndGet)
+            .attach(context);
 
         context.update(0.3f);
         context.update(0.3f);
@@ -65,10 +67,9 @@ public class EffectTest {
         timeline.addKeyFrame(0f, 0f);
         timeline.addKeyFrame(10f, 1f);
 
-        Effect effect = new Effect();
-        effect.addFrameHandler(frameUpdates::add);
-        effect.addTimelineHandler(timeline, values::add);
-        context.attach(effect);
+        Effect effect = Effect.forFrameHandler(frameUpdates::add)
+            .addTimelineHandler(timeline, values::add)
+            .attach(context);
 
         effect.update(context, 1f);
         effect.update(context, 2f);
@@ -83,30 +84,12 @@ public class EffectTest {
     }
 
     @Test
-    void terminateHandler() {
-        List<String> frames = new ArrayList<>();
-
-        Effect effect = new Effect();
-        effect.addFrameHandler(deltaTime -> frames.add("1"));
-        effect.addCompletionHandler(() -> frames.add("2"));
-        context.attach(effect);
-
-        context.update(1f);
-        context.update(1f);
-        effect.complete();
-        context.update(1f);
-
-        assertEquals(List.of("1", "1", "2"), frames);
-    }
-
-    @Test
     void stopAfterDuration() {
         List<String> frames = new ArrayList<>();
 
-        Effect effect = new Effect();
-        effect.addFrameHandler(deltaTime -> frames.add("1"));
-        effect.stopAfter(2f);
-        context.attach(effect);
+        Effect.forFrameHandler(deltaTime -> frames.add("1"))
+            .stopAfter(2f)
+            .attach(context);
 
         context.update(1f);
         context.update(1f);
@@ -119,10 +102,9 @@ public class EffectTest {
     void stopAfterCondition() {
         List<String> frames = new ArrayList<>();
 
-        Effect effect = new Effect();
-        effect.addFrameHandler(deltaTime -> frames.add("1"));
-        effect.stopIf(() -> frames.size() >= 2);
-        context.attach(effect);
+        Effect.forFrameHandler(deltaTime -> frames.add("1"))
+            .stopIf(() -> frames.size() >= 2)
+            .attach(context);
 
         context.update(1f);
         context.update(1f);
@@ -132,9 +114,9 @@ public class EffectTest {
     }
 
     @Test
-    void effectThatRunsOnTimer() {
+    void delayedAction() {
         List<String> events = new ArrayList<>();
-        Effect effect = Effect.forTimer(2f, () -> events.add("complete"));
+        Effect effect = Effect.delay(2f, () -> events.add("delayed"));
         effect.addFrameHandler(deltaTime -> events.add("frame"));
         context.attach(effect);
 
@@ -146,11 +128,79 @@ public class EffectTest {
         context.update(1f);
 
         assertTrue(effect.isCompleted());
-        assertEquals(List.of("frame", "frame", "complete"), events);
+        assertEquals(List.of("frame", "delayed", "frame"), events);
 
         context.update(1f);
 
         assertTrue(effect.isCompleted());
+        assertEquals(List.of("frame", "delayed", "frame"), events);
+    }
+
+    @Test
+    void completeAfterSpriteAnimation() {
+        List<String> events = new ArrayList<>();
+
+        Animation animation = new Animation(List.of(new MockImage(), new MockImage()), 1f, false);
+        Sprite sprite = new Sprite(animation);
+        context.getStage().getRoot().addChild(sprite);
+
+        Effect.forFrameHandler(deltaTime -> events.add("frame"))
+            .addCompletionHandler(() -> events.add("complete"))
+            .stopAfterAnimation(sprite)
+            .attach(context);
+
+        context.update(1f);
+        context.update(1f);
+        context.update(1f);
+
         assertEquals(List.of("frame", "frame", "complete"), events);
+    }
+
+    @Test
+    void multipleCompletionConditions() {
+        List<String> events = new ArrayList<>();
+
+        Effect.delay(2f, () -> events.add("a"))
+            .addFrameHandler(deltaTime -> events.add("b"))
+            .stopAfter(3f)
+            .attach(context);
+
+        context.update(1f);
+        context.update(1f);
+        context.update(1f);
+        context.update(1f);
+        context.update(1f);
+
+        assertEquals(List.of("b", "a", "b", "b"), events);
+    }
+
+    @Test
+    void scaleToFit() {
+        Canvas canvas = new Canvas(800, 600, ScaleStrategy.flexible());
+
+        Sprite sprite = new Sprite();
+        sprite.addGraphics("a", new MockImage(100, 100));
+
+        Effect effect = Effect.scaleToFit(sprite, canvas, false);
+        context.attach(effect);
+        context.update(1f);
+
+        assertEquals(800f, sprite.getTransform().getScaleX(), EPSILON);
+        assertEquals(600f, sprite.getTransform().getScaleY(), EPSILON);
+    }
+
+    @Test
+    void scaleToFitUniform() {
+        Canvas canvas = new Canvas(800, 600, ScaleStrategy.flexible());
+
+        Sprite sprite = new Sprite();
+        sprite.addGraphics("a", new MockImage(100, 100));
+
+        Effect effect = Effect.scaleToFit(sprite, canvas, true);
+        context.attach(effect);
+        context.update(1f);
+
+        assertEquals(800f, sprite.getTransform().getScaleX(), EPSILON);
+        assertEquals(800f, sprite.getTransform().getScaleY(), EPSILON);
     }
 }

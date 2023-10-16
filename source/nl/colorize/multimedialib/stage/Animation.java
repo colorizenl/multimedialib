@@ -11,7 +11,6 @@ import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 2D sprite animation that shows a number of images in sequence. Every frame
@@ -53,6 +52,7 @@ public class Animation {
     }
 
     public void addFrame(Image frame, float frameTime) {
+        Preconditions.checkNotNull(frame, "Missing frame graphics");
         Preconditions.checkArgument(frameTime >= 0f, "Invalid frame time: " + frameTime);
 
         frames.add(new FrameInfo(frame, frameTime));
@@ -65,7 +65,7 @@ public class Animation {
     public List<Image> getFrameImages() {
         return frames.stream()
             .map(frame -> frame.image)
-            .collect(Collectors.toList());
+            .toList();
     }
     
     public Image getFrameAtIndex(int index) {
@@ -134,7 +134,7 @@ public class Animation {
     private List<FrameInfo> copyFrames() {
         return frames.stream()
             .map(frame -> new FrameInfo(frame.image, frame.frameTime))
-            .collect(Collectors.toList());
+            .toList();
     }
     
     /**
@@ -142,9 +142,10 @@ public class Animation {
      * frames and corresponding frame times in reverse compared to the original.
      */
     public Animation reverse() {
-        List<FrameInfo> reverseFrames = copyFrames();
+        List<FrameInfo> reverseFrames = new ArrayList<>();
+        reverseFrames.addAll(copyFrames());
         Collections.reverse(reverseFrames);
-        
+
         return new Animation(reverseFrames, loop);
     }
     
@@ -156,7 +157,7 @@ public class Animation {
         List<FrameInfo> combinedFrames = new ArrayList<>();
         combinedFrames.addAll(copyFrames());
         combinedFrames.addAll(other.copyFrames());
-        
+
         return new Animation(combinedFrames, loop);
     }
     

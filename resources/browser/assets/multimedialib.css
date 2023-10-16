@@ -9,6 +9,7 @@ body {
     background-color: #343434;
     font-family: -apple-system, system-ui, "Open Sans", sans-serif;
     font-size: 16px;
+    touch-action: none;
 }
 
 #multimediaLibContainer, #multimediaLibContainer canvas, #console {

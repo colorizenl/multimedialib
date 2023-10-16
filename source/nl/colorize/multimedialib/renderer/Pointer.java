@@ -13,12 +13,12 @@ import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 
 /**
- * Current state of a pointer device for user input. Depending on the current
- * device, the pointer can represent a mouse, a trackpad, or touch input.
+ * Represents a pointer device, which can be a mouse, a trackpad, or touch
+ * controls depending on the current platform and device.
  * <p>
- * Devices that support multi-touch input will allow multiple pointers to be
- * active simultaneously. The pointer ID can be used to differentiate each
- * pointer in such cases.
+ * Devices that support multi-touch will allow multiple pointers to be active
+ * simultaneously. In such situations, the pointer {@code id} can be used to
+ * differentiate between different pointers.
  */
 @Getter
 @Setter
@@ -29,23 +29,29 @@ public class Pointer {
     private boolean pressed;
     private boolean released;
 
-    public Pointer(String id, Point2D position) {
-        Preconditions.checkArgument(!id.isEmpty(), "Missing pointer ID");
+    public Pointer(String id) {
+        Preconditions.checkArgument(!id.isEmpty(), "Empty pointer ID");
 
         this.id = id;
-        this.position = position;
+        this.position = Point2D.ORIGIN;
         this.pressed = false;
         this.released = false;
     }
 
-    public Pointer(String id) {
-        this(id, new Point2D(0, 0));
-    }
-
+    /**
+     * Convenience method that returns true if this pointer is currently in
+     * the pressed state <em>and</em> currently located within the specified
+     * bounds.
+     */
     public boolean isPressed(Rect bounds) {
         return pressed && bounds.contains(position);
     }
 
+    /**
+     * Convenience method that returns true if this pointer is currently in
+     * the released state <em>and</em> currently located within the specified
+     * bounds.
+     */
     public boolean isReleased(Rect bounds) {
         return released && bounds.contains(position);
     }

@@ -8,7 +8,9 @@ package nl.colorize.multimedialib.scene;
 
 import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.multimedialib.renderer.InputDevice;
+import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.Pointer;
+import nl.colorize.multimedialib.stage.Animation;
 import nl.colorize.multimedialib.stage.Graphic2D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
@@ -18,12 +20,14 @@ import nl.colorize.util.animation.Timeline;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
  * Effects are short-lived sub-scenes that can be defined in a declarative
- * way. Effects are not intended to contain general application logic, they
+ * style. Effects are not intended to contain general application logic, they
  * are intended for small, self-contained effects that are active for a
  * limited period of time and are independent of other things happening in
  * the scene.
@@ -32,61 +36,38 @@ import java.util.function.Supplier;
  * handlers operate on different points in the effect's lifecycle, for
  * example during frame updates or after the effect is marked as completed.
  * <p>
- * Effects can influence graphics in two different ways. The first is by
- * adding graphics to the effect itself. The second  allows the effect to
- * influence graphics that are on stage but are not part of the effect itself.
- * Using {@link #linkGraphics(Graphic2D...)} will "link" these eisting
- * graphics to the effect, meaning they will be removed when the effect has
- * completed.
+ * Effects can be "linked" to graphics. When the effect ends, it will
+ * automatically remove all linked graphics from the stage. This allows the
+ * effect to control the life cycle for both the effect logic and the
+ * associated graphics.
  */
 public final class Effect implements Scene {
 
-    private List<Runnable> startHandlers;
     private List<Updatable> frameHandlers;
-    private List<Consumer<SceneContext>> clickHandlers;
+    private List<ClickHandler> clickHandlers;
     private List<Runnable> completionHandlers;
     private List<Graphic2D> linkedGraphics;
+    private List<BooleanSupplier> completionConditions;
     private boolean completed;
 
-    public Effect() {
-        this.startHandlers = new ArrayList<>();
+    /**
+     * Creates a new effect that initially does not define any behavior and
+     * is not linked to any graphics. Use the static factory methods to create
+     * effects with the desired behavior, this constructor is for internal use
+     * only.
+     */
+    private Effect() {
         this.frameHandlers = new ArrayList<>();
         this.clickHandlers = new ArrayList<>();
         this.completionHandlers = new ArrayList<>();
         this.linkedGraphics = new ArrayList<>();
+        this.completionConditions = new ArrayList<>();
         this.completed = false;
     }
 
-    public void addStartHandler(Runnable handler) {
-        startHandlers.add(handler);
-    }
-
-    public void addFrameHandler(Updatable handler) {
+    public Effect addFrameHandler(Updatable handler) {
         frameHandlers.add(handler);
-    }
-
-    public void addClickHandler(Rect bounds, Runnable handler) {
-        clickHandlers.add(context -> {
-            InputDevice input = context.getInput();
-            if (input.isPointerReleased(bounds)) {
-                handler.run();
-                input.clearPointerReleased();
-            }
-        });
-    }
-
-    public void addClickHandler(Graphic2D graphic, Runnable handler) {
-        clickHandlers.add(context -> {
-            InputDevice input = context.getInput();
-            if (input.isPointerReleased(graphic.getStageBounds())) {
-                handler.run();
-                input.clearPointerReleased();
-            }
-        });
-    }
-
-    public void addCompletionHandler(Runnable handler) {
-        completionHandlers.add(handler);
+        return this;
     }
 
     /**
@@ -94,38 +75,50 @@ public final class Effect implements Scene {
      * and then invoke the callback function based on the timeline's new value.
      * When the timeline ends, this effect will be marked as completed.
      */
-    public void addTimelineHandler(Timeline timeline, Consumer<Float> callback) {
+    public Effect addTimelineHandler(Timeline timeline, Consumer<Float> callback) {
         addFrameHandler(deltaTime -> {
             timeline.movePlayhead(deltaTime);
             callback.accept(timeline.getValue());
-
-            if (timeline.isCompleted() && !timeline.isLoop()) {
-                complete();
-            }
         });
+        stopIf(() -> timeline.isCompleted() && !timeline.isLoop());
+        return this;
     }
 
-    /**
-     * Immediately marks this effect as completed. Note this will not
-     * immediately run the effect's completion handlers, that will only happen
-     * when the effect receives its next frame update.
-     */
-    public void complete() {
-        completed = true;
+    public Effect addClickHandler(Rect bounds, Runnable handler) {
+        clickHandlers.add(new ClickHandler(() -> bounds, handler));
+        return this;
+    }
+
+    public Effect addClickHandler(Graphic2D graphic, Runnable handler) {
+        clickHandlers.add(new ClickHandler(graphic::getStageBounds, handler));
+        return this;
+    }
+
+    public Effect addCompletionHandler(Runnable handler) {
+        completionHandlers.add(handler);
+        return this;
     }
 
     /**
      * Adds a handler that will mark the effect as completed once the specified
      * period of time has elapsed.
      */
-    public void stopAfter(float duration) {
+    public Effect stopAfter(float duration) {
         Timer timer = new Timer(duration);
+        addFrameHandler(timer);
+        stopIf(timer::isCompleted);
+        return this;
+    }
 
-        addFrameHandler(deltaTime -> {
-            timer.update(deltaTime);
-            if (timer.isCompleted()) {
-                complete();
-            }
+    /**
+     * Adds a handler that will mark the effect as completed once the specified
+     * sprite animation has ended.
+     */
+    public Effect stopAfterAnimation(Sprite sprite) {
+        return stopIf(() -> {
+            Animation animation = sprite.getCurrentStateGraphics();
+            Timer timer = sprite.getCurrentStateTimer();
+            return animation.getDuration() > 0f && timer.getTime() >= animation.getDuration();
         });
     }
 
@@ -133,50 +126,78 @@ public final class Effect implements Scene {
      * Adds a handler that will mark the effect as completed once the specified
      * condition is met.
      */
-    public void stopIf(Supplier<Boolean> condition) {
-        addFrameHandler(deltaTime -> {
-            if (condition.get()) {
-                complete();
-            }
-        });
+    public Effect stopIf(BooleanSupplier condition) {
+        completionConditions.add(condition);
+        return this;
     }
 
     /**
      * Links existing graphics to this effect. This means the graphics will be
      * removed from stage when the effect has completed.
      */
-    public void linkGraphics(Graphic2D... graphics) {
+    public Effect linkGraphics(Graphic2D... graphics) {
         for (Graphic2D graphic : graphics) {
             linkedGraphics.add(graphic);
         }
+
+        return this;
     }
 
     /**
      * Links existing graphics to this effect. This means the graphics will be
      * removed from stage when the effect has completed.
+     *
+     * @deprecated Use {@link #linkGraphics(Graphic2D...)} instead.
      */
-    public void removeAfterwards(Graphic2D... graphics) {
-        //TODO deprecate this in favor of linkGraphics().
-        linkGraphics(graphics);
-    }
-
-    @Override
-    public void start(SceneContext context) {
-        startHandlers.forEach(Runnable::run);
+    @Deprecated
+    public Effect removeAfterwards(Graphic2D... graphics) {
+        return linkGraphics(graphics);
     }
 
     @Override
     public void update(SceneContext context, float deltaTime) {
         if (!completed) {
-            frameHandlers.forEach(handler -> handler.update(deltaTime));
-            clickHandlers.forEach(handler -> handler.accept(context));
+            updateHandlers(context, deltaTime);
+
+            if (checkCompleted()) {
+                completed = true;
+            }
         }
+    }
+
+    private void updateHandlers(SceneContext context, float deltaTime) {
+        for (Updatable frameHandler : frameHandlers) {
+            frameHandler.update(deltaTime);
+        }
+
+        for (Pointer pointer : context.getInput().getPointers()) {
+            for (ClickHandler clickHandler : clickHandlers) {
+                if (pointer.isReleased(clickHandler.bounds.get())) {
+                    clickHandler.action.run();
+                    context.getInput().clearPointerState();
+                }
+            }
+        }
+    }
+
+    private boolean checkCompleted() {
+        if (completionConditions.isEmpty()) {
+            return false;
+        }
+
+        return completionConditions.stream()
+            .allMatch(BooleanSupplier::getAsBoolean);
     }
 
     @Override
     public void end(SceneContext context) {
-        linkedGraphics.forEach(Graphic2D::detach);
-        completionHandlers.forEach(Runnable::run);
+        for (Runnable completionHandler : completionHandlers) {
+            completionHandler.run();
+        }
+
+        for (Graphic2D graphic : linkedGraphics) {
+            graphic.detach();
+        }
     }
 
     @Override
@@ -184,10 +205,12 @@ public final class Effect implements Scene {
         return completed;
     }
 
+    @Deprecated
     public void withLinkedGraphics(Consumer<Graphic2D> callback) {
         linkedGraphics.forEach(callback);
     }
 
+    @Deprecated
     public <T extends Graphic2D> void withLinkedGraphics(Class<T> type, Consumer<T> callback) {
         linkedGraphics.stream()
             .filter(graphic -> graphic.getClass().equals(type))
@@ -197,10 +220,29 @@ public final class Effect implements Scene {
     /**
      * Attaches this effect to the specified scene context. Using this method
      * is identical to {@code sceneContext.attach(effect)}, but is more
-     * readable when creating effects in a declarative way.
+     * readable when creating effects using the fluent API.
      */
-    public void attach(SceneContext context) {
+    public Effect attach(SceneContext context) {
         context.attach(this);
+        return this;
+    }
+
+    /**
+     * Creates an effect that will use the specified callback every frame for
+     * as long the effect is active.
+     */
+    public static Effect forFrameHandler(Updatable action) {
+        Effect effect = new Effect();
+        effect.addFrameHandler(action);
+        return effect;
+    }
+
+    /**
+     * Creates an effect that will use the specified callback every frame for
+     * as long the effect is active.
+     */
+    public static Effect forFrameHandler(Runnable action) {
+        return forFrameHandler(deltaTime -> action.run());
     }
 
     /**
@@ -208,33 +250,19 @@ public final class Effect implements Scene {
      * time, and will then perform an action.
      */
     public static Effect delay(float duration, Runnable action) {
-        Effect effect = new Effect();
         Timer timer = new Timer(duration);
+        AtomicBoolean done = new AtomicBoolean(false);
 
-        if (action != null) {
-            effect.addCompletionHandler(action);
-        }
-
+        Effect effect = new Effect();
         effect.addFrameHandler(deltaTime -> {
             timer.update(deltaTime);
-            if (timer.isCompleted()) {
-                effect.complete();
+            if (timer.isCompleted() && !done.get()) {
+                action.run();
+                done.set(true);
             }
         });
-
+        effect.stopIf(timer::isCompleted);
         return effect;
-    }
-
-    /**
-     * Creates an effect that will first wait for the specified period of
-     * time, and will then perform an action.
-     *
-     * @deprecated This method is identical to {@link #delay(float, Runnable)},
-     *             use that instead because of its more descriptive name.
-     */
-    @Deprecated
-    public static Effect forTimer(float duration, Runnable action) {
-        return delay(duration, action);
     }
 
     /**
@@ -245,6 +273,13 @@ public final class Effect implements Scene {
     public static Effect forTimeline(Timeline timeline, Consumer<Float> callback) {
         Effect effect = new Effect();
         effect.addTimelineHandler(timeline, callback);
+        return effect;
+    }
+
+    public static Effect forClickHandler(Graphic2D graphic, Runnable handler) {
+        Effect effect = new Effect();
+        effect.linkGraphics(graphic);
+        effect.addClickHandler(graphic, handler);
         return effect;
     }
 
@@ -284,6 +319,28 @@ public final class Effect implements Scene {
         effect.addTimelineHandler(timeline, value -> sprite.getTransform().setAlpha(value));
         effect.removeAfterwards(sprite);
         return effect;
+    }
+
+    /**
+     * Changes a sprite's scale until it fits the canvas. The {@code uniform}
+     * parameter controls how the sprite should handle situations where the
+     * aspect ratio of {@code bound} differs from the sprite's own aspect
+     * ratio. When true, the sprite's horizontal and vertical scale will
+     * always be set to the same values. When false, they can be different,
+     * meaning the sprite could appear as stretched or squashed in certain
+     * situations.
+     */
+    public static Effect scaleToFit(Sprite sprite, Canvas canvas, boolean uniform) {
+        return Effect.forFrameHandler(() -> {
+            float scaleX = (float) canvas.getWidth() / (float) sprite.getCurrentWidth();
+            float scaleY = (float) canvas.getHeight() / (float) sprite.getCurrentHeight();
+
+            if (uniform) {
+                sprite.getTransform().setScale(Math.max(scaleX, scaleY) * 100f);
+            } else {
+                sprite.getTransform().setScale(scaleX * 100f, scaleY * 100f);
+            }
+        });
     }
 
     /**
@@ -330,10 +387,10 @@ public final class Effect implements Scene {
         return effect;
     }
 
-    public static Effect forClickHandler(Graphic2D graphic, Runnable handler) {
-        Effect effect = new Effect();
-        effect.linkGraphics(graphic);
-        effect.addClickHandler(graphic, handler);
-        return effect;
+    /**
+     * Defines a click handler from the area that should trigger the action
+     * and the action itself.
+     */
+    private record ClickHandler(Supplier<Rect> bounds, Runnable action) {
     }
 }

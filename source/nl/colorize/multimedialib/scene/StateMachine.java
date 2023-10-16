@@ -35,13 +35,13 @@ import java.util.function.BiPredicate;
  */
 public class StateMachine<S> implements Updatable {
 
-    private Deque<RequestedState<S>> stateQueue;
-    private S defaultState;
+    private Deque<StateQueueElement<S>> stateQueue;
+    private StateQueueElement<S> defaultState;
     private BiPredicate<S, S> allowedTransitions;
 
     public StateMachine(S defaultState) {
         this.stateQueue = new LinkedList<>();
-        this.defaultState = defaultState;
+        this.defaultState = new StateQueueElement<>(defaultState, Timer.infinite(), true);
         this.allowedTransitions = (a, b) -> true;
     }
 
@@ -73,8 +73,8 @@ public class StateMachine<S> implements Updatable {
         boolean interruptible = duration == 0f;
         Timer timer = interruptible ? Timer.infinite() : new Timer(duration);
 
-        RequestedState<S> stateInfo = new RequestedState<>(nextState, timer, interruptible);
-        stateQueue.offer(stateInfo);
+        StateQueueElement<S> element = new StateQueueElement<>(nextState, timer, interruptible);
+        stateQueue.offer(element);
         return true;
     }
 
@@ -127,9 +127,8 @@ public class StateMachine<S> implements Updatable {
             return;
         }
 
-        RequestedState<S> active = stateQueue.peek();
-        updateState(active.state, deltaTime);
-        active.timer.update(deltaTime);
+        StateQueueElement<S> active = stateQueue.peek();
+        updateState(active, deltaTime);
 
         // We intentionally check the active state at the start
         // *and* at the end of every frame, just to ensure the
@@ -139,27 +138,27 @@ public class StateMachine<S> implements Updatable {
         }
     }
 
-    private void updateState(S state, float deltaTime) {
-        if (state instanceof Updatable updatableState) {
+    private void updateState(StateQueueElement<S> element, float deltaTime) {
+        element.timer.update(deltaTime);
+
+        if (element.state instanceof Updatable updatableState) {
             updatableState.update(deltaTime);
         }
     }
 
     public S getActiveState() {
-        if (stateQueue.isEmpty()) {
-            return defaultState;
+        StateQueueElement<S> active = stateQueue.peek();
+        if (active == null) {
+            active = defaultState;
         }
-
-        RequestedState<S> active = stateQueue.peek();
         return active.state;
     }
 
     public Timer getActiveStateTimer() {
-        if (stateQueue.isEmpty()) {
-            return Timer.infinite();
+        StateQueueElement<S> active = stateQueue.peek();
+        if (active == null) {
+            active = defaultState;
         }
-
-        RequestedState<S> active = stateQueue.peek();
         return active.timer;
     }
 
@@ -168,15 +167,15 @@ public class StateMachine<S> implements Updatable {
             return false;
         }
 
-        RequestedState<S> active = stateQueue.peek();
+        StateQueueElement<S> active = stateQueue.peek();
         boolean hasNextState = stateQueue.size() >= 2;
         return active.timer.isCompleted() || (active.interruptible && hasNextState);
     }
 
     /**
-     * Data structure indicating one of the states in the queue. Also keeps
-     * track of the state's progress while it is active.
+     * Data structure that combines the state object with information on how
+     * the requested state should behave once it becomes active.
      */
-    private record RequestedState<S>(S state, Timer timer, boolean interruptible) {
+    private record StateQueueElement<S>(S state, Timer timer, boolean interruptible) {
     }
 }

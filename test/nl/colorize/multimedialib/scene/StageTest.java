@@ -150,7 +150,7 @@ class StageTest {
             Stage
                 Container
                     Container
-                        Sprite [MockImage]
+                        Sprite [$$default@0.0]
                         Primitive [(10, 10, 200, 200)]
                         Text [test]
             """;

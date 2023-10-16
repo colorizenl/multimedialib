@@ -14,6 +14,8 @@ import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.OutlineFont;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
+import nl.colorize.util.LoadUtils;
+import nl.colorize.util.TranslationBundle;
 
 import java.util.List;
 import java.util.Properties;
@@ -103,13 +105,34 @@ public interface MediaLoader {
     public String loadText(FilePointer file);
 
     /**
-     * Loads a text-based resource file using UTF-8 encoding, and returns it as
-     * a list of lines.
+     * Loads a text-based resource file using UTF-8 encoding, and returns
+     * it as a list of lines.
      *
      * @throws MediaException if the file does not exist.
      */
     default List<String> loadTextLines(FilePointer file) {
         return Splitter.on("\n").splitToList(loadText(file));
+    }
+
+    /**
+     * Convenience method that loads and then parses the contents of a
+     * {@code .properties} file. By default, reading the file contents
+     * is delegated to {@link #loadText(FilePointer)}.
+     */
+    default Properties loadProperties(FilePointer file) {
+        String contents = loadText(file);
+        return LoadUtils.loadProperties(contents);
+    }
+
+    /**
+     * Convenience method that loads and then parses the contents of a
+     * {@code .properties} file and returns a {@link TranslationBundle}.
+     * By default, reading the file contents is delegated to
+     * {@link #loadText(FilePointer)}.
+     */
+    default TranslationBundle loadTranslationBundle(FilePointer file) {
+        Properties properties = loadProperties(file);
+        return TranslationBundle.fromProperties(properties);
     }
 
     /**

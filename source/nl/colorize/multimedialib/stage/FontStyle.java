@@ -8,7 +8,12 @@ package nl.colorize.multimedialib.stage;
 
 import com.google.common.base.Preconditions;
 
-public record FontStyle(String family, int size, boolean bold, ColorRGB color) {
+public record FontStyle(
+    String family,
+    int size,
+    boolean bold,
+    ColorRGB color
+) {
 
     public FontStyle {
         Preconditions.checkArgument(!family.isEmpty(), "Invalid font family");

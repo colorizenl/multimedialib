@@ -48,7 +48,7 @@ class OrientationLockScreenTest {
             Stage
                 Container
                     Container
-                        Sprite [orientation lock]
+                        Sprite [$$default@0.0]
             """;
 
         assertEquals(expected, context.getStage().toString());

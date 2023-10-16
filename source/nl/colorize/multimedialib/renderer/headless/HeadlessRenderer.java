@@ -10,7 +10,6 @@ import com.google.common.annotations.VisibleForTesting;
 import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
@@ -29,7 +28,6 @@ import nl.colorize.util.Stopwatch;
 
 import java.io.File;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Headless renderer implementation intended for testing or simulating on
@@ -124,30 +122,16 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     }
 
     @Override
-    public Optional<Point2D> getPointer() {
-        return Optional.ofNullable(pointer);
-    }
-
-    @Override
-    public List<Pointer> getPointers() {
-        Pointer pointerObject = new Pointer("headless", pointer);
+    public Iterable<Pointer> getPointers() {
+        Pointer pointerObject = new Pointer("headless");
+        pointerObject.setPosition(pointer);
         pointerObject.setPressed(pointerPressed);
         pointerObject.setReleased(pointerReleased);
         return List.of(pointerObject);
     }
 
     @Override
-    public boolean isPointerPressed(Rect area) {
-        return pointerPressed;
-    }
-
-    @Override
-    public boolean isPointerReleased(Rect area) {
-        return pointerReleased;
-    }
-
-    @Override
-    public void clearPointerReleased() {
+    public void clearPointerState() {
         pointerPressed = false;
         pointerReleased = false;
     }

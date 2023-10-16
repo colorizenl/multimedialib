@@ -25,7 +25,7 @@ public class AWTImageTest {
         image.setRGB(1, 0, Color.GREEN.getRGB());
         image.setRGB(2, 0, Color.BLUE.getRGB());
 
-        AWTImage texture = new AWTImage(image);
+        AWTImage texture = new AWTImage(image, null);
 
         assertEquals(ColorRGB.RED, texture.getColor(0, 0));
         assertEquals(ColorRGB.GREEN, texture.getColor(1, 0));
@@ -39,7 +39,7 @@ public class AWTImageTest {
         image.setRGB(1, 0, new Color(255, 0, 0, 127).getRGB());
         image.setRGB(2, 0, new Color(255, 0, 0, 0).getRGB());
 
-        AWTImage texture = new AWTImage(image);
+        AWTImage texture = new AWTImage(image, null);
 
         assertEquals(100, texture.getAlpha(0, 0));
         assertEquals(50, texture.getAlpha(1, 0));
@@ -53,7 +53,7 @@ public class AWTImageTest {
         image.setRGB(1, 0, Color.GREEN.getRGB());
         image.setRGB(2, 0, Color.BLUE.getRGB());
 
-        AWTImage texture = new AWTImage(image);
+        AWTImage texture = new AWTImage(image, null);
         Image region = texture.extractRegion(new Region(1, 0, 2, 1));
 
         assertEquals(2, region.getWidth());

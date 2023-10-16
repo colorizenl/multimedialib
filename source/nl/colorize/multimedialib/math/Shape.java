@@ -30,4 +30,12 @@ public interface Shape {
      * specified X and Y offset.
      */
     public Shape reposition(Point2D offset);
+
+    /**
+     * Returns a new {@link Shape} instance that is repositioned by the
+     * specified X and Y offset.
+     */
+    default Shape reposition(float offsetX, float offsetY) {
+        return reposition(new Point2D(offsetX, offsetY));
+    }
 }

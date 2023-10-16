@@ -8,9 +8,11 @@ package nl.colorize.multimedialib.stage;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
+import nl.colorize.multimedialib.math.MathUtils;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.StateMachine;
+import nl.colorize.multimedialib.scene.Timer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -58,8 +60,11 @@ public class Sprite implements Graphic2D {
      *
      * @throws IllegalArgumentException if a state with the same name has
      *         already been registered with this sprite.
+     * @throws NullPointerException when trying to add {@code null} graphics.
      */
     public void addGraphics(String stateName, Animation stateGraphics) {
+        Preconditions.checkNotNull(stateName, "Missing state name");
+        Preconditions.checkNotNull(stateGraphics, "Missing state graphics");
         Preconditions.checkArgument(!graphics.containsKey(stateName),
             "Sprite already contains graphics for " + stateName);
 
@@ -128,6 +133,11 @@ public class Sprite implements Graphic2D {
         return graphics.get(stateMachine.getActiveState());
     }
 
+    @Deprecated
+    public Timer getCurrentStateTimer() {
+        return stateMachine.getActiveStateTimer();
+    }
+
     public Image getCurrentGraphics() {
         Animation currentGraphics = graphics.get(stateMachine.getActiveState());
         float time = stateMachine.getActiveStateTimer().getTime();
@@ -174,6 +184,8 @@ public class Sprite implements Graphic2D {
 
     @Override
     public String toString() {
-        return "Sprite [" + getCurrentGraphics() + "]";
+        String state = stateMachine.getActiveState();
+        String time = MathUtils.format(stateMachine.getActiveStateTimer().getTime(), 1);
+        return "Sprite [" + state + "@" + time + "]";
     }
 }

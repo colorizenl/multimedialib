@@ -43,4 +43,16 @@ public class Buffer<E> {
         contents.clear();
         return buffer;
     }
+
+    /**
+     * Peeks at the contents of this buffer without flushing it.
+     */
+    public Iterable<E> peek() {
+        return contents;
+    }
+
+    @Override
+    public String toString() {
+        return contents.toString();
+    }
 }

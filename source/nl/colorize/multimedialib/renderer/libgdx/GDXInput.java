@@ -10,7 +10,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.google.common.collect.ImmutableMap;
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
@@ -26,7 +25,6 @@ import java.awt.BorderLayout;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 public class GDXInput implements InputDevice {
@@ -95,11 +93,14 @@ public class GDXInput implements InputDevice {
         .put(KeyCode.F10, Input.Keys.F10)
         .put(KeyCode.F11, Input.Keys.F11)
         .put(KeyCode.F12, Input.Keys.F12)
+        .put(KeyCode.PLUS, Input.Keys.PLUS)
+        .put(KeyCode.MINUS, Input.Keys.MINUS)
+        .put(KeyCode.EQUALS, Input.Keys.EQUALS)
         .build();
 
     protected GDXInput(Canvas canvas) {
         this.canvas = canvas;
-        this.pointer = new Pointer("mouse", new Point2D(0f, 0f));
+        this.pointer = new Pointer("mouse");
         this.keysUp = new HashSet<>();
         this.keysDown = new HashSet<>();
     }
@@ -145,37 +146,12 @@ public class GDXInput implements InputDevice {
     }
 
     @Override
-    public Optional<Point2D> getPointer() {
-        return Optional.of(pointer.getPosition());
-    }
-
-    @Override
     public List<Pointer> getPointers() {
         return List.of(pointer);
     }
 
     @Override
-    public boolean isPointerPressed(Rect area) {
-        return pointer.isPressed() && area.contains(pointer.getPosition());
-    }
-
-    @Override
-    public boolean isPointerPressed() {
-        return pointer.isPressed();
-    }
-
-    @Override
-    public boolean isPointerReleased(Rect area) {
-        return pointer.isReleased() && area.contains(pointer.getPosition());
-    }
-
-    @Override
-    public boolean isPointerReleased() {
-        return pointer.isReleased();
-    }
-
-    @Override
-    public void clearPointerReleased() {
+    public void clearPointerState() {
         pointer.setReleased(false);
     }
 

@@ -73,7 +73,11 @@ public enum KeyCode {
     F9,
     F10,
     F11,
-    F12;
+    F12,
+
+    PLUS,
+    MINUS,
+    EQUALS;
 
     public static final List<KeyCode> ARROWS = List.of(LEFT, RIGHT, UP, DOWN);
 }

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static nl.colorize.multimedialib.math.MathUtils.EPSILON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -154,5 +155,24 @@ public class StateMachineTest {
         stateMachine.update(1f);
 
         assertEquals("[b, b, b]", frames.toString());
+    }
+
+    @Test
+    void updateStateTime() {
+        StateMachine<String> stateMachine = new StateMachine<>("a");
+        stateMachine.requestState("b");
+        stateMachine.update(1f);
+        stateMachine.update(1f);
+
+        assertEquals(2f, stateMachine.getActiveStateTimer().getTime(), EPSILON);
+    }
+
+    @Test
+    void updateDefaultStateTime() {
+        StateMachine<String> stateMachine = new StateMachine<>("a");
+        stateMachine.update(1f);
+        stateMachine.update(1f);
+
+        assertEquals(2f, stateMachine.getActiveStateTimer().getTime(), EPSILON);
     }
 }

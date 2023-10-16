@@ -13,18 +13,18 @@ import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GeometryBuilder;
-import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.MediaLoader;
+import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.stage.World3D;
 import nl.colorize.multimedialib.stage.OutlineFont;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
+import nl.colorize.multimedialib.stage.World3D;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -132,10 +132,10 @@ public class Demo3D implements Scene, ErrorHandler {
 
     @Override
     public void update(SceneContext context, float deltaTime) {
-        InputDevice inputDevice = context.getInput();
-
-        if (inputDevice.isPointerReleased(context.getCanvas().getBounds())) {
-            pointer = inputDevice.getPointer().orElse(new Point2D(0f, 0f));
+        for (Pointer pointer : context.getInput().getPointers()) {
+            if (pointer.isReleased()) {
+                this.pointer = pointer.getPosition();
+            }
         }
 
         updateModels(context.getStage());

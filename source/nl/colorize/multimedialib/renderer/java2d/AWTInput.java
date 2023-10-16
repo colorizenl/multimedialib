@@ -8,7 +8,6 @@ package nl.colorize.multimedialib.renderer.java2d;
 
 import com.google.common.collect.ImmutableMap;
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
@@ -28,7 +27,6 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -114,6 +112,9 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
         .put(KeyCode.F10, KeyEvent.VK_F10)
         .put(KeyCode.F11, KeyEvent.VK_F11)
         .put(KeyCode.F12, KeyEvent.VK_F12)
+        .put(KeyCode.PLUS, KeyEvent.VK_PLUS)
+        .put(KeyCode.MINUS, KeyEvent.VK_MINUS)
+        .put(KeyCode.EQUALS, KeyEvent.VK_EQUALS)
         .build();
 
     public AWTInput(Canvas canvas) {
@@ -241,49 +242,21 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
         e.consume();
     }
 
-    private Point2D getMousePosition() {
+    @Override
+    public Iterable<Pointer> getPointers() {
         float canvasX = canvas.toCanvasX(mouseX);
         float canvasY = canvas.toCanvasY(mouseY);
-        return new Point2D(canvasX, canvasY);
-    }
+        Point2D mouseCanvasPosition = new Point2D(canvasX, canvasY);
 
-    @Override
-    public Optional<Point2D> getPointer() {
-        return Optional.of(getMousePosition());
-    }
-
-    @Override
-    public List<Pointer> getPointers() {
-        Pointer pointer = new Pointer("mouse", getMousePosition());
-        pointer.setPressed(isPointerPressed());
-        pointer.setReleased(isPointerReleased());
+        Pointer pointer = new Pointer("mouse");
+        pointer.setPosition(mouseCanvasPosition);
+        pointer.setPressed(mouseState == MOUSE_STATE_PRESSED);
+        pointer.setReleased(mouseState == MOUSE_STATE_RELEASED);
         return List.of(pointer);
     }
 
     @Override
-    public boolean isPointerPressed(Rect area) {
-        Point2D mousePosition = getMousePosition();
-        return mouseState == MOUSE_STATE_PRESSED && area.contains(mousePosition);
-    }
-
-    @Override
-    public boolean isPointerPressed() {
-        return mouseState == MOUSE_STATE_PRESSED;
-    }
-
-    @Override
-    public boolean isPointerReleased(Rect area) {
-        Point2D mousePosition = getMousePosition();
-        return mouseState == MOUSE_STATE_RELEASED && area.contains(mousePosition);
-    }
-
-    @Override
-    public boolean isPointerReleased() {
-        return mouseState == MOUSE_STATE_RELEASED;
-    }
-
-    @Override
-    public void clearPointerReleased() {
+    public void clearPointerState() {
         mouseState = MOUSE_STATE_DEFAULT;
     }
 

@@ -79,5 +79,6 @@ public class Point2DTest {
     @Test
     void move() {
         assertEquals("(40, 60)", new Point2D(10, 20).move(30, 40).toString());
+        assertEquals("(40, 60)", new Point2D(10, 20).move(new Point2D(30, 40)).toString());
     }
 }

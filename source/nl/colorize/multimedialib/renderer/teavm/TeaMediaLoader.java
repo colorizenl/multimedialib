@@ -58,6 +58,7 @@ public class TeaMediaLoader implements MediaLoader {
     public Image loadImage(FilePointer file) {
         HTMLImageElement imageElement = (HTMLImageElement) document.createElement("img");
         Subscribable<HTMLImageElement> imagePromise = new Subscribable<>();
+        imageElement.setCrossOrigin("anonymous");
         imageElement.addEventListener("load", event -> imagePromise.next(imageElement));
         imageElement.setSrc("resources/" + normalizeFilePath(file, false));
         return new TeaImage(imagePromise.toPromise(), null);
@@ -67,6 +68,7 @@ public class TeaMediaLoader implements MediaLoader {
     public Audio loadAudio(FilePointer file) {
         HTMLAudioElement audioElement = (HTMLAudioElement) document.createElement("audio");
         Subscribable<HTMLAudioElement> audioPromise = new Subscribable<>();
+        audioElement.setCrossOrigin("anonymous");
         audioElement.addEventListener("loadeddata", event -> audioPromise.next(audioElement));
         audioElement.setSrc("resources/" + normalizeFilePath(file, false));
         return new TeaAudio(audioPromise.toPromise());

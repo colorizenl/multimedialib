@@ -9,7 +9,6 @@ package nl.colorize.multimedialib.renderer.teavm;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
@@ -21,9 +20,7 @@ import org.teavm.jso.dom.events.MouseEvent;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -101,6 +98,10 @@ public class TeaInputDevice implements InputDevice {
             .put(KeyCode.F10, 121)
             .put(KeyCode.F11, 122)
             .put(KeyCode.F12, 123)
+            .put(KeyCode.PLUS, 187)
+            .put(KeyCode.MINUS, 189)
+            // KeyCode.EQUALS is not supported because JavaScript uses
+            // the same keycode for both "+" and "=".
             .build();
 
     public TeaInputDevice(Canvas canvas, TeaGraphics graphics) {
@@ -205,16 +206,7 @@ public class TeaInputDevice implements InputDevice {
     }
 
     @Override
-    public Optional<Point2D> getPointer() {
-        List<Pointer> pointers = getPointers();
-        if (pointers.isEmpty()) {
-            return Optional.empty();
-        }
-        return Optional.of(pointers.get(0).getPosition());
-    }
-
-    @Override
-    public List<Pointer> getPointers() {
+    public Iterable<Pointer> getPointers() {
         //TODO cannot use List.copyOf() because it is not yet
         //     supported by TeaVM.
         return ImmutableList.copyOf(pointers.values());
@@ -231,31 +223,7 @@ public class TeaInputDevice implements InputDevice {
     }
 
     @Override
-    public boolean isPointerPressed(Rect area) {
-        List<Pointer> pointers = getPointers();
-        return !pointers.isEmpty() && pointers.get(0).isPressed(area);
-    }
-
-    @Override
-    public boolean isPointerPressed() {
-        List<Pointer> pointers = getPointers();
-        return !pointers.isEmpty() && pointers.get(0).isPressed();
-    }
-
-    @Override
-    public boolean isPointerReleased(Rect area) {
-        List<Pointer> pointers = getPointers();
-        return !pointers.isEmpty() && pointers.get(0).isReleased(area);
-    }
-
-    @Override
-    public boolean isPointerReleased() {
-        List<Pointer> pointers = getPointers();
-        return !pointers.isEmpty() && pointers.get(0).isReleased();
-    }
-
-    @Override
-    public void clearPointerReleased() {
+    public void clearPointerState() {
         pointers.clear();
     }
 

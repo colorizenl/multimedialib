@@ -11,9 +11,11 @@ import lombok.Getter;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Image;
+import nl.colorize.util.LogHelper;
 import nl.colorize.util.Promise;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.canvas.CanvasRenderingContext2D;
+import org.teavm.jso.canvas.ImageData;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
 import org.teavm.jso.dom.html.HTMLDocument;
 import org.teavm.jso.dom.html.HTMLImageElement;
@@ -21,6 +23,7 @@ import org.teavm.jso.typedarrays.Uint8ClampedArray;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 /**
  * Image implementation that is based on an HTML {@code img} element. Since all
@@ -37,6 +40,7 @@ public class TeaImage implements Image {
 
     private static final Region IMAGE_LOADING_REGION = new Region(0, 0, 1, 1);
     private static final int[] UNKNOWN_RGBA = {0, 0, 0, 0};
+    private static final Logger LOGGER = LogHelper.getLogger(TeaImage.class);
 
     protected TeaImage(Promise<HTMLImageElement> imagePromise, Region region) {
         this.id = UUID.randomUUID();
@@ -55,9 +59,12 @@ public class TeaImage implements Image {
     @Override
     public Region getRegion() {
         if (region == null) {
-            return imagePromise.getValue()
-                .map(img -> new Region(0, 0, img.getWidth(), img.getHeight()))
-                .orElse(IMAGE_LOADING_REGION);
+            if (imagePromise.getValue().isEmpty()) {
+                return IMAGE_LOADING_REGION;
+            }
+
+            HTMLImageElement imageElement = imagePromise.getValue().get();
+            region = new Region(0, 0, imageElement.getWidth(), imageElement.getHeight());
         }
 
         return region;
@@ -82,20 +89,25 @@ public class TeaImage implements Image {
 
     private int[] getImageData(int x, int y) {
         HTMLImageElement img = imagePromise.getValue().orElse(null);
+        Region region = getRegion();
 
         if (img == null) {
+            LOGGER.warning("Trying to retrieve image data when image is still loading");
             return UNKNOWN_RGBA;
         }
 
         if (imageData == null) {
             HTMLDocument document = Window.current().getDocument();
             HTMLCanvasElement canvas = (HTMLCanvasElement) document.createElement("canvas");
+            canvas.setWidth(region.width());
+            canvas.setHeight(region.height());
             imageData = (CanvasRenderingContext2D) canvas.getContext("2d");
             imageData.drawImage(img, 0, 0);
         }
 
-        Uint8ClampedArray rgba = imageData.getImageData(x, y, 1, 1).getData();
-        return new int[] { rgba.get(0), rgba.get(1), rgba.get(2), rgba.get(3) };
+        ImageData pixels = imageData.getImageData(x, y, 1, 1);
+        Uint8ClampedArray pixelData = pixels.getData();
+        return new int[] {pixelData.get(0), pixelData.get(1), pixelData.get(2), pixelData.get(3)};
     }
 
     /**

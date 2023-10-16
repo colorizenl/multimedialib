@@ -16,11 +16,12 @@ import java.util.UUID;
  * being displayed on the stage. This class exists to avoid repeated logic
  * between different types of graphics.
  */
+@Getter
 public class StageLocation {
 
-    @Getter private UUID id;
-    @Getter private Container parent;
-    @Getter private Transform localTransform;
+    private UUID id;
+    private Container parent;
+    private Transform localTransform;
 
     public StageLocation() {
         this.id = UUID.randomUUID();

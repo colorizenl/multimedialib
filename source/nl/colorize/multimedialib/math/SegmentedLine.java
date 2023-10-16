@@ -6,6 +6,7 @@
 
 package nl.colorize.multimedialib.math;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import lombok.Value;
 
@@ -41,6 +42,10 @@ public class SegmentedLine implements Shape {
         return points.get(0);
     }
 
+    public Point2D getTail() {
+        return points.get(points.size() - 1);
+    }
+
     @Override
     public boolean contains(Point2D p) {
         return points.contains(p);
@@ -70,5 +75,31 @@ public class SegmentedLine implements Shape {
             .toList();
 
         return new SegmentedLine(pointsCopy);
+    }
+
+    /**
+     * Returns a direct line that points from this segmented line's head to
+     * its tail.
+     */
+    public Line toDirectLine() {
+        return new Line(getHead(), getTail());
+    }
+
+    /**
+     * Returns a new {@link SegmentedLine} that consists of the same segments
+     * as this one plus one extra segment between this line's tail and the
+     * specified point.
+     */
+    public SegmentedLine extend(Point2D p) {
+        List<Point2D> extendedPoints = new ArrayList<>();
+        extendedPoints.addAll(points);
+        extendedPoints.add(p);
+
+        return new SegmentedLine(extendedPoints);
+    }
+
+    @Override
+    public String toString() {
+        return Joiner.on(" -> ").join(points);
     }
 }

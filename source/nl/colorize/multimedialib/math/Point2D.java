@@ -98,6 +98,14 @@ public class Point2D {
         return new Point2D(x + deltaX, y + deltaY);
     }
 
+    /**
+     * Returns a new point that starts from this point and then adds the
+     * specified offset.
+     */
+    public Point2D move(Point2D other) {
+        return move(other.getX(), other.getY());
+    }
+
     @Override
     public String toString() {
         return String.format("(%d, %d)", Math.round(x), Math.round(y));

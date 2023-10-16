@@ -6,10 +6,12 @@
 
 package nl.colorize.multimedialib.scene;
 
+import lombok.Getter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
+import nl.colorize.multimedialib.stage.GraphicsProvider;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Transform;
@@ -24,9 +26,10 @@ import java.util.List;
  * where the particles slowly reveal the screen. Both effects would typically
  * be used on either side of the transition.
  */
-public class WipeTransition implements InteractiveObject {
+public class WipeTransition implements Scene, GraphicsProvider {
 
-    private Container container;
+    @Getter private Container container;
+
     private boolean reverse;
     private Image particleImage;
     private float duration;
@@ -96,11 +99,6 @@ public class WipeTransition implements InteractiveObject {
     public boolean isCompleted() {
         return particles.stream()
             .allMatch(particle -> particle.timeline.isCompleted());
-    }
-
-    @Override
-    public Container getContainer() {
-        return container;
     }
 
     /**
