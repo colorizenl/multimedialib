@@ -39,9 +39,9 @@ import java.io.File;
 public interface Renderer {
 
     /**
-     * Initializes this renderer and starts playing the requested scene. Errors
-     * that occur during the application will be forwarded to the specified
-     * error handler.
+     * Initializes this renderer and starts playing the requested scene.
+     * Errors that occur during the application will be forwarded to the
+     * specified error handler.
      * <p>
      * As explained in the class documentation, this is the only method in
      * {@link Renderer} that can be safely called from <em>outside</em> the
@@ -88,4 +88,12 @@ public interface Renderer {
      *         screenshots to files.
      */
     public void takeScreenshot(File outputFile);
+
+    /**
+     * Returns true if the renderer is currently running within a development
+     * environment. This method can be used for testing and debugging
+     * purposes. What exactly "counts" as a development environment depends
+     * on the renderer and platform.
+     */
+    public boolean isDevelopmentEnvironment();
 }

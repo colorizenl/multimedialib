@@ -1,7 +1,7 @@
 plugins {
-    id "io.freefair.lombok" version "8.3"
-    id "com.github.ben-manes.versions" version "0.48.0"
-    id "nl.colorize.gradle.application" version "2023.8"
+    id "io.freefair.lombok" version "8.4"
+    id "com.github.ben-manes.versions" version "0.49.0"
+    id "nl.colorize.gradle.application" version "2023.10.2"
 }
 
 apply plugin: "java-library"
@@ -10,10 +10,10 @@ apply plugin: "maven-publish"
 apply plugin: "signing"
 
 group = "nl.colorize"
-version = "2023.8"
+version = "2023.9"
 compileJava.options.encoding = "UTF-8"
-ext.libgdxVersion = "1.12.0"
-ext.teavmVersion = "0.8.1"
+ext.libgdxVersion = "1.12.1"
+ext.teavmVersion = "0.9.0"
 
 java {
     sourceCompatibility = "17"
@@ -31,7 +31,7 @@ repositories {
 }
 
 dependencies {
-    implementation "nl.colorize:colorize-java-commons:2023.15"
+    implementation "nl.colorize:colorize-java-commons:2023.19"
 
     implementation "com.badlogicgames.gdx:gdx:${libgdxVersion}"
     implementation "com.badlogicgames.gdx:gdx-platform:${libgdxVersion}:natives-desktop"
@@ -50,7 +50,8 @@ dependencies {
 
     implementation "com.github.mgsx-dev.gdx-gltf:gltf:2.1.0"
     implementation "com.tagtraum:casampledsp-complete:0.9.31"
-    testImplementation "org.junit.jupiter:junit-jupiter:5.10.0"
+    testImplementation "org.junit.jupiter:junit-jupiter:5.10.1"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
 java {
@@ -100,6 +101,14 @@ xcode {
     appVersion = "${version}"
     icon = "resources/browser/assets/apple-icon.png"
     resourcesDir = "${buildDir}/browserdemo2d"   
+}
+
+exe {
+    inherit = true
+    mainJarName = jar.archiveFileName.get()
+    exeFileName = "multimedialib-demo.exe"
+    icon = "${projectDir}/_development/colorize.ico"
+    supportURL = "https://www.colorize.nl"
 }
 
 createApplicationBundle.doLast {

@@ -11,9 +11,9 @@ import org.teavm.jso.JSProperty;
 import org.teavm.jso.canvas.CanvasImageSource;
 
 /**
- * TeaVM interface for the {@code pixi-interface.js} JavaScript implementation.
+ * TeaVM interface for the {@code pixi-bridge.js} JavaScript implementation.
  */
-public interface PixiInterface extends JSObject {
+public interface PixiBridge extends JSObject {
 
     public void init();
 

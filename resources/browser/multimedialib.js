@@ -17,8 +17,9 @@ document.addEventListener("DOMContentLoaded", event => {
     window.addEventListener("touchend", handleTouchEvent, true);
     window.addEventListener("touchcancel", handleTouchEvent, true);
 
-    window.pixiInterface = new PixiInterface();
-    window.threeInterface = new ThreeInterface();
+    window.pixiBridge = new PixiBridge();
+    window.threeBridge = new ThreeBridge();
+    window.peerjsBridge = new PeerJsBridge();
 
     // TeaVM entry point in transpiled code.
     main();
@@ -62,7 +63,7 @@ window.preloadFontFace = function(family, url, callback) {
  */
 function handleTouchEvent(touchEvent) {
     for (let i = 0; i < touchEvent.changedTouches.length; i++) {
-        touchEvent.target.dispatchEvent(new CustomEvent("custom:" + touchEvent.type, {
+        const customEvent = new CustomEvent("custom:" + touchEvent.type, {
             bubbles: false,
             cancelable: true,
             composed: false,
@@ -71,7 +72,9 @@ function handleTouchEvent(touchEvent) {
                 pageX: touchEvent.changedTouches[i].clientX,
                 pageY: touchEvent.changedTouches[i].clientY
             }
-        }));
+        });
+
+        touchEvent.target.dispatchEvent(customEvent);
     }
 
     touchEvent.preventDefault();

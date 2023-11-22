@@ -50,7 +50,7 @@ public class PixiGraphics implements TeaGraphics {
 
     private Canvas canvas;
     private BrowserDOM dom;
-    private PixiInterface pixi;
+    private PixiBridge pixi;
     private Map<UUID, Pixi.DisplayObject> displayObjects;
     private Cache<TeaImage, Pixi.Texture> textureCache;
 
@@ -60,7 +60,7 @@ public class PixiGraphics implements TeaGraphics {
     public PixiGraphics(Canvas canvas) {
         this.canvas = canvas;
         this.dom = new BrowserDOM();
-        this.pixi = Browser.getPixiInterface();
+        this.pixi = Browser.getPixiBridge();
         this.displayObjects = new HashMap<>();
         this.textureCache = Cache.from(this::prepareTexture, TEXTURE_CACHE_SIZE);
     }

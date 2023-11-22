@@ -6,6 +6,8 @@
 
 package nl.colorize.multimedialib.renderer;
 
+import com.google.common.collect.Streams;
+import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.Updatable;
 
 /**
@@ -27,6 +29,24 @@ public interface InputDevice extends Updatable {
      * the pointer disappears once the touch event has ended.
      */
     public Iterable<Pointer> getPointers();
+
+    /**
+     * Convenience method that returns true if <em>any</em> of the pointer
+     * devices is currently pressed and located within the specified bounds.
+     */
+    default boolean isPointerPressed(Rect bounds) {
+        return Streams.stream(getPointers())
+            .anyMatch(pointer -> pointer.isPressed(bounds));
+    }
+
+    /**
+     * Convenience method that returns true if <em>any</em> of the pointer
+     * devices has been released within the specified bounds.
+     */
+    default boolean isPointerReleased(Rect bounds) {
+        return Streams.stream(getPointers())
+            .anyMatch(pointer -> pointer.isReleased(bounds));
+    }
 
     /**
      * Clears all pointer state for all currently active pointers.
@@ -63,4 +83,9 @@ public interface InputDevice extends Updatable {
      * to the platform so that a native text field can be used.
      */
     public String requestTextInput(String label, String initialValue);
+
+    /**
+     * Copies the specified text to the system clipboard.
+     */
+    public void fillClipboard(String text);
 }

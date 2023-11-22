@@ -116,6 +116,9 @@ public class Java2DRenderer implements Renderer {
         window.setTitle(windowOptions.getTitle());
         window.setIconImage(loadIcon(windowOptions));
         window.getContentPane().setPreferredSize(new Dimension(canvas.getWidth(), canvas.getHeight()));
+        if (windowOptions.isFullscreen()) {
+            SwingUtils.goFullScreen(window);
+        }
         window.pack();
         window.setLocationRelativeTo(null);
         window.setVisible(true);
@@ -123,10 +126,6 @@ public class Java2DRenderer implements Renderer {
 
         if (Platform.isMac()) {
             MacIntegration.setApplicationMenuListener(windowOptions.getAppMenuListener());
-        }
-
-        if (windowOptions.isFullscreen()) {
-            SwingUtils.goFullScreen(window);
         }
 
         return window;
@@ -313,6 +312,12 @@ public class Java2DRenderer implements Renderer {
         } catch (IOException e) {
             LOGGER.warning("Failed to write screenshot to " + outputFile.getAbsolutePath());
         }
+    }
+
+    @Override
+    public boolean isDevelopmentEnvironment() {
+        File workDir = Platform.getUserWorkingDirectory();
+        return new File(workDir, "build.gradle").exists();
     }
 
     @Override

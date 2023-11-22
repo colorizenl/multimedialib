@@ -37,13 +37,13 @@ public class TeaVMTranspilerToolTest {
         String generatedCode = Files.toString(new File(outputDir, "classes.js"), Charsets.UTF_8);
 
         String expected = "";
-        expected += "function ncmt_TeaVMTranspilerToolTest$MockApp_main($args) {\n";
-        expected += "    var $result;\n";
-        expected += "    $result = ju_ArrayList__init_();\n";
-        expected += "    $result.$add($rt_s(2));\n";
-        expected += "    $result.$add($rt_s(3));\n";
-        expected += "    $result.$clear();\n";
-        expected += "}\n";
+        expected += "    function ncmt_TeaVMTranspilerToolTest$MockApp_main($args) {\n";
+        expected += "        var $result;\n";
+        expected += "        $result = ju_ArrayList__init_();\n";
+        expected += "        $result.$add($rt_s(2));\n";
+        expected += "        $result.$add($rt_s(3));\n";
+        expected += "        $result.$clear();\n";
+        expected += "    }\n";
 
         assertTrue(generatedCode.contains(expected), "Generated code:\n" + generatedCode);
     }

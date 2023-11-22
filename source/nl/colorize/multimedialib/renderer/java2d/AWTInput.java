@@ -302,4 +302,9 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
 
         return field.getText();
     }
+
+    @Override
+    public void fillClipboard(String text) {
+        SwingUtils.copyToClipboard(text);
+    }
 }

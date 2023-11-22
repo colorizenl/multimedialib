@@ -6,11 +6,10 @@
 
 package nl.colorize.multimedialib.math;
 
-import com.google.common.collect.ImmutableList;
-
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.stream.Stream;
 
 /**
  * Data structure that can be flushed to obtain values that have accumulated
@@ -31,17 +30,36 @@ public class Buffer<E> {
         contents.add(element);
     }
 
+    public void push(List<E> elements) {
+        contents.addAll(elements);
+    }
+
+    public void push(E[] elements) {
+        for (E element : elements) {
+            push(element);
+        }
+    }
+
     /**
      * Returns all elements that were pushed to the queue since the last time
      * this method was called, then clears the queue. This method exists to
      * support frame-by-frame polling.
      */
     public Iterable<E> flush() {
-        //TODO cannot use List.copyOf() until the next version
-        //     of TeaVM is released.
-        List<E> buffer = ImmutableList.copyOf(contents);
+        List<E> buffer = List.copyOf(contents);
         contents.clear();
         return buffer;
+    }
+
+    /**
+     * Returns all elements that were pushed to the queue since the last time
+     * this method was called, then clears the queue. Similar to
+     * {@link #flush()}, but returns a stream instead of an {@link Iterable}.
+     */
+    public Stream<E> flushStream() {
+        List<E> buffer = List.copyOf(contents);
+        contents.clear();
+        return buffer.stream();
     }
 
     /**

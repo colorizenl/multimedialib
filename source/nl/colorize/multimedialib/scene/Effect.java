@@ -52,11 +52,10 @@ public final class Effect implements Scene {
 
     /**
      * Creates a new effect that initially does not define any behavior and
-     * is not linked to any graphics. Use the static factory methods to create
-     * effects with the desired behavior, this constructor is for internal use
-     * only.
+     * is not linked to any graphics. Prefer using the static factory methods
+     * to create effects with the desired behavior.
      */
-    private Effect() {
+    public Effect() {
         this.frameHandlers = new ArrayList<>();
         this.clickHandlers = new ArrayList<>();
         this.completionHandlers = new ArrayList<>();
@@ -128,6 +127,15 @@ public final class Effect implements Scene {
      */
     public Effect stopIf(BooleanSupplier condition) {
         completionConditions.add(condition);
+        return this;
+    }
+
+    /**
+     * Adds a handler that will mark the effect as completed during the next
+     * frame update.
+     */
+    public Effect stopNow() {
+        completionConditions.add(() -> true);
         return this;
     }
 

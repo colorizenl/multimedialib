@@ -149,6 +149,11 @@ public class TeaRenderer implements Renderer {
     }
 
     @Override
+    public boolean isDevelopmentEnvironment() {
+        return BrowserDOM.getQueryString().contains("local");
+    }
+
+    @Override
     public void terminate() {
         throw new UnsupportedOperationException();
     }

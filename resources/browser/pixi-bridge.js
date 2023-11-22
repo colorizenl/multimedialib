@@ -5,10 +5,10 @@
 //-----------------------------------------------------------------------------
 
 /**
- * Interface for the parts of the Pixi.js interface implemented in JavaScript.
- * This interface is called from the renderer via TeaVM.
+ * Bridge interface for the parts of the Pixi.js interface implemented in
+ * JavaScript. This interface is called from the renderer via TeaVM.
  */
-class PixiInterface {
+class PixiBridge {
 
     constructor() {
         this.pixiApp = null;

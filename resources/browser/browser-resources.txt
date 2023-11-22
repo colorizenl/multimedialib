@@ -14,8 +14,9 @@ effects/particle-circle.png
 effects/particle-diamond.png
 
 browser/multimedialib.js
-browser/pixi-interface.js
-browser/three-interface.js
+browser/pixi-bridge.js
+browser/three-bridge.js
+browser/peerjs-bridge.js
 browser/vertex-shader.glsl
 browser/fragment-shader.glsl
 browser/assets/multimedialib.css

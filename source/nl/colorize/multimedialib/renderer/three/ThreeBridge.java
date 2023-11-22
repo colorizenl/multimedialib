@@ -9,9 +9,9 @@ package nl.colorize.multimedialib.renderer.three;
 import org.teavm.jso.JSObject;
 
 /**
- * TeaVM interface for the {@code three-interface.js} JavaScript implementation.
+ * TeaVM interface for the {@code three-bridge.js} JavaScript implementation.
  */
-public interface ThreeInterface extends JSObject {
+public interface ThreeBridge extends JSObject {
 
     public void init();
 

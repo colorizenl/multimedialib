@@ -47,7 +47,6 @@ import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
 import nl.colorize.util.http.Headers;
 import nl.colorize.util.http.PostData;
-import nl.colorize.util.stats.Tuple;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -101,7 +100,6 @@ public class Demo2D implements Scene, ErrorHandler {
     private static final ColorRGB ALT_BACKGROUND_COLOR = ColorRGB.parseHex("#EBEBEB");
     private static final ColorRGB COLORIZE_COLOR = ColorRGB.parseHex("#e45d61");
     private static final String EXAMPLE_URL = "https://dashboard.clrz.nl/rest/echo";
-
     private static final List<ColorRGB> SWIPE_COLORS = List.of(RED, GREEN, BLUE, YELLOW);
 
     @Override
@@ -151,6 +149,10 @@ public class Demo2D implements Scene, ErrorHandler {
         createButton(context, "Play sound", GREEN_BUTTON, 60, audioClip::play);
         createButton(context, "Background", GREEN_BUTTON, 90, this::toggleBackgroundColor);
         createButton(context, "Cause error", PINK_BUTTON, 120, this::causeError);
+        if (context.getNetwork().isPeerToPeerSupported()) {
+            createButton(context, "Open connection", PINK_BUTTON, 150, this::openPeerConnection);
+            createButton(context, "Join connection", PINK_BUTTON, 180, this::joinPeerConnection);
+        }
 
         Polygon hexagon = new Polygon(80, 70, 120, 70, 135, 100, 120, 130, 80, 130, 65, 100);
         Primitive hexagonPrimitive = new Primitive(hexagon, COLORIZE_COLOR);
@@ -227,7 +229,7 @@ public class Demo2D implements Scene, ErrorHandler {
     }
 
     private void sendHttpRequest(Network network) {
-        Headers headers = new Headers(Tuple.of(HttpHeaders.ACCEPT, "text/plain"));
+        Headers headers = Headers.of(HttpHeaders.ACCEPT, "text/plain");
         PostData data = PostData.create("message", "1234");
 
         Text info = new Text("Network request pending", font, Align.RIGHT);
@@ -238,7 +240,7 @@ public class Demo2D implements Scene, ErrorHandler {
             List<String> text = new ArrayList<>();
             text.add("Network request succeeded");
             text.add("Content-Type: " + response.getContentType().orElse("?"));
-            text.addAll(Splitter.on("\n").omitEmptyStrings().splitToList(response.getBody()));
+            text.addAll(Splitter.on("\n").omitEmptyStrings().splitToList(response.readBody()));
             info.setText(text);
         }, e -> info.setText("Failed to send network request"));
     }
@@ -261,11 +263,42 @@ public class Demo2D implements Scene, ErrorHandler {
         throw new RuntimeException("Intentional error");
     }
 
+    private void openPeerConnection() {
+        context.getNetwork().openPeerConnection().subscribe(connection -> {
+            showNotification("Peer connection:\n" + connection.getId());
+            context.getInput().fillClipboard(connection.getId());
+
+            context.attach(() -> {
+                for (String message : connection.getReceivedMessages().flush()) {
+                    showNotification("Message received:\n\n" + message);
+                }
+            });
+        });
+    }
+
+    private void joinPeerConnection() {
+        String id = context.getInput().requestTextInput("Peer-to-peer connection ID", "");
+
+        if (id != null && !id.isEmpty()) {
+            context.getNetwork().openPeerConnection().subscribe(connection -> {
+                connection.connect(id).subscribe(result -> {
+                    connection.sendMessage("Hello from a peer-to-peer connection");
+                });
+            });
+        }
+    }
+
     @Override
     public void onError(SceneContext context, Exception cause) {
-        Text errorText = new Text("Error:\n\n" + cause.getMessage(), font, Align.CENTER);
-        errorText.getTransform().setPosition(context.getCanvas().getCenter());
-        hudLayer.addChild(errorText);
+        showNotification("Error:\n\n" + cause.getMessage());
+    }
+
+    private void showNotification(String message) {
+        Text notification = new Text(message, font, Align.CENTER);
+        notification.getTransform().setPosition(context.getCanvas().getCenter());
+        hudLayer.addChild(notification);
+
+        Effect.delay(4f, () -> hudLayer.removeChild(notification)).attach(context);
     }
 
     @Override

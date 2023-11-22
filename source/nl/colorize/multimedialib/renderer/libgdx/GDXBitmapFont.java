@@ -27,7 +27,7 @@ public class GDXBitmapFont implements OutlineFont {
         this.source = source;
         this.style = style;
         this.bitmapFont = fontLoader.getBitmapFont(source, style);
-        this.lineOffset = style.size() * (Platform.isWindows() ? 0.375f : 0.75f);
+        this.lineOffset = style.size() * (0.65f * (Platform.isWindows() ? 0.5f : 1f));
     }
 
     @Override

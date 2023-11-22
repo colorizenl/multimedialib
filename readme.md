@@ -28,13 +28,13 @@ to the dependencies section in `pom.xml`:
     <dependency>
         <groupId>nl.colorize</groupId>
         <artifactId>multimedialib</artifactId>
-        <version>2023.8</version>
+        <version>2023.9</version>
     </dependency>  
     
 The library can also be used in Gradle projects:
 
     dependencies {
-        implementation "nl.colorize:multimedialib:2023.8"
+        implementation "nl.colorize:multimedialib:2023.9"
     }
     
 Supported platforms
@@ -118,17 +118,22 @@ parameters:
 Note that when using 3D graphics on Mac OS the command line argument `-XstartOnFirstThread` must
 be present.
 
-The demo application can also be tested as a (native) app for various platforms:
+The demo application can also be tested as a (native) app for various platforms. Building native
+applications uses the
+[Colorize Gradle application plugin](https://plugins.gradle.org/plugin/nl.colorize.gradle.application).
+Refer to the plugin documentation for the system requirements to build native applications for each
+platform.
 
 - **Browser:** The browser version of the demo applications can be created by running 
   `gradle transpileDemoApplication2D` and `gradle transpileDemoApplication3D` respectively.
   The build output is then saved to the directories `build/browserdemo2d` and `browserdemo3d`,
   and can be started by opening the corresponding `index.html` in a browser.
 - **Mac:** Running `gradle createApplicationBundle` will generate the native Mac application
-  bundle in `build/mac`. This command can only be used on a Mac.
+  bundle in `build/mac`. 
 - **iOS:** Running `gradle xcodeGen` will generate an Xcode project for a native iOS version of
-  the demo application. The Xcode project will be located in `build/xcode`. This command can only
-  be used on a Mac.
+  the demo application. The Xcode project will be located in `build/xcode`. 
+- **Windows:** Running `gradle packageEXE` will generate the Windows application, which is then
+  packages and saved to the `build` directory.
 
 Transpiling applications to HTML/JavaScript
 -------------------------------------------

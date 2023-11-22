@@ -30,6 +30,7 @@ import nl.colorize.util.swing.Utils2D;
 import java.awt.Font;
 import java.awt.FontFormatException;
 import java.awt.GraphicsEnvironment;
+import java.awt.HeadlessException;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -97,14 +98,23 @@ public class StandardMediaLoader implements MediaLoader {
         try {
             ResourceFile source = toResourceFile(file);
             BufferedImage original = Utils2D.loadImage(source.openStream());
-
-            if (Platform.isWindows() || Platform.isMac()) {
-                return new AWTImage(Utils2D.makeImageCompatible(original), file);
-            } else {
-                return new AWTImage(original, file);
-            }
+            return prepareImage(file, original);
         } catch (IOException e) {
             throw new MediaException("Cannot load image from " + file.path(), e);
+        }
+    }
+
+    /**
+     * Prepares the image in order to make it hardware-accelerated. If this
+     * is not possible on the current platform, the original image will be
+     * used.
+     */
+    private Image prepareImage(FilePointer file, BufferedImage original) {
+        try {
+            BufferedImage compatible = Utils2D.makeImageCompatible(original);
+            return new AWTImage(compatible, file);
+        } catch (HeadlessException e) {
+            return new AWTImage(original, file);
         }
     }
 

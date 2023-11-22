@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
  */
 public class TeaVMTranspilerTool {
 
-    @Arg(name = "project")
+    @Arg(name = "project", usage = "Project display name")
     protected String projectName;
 
     @Arg(name = "main", usage = "Main class that acts as application entry point")
@@ -54,7 +54,7 @@ public class TeaVMTranspilerTool {
     @Arg(name = "resources", usage = "Location of the application's resource files")
     protected File resourceDir;
 
-    @Arg(name = "out")
+    @Arg(name = "out", usage = "Output directory for transpiled application")
     protected File outputDir;
 
     @Arg(usage = "Minifies the generated JavaScript, off by default")
@@ -226,7 +226,7 @@ public class TeaVMTranspilerTool {
             URLResponse response = request.send();
 
             File outputFile = new File(libDir, url.substring(url.lastIndexOf("/") + 1));
-            FileUtils.write(response.body(), outputFile);
+            FileUtils.write(response.getBody(), outputFile);
             return outputFile;
         } catch (IOException e) {
             throw new RuntimeException("Failed to download " + url, e);

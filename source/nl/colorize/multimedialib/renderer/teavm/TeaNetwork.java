@@ -9,15 +9,16 @@ package nl.colorize.multimedialib.renderer.teavm;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import nl.colorize.multimedialib.renderer.Network;
+import nl.colorize.multimedialib.renderer.PeerConnection;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Subscribable;
 import nl.colorize.util.http.Headers;
 import nl.colorize.util.http.PostData;
 import nl.colorize.util.http.URLResponse;
+import nl.colorize.util.stats.TupleList;
 import org.teavm.jso.ajax.XMLHttpRequest;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.logging.Logger;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -77,27 +78,49 @@ public class TeaNetwork implements Network {
         int status = request.getStatus();
         Headers headers = parseResponseHeaders(request);
         String body = request.getResponseText();
-        return new URLResponse(status, headers, body.getBytes(UTF_8), UTF_8, Collections.emptyMap());
+        return new URLResponse(status, headers, body.getBytes(UTF_8));
     }
 
     private Headers parseResponseHeaders(XMLHttpRequest request) {
-        Headers headers = new Headers();
+        TupleList<String, String> headers = new TupleList<>();
 
         for (String line : HEADER_SPLITTER.split(request.getAllResponseHeaders())) {
             if (line.contains(": ")) {
                 String name = line.substring(0, line.indexOf(": "));
                 String value = line.substring(line.indexOf(": ") + 2);
-                headers = headers.concat(name, value);
+                headers.add(name, value);
             } else if (!line.isEmpty()) {
                 LOGGER.warning("Malformed HTTP response header: " + line);
             }
         }
 
-        return headers;
+        return new Headers(headers);
+    }
+
+    /**
+     * Uses WebRTC to open a peer-to-peer connection. This is implemented in
+     * JavaScript using the <a href="https://peerjs.com">PeerJS</a> library.
+     */
+    @Override
+    public Subscribable<PeerConnection> openPeerConnection() {
+        PeerjsBridge bridge = Browser.getPeerJsBridge();
+        Subscribable<PeerConnection> promise = new Subscribable<>();
+
+        bridge.open(success -> {
+            if (success) {
+                PeerjsConnection connection = new PeerjsConnection(bridge);
+                promise.next(connection);
+            } else {
+                LOGGER.warning("Peer connection failed");
+                promise.nextError(new RuntimeException("Peer connection failed"));
+            }
+        });
+
+        return promise;
     }
 
     @Override
-    public boolean isDevelopmentEnvironment() {
-        return BrowserDOM.getQueryString().contains("local");
+    public boolean isPeerToPeerSupported() {
+        return true;
     }
 }

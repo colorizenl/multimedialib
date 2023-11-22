@@ -6,8 +6,8 @@
 
 package nl.colorize.multimedialib.renderer.teavm;
 
-import nl.colorize.multimedialib.renderer.pixi.PixiInterface;
-import nl.colorize.multimedialib.renderer.three.ThreeInterface;
+import nl.colorize.multimedialib.renderer.pixi.PixiBridge;
+import nl.colorize.multimedialib.renderer.three.ThreeBridge;
 import org.teavm.jso.JSBody;
 
 /**
@@ -56,15 +56,24 @@ public class Browser {
         params = {"family", "url", "callback"},
         script = "return window.preloadFontFace(family, url, callback);"
     )
-    public static native void preloadFontFace(String family, String url, FontLoadCallback callback);
+    public static native void preloadFontFace(String family, String url, SuccessCallback callback);
+
+    @JSBody(
+        params = {"text"},
+        script = "window.navigator.clipboard.writeText(text);"
+    )
+    public static native void writeClipboard(String text);
 
     // ----------------------------------------
     // JavaScript framework interfaces
     // ----------------------------------------
 
-    @JSBody(script = "return window.pixiInterface;")
-    public static native PixiInterface getPixiInterface();
+    @JSBody(script = "return window.pixiBridge;")
+    public static native PixiBridge getPixiBridge();
 
-    @JSBody(script = "return window.threeInterface;")
-    public static native ThreeInterface getThreeInterface();
+    @JSBody(script = "return window.threeBridge;")
+    public static native ThreeBridge getThreeBridge();
+
+    @JSBody(script = "return window.peerjsBridge;")
+    public static native PeerjsBridge getPeerJsBridge();
 }

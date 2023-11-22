@@ -190,4 +190,9 @@ public class GDXInput implements InputDevice {
 
         return field.getText();
     }
+
+    @Override
+    public void fillClipboard(String text) {
+        SwingUtils.copyToClipboard(text);
+    }
 }

@@ -96,6 +96,11 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     }
 
     @Override
+    public boolean isDevelopmentEnvironment() {
+        return true;
+    }
+
+    @Override
     public void terminate() {
         throw new UnsupportedOperationException();
     }
@@ -149,5 +154,9 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     @Override
     public String requestTextInput(String label, String initialValue) {
         return null;
+    }
+
+    @Override
+    public void fillClipboard(String text) {
     }
 }

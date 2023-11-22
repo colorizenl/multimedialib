@@ -22,9 +22,19 @@ public interface Network {
     public Subscribable<URLResponse> post(String url, Headers headers, PostData body);
 
     /**
-     * Returns true if the application is running in the local development
-     * environment. The definition of what such an environment entails depends
-     * on the renderer and platform.
+     * Opens a peer-to-peer connection. The protocol used for the connection
+     * depends on both the renderer and the current platform. This also means
+     * that it is generally not possible to connect to peers on other
+     * platforms.
+     *
+     * @throws UnsupportedOperationException if peer-to-peer connections are
+     *         not supported by the current platform and/or renderer.
      */
-    public boolean isDevelopmentEnvironment();
+    public Subscribable<PeerConnection> openPeerConnection();
+
+    /**
+     * Returns true if this renderer supports peer-to-peer connectios on the
+     * current platform. See {@link #openPeerConnection()}.
+     */
+    public boolean isPeerToPeerSupported();
 }

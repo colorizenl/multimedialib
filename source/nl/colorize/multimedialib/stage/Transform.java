@@ -58,6 +58,14 @@ public final class Transform {
         position = new Point2D(x, y);
     }
 
+    public void setX(float x) {
+        position = new Point2D(x, position.getY());
+    }
+
+    public void setY(float y) {
+        position = new Point2D(position.getX(), y);
+    }
+
     public void addPosition(float deltaX, float deltaY) {
         position = new Point2D(position.getX() + deltaX, position.getY() + deltaY);
     }

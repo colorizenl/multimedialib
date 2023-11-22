@@ -27,11 +27,11 @@ import nl.colorize.multimedialib.stage.Text;
 public class ThreeGraphics implements TeaGraphics {
 
     private Canvas canvas;
-    private ThreeInterface three;
+    private ThreeBridge three;
 
     public ThreeGraphics(Canvas canvas) {
         this.canvas = canvas;
-        this.three = Browser.getThreeInterface();
+        this.three = Browser.getThreeBridge();
     }
 
     @Override
