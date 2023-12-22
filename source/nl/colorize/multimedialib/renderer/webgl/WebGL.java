@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -314,7 +314,7 @@ public class WebGL implements TeaGraphics {
     @Override
     public void drawSprite(Sprite sprite) {
         TeaImage image = (TeaImage) sprite.getCurrentGraphics();
-        HTMLImageElement imageElement = image.getImagePromise().getValue().orElse(null);
+        HTMLImageElement imageElement = image.getImageElement().orElse(null);
 
         // Skip drawing this sprite if the underlying image is still loading.
         if (imageElement == null) {

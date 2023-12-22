@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import static nl.colorize.multimedialib.math.MathUtils.EPSILON;
+import static nl.colorize.multimedialib.math.Shape.EPSILON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

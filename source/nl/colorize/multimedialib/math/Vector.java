@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -9,33 +9,41 @@ package nl.colorize.multimedialib.math;
 import lombok.Value;
 
 /**
- * A two-dimensional vector with a direction and a magnitude, both defined with
- * float precision. The direction of the vector is defined by an angle in
- * degrees. An angle of 0 degrees represents the vector (1, 0). Angles greater
- * than 0 rotate in a clockwise direction, so an angle of 180 degress would
- * represent the vector (-1, 0).
+ * A two-dimensional vector expressed using an origin, a direction, and a
+ * magnitude. All coordinates are defined with float precision.
+ * <p>
+ * The direction of the vector is defined by an angle in degrees. An angle
+ * of 0 degrees represents the vector (1, 0). Angles greater than 0 rotate
+ * in a clockwise direction, so an angle of 180 degress would represent the
+ * vector (-1, 0).
  */
 @Value
 public class Vector {
 
+    private Point2D origin;
     private float direction;
     private float magnitude;
 
-    public Vector(float direction, float magnitude) {
+    public Vector(Point2D origin, float direction, float magnitude) {
+        this.origin = origin;
         this.direction = direction;
         this.magnitude = Math.max(magnitude, 0f);
     }
 
+    public Vector(float direction, float magnitude) {
+        this(Point2D.ORIGIN, direction, magnitude);
+    }
+
     public float getX() {
-        return magnitude * (float) Math.cos(Math.toRadians(direction));
+        return origin.getX() + (magnitude * (float) Math.cos(Math.toRadians(direction)));
     }
 
     public float getY() {
-        return magnitude * (float) Math.sin(Math.toRadians(direction));
+        return origin.getY() + (magnitude * (float) Math.sin(Math.toRadians(direction)));
     }
 
-    public boolean isOrigin() {
-        return magnitude < MathUtils.EPSILON;
+    public Point2D toPoint() {
+        return new Point2D(getX(), getY());
     }
 
     public Vector withDirection(float newDirection) {
@@ -48,7 +56,11 @@ public class Vector {
 
     @Override
     public String toString() {
-        return String.format("[ %d %d ]", Math.round(direction), Math.round(magnitude));
+        String result = String.format("[ %d %d ]", Math.round(direction), Math.round(magnitude));
+        if (!origin.equals(Point2D.ORIGIN)) {
+            result = origin + " " + result;
+        }
+        return result;
     }
 
     /**

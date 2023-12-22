@@ -1,14 +1,14 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 /**
- * Interface for the parts of the Three.js interface implemented in JavaScript.
- * This interface is called from the renderer via TeaVM.
+ * Bridge interface for the parts of the Three.js interface implemented in
+ * JavaScript. This interface is called from the renderer via TeaVM.
  */
-class ThreeInterface {
+class ThreeBridge {
 
     init() {
         this.scene3D = new THREE.Scene();

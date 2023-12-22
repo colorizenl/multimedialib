@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,7 +8,7 @@ package nl.colorize.multimedialib.renderer.java2d;
 
 import com.google.common.net.HttpHeaders;
 import nl.colorize.multimedialib.renderer.Network;
-import nl.colorize.util.Platform;
+import nl.colorize.multimedialib.renderer.PeerConnection;
 import nl.colorize.util.Subscribable;
 import nl.colorize.util.http.Headers;
 import nl.colorize.util.http.Method;
@@ -16,7 +16,6 @@ import nl.colorize.util.http.PostData;
 import nl.colorize.util.http.URLLoader;
 import nl.colorize.util.http.URLResponse;
 
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -29,13 +28,13 @@ public class StandardNetwork implements Network {
     @Override
     public Subscribable<URLResponse> get(String url, Headers headers) {
         URLLoader request = createRequest(Method.GET, url, headers, null);
-        return request.subscribe();
+        return request.sendBackground();
     }
 
     @Override
     public Subscribable<URLResponse> post(String url, Headers headers, PostData body) {
         URLLoader request = createRequest(Method.POST, url, headers, body);
-        return request.subscribe();
+        return request.sendBackground();
     }
 
     private URLLoader createRequest(Method method, String url, Headers headers, PostData body) {
@@ -51,8 +50,12 @@ public class StandardNetwork implements Network {
     }
 
     @Override
-    public boolean isDevelopmentEnvironment() {
-        File workDir = Platform.getUserWorkingDirectory();
-        return new File(workDir, "build.gradle").exists();
+    public Subscribable<PeerConnection> openPeerConnection() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isPeerToPeerSupported() {
+        return false;
     }
 }

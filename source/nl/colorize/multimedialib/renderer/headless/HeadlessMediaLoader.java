@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -58,8 +58,8 @@ public class HeadlessMediaLoader extends StandardMediaLoader {
     }
 
     @Override
-    public OutlineFont loadFont(FilePointer file, FontStyle style) {
-        return super.loadFont(file, style);
+    public OutlineFont loadFont(FilePointer file, String family, FontStyle style) {
+        return super.loadFont(file, family, style);
     }
 
     /**
@@ -92,8 +92,9 @@ public class HeadlessMediaLoader extends StandardMediaLoader {
         }
 
         @Override
-        public Image extractRegion(Region region) {
-            return new HeadlessImage(name + "[" + region + "]", region.width(), region.height());
+        public Image extractRegion(Region subRegion) {
+            String subImageName = name + "[" + subRegion + "]";
+            return new HeadlessImage(subImageName, subRegion.width(), subRegion.height());
         }
 
         @Override

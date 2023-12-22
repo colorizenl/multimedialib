@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -11,10 +11,8 @@ import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
-import nl.colorize.multimedialib.stage.GraphicsProvider;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.Sprite;
-import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.util.animation.Timeline;
 
 import java.util.ArrayList;
@@ -26,7 +24,7 @@ import java.util.List;
  * where the particles slowly reveal the screen. Both effects would typically
  * be used on either side of the transition.
  */
-public class WipeTransition implements Scene, GraphicsProvider {
+public class ParticleWipe implements Scene {
 
     @Getter private Container container;
 
@@ -47,7 +45,7 @@ public class WipeTransition implements Scene, GraphicsProvider {
      * {@code reverse} is true, the transition will start fully obscured and
      * will then play backwards, slowly revealing the stage.
      */
-    public WipeTransition(Image particleImage, ColorRGB color, float duration, boolean reverse) {
+    public ParticleWipe(Image particleImage, ColorRGB color, float duration, boolean reverse) {
         this.container = new Container();
         this.duration = duration;
         this.particleImage = particleImage;
@@ -72,33 +70,38 @@ public class WipeTransition implements Scene, GraphicsProvider {
                 container.addChild(particle.sprite);
             }
         }
+
+        context.getStage().getRoot().addChild(container);
     }
 
     @Override
     public void update(SceneContext context, float deltaTime) {
         for (Particle particle : particles) {
             particle.timeline.movePlayhead(deltaTime);
-            particle.sprite.getTransform().set(getParticleTransform(particle));
+            particle.sprite.getTransform().setMaskColor(fillColor);
+            particle.sprite.getTransform().setPosition(particle.position);
+            particle.sprite.getTransform().setScale(getParticleScale(particle));
+            particle.sprite.getTransform().setVisible(particle.sprite.getTransform().getScaleX() > 1);
         }
     }
 
-    private Transform getParticleTransform(Particle particle) {
+    private float getParticleScale(Particle particle) {
         float delta = particle.timeline.getValue();
         if (reverse) {
             delta = 1f - delta;
         }
-
-        Transform transform = new Transform();
-        transform.setPosition(particle.position);
-        transform.setScale(Math.max(delta * 200f, 1f));
-        transform.setMaskColor(fillColor);
-        return transform;
+        return Math.max(delta * 200f, 1f);
     }
 
     @Override
     public boolean isCompleted() {
         return particles.stream()
             .allMatch(particle -> particle.timeline.isCompleted());
+    }
+
+    @Override
+    public void end(SceneContext context) {
+        container.detach();
     }
 
     /**

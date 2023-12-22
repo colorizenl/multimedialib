@@ -1,17 +1,13 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.scene;
 
-import com.google.common.base.Preconditions;
-import lombok.Getter;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Graphic2D;
-import nl.colorize.multimedialib.stage.GraphicsProvider;
 
 /**
  * Displays an image and/or message to inform the user to change their device
@@ -25,26 +21,19 @@ import nl.colorize.multimedialib.stage.GraphicsProvider;
  * scene will continue to play in the background. Which approach should be
  * preferred depends on the type of application.
  */
-public class OrientationLockScreen implements Scene, GraphicsProvider {
+public class OrientationLockScreen implements Scene {
 
-    @Getter private Container container;
+    private Graphic2D graphics;
 
-    public OrientationLockScreen(Graphic2D... graphics) {
-        Preconditions.checkArgument(graphics.length > 0,
-            "Orientation lock screen must have graphics");
-
-        this.container = new Container();
-
-        for (Graphic2D graphic : graphics) {
-            container.addChild(graphic);
-        }
+    public OrientationLockScreen(Graphic2D graphics) {
+        this.graphics = graphics;
     }
 
     @Override
     public void update(SceneContext context, float deltaTime) {
         Canvas canvas = context.getCanvas();
-        container.getTransform().setVisible(canvas.getWidth() < canvas.getHeight());
+        graphics.getTransform().setVisible(canvas.getWidth() < canvas.getHeight());
         // Reposition all graphics because the canvas might have changed.
-        container.getTransform().setPosition(canvas.getCenter());
+        graphics.getTransform().setPosition(canvas.getCenter());
     }
 }

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,11 +8,11 @@ package nl.colorize.multimedialib.stage;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
-import nl.colorize.multimedialib.math.MathUtils;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.StateMachine;
 import nl.colorize.multimedialib.scene.Timer;
+import nl.colorize.util.TextUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -185,7 +185,7 @@ public class Sprite implements Graphic2D {
     @Override
     public String toString() {
         String state = stateMachine.getActiveState();
-        String time = MathUtils.format(stateMachine.getActiveStateTimer().getTime(), 1);
+        String time = TextUtils.numberFormat(stateMachine.getActiveStateTimer().getTime(), 1);
         return "Sprite [" + state + "@" + time + "]";
     }
 }

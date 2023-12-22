@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -17,6 +17,8 @@ import nl.colorize.multimedialib.renderer.MediaLoader;
  */
 public interface OutlineFont {
 
+    public String getFamily();
+
     public FontStyle getStyle();
 
     /**
@@ -32,17 +34,17 @@ public interface OutlineFont {
 
     default OutlineFont derive(int size) {
         FontStyle style = getStyle();
-        return derive(new FontStyle(style.family(), size, style.bold(), style.color()));
+        return derive(new FontStyle(size, style.bold(), style.color()));
     }
 
     default OutlineFont derive(int size, boolean bold) {
         FontStyle style = getStyle();
-        return derive(new FontStyle(style.family(), size, bold, style.color()));
+        return derive(new FontStyle(size, bold, style.color()));
     }
 
     default OutlineFont derive(ColorRGB color) {
         FontStyle style = getStyle();
-        return derive(new FontStyle(style.family(), style.size(), style.bold(), color));
+        return derive(new FontStyle(style.size(), style.bold(), color));
     }
 
     /**
@@ -53,6 +55,6 @@ public interface OutlineFont {
     default OutlineFont scale(Canvas canvas) {
         FontStyle style = getStyle();
         int actualDisplaySize = Math.round(canvas.getZoomLevel() * style.size());
-        return derive(new FontStyle(style.family(), actualDisplaySize, style.bold(), style.color()));
+        return derive(new FontStyle(actualDisplaySize, style.bold(), style.color()));
     }
 }

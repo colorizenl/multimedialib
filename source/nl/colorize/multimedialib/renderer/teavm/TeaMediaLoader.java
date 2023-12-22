@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -61,7 +61,7 @@ public class TeaMediaLoader implements MediaLoader {
         imageElement.setCrossOrigin("anonymous");
         imageElement.addEventListener("load", event -> imagePromise.next(imageElement));
         imageElement.setSrc("resources/" + normalizeFilePath(file, false));
-        return new TeaImage(imagePromise.toPromise(), null);
+        return new TeaImage(imagePromise, null);
     }
 
     @Override
@@ -71,18 +71,15 @@ public class TeaMediaLoader implements MediaLoader {
         audioElement.setCrossOrigin("anonymous");
         audioElement.addEventListener("loadeddata", event -> audioPromise.next(audioElement));
         audioElement.setSrc("resources/" + normalizeFilePath(file, false));
-        return new TeaAudio(audioPromise.toPromise());
+        return new TeaAudio(audioPromise);
     }
 
     @Override
-    public OutlineFont loadFont(FilePointer file, FontStyle style) {
+    public OutlineFont loadFont(FilePointer file, String family, FontStyle style) {
         Subscribable<Boolean> fontPromise = new Subscribable<>();
         String url = "url('resources/" + normalizeFilePath(file, false) + "')";
-        FontLoadCallback callback = success -> fontPromise.next(success);
-
-        Browser.preloadFontFace(style.family(), url, callback);
-
-        return new TeaFont(fontPromise.toPromise(), style);
+        Browser.preloadFontFace(family, url, fontPromise::next);
+        return new TeaFont(family, style);
     }
 
     @Override
@@ -149,13 +146,15 @@ public class TeaMediaLoader implements MediaLoader {
 
     @Override
     public Properties loadApplicationData(String appName) {
-        Storage localStorage = Storage.getLocalStorage();
+        Storage localStorage = Browser.accessLocalStorage();
         Properties data = new Properties();
 
-        for (int i = 0; i < localStorage.getLength(); i++) {
-            String name = localStorage.key(i);
-            String value = localStorage.getItem(name);
-            data.setProperty(name, value);
+        if (localStorage != null) {
+            for (int i = 0; i < localStorage.getLength(); i++) {
+                String name = localStorage.key(i);
+                String value = localStorage.getItem(name);
+                data.setProperty(name, value);
+            }
         }
 
         return data;
@@ -163,10 +162,12 @@ public class TeaMediaLoader implements MediaLoader {
 
     @Override
     public void saveApplicationData(String appName, Properties data) {
-        Storage localStorage = Storage.getLocalStorage();
+        Storage localStorage = Browser.accessLocalStorage();
 
-        for (String name : data.stringPropertyNames()) {
-            localStorage.setItem(name, data.getProperty(name, ""));
+        if (localStorage != null) {
+            for (String name : data.stringPropertyNames()) {
+                localStorage.setItem(name, data.getProperty(name, ""));
+            }
         }
     }
 }

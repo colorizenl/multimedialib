@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -12,7 +12,6 @@ import com.google.common.net.HttpHeaders;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.RandomGenerator;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Region;
@@ -25,11 +24,11 @@ import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.multimedialib.scene.Effect;
+import nl.colorize.multimedialib.scene.ParticleWipe;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.SwipeTracker;
 import nl.colorize.multimedialib.scene.Updatable;
-import nl.colorize.multimedialib.scene.WipeTransition;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.Animation;
 import nl.colorize.multimedialib.stage.Audio;
@@ -37,24 +36,27 @@ import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.OutlineFont;
+import nl.colorize.multimedialib.scene.PerformanceMonitor;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
-import nl.colorize.multimedialib.stage.Transform;
+import nl.colorize.util.DateParser;
+import nl.colorize.util.LoadUtils;
 import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
 import nl.colorize.util.http.Headers;
 import nl.colorize.util.http.PostData;
-import nl.colorize.util.stats.Tuple;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import static nl.colorize.multimedialib.stage.ColorRGB.BLUE;
 import static nl.colorize.multimedialib.stage.ColorRGB.GREEN;
 import static nl.colorize.multimedialib.stage.ColorRGB.RED;
+import static nl.colorize.multimedialib.stage.ColorRGB.WHITE;
 import static nl.colorize.multimedialib.stage.ColorRGB.YELLOW;
 
 /**
@@ -78,9 +80,9 @@ public class Demo2D implements Scene, ErrorHandler {
     private SpriteAtlas marioSpriteSheet;
     private OutlineFont font;
     private List<Mario> marios;
-    private Effect colorizeLogo;
     private Audio audioClip;
     private Text hud;
+    private PerformanceMonitor performanceMonitor;
 
     public static final int DEFAULT_CANVAS_WIDTH = 800;
     public static final int DEFAULT_CANVAS_HEIGHT = 600;
@@ -97,11 +99,11 @@ public class Demo2D implements Scene, ErrorHandler {
     private static final ColorRGB RED_BUTTON = new ColorRGB(228, 93, 97);
     private static final ColorRGB GREEN_BUTTON = ColorRGB.parseHex("#72A725");
     private static final ColorRGB PINK_BUTTON = ColorRGB.parseHex("#B75797");
+    private static final ColorRGB BLUE_BUTTON = ColorRGB.parseHex("#43A1C7");
     private static final ColorRGB BACKGROUND_COLOR = ColorRGB.parseHex("#343434");
     private static final ColorRGB ALT_BACKGROUND_COLOR = ColorRGB.parseHex("#EBEBEB");
     private static final ColorRGB COLORIZE_COLOR = ColorRGB.parseHex("#e45d61");
     private static final String EXAMPLE_URL = "https://dashboard.clrz.nl/rest/echo";
-
     private static final List<ColorRGB> SWIPE_COLORS = List.of(RED, GREEN, BLUE, YELLOW);
 
     @Override
@@ -118,13 +120,20 @@ public class Demo2D implements Scene, ErrorHandler {
         marios = new ArrayList<>();
         addMarios();
 
-        font = mediaLoader.loadDefaultFont(12, ColorRGB.WHITE);
+        font = mediaLoader.loadDefaultFont(WHITE);
         audioClip = mediaLoader.loadAudio(AUDIO_FILE);
 
         initHUD();
         initEffects();
         attachSwipeTracker();
         sendHttpRequest(context.getNetwork());
+
+        context.getMediaLoader().saveApplicationData("MultimediaLib-Demo2D",
+            LoadUtils.loadProperties("demo=" + DateParser.format(new Date(), "yyyy-MM-dd HH:mm")));
+
+        performanceMonitor = new PerformanceMonitor(false);
+        performanceMonitor.setActive(false);
+        context.attach(performanceMonitor);
     }
 
     private void initMarioSprites(MediaLoader mediaLoader) {
@@ -151,15 +160,11 @@ public class Demo2D implements Scene, ErrorHandler {
         createButton(context, "Play sound", GREEN_BUTTON, 60, audioClip::play);
         createButton(context, "Background", GREEN_BUTTON, 90, this::toggleBackgroundColor);
         createButton(context, "Cause error", PINK_BUTTON, 120, this::causeError);
-
-        Polygon hexagon = new Polygon(80, 70, 120, 70, 135, 100, 120, 130, 80, 130, 65, 100);
-        Primitive hexagonPrimitive = new Primitive(hexagon, COLORIZE_COLOR);
-        hexagonPrimitive.getTransform().setAlpha(50f);
-        hudLayer.addChild(hexagonPrimitive);
-
-        Effect.forFrameHandler(deltaTime -> {
-            hexagonPrimitive.setPosition(50f, context.getCanvas().getHeight() - 150f);
-        }).attach(context);
+        createButton(context, "Performance", PINK_BUTTON, 150, this::togglePerformanceMonitor);
+        if (context.getNetwork().isPeerToPeerSupported()) {
+            createButton(context, "Open connection", BLUE_BUTTON, 180, this::openPeerConnection);
+            createButton(context, "Join connection", BLUE_BUTTON, 210, this::joinPeerConnection);
+        }
     }
 
     private void createButton(SceneContext context, String label, ColorRGB color, int y, Runnable click) {
@@ -189,15 +194,14 @@ public class Demo2D implements Scene, ErrorHandler {
         hudLayer.addChild(sprite);
 
         Effect.forTimeline(timeline, value -> {
-            sprite.setPosition(50, context.getCanvas().getHeight() - 50);
+            sprite.setPosition(context.getCanvas().getWidth() / 2f, context.getCanvas().getHeight() - 50);
             sprite.getTransform().setScale(80 + value * 40f);
         }).addFrameHandler(dt -> sprite.getTransform().addRotation(dt * 100f))
         .attach(context);
 
-        Image diamond = context.getMediaLoader().loadImage(WipeTransition.DIAMOND);
-        WipeTransition wipe = new WipeTransition(diamond, COLORIZE_COLOR, 1.5f, true);
+        Image diamond = context.getMediaLoader().loadImage(ParticleWipe.DIAMOND);
+        ParticleWipe wipe = new ParticleWipe(diamond, COLORIZE_COLOR, 1.5f, true);
         context.attach(wipe);
-        hudLayer.addChild(wipe);
     }
 
     private void attachSwipeTracker() {
@@ -227,7 +231,7 @@ public class Demo2D implements Scene, ErrorHandler {
     }
 
     private void sendHttpRequest(Network network) {
-        Headers headers = new Headers(Tuple.of(HttpHeaders.ACCEPT, "text/plain"));
+        Headers headers = Headers.of(HttpHeaders.ACCEPT, "text/plain");
         PostData data = PostData.create("message", "1234");
 
         Text info = new Text("Network request pending", font, Align.RIGHT);
@@ -238,7 +242,7 @@ public class Demo2D implements Scene, ErrorHandler {
             List<String> text = new ArrayList<>();
             text.add("Network request succeeded");
             text.add("Content-Type: " + response.getContentType().orElse("?"));
-            text.addAll(Splitter.on("\n").omitEmptyStrings().splitToList(response.getBody()));
+            text.addAll(Splitter.on("\n").omitEmptyStrings().splitToList(response.readBody()));
             info.setText(text);
         }, e -> info.setText("Failed to send network request"));
     }
@@ -261,18 +265,52 @@ public class Demo2D implements Scene, ErrorHandler {
         throw new RuntimeException("Intentional error");
     }
 
+    private void togglePerformanceMonitor() {
+        performanceMonitor.setActive(!performanceMonitor.isActive());
+    }
+
+    private void openPeerConnection() {
+        context.getNetwork().openPeerConnection().subscribe(connection -> {
+            showNotification("Peer connection:\n" + connection.getId());
+            context.getInput().fillClipboard(connection.getId());
+
+            context.attach(() -> {
+                for (String message : connection.getReceivedMessages().flush()) {
+                    showNotification("Message received:\n\n" + message);
+                }
+            });
+        });
+    }
+
+    private void joinPeerConnection() {
+        String id = context.getInput().requestTextInput("Peer-to-peer connection ID", "");
+
+        if (id != null && !id.isEmpty()) {
+            context.getNetwork().openPeerConnection().subscribe(connection -> {
+                connection.connect(id).subscribe(result -> {
+                    connection.sendMessage("Hello from a peer-to-peer connection");
+                });
+            });
+        }
+    }
+
     @Override
     public void onError(SceneContext context, Exception cause) {
-        Text errorText = new Text("Error:\n\n" + cause.getMessage(), font, Align.CENTER);
-        errorText.getTransform().setPosition(context.getCanvas().getCenter());
-        hudLayer.addChild(errorText);
+        showNotification("Error:\n\n" + cause.getMessage());
+    }
+
+    private void showNotification(String message) {
+        Text notification = new Text(message, font, Align.CENTER);
+        notification.getTransform().setPosition(context.getCanvas().getCenter());
+        hudLayer.addChild(notification);
+
+        Effect.delay(4f, () -> hudLayer.removeChild(notification)).attach(context);
     }
 
     @Override
     public void update(SceneContext context, float deltaTime) {
         InputDevice inputDevice = context.getInput();
-        handleClick(inputDevice, context.getStage());
-        checkLogoClick(inputDevice);
+        handleClick(inputDevice);
         handleSystemControls(inputDevice);
 
         for (Mario mario : marios) {
@@ -286,21 +324,7 @@ public class Demo2D implements Scene, ErrorHandler {
         hud.setText(info);
     }
 
-    private void checkLogoClick(InputDevice input) {
-        Rect area = new Rect(0f, context.getCanvas().getHeight() - 80f, 80f, 80f);
-
-        for (Pointer pointer : input.getPointers()) {
-            if (pointer.isReleased(area)) {
-                colorizeLogo.withLinkedGraphics(g -> {
-                    Sprite sprite = (Sprite) g;
-                    Transform transform = sprite.getTransform();
-                    transform.setFlipHorizontal(!transform.isFlipHorizontal());
-                });
-            }
-        }
-    }
-
-    private void handleClick(InputDevice input, Stage stage) {
+    private void handleClick(InputDevice input) {
         for (Pointer pointer : input.getPointers()) {
             if (checkMarioClick(pointer)) {
                 return;
@@ -338,7 +362,7 @@ public class Demo2D implements Scene, ErrorHandler {
 
         Container container = new Container();
         container.getTransform().setPosition(position);
-        container.addChild(new Primitive(new Circle(Point2D.ORIGIN, 4f), ColorRGB.WHITE));
+        container.addChild(new Primitive(new Circle(Point2D.ORIGIN, 4f), WHITE));
         container.addChild(new Text(position.toString(), font, Align.LEFT), 4, -4);
         hudLayer.addChild(container);
 
@@ -415,7 +439,7 @@ public class Demo2D implements Scene, ErrorHandler {
             };
 
             sprite.getTransform().setPosition(newPosition);
-            sprite.getTransform().setMaskColor(mask ? ColorRGB.WHITE : null);
+            sprite.getTransform().setMaskColor(mask ? WHITE : null);
             checkBounds();
         }
 

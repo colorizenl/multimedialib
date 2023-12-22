@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -80,12 +80,12 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
     }
 
     @Override
-    public OutlineFont loadFont(FilePointer file, FontStyle style) {
-        return new GDXBitmapFont(this, getFileHandle(file), style);
+    public OutlineFont loadFont(FilePointer file, String family, FontStyle style) {
+        return new GDXBitmapFont(this, getFileHandle(file), family, style);
     }
 
-    protected BitmapFont getBitmapFont(FileHandle source, FontStyle style) {
-        FontCacheKey cacheKey = new FontCacheKey(source, style);
+    protected BitmapFont getBitmapFont(FileHandle source, String family, FontStyle style) {
+        FontCacheKey cacheKey = new FontCacheKey(source, family, style);
         return fontCache.get(cacheKey);
     }
 
@@ -172,6 +172,6 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
         return new Color(color.r() / 255f, color.g() / 255f, color.b() / 255f, 1f);
     }
 
-    private record FontCacheKey(FileHandle source, FontStyle style) {
+    private record FontCacheKey(FileHandle source, String family, FontStyle style) {
     }
 }

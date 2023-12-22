@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -146,6 +146,11 @@ public class TeaRenderer implements Renderer {
     @Override
     public void takeScreenshot(File outputFile) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isDevelopmentEnvironment() {
+        return BrowserDOM.getQueryString().contains("local");
     }
 
     @Override

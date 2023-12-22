@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -21,6 +21,7 @@ import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Streams;
@@ -125,33 +126,55 @@ public class GDXGraphics implements StageVisitor {
      */
     @Override
     public void drawLine(Primitive graphic, Line line) {
-        float x0 = toScreenX(line.getStart().getX());
-        float y0 = toScreenY(line.getStart().getY());
-        float x1 = toScreenX(line.getEnd().getX());
-        float y1 = toScreenY(line.getEnd().getY());
-
-        switchMode(false, false);
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-        shapeBatch.begin(ShapeRenderer.ShapeType.Line);
-        shapeBatch.setColor(convertColor(graphic.getColor()));
-        shapeBatch.line(x0, y0, x1, y1);
-        shapeBatch.end();
+        if (graphic.getStroke() == 1f) {
+            drawBasicLines(List.of(line), graphic.getColor());
+        } else {
+            drawComplexLines(List.of(line), graphic.getColor(), graphic.getStroke());
+        }
     }
 
     @Override
     public void drawSegmentedLine(Primitive graphic, SegmentedLine line) {
+        if (graphic.getStroke() == 1f) {
+            drawBasicLines(line.getSegments(), graphic.getColor());
+        } else {
+            drawComplexLines(line.getSegments(), graphic.getColor(), graphic.getStroke());
+        }
+    }
+
+    private void drawBasicLines(List<Line> lines, ColorRGB color) {
         switchMode(false, false);
         Gdx.gl.glEnable(GL20.GL_BLEND);
-        shapeBatch.begin(ShapeRenderer.ShapeType.Line);
-        shapeBatch.setColor(convertColor(graphic.getColor()));
 
-        for (Line segment : line.getSegments()) {
+        shapeBatch.begin(ShapeRenderer.ShapeType.Line);
+        shapeBatch.setColor(convertColor(color));
+
+        for (Line segment : lines) {
             float x0 = toScreenX(segment.getStart().getX());
             float y0 = toScreenY(segment.getStart().getY());
             float x1 = toScreenX(segment.getEnd().getX());
             float y1 = toScreenY(segment.getEnd().getY());
 
             shapeBatch.line(x0, y0, x1, y1);
+        }
+
+        shapeBatch.end();
+    }
+
+    private void drawComplexLines(List<Line> lines, ColorRGB color, float stroke) {
+        switchMode(false, false);
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+
+        shapeBatch.begin(ShapeRenderer.ShapeType.Filled);
+        shapeBatch.setColor(convertColor(color));
+
+        for (Line segment : lines) {
+            float x0 = toScreenX(segment.getStart().getX());
+            float y0 = toScreenY(segment.getStart().getY());
+            float x1 = toScreenX(segment.getEnd().getX());
+            float y1 = toScreenY(segment.getEnd().getY());
+
+            shapeBatch.rectLine(new Vector2(x0, y0), new Vector2(x1, y1), stroke);
         }
 
         shapeBatch.end();

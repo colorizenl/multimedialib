@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -37,6 +37,7 @@ import nl.colorize.util.Platform;
 import nl.colorize.util.Stopwatch;
 import nl.colorize.util.swing.SwingUtils;
 
+import java.awt.Dimension;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -100,20 +101,35 @@ public class GDXRenderer implements Renderer, ApplicationListener {
     }
 
     private void configureDisplayMode(Lwjgl3ApplicationConfiguration config) {
-        // There is an issue in LWJGL that causes the application
-        // to crash using LWJGL's own fullscreen display mode.
-        if (window.isFullscreen() && !Platform.isMac()) {
-            config.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayMode());
+        if (window.isFullscreen()) {
+            configureFullScreen(config);
         } else {
-            int width = canvas.getWidth();
-            int height = canvas.getHeight();
+            configureWindow(config);
+        }
+    }
 
-            if (Platform.isWindows()) {
-                float uiScale = SwingUtils.getDesktopScaleFactor();
-                config.setWindowedMode(Math.round(width * uiScale), Math.round(height * uiScale));
-            } else {
-                config.setWindowedMode(width, height);
-            }
+    private void configureFullScreen(Lwjgl3ApplicationConfiguration config) {
+        if (Platform.isMac()) {
+            // There is an issue in LWJGL that causes the application
+            // to crash using LWJGL's own fullscreen display mode.
+            Dimension screen = SwingUtils.getScreenSize();
+            config.setDecorated(false);
+            config.setWindowedMode(screen.width, screen.height);
+            config.setMaximized(true);
+        } else {
+            config.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayMode());
+        }
+    }
+
+    private void configureWindow(Lwjgl3ApplicationConfiguration config) {
+        int width = canvas.getWidth();
+        int height = canvas.getHeight();
+
+        if (Platform.isWindows()) {
+            float uiScale = SwingUtils.getDesktopScaleFactor();
+            config.setWindowedMode(Math.round(width * uiScale), Math.round(height * uiScale));
+        } else {
+            config.setWindowedMode(width, height);
         }
     }
 
@@ -207,6 +223,12 @@ public class GDXRenderer implements Renderer, ApplicationListener {
     @Override
     public void takeScreenshot(File outputFile) {
         requestedScreenshots.add(new FileHandle(outputFile));
+    }
+
+    @Override
+    public boolean isDevelopmentEnvironment() {
+        File workDir = Platform.getUserWorkingDirectory();
+        return new File(workDir, "build.gradle").exists();
     }
 
     /**

@@ -1,13 +1,13 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.scene;
 
 import com.google.common.base.Preconditions;
-import nl.colorize.multimedialib.math.MathUtils;
+import nl.colorize.util.TextUtils;
 
 /**
  * Utility class for time-based behavior. A timer consists of a position and a
@@ -64,7 +64,7 @@ public class Timer implements Updatable {
 
     @Override
     public String toString() {
-        return MathUtils.format(position, 1) + " / " + MathUtils.format(duration, 1);
+        return TextUtils.numberFormat(position, 1) + " / " + TextUtils.numberFormat(duration, 1);
     }
 
     /**

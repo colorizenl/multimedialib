@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <title>MultimediaLib | PeerJS</title>
+    <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no"/>
+    <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
+</head>
+
+<body>
+    <form>
+        <textarea id="console" style="width: 450px; height: 200px;"></textarea>
+        <div>
+            <input type="text" id="connectionField" value="" />
+            <button type="button" onclick="init()">Initalize</button>
+            <button type="button" onclick="connect()">Connect</button>
+        </div>
+        <div>
+            <input type="text" id="messageField" value="" />
+            <button type="button" onclick="send()">Send</button>
+        </div>
+    </form>
+
+    <script>
+        const peer = new Peer();
+        let connection = null;
+
+        function log(message) {
+            const console = document.getElementById("console");
+            console.value += message + "\n";
+        }
+
+        function init() {
+            configurePeer();
+            return false;
+        }
+
+        function connect() {
+            const id = document.getElementById("connectionField").value;
+            log("Connecting: " + id);
+            configurePeer();
+            receiveConnection(peer.connect(id));
+            return false;
+        }
+
+        function configurePeer() {
+            peer.on("open", id => log("Receiving ID:\n" + id));
+            peer.on("connection", c => receiveConnection(c));
+            peer.on("close", c => log("Connection closed"));
+            peer.on("disconnected", c => log("Connection disconnected"));
+            peer.on("error", e => log("Connection error: " + e));
+        }
+
+        function receiveConnection(c) {
+            log("Receiving connection");
+            connection = c;
+
+            connection.on("open", () => {
+                log("Connection is now open");
+                connection.on("data", message => {
+                    log("Received message: " + message);
+                });
+
+                connection.on("close", c => log("Connection closed"));
+                connection.on("error", e => log("Connection error: " + e));
+            });
+        }
+
+        function send() {
+            const message = document.getElementById("messageField").value;
+            if (connection) {
+                log("Sending: " + message);
+                connection.send(message);
+            }
+            return false;
+        }
+    </script>
+</body>
+</html>

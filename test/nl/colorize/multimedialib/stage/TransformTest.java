@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -39,5 +39,14 @@ class TransformTest {
         assertEquals(-75f, global.getScaleX(), EPSILON);
         assertEquals(100f, global.getScaleY(), EPSILON);
         assertEquals(80f, global.getAlpha(), EPSILON);
+    }
+
+    @Test
+    void angleDistance() {
+        assertEquals(40f, Transform.angleDistance(90f, 130f), EPSILON);
+        assertEquals(40f, Transform.angleDistance(130f, 90f), EPSILON);
+        assertEquals(90f, Transform.angleDistance(90f, 180f), EPSILON);
+        assertEquals(180f, Transform.angleDistance(90f, 270f), EPSILON);
+        assertEquals(170f, Transform.angleDistance(90f, 280f), EPSILON);
     }
 }

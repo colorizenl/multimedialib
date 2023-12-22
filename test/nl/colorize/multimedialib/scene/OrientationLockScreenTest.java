@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -22,7 +22,6 @@ class OrientationLockScreenTest {
 
         Sprite sprite = new MockImage("orientation lock").toSprite();
         OrientationLockScreen orientationLockScreen = new OrientationLockScreen(sprite);
-        context.getStage().getRoot().addChild(orientationLockScreen.getContainer());
         orientationLockScreen.update(context, 1f);
 
         String expected = """
@@ -40,15 +39,15 @@ class OrientationLockScreenTest {
         context.getCanvas().resizeScreen(200, 600);
 
         Sprite sprite = new MockImage("orientation lock").toSprite();
+        context.getStage().getRoot().addChild(sprite);
+
         OrientationLockScreen orientationLockScreen = new OrientationLockScreen(sprite);
-        context.getStage().getRoot().addChild(orientationLockScreen.getContainer());
         orientationLockScreen.update(context, 1f);
 
         String expected = """
             Stage
                 Container
-                    Container
-                        Sprite [$$default@0.0]
+                    Sprite [$$default@0.0]
             """;
 
         assertEquals(expected, context.getStage().toString());
@@ -60,8 +59,9 @@ class OrientationLockScreenTest {
         SceneContext context = renderer.getContext();
 
         Sprite sprite = new MockImage("orientation lock").toSprite();
+        context.getStage().getRoot().addChild(sprite);
+
         OrientationLockScreen orientationLockScreen = new OrientationLockScreen(sprite);
-        context.getStage().getRoot().addChild(orientationLockScreen.getContainer());
         orientationLockScreen.update(context, 1f);
         context.getCanvas().resizeScreen(200, 600);
         orientationLockScreen.update(context, 1f);

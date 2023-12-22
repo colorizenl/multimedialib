@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -10,7 +10,7 @@ import com.google.common.base.Preconditions;
 import lombok.Value;
 import nl.colorize.util.animation.Interpolation;
 
-import static nl.colorize.multimedialib.math.MathUtils.EPSILON;
+import static nl.colorize.multimedialib.math.Shape.EPSILON;
 
 /**
  * Describes a point with X and Y coordinates within a two-dimensional space.

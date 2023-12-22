@@ -1,41 +1,29 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.teavm;
 
-import com.google.common.base.Preconditions;
+import lombok.Getter;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.OutlineFont;
-import nl.colorize.util.Promise;
 
+@Getter
 public class TeaFont implements OutlineFont {
 
-    private Promise<Boolean> fontPromise;
+    private String family;
     private FontStyle style;
 
-    protected TeaFont(Promise<Boolean> fontPromise, FontStyle style) {
-        this.fontPromise = fontPromise;
+    protected TeaFont(String family, FontStyle style) {
+        this.family = family;
         this.style = style;
-    }
-
-    public boolean isLoaded() {
-        return fontPromise.getValue().isPresent();
-    }
-
-    @Override
-    public FontStyle getStyle() {
-        return style;
     }
 
     @Override
     public OutlineFont derive(FontStyle newStyle) {
-        Preconditions.checkArgument(style.family().equals(newStyle.family()),
-            "Font family mismatch: expected " + style.family());
-
-        return new TeaFont(fontPromise, newStyle);
+        return new TeaFont(family, newStyle);
     }
 
     /**
@@ -43,6 +31,6 @@ public class TeaFont implements OutlineFont {
      * the CSS {@code font} shorthand property.
      */
     public String getFontString() {
-        return (style.bold() ? "bold " : "") + style.size() + "px " + style.family();
+        return (style.bold() ? "bold " : "") + style.size() + "px " + family;
     }
 }

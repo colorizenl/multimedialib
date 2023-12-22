@@ -1,16 +1,20 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.mock;
 
+import lombok.Getter;
+import lombok.Setter;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.Sprite;
 
+@Getter
+@Setter
 public class MockImage implements Image {
 
     private String name;
@@ -38,14 +42,6 @@ public class MockImage implements Image {
     @Override
     public Region getRegion() {
         return new Region(0, 0, width, height);
-    }
-
-    public void setWidth(int width) {
-        this.width = width;
-    }
-
-    public void setHeight(int height) {
-        this.height = height;
     }
 
     @Override

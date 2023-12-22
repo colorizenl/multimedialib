@@ -1,14 +1,15 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.teavm;
 
-import nl.colorize.multimedialib.renderer.pixi.PixiInterface;
-import nl.colorize.multimedialib.renderer.three.ThreeInterface;
+import nl.colorize.multimedialib.renderer.pixi.PixiBridge;
+import nl.colorize.multimedialib.renderer.three.ThreeBridge;
 import org.teavm.jso.JSBody;
+import org.teavm.jso.browser.Storage;
 
 /**
  * Contains the API for calling JavaScript functions using TeaVM. This consists
@@ -46,6 +47,9 @@ public class Browser {
     @JSBody(script = "window.prepareAnimationLoop();")
     public static native void prepareAnimationLoop();
 
+    @JSBody(script = "return window.accessLocalStorage();")
+    public static native Storage accessLocalStorage();
+
     @JSBody(
         params = {"callback"},
         script = "window.registerErrorHandler(callback);"
@@ -56,15 +60,24 @@ public class Browser {
         params = {"family", "url", "callback"},
         script = "return window.preloadFontFace(family, url, callback);"
     )
-    public static native void preloadFontFace(String family, String url, FontLoadCallback callback);
+    public static native void preloadFontFace(String family, String url, SuccessCallback callback);
+
+    @JSBody(
+        params = {"text"},
+        script = "window.navigator.clipboard.writeText(text);"
+    )
+    public static native void writeClipboard(String text);
 
     // ----------------------------------------
     // JavaScript framework interfaces
     // ----------------------------------------
 
-    @JSBody(script = "return window.pixiInterface;")
-    public static native PixiInterface getPixiInterface();
+    @JSBody(script = "return window.pixiBridge;")
+    public static native PixiBridge getPixiBridge();
 
-    @JSBody(script = "return window.threeInterface;")
-    public static native ThreeInterface getThreeInterface();
+    @JSBody(script = "return window.threeBridge;")
+    public static native ThreeBridge getThreeBridge();
+
+    @JSBody(script = "return window.peerjsBridge;")
+    public static native PeerjsBridge getPeerJsBridge();
 }

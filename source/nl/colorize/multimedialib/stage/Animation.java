@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -26,10 +26,10 @@ import java.util.List;
  */
 public class Animation {
     
-    private List<FrameInfo> frames;
+    private List<Frame> frames;
     private boolean loop;
     
-    private Animation(List<FrameInfo> frames, boolean loop) {
+    private Animation(List<Frame> frames, boolean loop) {
         this.frames = new ArrayList<>(frames);
         this.loop = loop;
     }
@@ -55,7 +55,7 @@ public class Animation {
         Preconditions.checkNotNull(frame, "Missing frame graphics");
         Preconditions.checkArgument(frameTime >= 0f, "Invalid frame time: " + frameTime);
 
-        frames.add(new FrameInfo(frame, frameTime));
+        frames.add(new Frame(frame, frameTime));
     }
 
     public int getFrameCount() {
@@ -83,7 +83,7 @@ public class Animation {
             time = time % getDuration();
         }
 
-        for (FrameInfo frame : frames) {
+        for (Frame frame : frames) {
             time -= frame.frameTime;
             if (time < 0f) {
                 return frame.image;
@@ -99,27 +99,43 @@ public class Animation {
         }
 
         float duration = 0f;
-        for (FrameInfo frame : frames) {
+        for (Frame frame : frames) {
             duration += frame.frameTime;
         }
         return duration;
     }
 
+    /**
+     * Changes the frame time for the frame located at the specified index.
+     */
     public void setFrameTime(int index, float frameTime) {
-        Preconditions.checkArgument(frameTime >= 0f, "Invalid frame time: " + frameTime);
-
-        FrameInfo frame = frames.get(index);
-        frames.set(index, new FrameInfo(frame.image, frameTime));
+        Frame frame = frames.get(index);
+        frames.set(index, new Frame(frame.image, frameTime));
     }
-    
+
+    /**
+     * Changes the frame time for all frames within this animation. The number
+     * of elements in the list needs to match the number of frames within this
+     * animation.
+     */
     public void setFrameTimes(List<Float> frameTimes) {
         Preconditions.checkArgument(frameTimes.size() == 1 || frameTimes.size() == frames.size(),
             "Animation has " + frames.size() + " frame, but provided " + frameTimes.size());
         
         for (int i = 0; i < frames.size(); i++) {
-            FrameInfo frame = frames.get(i);
+            Frame frame = frames.get(i);
             float time = frameTimes.get(frameTimes.size() == 1 ? 0 : i);
-            frames.set(i, new FrameInfo(frame.image, time));
+            frames.set(i, new Frame(frame.image, time));
+        }
+    }
+
+    /**
+     * Changes the frame time for all frames within this animation.
+     */
+    public void setFrameTime(float frameTime) {
+        for (int i = 0; i < frames.size(); i++) {
+            Frame frame = frames.get(i);
+            frames.set(i, new Frame(frame.image, frameTime));
         }
     }
 
@@ -130,10 +146,14 @@ public class Animation {
     public boolean isLoop() {
         return loop;
     }
+
+    public Animation copy() {
+        return new Animation(copyFrames(), loop);
+    }
     
-    private List<FrameInfo> copyFrames() {
+    private List<Frame> copyFrames() {
         return frames.stream()
-            .map(frame -> new FrameInfo(frame.image, frame.frameTime))
+            .map(frame -> new Frame(frame.image, frame.frameTime))
             .toList();
     }
     
@@ -142,7 +162,7 @@ public class Animation {
      * frames and corresponding frame times in reverse compared to the original.
      */
     public Animation reverse() {
-        List<FrameInfo> reverseFrames = new ArrayList<>();
+        List<Frame> reverseFrames = new ArrayList<>();
         reverseFrames.addAll(copyFrames());
         Collections.reverse(reverseFrames);
 
@@ -154,7 +174,7 @@ public class Animation {
      * followed by all frames of the specified other animation.
      */
     public Animation append(Animation other) {
-        List<FrameInfo> combinedFrames = new ArrayList<>();
+        List<Frame> combinedFrames = new ArrayList<>();
         combinedFrames.addAll(copyFrames());
         combinedFrames.addAll(other.copyFrames());
 
@@ -172,7 +192,7 @@ public class Animation {
     public Animation repeat(int times) {
         Preconditions.checkArgument(times >= 2, "Must repeat at least twice");
         
-        List<FrameInfo> repeatingFrames = new ArrayList<>();
+        List<Frame> repeatingFrames = new ArrayList<>();
         for (int i = 0; i < times; i++) {
             repeatingFrames.addAll(copyFrames());
         }
@@ -181,18 +201,24 @@ public class Animation {
     }
     
     /**
-     * Returns a new animation with the same frames as this one, but appends the
-     * reversed version of the animation. For example, if the original animation
-     * consists of frames 1-2-3, the result would be 1-2-3-3-2-1.
+     * Returns a new animation with the same frames as this one, but appends
+     * the reversed version of the animation. For example, if the original
+     * animation consists of frames {@code 1-2-3}, the result would be
+     * {@code 1-2-3-3-2-1}.
      */
     public Animation mirror() {
         return append(reverse());
     }
 
     /**
-     * Data structure for all information related to showing one of the frames
-     * within the animation.
+     * Describes how one of the animation frames should be displayed. Frames
+     * are immutable, modifying the animation requires swapping out the frame.
      */
-    private record FrameInfo(Image image, float frameTime) {
+    private record Frame(Image image, float frameTime) {
+
+        public Frame {
+            Preconditions.checkNotNull(image, "Missing frame image");
+            Preconditions.checkArgument(frameTime >= 0f, "Invalid frame time: " + frameTime);
+        }
     }
 }

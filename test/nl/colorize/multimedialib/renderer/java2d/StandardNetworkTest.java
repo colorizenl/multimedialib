@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -23,8 +23,8 @@ public class StandardNetworkTest {
         List<Throwable> errors = new ArrayList<>();
 
         StandardNetwork internetAccess = new StandardNetwork();
-        internetAccess.get("http://www.colorize.nl", new Headers())
-            .subscribe(response -> responses.add(response.getBody()), errors::add);
+        internetAccess.get("http://www.colorize.nl", Headers.none())
+            .subscribe(response -> responses.add(response.readBody()), errors::add);
 
         Thread.sleep(3000);
 

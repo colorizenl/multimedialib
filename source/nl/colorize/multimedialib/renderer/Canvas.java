@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,9 +8,9 @@ package nl.colorize.multimedialib.renderer;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
-import nl.colorize.multimedialib.math.MathUtils;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.util.TextUtils;
 
 /**
  * Defines how the application graphics should be displayed. This consists of
@@ -144,6 +144,6 @@ public class Canvas {
     @Override
     public String toString() {
         float zoomLevel = getZoomLevel();
-        return getWidth() + "x" + getHeight() + " @ " + MathUtils.format(zoomLevel, 1) + "x";
+        return getWidth() + "x" + getHeight() + " @ " + TextUtils.numberFormat(zoomLevel, 1) + "x";
     }
 }

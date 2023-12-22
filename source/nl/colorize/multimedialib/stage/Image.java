@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -33,21 +33,33 @@ public interface Image {
     /**
      * Returns a new {@code Image} instance that is based on the same source
      * image, but only contains the specified rectangular region within the
-     * source image.
+     * source image. If this {@link Image} is itself a region, the coordinates
+     * in the {@code region} parameter will be interpreted relative to this
+     * image's region.
+     *
+     * @throws IllegalArgumentException if {@code region} is located partially
+     *         or entirely outside of this image.
      */
-    public Image extractRegion(Region region);
+    public Image extractRegion(Region subRegion);
 
     /**
      * Returns the RGB color value of a pixel within the image. This does not
      * include the pixel's alpha value even if the image does support
-     * transparency. The alpha value can be retrieved separately using
-     * {@link #getAlpha(int, int)}.
+     * transparency. The returned color does not include an alpha channel.
+     * The alpha value of transparent or translucent pixels in the image can
+     * be obtained using {@link #getAlpha(int, int)}.
+     *
+     * @throws IllegalArgumentException If the X or Y coordinate is located
+     *         outside the image bounds.
      */
     public ColorRGB getColor(int x, int y);
 
     /**
      * Returns the alpha of a pixel within the image. The returned value is
      * between 0 (fully transparent) and 100 (fully opaque).
+     *
+     * @throws IllegalArgumentException If the X or Y coordinate is located
+     *         outside the image bounds.
      */
     public int getAlpha(int x, int y);
 }

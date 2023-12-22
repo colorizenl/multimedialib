@@ -1,12 +1,11 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.java2d;
 
-import nl.colorize.multimedialib.math.MathUtils;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
@@ -116,6 +115,9 @@ public class Java2DRenderer implements Renderer {
         window.setTitle(windowOptions.getTitle());
         window.setIconImage(loadIcon(windowOptions));
         window.getContentPane().setPreferredSize(new Dimension(canvas.getWidth(), canvas.getHeight()));
+        if (windowOptions.isFullscreen()) {
+            SwingUtils.goFullScreen(window);
+        }
         window.pack();
         window.setLocationRelativeTo(null);
         window.setVisible(true);
@@ -123,10 +125,6 @@ public class Java2DRenderer implements Renderer {
 
         if (Platform.isMac()) {
             MacIntegration.setApplicationMenuListener(windowOptions.getAppMenuListener());
-        }
-
-        if (windowOptions.isFullscreen()) {
-            SwingUtils.goFullScreen(window);
         }
 
         return window;
@@ -196,7 +194,7 @@ public class Java2DRenderer implements Renderer {
                 long frameTime = timer.tock();
                 long sleepTime = displayMode.getFrameTimeMS() - frameTime - oversleep;
                 Thread.yield();
-                Thread.sleep(MathUtils.clamp(sleepTime, 1L, 100L));
+                Thread.sleep(Math.clamp(sleepTime, 1L, 100L));
             }
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error during animation loop", e);
@@ -313,6 +311,12 @@ public class Java2DRenderer implements Renderer {
         } catch (IOException e) {
             LOGGER.warning("Failed to write screenshot to " + outputFile.getAbsolutePath());
         }
+    }
+
+    @Override
+    public boolean isDevelopmentEnvironment() {
+        File workDir = Platform.getUserWorkingDirectory();
+        return new File(workDir, "build.gradle").exists();
     }
 
     @Override

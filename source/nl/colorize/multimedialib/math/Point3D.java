@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,7 +8,7 @@ package nl.colorize.multimedialib.math;
 
 import lombok.Value;
 
-import static nl.colorize.multimedialib.math.MathUtils.EPSILON;
+import static nl.colorize.multimedialib.math.Shape.EPSILON;
 
 /**
  * Describes a point with X, Y, and Z coordinates within a three-dimensional

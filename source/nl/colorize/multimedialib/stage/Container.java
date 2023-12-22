@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -54,10 +54,6 @@ public class Container implements Graphic2D {
         child.getLocation().attach(this);
         children.add(child);
         addedChildren.push(child);
-    }
-
-    public void addChild(GraphicsProvider child) {
-        addChild(child.getContainer());
     }
 
     /**

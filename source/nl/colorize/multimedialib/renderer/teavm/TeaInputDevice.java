@@ -1,12 +1,11 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.teavm;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.renderer.Canvas;
@@ -20,6 +19,7 @@ import org.teavm.jso.dom.events.MouseEvent;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -185,9 +185,9 @@ public class TeaInputDevice implements InputDevice {
             pointers.put(identifier, touchPointer);
         }
 
-        Point2D position = getPointerCanvasPosition(customTouchEvent.getDetail().getPageX(),
-            customTouchEvent.getDetail().getPageY());
-        touchPointer.setPosition(position);
+        int pageX = customTouchEvent.getDetail().getPageX();
+        int pageY = customTouchEvent.getDetail().getPageY();
+        touchPointer.setPosition(getPointerCanvasPosition(pageX, pageY));
 
         switch (event.getType()) {
             case "custom:touchstart" -> touchPointer.setPressed(true);
@@ -207,9 +207,7 @@ public class TeaInputDevice implements InputDevice {
 
     @Override
     public Iterable<Pointer> getPointers() {
-        //TODO cannot use List.copyOf() because it is not yet
-        //     supported by TeaVM.
-        return ImmutableList.copyOf(pointers.values());
+        return List.copyOf(pointers.values());
     }
 
     private Point2D getPointerCanvasPosition(int pageX, int pageY) {
@@ -252,6 +250,11 @@ public class TeaInputDevice implements InputDevice {
     @Override
     public String requestTextInput(String label, String initialValue) {
         return Window.prompt(label, initialValue);
+    }
+
+    @Override
+    public void fillClipboard(String text) {
+        Browser.writeClipboard(text);
     }
 
     @Override

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -52,11 +52,10 @@ public final class Effect implements Scene {
 
     /**
      * Creates a new effect that initially does not define any behavior and
-     * is not linked to any graphics. Use the static factory methods to create
-     * effects with the desired behavior, this constructor is for internal use
-     * only.
+     * is not linked to any graphics. Prefer using the static factory methods
+     * to create effects with the desired behavior.
      */
-    private Effect() {
+    public Effect() {
         this.frameHandlers = new ArrayList<>();
         this.clickHandlers = new ArrayList<>();
         this.completionHandlers = new ArrayList<>();
@@ -67,6 +66,11 @@ public final class Effect implements Scene {
 
     public Effect addFrameHandler(Updatable handler) {
         frameHandlers.add(handler);
+        return this;
+    }
+
+    public Effect addFrameHandler(Runnable handler) {
+        frameHandlers.add(deltaTime -> handler.run());
         return this;
     }
 
@@ -128,6 +132,24 @@ public final class Effect implements Scene {
      */
     public Effect stopIf(BooleanSupplier condition) {
         completionConditions.add(condition);
+        return this;
+    }
+
+    /**
+     * Adds a handler that will mark the effect as completed during the next
+     * frame update.
+     */
+    public Effect stopNow() {
+        completionConditions.add(() -> true);
+        return this;
+    }
+
+    /**
+     * Adds a handler that will always return false, and will therefore make
+     * the effect continue indefinitely.
+     */
+    public Effect stopNever() {
+        completionConditions.add(() -> false);
         return this;
     }
 
@@ -280,6 +302,20 @@ public final class Effect implements Scene {
         Effect effect = new Effect();
         effect.linkGraphics(graphic);
         effect.addClickHandler(graphic, handler);
+        return effect;
+    }
+
+    public static Effect forX(Graphic2D graphic, Timeline timeline) {
+        Effect effect = new Effect();
+        effect.addTimelineHandler(timeline, value -> graphic.getTransform().setX(value));
+        effect.linkGraphics(graphic);
+        return effect;
+    }
+
+    public static Effect forY(Graphic2D graphic, Timeline timeline) {
+        Effect effect = new Effect();
+        effect.addTimelineHandler(timeline, value -> graphic.getTransform().setY(value));
+        effect.linkGraphics(graphic);
         return effect;
     }
 

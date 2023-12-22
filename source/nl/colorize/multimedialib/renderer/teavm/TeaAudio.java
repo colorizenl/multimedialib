@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,7 +8,7 @@ package nl.colorize.multimedialib.renderer.teavm;
 
 import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.stage.Audio;
-import nl.colorize.util.Promise;
+import nl.colorize.util.Subscribable;
 import org.teavm.jso.dom.html.HTMLAudioElement;
 
 /**
@@ -23,35 +23,37 @@ import org.teavm.jso.dom.html.HTMLAudioElement;
  */
 public class TeaAudio implements Audio {
 
-    private Promise<HTMLAudioElement> audioPromise;
+    private HTMLAudioElement audioElement;
 
-    protected TeaAudio(Promise<HTMLAudioElement> audioPromise) {
-        this.audioPromise = audioPromise;
+    protected TeaAudio(Subscribable<HTMLAudioElement> audioPromise) {
+        audioPromise.subscribe(event -> audioElement = event);
     }
 
     @Override
     public void play(int volume, boolean loop) {
-        Preconditions.checkArgument(volume >= 0 && volume <= 100, "Invalid volume: " + volume);
+        Preconditions.checkArgument(volume >= 0 && volume <= 100,
+            "Invalid volume: " + volume);
 
-        audioPromise.getValue().ifPresent(audioElement -> {
+        if (audioElement != null) {
             audioElement.setVolume(volume / 100f);
             audioElement.setLoop(loop);
             audioElement.play();
-        });
+        }
     }
 
     @Override
     public void stop() {
-        audioPromise.getValue().ifPresent(audioElement -> {
+        if (audioElement != null) {
             audioElement.pause();
             audioElement.setCurrentTime(0.0);
-        });
+        }
     }
 
     @Override
     public String toString() {
-        return audioPromise.getValue()
-            .map(HTMLAudioElement::getSrc)
-            .orElse("<loading>");
+        if (audioElement == null) {
+            return "<loading>";
+        }
+        return audioElement.getSrc();
     }
 }

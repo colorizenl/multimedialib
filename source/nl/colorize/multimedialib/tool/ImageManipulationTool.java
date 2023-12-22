@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -35,19 +35,12 @@ import java.util.logging.Logger;
  */
 public class ImageManipulationTool {
 
-    @Arg(name = "input")
-    protected File inputDir;
-
-    @Arg(name = "output")
-    protected File outputDir;
-    @Arg
-    protected int horizontalOffset;
-
-    @Arg
-    protected int verticalOffset;
-
-    @Arg
-    protected boolean mirror;
+    @Arg(name = "input") protected File inputDir;
+    @Arg(name = "output") protected File outputDir;
+    @Arg(defaultValue = "") protected String outputPrefix;
+    @Arg protected int horizontalOffset;
+    @Arg protected int verticalOffset;
+    @Arg protected boolean mirror;
 
     private int counter;
 
@@ -92,7 +85,7 @@ public class ImageManipulationTool {
     }
 
     private void applyHorizontalOffset(BufferedImage original) {
-        for (int x = 0; x < original.getWidth(); x += horizontalOffset) {
+        for (int x = 0; x <= original.getWidth(); x += horizontalOffset) {
             int offset = x;
 
             generateVariant(original, g2 -> {
@@ -103,7 +96,7 @@ public class ImageManipulationTool {
     }
 
     private void applyVerticalOffset(BufferedImage original) {
-        for (int y = 0; y < original.getHeight(); y += verticalOffset) {
+        for (int y = 0; y <= original.getHeight(); y += verticalOffset) {
             int offset = y;
 
             generateVariant(original, g2 -> {
@@ -136,7 +129,7 @@ public class ImageManipulationTool {
 
     private void writePNG(BufferedImage image) {
         counter++;
-        File outputFile = new File(outputDir, counter + ".png");
+        File outputFile = new File(outputDir, outputPrefix + counter + ".png");
 
         if (outputFile.exists()) {
             LOGGER.warning(outputFile.getAbsolutePath() + " already exists");

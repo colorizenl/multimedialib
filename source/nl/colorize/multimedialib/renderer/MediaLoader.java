@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -65,16 +65,16 @@ public interface MediaLoader {
      *
      * @throws MediaException if the format is not supported by the renderer.
      */
-    public OutlineFont loadFont(FilePointer file, FontStyle style);
+    public OutlineFont loadFont(FilePointer file, String family, FontStyle style);
 
     /**
      * Loads the default font, the open source font Open Sans. This is included
      * in MultimediaLib and therefore guaranteed to be always available.
      */
-    default OutlineFont loadDefaultFont(int size, ColorRGB color) {
+    default OutlineFont loadDefaultFont(ColorRGB color) {
         FilePointer file = new FilePointer("OpenSans-Regular.ttf");
-        FontStyle style = new FontStyle("Open Sans", size, false, color);
-        return loadFont(file, style);
+        FontStyle style = new FontStyle(12, false, color);
+        return loadFont(file, "Open Sans", style);
     }
 
     /**

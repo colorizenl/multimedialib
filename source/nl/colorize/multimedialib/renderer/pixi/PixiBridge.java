@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -11,9 +11,9 @@ import org.teavm.jso.JSProperty;
 import org.teavm.jso.canvas.CanvasImageSource;
 
 /**
- * TeaVM interface for the {@code pixi-interface.js} JavaScript implementation.
+ * TeaVM interface for the {@code pixi-bridge.js} JavaScript implementation.
  */
-public interface PixiInterface extends JSObject {
+public interface PixiBridge extends JSObject {
 
     public void init();
 

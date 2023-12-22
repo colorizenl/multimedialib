@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -28,6 +28,8 @@ import nl.colorize.multimedialib.stage.World3D;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static nl.colorize.multimedialib.stage.ColorRGB.WHITE;
 
 /**
  * Simple demo application for 3D graphics, that shows a checkerboard floor and
@@ -60,7 +62,7 @@ public class Demo3D implements Scene, ErrorHandler {
     public void start(SceneContext context) {
         this.context = context;
         MediaLoader mediaLoader = context.getMediaLoader();
-        font = mediaLoader.loadDefaultFont(12, ColorRGB.WHITE);
+        font = mediaLoader.loadDefaultFont(WHITE);
         logo = mediaLoader.loadImage(LOGO_FILE);
 
         World3D stage = context.getStage().getWorld();
@@ -81,7 +83,7 @@ public class Demo3D implements Scene, ErrorHandler {
         for (int i = -5; i <= 5; i++) {
             for (int j = -5; j <= 5; j++) {
                 float tileSize = AREA_SIZE / 11f;
-                ColorRGB color = white ? ColorRGB.WHITE : new ColorRGB(50, 50, 50);
+                ColorRGB color = white ? WHITE : new ColorRGB(50, 50, 50);
                 PolygonModel tile = createTile(tileSize, color, i == 0 && j == 0);
                 tile.getTransform().setPosition(i * tileSize, 0f, j * tileSize);
                 stage.getChildren().add(tile);

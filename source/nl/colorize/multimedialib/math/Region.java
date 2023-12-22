@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -9,9 +9,9 @@ package nl.colorize.multimedialib.math;
 import com.google.common.base.Preconditions;
 
 /**
- * Rectangular region within an image. This class exists alongside {@link Rect}
- * because it uses integer-precision coordinates, does not allow negative
- * coordinates, and is immutable.
+ * Rectangular region with integer coordinates, typically used to describe
+ * a pixel region within an image. Unlike {@link Rect}, this class does
+ * <em>not</em> allow negative coordinates.
  */
 public record Region(int x, int y, int width, int height) {
 
@@ -28,6 +28,10 @@ public record Region(int x, int y, int width, int height) {
 
     public int y1() {
         return y + height;
+    }
+
+    public Region move(int deltaX, int deltaY) {
+        return new Region(x + deltaX, y + deltaY, width, height);
     }
 
     @Override

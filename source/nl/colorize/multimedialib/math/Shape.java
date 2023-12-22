@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -12,7 +12,7 @@ package nl.colorize.multimedialib.math;
  */
 public interface Shape {
 
-    public static final float EPSILON = MathUtils.EPSILON;
+    public static final float EPSILON = 0.001f;
 
     /**
      * Returns whether this shape contains the specified point.

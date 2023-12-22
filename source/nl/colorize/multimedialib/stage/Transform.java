@@ -1,13 +1,12 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.stage;
 
 import lombok.Data;
-import nl.colorize.multimedialib.math.MathUtils;
 import nl.colorize.multimedialib.math.Point2D;
 
 /**
@@ -58,8 +57,24 @@ public final class Transform {
         position = new Point2D(x, y);
     }
 
+    public void setX(float x) {
+        position = new Point2D(x, position.getY());
+    }
+
+    public void setY(float y) {
+        position = new Point2D(position.getX(), y);
+    }
+
     public void addPosition(float deltaX, float deltaY) {
         position = new Point2D(position.getX() + deltaX, position.getY() + deltaY);
+    }
+
+    public float getX() {
+        return position.getX();
+    }
+
+    public float getY() {
+        return position.getY();
     }
 
     public void setRotation(float degrees) {
@@ -101,7 +116,7 @@ public final class Transform {
     }
 
     public void setAlpha(float alpha) {
-        this.alpha = MathUtils.clamp(alpha, 0f, 100f);
+        this.alpha = Math.clamp(alpha, 0f, 100f);
     }
 
     /**
@@ -140,5 +155,17 @@ public final class Transform {
 
     private float combinePercentage(float value, float parentValue) {
         return ((value / 100f) * (parentValue / 100f)) * 100f;
+    }
+
+    /**
+     * Returns the distance between two angles in degrees. The result will be
+     * in the range between 0 and 180.
+     */
+    public static float angleDistance(float a, float b) {
+        float phi = Math.abs(b - a) % 360f;
+        if (phi > 180f) {
+            return 360f - phi;
+        }
+        return phi;
     }
 }

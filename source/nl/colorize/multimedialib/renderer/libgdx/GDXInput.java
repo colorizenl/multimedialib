@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -189,5 +189,10 @@ public class GDXInput implements InputDevice {
         Popups.message(null, "", panel);
 
         return field.getText();
+    }
+
+    @Override
+    public void fillClipboard(String text) {
+        SwingUtils.copyToClipboard(text);
     }
 }

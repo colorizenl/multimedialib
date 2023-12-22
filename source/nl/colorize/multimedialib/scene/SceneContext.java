@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,9 +8,9 @@ package nl.colorize.multimedialib.scene;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
-import nl.colorize.multimedialib.math.MathUtils;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
+import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.InputDevice;
@@ -18,6 +18,7 @@ import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.stage.Stage;
+import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.Stopwatch;
@@ -43,8 +44,11 @@ import java.util.logging.Logger;
  * outlive their parent scene. When the active scene is changed, both the scene
  * itself and its sub-scenes will be terminated and the stage will be cleared
  * in preparation for the next scene.
+ * <p>
+ * This class implements the {@link Renderer} interface so that it can be used
+ * as a delegate for accessing the actual underlying renderer.
  */
-public final class SceneContext implements Updatable {
+public final class SceneContext implements Renderer, Updatable {
 
     private Renderer renderer;
     private Stopwatch timer;
@@ -75,6 +79,8 @@ public final class SceneContext implements Updatable {
      * by the renderer itself during initialization.
      */
     public SceneContext(Renderer renderer, Stopwatch timer) {
+        Preconditions.checkArgument(renderer != null, "Context not attached to renderer");
+
         this.renderer = renderer;
         this.timer = timer;
         this.elapsedTime = 0L;
@@ -125,7 +131,7 @@ public final class SceneContext implements Updatable {
         // precision of the underlying animation loop.
         frameStats.markEnd(FrameStats.PHASE_FRAME_TIME);
 
-        float deltaTime = MathUtils.clamp(elapsedTime / 1000f, MIN_FRAME_TIME, MAX_FRAME_TIME);
+        float deltaTime = Math.clamp(elapsedTime / 1000f, MIN_FRAME_TIME, MAX_FRAME_TIME);
         frameStats.markStart(FrameStats.PHASE_FRAME_UPDATE);
         update(deltaTime);
         frameStats.markEnd(FrameStats.PHASE_FRAME_UPDATE);
@@ -320,7 +326,7 @@ public final class SceneContext implements Updatable {
         List<String> info = new ArrayList<>();
         info.add("Renderer:  " + getRendererName());
         info.add("Canvas:  " + getCanvas());
-        info.add("Framerate:  " + frameStats.getActualFramerate() + " / " + targetFPS);
+        info.add("Framerate:  " + Math.round(frameStats.getAverageFramerate()) + " / " + targetFPS);
         info.add("Update time:  " + frameStats.getFrameUpdateTime() + "ms");
         info.add("Render time:  " + frameStats.getFrameRenderTime() + "ms");
 
@@ -336,35 +342,74 @@ public final class SceneContext implements Updatable {
     }
 
     //-------------------------------------------------------------------------
-    // Renderer access
+    // Renderer delegate
     //-------------------------------------------------------------------------
 
+    /**
+     * This method cannot be used on {@link SceneContext}. It is inherited
+     * from {@link Renderer}, but the {@link SceneContext} is only available
+     * when the renderer has already started. Therefore, calling this method
+     * will result in an {@link UnsupportedOperationException}.
+     */
+    @Override
+    public void start(Scene initialScene, ErrorHandler errorHandler) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * The {@link SceneContext} does not allow direct access to the
+     * renderer's graphics. This method is inherited from {@link Renderer},
+     * but trying to call it on this {@link SceneContext} will result in an
+     * {@link UnsupportedOperationException}.
+     */
+    @Override
+    public StageVisitor getGraphics() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void terminate() {
         renderer.terminate();
     }
 
+    @Override
     public GraphicsMode getGraphicsMode() {
         return renderer.getGraphicsMode();
     }
 
+    @Override
     public DisplayMode getDisplayMode() {
         return renderer.getDisplayMode();
     }
 
+    @Override
     public Canvas getCanvas() {
         return renderer.getCanvas();
     }
 
+    @Override
     public InputDevice getInput() {
         return renderer.getInput();
     }
 
+    @Override
     public MediaLoader getMediaLoader() {
         return renderer.getMediaLoader();
     }
 
+    @Override
     public Network getNetwork() {
         return renderer.getNetwork();
+    }
+
+    @Override
+    public boolean isDevelopmentEnvironment() {
+        return renderer.isDevelopmentEnvironment();
+    }
+
+    @Override
+    public void takeScreenshot(File outputFile) {
+        renderer.takeScreenshot(outputFile);
     }
 
     /**

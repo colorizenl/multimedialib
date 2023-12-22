@@ -1,6 +1,9 @@
 MultimediaLib
 =============
 
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/nl.colorize/multimedialib/badge.svg)](
+https://central.sonatype.com/artifact/nl.colorize/multimedialib)
+
 MultimediaLib is a framework for creating multimedia applications in Java that run on multiple
 platforms: desktop applications (Windows, Mac OS, Linux), mobile apps (iOS, Android), and web
 (browser, PWA). MultimediaLib mainly targets 2D graphics and animation, though support for basic
@@ -28,13 +31,13 @@ to the dependencies section in `pom.xml`:
     <dependency>
         <groupId>nl.colorize</groupId>
         <artifactId>multimedialib</artifactId>
-        <version>2023.8</version>
+        <version>2024.1</version>
     </dependency>  
     
 The library can also be used in Gradle projects:
 
     dependencies {
-        implementation "nl.colorize:multimedialib:2023.8"
+        implementation "nl.colorize:multimedialib:2024.1"
     }
     
 Supported platforms
@@ -118,17 +121,22 @@ parameters:
 Note that when using 3D graphics on Mac OS the command line argument `-XstartOnFirstThread` must
 be present.
 
-The demo application can also be tested as a (native) app for various platforms:
+The demo application can also be tested as a (native) app for various platforms. Building native
+applications uses the
+[Colorize Gradle application plugin](https://plugins.gradle.org/plugin/nl.colorize.gradle.application).
+Refer to the plugin documentation for the system requirements to build native applications for each
+platform.
 
 - **Browser:** The browser version of the demo applications can be created by running 
   `gradle transpileDemoApplication2D` and `gradle transpileDemoApplication3D` respectively.
   The build output is then saved to the directories `build/browserdemo2d` and `browserdemo3d`,
   and can be started by opening the corresponding `index.html` in a browser.
 - **Mac:** Running `gradle createApplicationBundle` will generate the native Mac application
-  bundle in `build/mac`. This command can only be used on a Mac.
+  bundle in `build/mac`. 
 - **iOS:** Running `gradle xcodeGen` will generate an Xcode project for a native iOS version of
-  the demo application. The Xcode project will be located in `build/xcode`. This command can only
-  be used on a Mac.
+  the demo application. The Xcode project will be located in `build/xcode`. 
+- **Windows:** Running `gradle packageEXE` will generate the Windows application, which is then
+  packages and saved to the `build` directory.
 
 Transpiling applications to HTML/JavaScript
 -------------------------------------------
@@ -201,7 +209,7 @@ Build instructions
 
 Building the library requires the following:
 
-- [Java JDK](http://java.oracle.com) 17+
+- [Java JDK](http://java.oracle.com) 21+
 - [Gradle](http://gradle.org)
 
 The following Gradle build tasks are available:
@@ -213,16 +221,13 @@ The following Gradle build tasks are available:
 - `gradle coverage` runs all unit tests and reports on test coverage
 - `gradle javadoc` generates the JavaDoc API documentation
 - `gradle dependencyUpdates` checks for and reports on library updates
-- `gradle publish` publishes to Maven central
-
-Note: Publishing the library to Maven Central requires the Gradle properties `ossrhUser` and 
-`ossrhPassword`. If you want to use the library locally, simply provide dummy values for these
-properties in `~/.gradle/gradle.properties`.
+- `gradle publish` publishes the library to Maven central
+  (requires the Gradle properties `mavenCentralUser` and `mavenCentralPassword`)
   
 License
 -------
 
-Copyright 2009-2023 Colorize
+Copyright 2009-2024 Colorize
 
 > Licensed under the Apache License, Version 2.0 (the "License");
 > you may not use this file except in compliance with the License.

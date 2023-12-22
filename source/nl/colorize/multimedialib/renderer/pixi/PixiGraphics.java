@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -50,7 +50,7 @@ public class PixiGraphics implements TeaGraphics {
 
     private Canvas canvas;
     private BrowserDOM dom;
-    private PixiInterface pixi;
+    private PixiBridge pixi;
     private Map<UUID, Pixi.DisplayObject> displayObjects;
     private Cache<TeaImage, Pixi.Texture> textureCache;
 
@@ -60,7 +60,7 @@ public class PixiGraphics implements TeaGraphics {
     public PixiGraphics(Canvas canvas) {
         this.canvas = canvas;
         this.dom = new BrowserDOM();
-        this.pixi = Browser.getPixiInterface();
+        this.pixi = Browser.getPixiBridge();
         this.displayObjects = new HashMap<>();
         this.textureCache = Cache.from(this::prepareTexture, TEXTURE_CACHE_SIZE);
     }
@@ -141,7 +141,7 @@ public class PixiGraphics implements TeaGraphics {
         TeaImage image = getImage(sprite);
         Pixi.DisplayObject spriteContainer = pixi.createContainer();
 
-        image.getImagePromise().getSubject().subscribe(imgElement -> {
+        image.getImagePromise().subscribe(imageElement -> {
             Pixi.Texture texture = textureCache.get(image);
             Pixi.DisplayObject spriteDisplayObject = pixi.createSprite(texture);
             spriteContainer.addChild(spriteDisplayObject);
@@ -151,9 +151,10 @@ public class PixiGraphics implements TeaGraphics {
     }
 
     private Pixi.DisplayObject createTextDisplayObject(Text text) {
+        String family = text.getFont().getFamily();
         FontStyle style = text.getFont().scale(canvas).getStyle();
 
-        return pixi.createText(style.family(), style.size(), style.bold(),
+        return pixi.createText(family, style.size(), style.bold(),
             text.getAlign().toString(), text.getLineHeight(), style.color().getRGB());
     }
 

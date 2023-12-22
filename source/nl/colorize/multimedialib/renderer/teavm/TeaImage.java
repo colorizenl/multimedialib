@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -12,7 +12,7 @@ import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.util.LogHelper;
-import nl.colorize.util.Promise;
+import nl.colorize.util.Subscribable;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.canvas.CanvasRenderingContext2D;
 import org.teavm.jso.canvas.ImageData;
@@ -33,37 +33,39 @@ import java.util.logging.Logger;
 public class TeaImage implements Image {
 
     @Getter private UUID id;
-    @Getter private Promise<HTMLImageElement> imagePromise;
+    @Getter private Subscribable<HTMLImageElement> imagePromise;
     private Region region;
 
+    private HTMLImageElement imageElement;
     private CanvasRenderingContext2D imageData;
 
     private static final Region IMAGE_LOADING_REGION = new Region(0, 0, 1, 1);
     private static final int[] UNKNOWN_RGBA = {0, 0, 0, 0};
     private static final Logger LOGGER = LogHelper.getLogger(TeaImage.class);
 
-    protected TeaImage(Promise<HTMLImageElement> imagePromise, Region region) {
+    protected TeaImage(Subscribable<HTMLImageElement> imagePromise, Region region) {
         this.id = UUID.randomUUID();
         this.imagePromise = imagePromise;
         this.region = region;
+
+        imagePromise.subscribe(event -> imageElement = event);
     }
 
     public Optional<HTMLImageElement> getImageElement() {
-        return imagePromise.getValue();
+        return Optional.ofNullable(imageElement);
     }
 
     public boolean isLoaded() {
-        return imagePromise.getValue().isPresent();
+        return imageElement != null;
     }
 
     @Override
     public Region getRegion() {
         if (region == null) {
-            if (imagePromise.getValue().isEmpty()) {
+            if (imageElement == null) {
                 return IMAGE_LOADING_REGION;
             }
 
-            HTMLImageElement imageElement = imagePromise.getValue().get();
             region = new Region(0, 0, imageElement.getWidth(), imageElement.getHeight());
         }
 
@@ -71,8 +73,11 @@ public class TeaImage implements Image {
     }
 
     @Override
-    public TeaImage extractRegion(Region region) {
-        return new TeaImage(imagePromise, region);
+    public TeaImage extractRegion(Region subRegion) {
+        if (region != null) {
+            subRegion = subRegion.move(region.x(), region.y());
+        }
+        return new TeaImage(imagePromise, subRegion);
     }
 
     @Override
@@ -88,13 +93,12 @@ public class TeaImage implements Image {
     }
 
     private int[] getImageData(int x, int y) {
-        HTMLImageElement img = imagePromise.getValue().orElse(null);
-        Region region = getRegion();
-
-        if (img == null) {
+        if (imageElement == null) {
             LOGGER.warning("Trying to retrieve image data when image is still loading");
             return UNKNOWN_RGBA;
         }
+
+        Region region = getRegion();
 
         if (imageData == null) {
             HTMLDocument document = Window.current().getDocument();
@@ -102,7 +106,7 @@ public class TeaImage implements Image {
             canvas.setWidth(region.width());
             canvas.setHeight(region.height());
             imageData = (CanvasRenderingContext2D) canvas.getContext("2d");
-            imageData.drawImage(img, 0, 0);
+            imageData.drawImage(imageElement, 0, 0);
         }
 
         ImageData pixels = imageData.getImageData(x, y, 1, 1);
@@ -134,7 +138,6 @@ public class TeaImage implements Image {
 
     @Override
     public String toString() {
-        HTMLImageElement imageElement = imagePromise.getValue().orElse(null);
         if (imageElement == null) {
             return "<loading>";
         }

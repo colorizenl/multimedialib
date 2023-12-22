@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -27,11 +27,11 @@ import nl.colorize.multimedialib.stage.Text;
 public class ThreeGraphics implements TeaGraphics {
 
     private Canvas canvas;
-    private ThreeInterface three;
+    private ThreeBridge three;
 
     public ThreeGraphics(Canvas canvas) {
         this.canvas = canvas;
-        this.three = Browser.getThreeInterface();
+        this.three = Browser.getThreeBridge();
     }
 
     @Override

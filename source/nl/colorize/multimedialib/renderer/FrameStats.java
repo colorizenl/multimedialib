@@ -1,13 +1,13 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2023 Colorize
+// Copyright 2009-2024 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
 import nl.colorize.util.Stopwatch;
-import nl.colorize.util.stats.Aggregate;
+import nl.colorize.util.stats.Statistics;
 
 import java.util.Deque;
 import java.util.LinkedHashMap;
@@ -31,11 +31,10 @@ public class FrameStats {
     private DisplayMode displayMode;
     private Map<String, PhaseStats> stats;
 
-    public static final String PHASE_NATIVE_ANIMATION_LOOP_FRAME_TIME = "$$nativeFrameTime";
     public static final String PHASE_FRAME_TIME = "$$frameTime";
     public static final String PHASE_FRAME_UPDATE = "$$frameUpdate";
     public static final String PHASE_FRAME_RENDER = "$$frameRender";
-    private static final int SLIDING_WINDOW_FRAMES = 60;
+    public static final int BUFFER_CAPACITY = 100;
 
     public FrameStats(DisplayMode displayMode) {
         this.displayMode = displayMode;
@@ -61,7 +60,7 @@ public class FrameStats {
         long value = phaseStats.timer.tick();
         phaseStats.values.add(value);
 
-        while (phaseStats.values.size() > SLIDING_WINDOW_FRAMES) {
+        while (phaseStats.values.size() > BUFFER_CAPACITY) {
             phaseStats.values.removeFirst();
         }
     }
@@ -70,9 +69,9 @@ public class FrameStats {
         return displayMode.framerate();
     }
 
-    public int getActualFramerate() {
+    public float getAverageFramerate() {
         int frameTimeMS = getAverageTimeMS(PHASE_FRAME_TIME);
-        return 1000 / Math.max(frameTimeMS, 1);
+        return 1000f / Math.max(frameTimeMS, 1);
     }
 
     public int getFrameUpdateTime() {
@@ -84,14 +83,29 @@ public class FrameStats {
     }
 
     /**
-     * Returns the average duration for the specified phase based on previously
-     * measured frames, in milliseconds.
+     * Returns the average duration for the specified phase, in milliseconds.
+     * The average is based on all previously measured frames that are
+     * currently in the buffer.
      */
     public int getAverageTimeMS(String phase) {
         PhaseStats phaseStats = prepare(phase);
-        return (int) Aggregate.AVERAGE.calc(phaseStats.values);
+        return (int) Statistics.average(phaseStats.values);
     }
 
+    /**
+     * Returns the average duration for the specified phase, in seconds.
+     * The average is based on all previously measured frames that are
+     * currently in the buffer.
+     */
+    public float getAverageTime(String phase) {
+        return getAverageTimeMS(phase) / 1000f;
+    }
+
+    /**
+     * Returns the names of all custom statistics that have been measured and
+     * are currently in the buffer. Note this does <em>not</em> return the
+     * standard performance statistics that are <em>always</em> measured.
+     */
     public List<String> getCustomStats() {
         return stats.keySet().stream()
             .filter(phase -> !phase.startsWith("$$"))
@@ -99,11 +113,20 @@ public class FrameStats {
     }
 
     /**
-     * Returns a list containing all "native" frame times currently in the
-     * buffer, in millisecond precision.
+     * Returns all measured frame times for the specified phase that are
+     * currently in the buffer, in millisecond precision. Frames are sorted
+     * so that the oldest frame is first, and the most recent frame is last.
      */
-    public Deque<Long> getFrameTimes() {
-        return prepare(PHASE_NATIVE_ANIMATION_LOOP_FRAME_TIME).values();
+    public Iterable<Long> getFrameTimes(String phase) {
+        return prepare(phase).values();
+    }
+
+    /**
+     * Returns the number of frames that have been measured and that are
+     * currently in the buffer.
+     */
+    public int getBufferSize() {
+        return prepare(PHASE_FRAME_TIME).values().size();
     }
 
     /**
