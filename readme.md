@@ -3,6 +3,10 @@ MultimediaLib
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/nl.colorize/multimedialib/badge.svg)](
 https://central.sonatype.com/artifact/nl.colorize/multimedialib)
+[![Documentation](https://img.shields.io/badge/docs-javadoc-blue)](
+https://api.clrz.nl/multimedialib)
+[![License](https://img.shields.io/badge/license-apache_2.0-purple)](
+https://www.apache.org/licenses/LICENSE-2.0)
 
 MultimediaLib is a framework for creating multimedia applications in Java that run on multiple
 platforms: desktop applications (Windows, Mac OS, Linux), mobile apps (iOS, Android), and web
