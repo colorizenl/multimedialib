@@ -20,13 +20,15 @@ import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
+import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.multimedialib.renderer.java2d.StandardNetwork;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.FontFace;
+import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.StageVisitor;
-import nl.colorize.util.Stopwatch;
 
-import java.io.File;
 import java.util.List;
 
 /**
@@ -44,7 +46,8 @@ import java.util.List;
 @Setter
 public class HeadlessRenderer implements Renderer, InputDevice {
 
-    private final GraphicsMode graphicsMode;
+    private GraphicsMode graphicsMode;
+    private WindowOptions windowOptions;
     private DisplayMode displayMode;
     private StageVisitor graphics;
     private HeadlessMediaLoader mediaLoader;
@@ -61,13 +64,17 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     public static final int DEFAULT_HEIGHT = 600;
     public static final int DEFAULT_FRAMERATE = 30;
 
+    public static final FontFace DEFAULT_FONT = new FontFace(null, null, "sans-serif",
+        new FontStyle(10, false, ColorRGB.BLACK));
+
     public HeadlessRenderer(DisplayMode displayMode, boolean graphicsEnvironmentEnabled) {
         this.graphicsMode = GraphicsMode.HEADLESS;
+        this.windowOptions = new WindowOptions("<headless>");
         this.displayMode = displayMode;
         this.graphics = null;
         this.mediaLoader = new HeadlessMediaLoader(graphicsEnvironmentEnabled);
         this.network = new StandardNetwork();
-        this.context = new SceneContext(this, new Stopwatch());
+        this.context = new SceneContext(this, mediaLoader, this, network);
 
         this.touchAvailable = false;
         this.keyboardAvailable = false;
@@ -88,16 +95,6 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     public void start(Scene initialScene, ErrorHandler errorHandler) {
         context.changeScene(initialScene);
         doFrame();
-    }
-    
-    @Override
-    public void takeScreenshot(File outputFile) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean isDevelopmentEnvironment() {
-        return true;
     }
 
     @Override
@@ -122,16 +119,18 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     //-------------------------------------------------------------------------
 
     @Override
-    public InputDevice getInput() {
-        return this;
-    }
-
-    @Override
     public Iterable<Pointer> getPointers() {
         Pointer pointerObject = new Pointer("headless");
         pointerObject.setPosition(pointer);
-        pointerObject.setPressed(pointerPressed);
-        pointerObject.setReleased(pointerReleased);
+
+        if (pointerReleased) {
+            pointerObject.setState(Pointer.STATE_RELEASED);
+        } else if (pointerPressed) {
+            pointerObject.setState(Pointer.STATE_PRESSED);
+        } else {
+            pointerObject.setState(Pointer.STATE_IDLE);
+        }
+
         return List.of(pointerObject);
     }
 
@@ -158,5 +157,10 @@ public class HeadlessRenderer implements Renderer, InputDevice {
 
     @Override
     public void fillClipboard(String text) {
+    }
+
+    @Override
+    public String toString() {
+        return "<headless>";
     }
 }

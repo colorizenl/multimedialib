@@ -44,20 +44,23 @@ public interface Graphic2D extends Updatable {
         return getLocation().getLocalTransform();
     }
 
+    @Deprecated
     default void setPosition(float x, float y) {
         getTransform().setPosition(x, y);
     }
 
+    @Deprecated
     default void setPosition(Point2D position) {
         getTransform().setPosition(position);
     }
 
     /**
      * Returns this graphic's <em>global</em> transform, which indicates how
-     * the graphic should be displayed on the stage.
+     * the graphic should be displayed on the stage. This method is a
+     * shorthand for {@code getTransform().toGlobalTransform()}.
      */
     default Transform getGlobalTransform() {
-        return getLocation().getGlobalTransform();
+        return getLocation().getLocalTransform().toGlobalTransform();
     }
 
     /**

@@ -14,44 +14,48 @@ The compatibility table uses the following notation:
 - Red (🔴) means the feature is *not* supported by the renderer.
 - Purple (🟣) means the feature is not yet supported, but *will* be supported in a future version. 
 
-| Feature / Renderer       | Java2D | libGDX | HTML Canvas | WebGL | Pixi | Three | 
-|--------------------------|--------|--------|-------------|-------|------|-------|
+| Feature / Renderer       | Java2D | JavaFX | libGDX | HTML Canvas | WebGL | Pixi | Three | 
+|--------------------------|--------|--------|--------|-------------|-------|------|-------|
 | **Animation loop**       |
-| Canvas size              | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
-| Resize events            | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
-| Custom framerate         | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟢    |
+| Canvas size              | 🟢     | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
+| Resize events            | 🟢     | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
+| Custom framerate         | 🟢     | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟢    |
+| Error handler            | 🟢     | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
 | **Sprites**              | 
-| Sprites                  | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
-| Image translucency       | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
-| Image region             | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
-| Rotation                 | 🟢     | 🟢     | 🟢          | 🟠    | 🟢   | 🟣    |
-| Scale                    | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
-| Independent X/Y scale    | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
-| Alpha                    | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
-| Flip horizontal/vertical | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
-| Retrieve pixel data      | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟢    |
+| Sprites                  | 🟢     | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
+| Image translucency       | 🟢     | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
+| Image region             | 🟢     | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
+| Rotation                 | 🟢     | 🟢     | 🟢     | 🟢          | 🟠    | 🟢   | 🟣    |
+| Scale                    | 🟢     | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
+| Independent X/Y scale    | 🟢     | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
+| Alpha                    | 🟢     | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
+| Flip horizontal/vertical | 🟢     | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
+| Mask color               | 🟡     | 🟡     | 🟢     | 🟡          | 🟢    | 🟢   | 🟢    |
+| Retrieve pixel data      | 🟢     | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟢    |
 | **2D Graphics**          |
-| Lines                    | 🟢     | 🟢     | 🟢          | 🟡    | 🟢   | 🟣    |
-| Segmented lines          | 🟢     | 🟢     | 🟢          | 🟡    | 🟢   | 🟣    |
-| Rectangles               | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
-| Circles                  | 🟡 (2) | 🟢     | 🟢          | 🟡    | 🟢   | 🟣    |
-| Polygons                 | 🟢     | 🟢     | 🟢          | 🟡    | 🟢   | 🟣    |
-| Alpha                    | 🟢     | 🟢     | 🟢          | 🟡    | 🟢   | 🟣    |
+| Lines                    | 🟢     | 🟢     | 🟢     | 🟢          | 🟡    | 🟢   | 🟣    |
+| Segmented lines          | 🟢     | 🟢     | 🟢     | 🟢          | 🟡    | 🟢   | 🟣    |
+| Rectangles               | 🟢     | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟣    |
+| Circles                  | 🟡 (2) | 🟢     | 🟢     | 🟢          | 🟡    | 🟢   | 🟣    |
+| Polygons                 | 🟢     | 🟢     | 🟢     | 🟢          | 🟡    | 🟢   | 🟣    |
+| Alpha                    | 🟢     | 🟢     | 🟢     | 🟢          | 🟡    | 🟢   | 🟣    |
 | **Text**                 |
-| TrueType fonts           | 🟢     | 🟢     | 🟢          | 🟡    | 🟢   | 🟣    |
-| Text alignment           | 🟢     | 🟢     | 🟢          | 🟡    | 🟢   | 🟣    |
-| Text alpha               | 🟢     | 🟢     | 🟢          | 🟡    | 🟢   | 🟣    |
+| TrueType fonts           | 🟢     | 🟢     | 🟢     | 🟢          | 🟡    | 🟢   | 🟣    |
+| Text alignment           | 🟢     | 🟢     | 🟢     | 🟢          | 🟡    | 🟢   | 🟣    |
+| Text alpha               | 🟢     | 🟢     | 🟢     | 🟢          | 🟡    | 🟢   | 🟣    |
 | **Audio**                | 
-| Audio playback           | 🟠 (1) | 🟢     | 🟢          | 🟢    | 🟢   | 🟢    | 
+| Audio playback           | 🟠 (1) | 🟠 (1) | 🟢     | 🟢          | 🟢    | 🟢   | 🟢    | 
 | **Media**                |
-| PNG images               | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟢    |
-| MP3 audio                | 🟠 (1) | 🟢     | 🟢          | 🟢    | 🟢   | 🟢    |
+| PNG images               | 🟢     | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟢    |
+| MP3 audio                | 🟠 (1) | 🟠 (1) | 🟢     | 🟢          | 🟢    | 🟢   | 🟢    |
 | **Input**                |
-| Keyboard controls        | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟢    |
-| Mouse/touch controls     | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟢    |
+| Keyboard controls        | 🟢     | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟢    |
+| Mouse/touch controls     | 🟢     | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟢    |
 | **Network**              |
-| HTTP requests            | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟢    |
-| Peer-to-peer connections | 🔴     | 🔴     | 🟢          | 🟢    | 🟢   | 🟢    |
+| HTTP requests            | 🟢     | 🟢     | 🟢     | 🟢          | 🟢    | 🟢   | 🟢    |
+| Peer-to-peer connections | 🔴     | 🔴     | 🔴     | 🟢          | 🟢    | 🟢   | 🟢    |
+| **Miscellaneous**        |
+| Capture screenshots      | 🟡     | 🔴     | 🟢     | 🔴          | 🔴    | 🔴   | 🔴    |
 
 Footnotes:
 

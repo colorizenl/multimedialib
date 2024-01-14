@@ -29,16 +29,19 @@ import org.teavm.jso.dom.html.HTMLImageElement;
  */
 public class BrowserDOM {
 
+    private Window window;
+    private HTMLDocument document;
     private Cache<MaskImage, HTMLCanvasElement> maskImageCache;
 
     private static final int IMAGE_CACHE_SIZE = 500;
 
     public BrowserDOM() {
+        this.window = Window.current();
+        this.document = window.getDocument();
         this.maskImageCache = Cache.from(this::createMaskImage, IMAGE_CACHE_SIZE);
     }
 
     public HTMLCanvasElement createFullScreenCanvas(HTMLElement container) {
-        Window window = Window.current();
         HTMLDocument document = window.getDocument();
 
         HTMLCanvasElement canvas = (HTMLCanvasElement) document.createElement("canvas");
@@ -50,7 +53,6 @@ public class BrowserDOM {
     }
 
     private void resizeCanvas(HTMLCanvasElement canvas, HTMLElement container) {
-        HTMLDocument document = Window.current().getDocument();
         int width = container.getOffsetWidth();
         int height = document.getDocumentElement().getClientHeight();
 
@@ -58,7 +60,7 @@ public class BrowserDOM {
     }
 
     private void resizeCanvas(HTMLCanvasElement canvas, int width, int height) {
-        float devicePixelRatio = (float) Window.current().getDevicePixelRatio();
+        float devicePixelRatio = (float) window.getDevicePixelRatio();
 
         canvas.getStyle().setProperty("width", width + "px");
         canvas.getStyle().setProperty("height", height + "px");
@@ -80,7 +82,6 @@ public class BrowserDOM {
     private HTMLCanvasElement createMaskImage(MaskImage key) {
         Preconditions.checkState(key.image.isLoaded(), "Image is still loading");
 
-        HTMLDocument document = Window.current().getDocument();
         HTMLImageElement img = key.image().getImageElement().get();
 
         HTMLCanvasElement canvas = (HTMLCanvasElement) document.createElement("canvas");
@@ -97,7 +98,6 @@ public class BrowserDOM {
     }
 
     public HTMLCanvasElement createColorCanvas(int width, int height, ColorRGB color) {
-        HTMLDocument document = Window.current().getDocument();
         HTMLCanvasElement canvas = (HTMLCanvasElement) document.createElement("canvas");
         resizeCanvas(canvas, width, height);
 

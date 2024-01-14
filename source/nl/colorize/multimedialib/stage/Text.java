@@ -6,61 +6,113 @@
 
 package nl.colorize.multimedialib.stage;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.base.Splitter;
 import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.util.TextUtils;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 /**
- * Draws text to the screen using the specified TrueType font.
+ * Draws text to the screen using the specified TrueType font. Multiline text
+ * is supported, and any newline characters in the text will be preserved when
+ * the text is rendered. By default, the text will occupy whatever horizontal
+ * space it needs, but word-wrapping can optionally be enabled by specifying
+ * an explicit line width.
  */
 @Getter
 @Setter
 public class Text implements Graphic2D {
 
     private final StageLocation location;
-    private String text;
     private List<String> lines;
-    private OutlineFont font;
+    private FontFace font;
     private Align align;
+    private int lineWidth;
     private float lineHeight;
 
-    public Text(String text, OutlineFont font, Align align) {
+    private static final Splitter LINE_BOUNDARY = Splitter.on('\n');
+    private static final Splitter WORD_BOUNDARY = Splitter.on(' ');
+
+    //TODO both of these are reasonably accurate for most fonts,
+    //     but of course it would be much better if the renderer
+    //     can provide the actual width and height of the text
+    //     without needing to rendering it.
+    private static final float ESTIMATED_CHAR_WIDTH_FACTOR = 0.6f;
+    private static final float ESTIMATED_LINE_HEIGHT_FACTOR = 1.8f;
+
+    public Text(String text, FontFace font, Align align, int lineWidth) {
         this.location = new StageLocation();
-        this.text = text;
-        this.lines = TextUtils.LINE_SPLITTER.splitToList(text);
+        this.lines = Collections.emptyList();
         this.font = font;
         this.align = align;
-        //TODO the font shouldn't be null, but we used this
-        //     in some of the tests.
-        this.lineHeight = font == null ? 10f : Math.round(font.getStyle().size() * 1.8f);
+        this.lineWidth = lineWidth;
+        //TODO the font shouldn't be null, but we used this in some of the tests.
+        this.lineHeight = font == null ? 10f : font.style().size() * ESTIMATED_LINE_HEIGHT_FACTOR;
+
+        setText(text);
     }
 
-    public Text(String text, OutlineFont font) {
+    public Text(String text, FontFace font, Align align) {
+        this(text, font, align, 0);
+    }
+
+    public Text(String text, FontFace font) {
         this(text, font, Align.LEFT);
     }
 
-    public void setText(String... lines) {
-        setText(ImmutableList.copyOf(lines));
+    public void setText(String text) {
+        setText(List.of(text));
     }
 
-    public void setText(List<String> lines) {
-        if (lines.isEmpty()) {
-            this.text = "";
-            this.lines = Collections.emptyList();
-        } else if (lines.size() == 1) {
-            this.text = lines.get(0);
-            this.lines = TextUtils.LINE_SPLITTER.splitToList(text);
+    public void setText(List<String> text) {
+        if (text.isEmpty()) {
+            lines = Collections.emptyList();
         } else {
-            this.text = TextUtils.LINE_JOINER.join(lines);
-            this.lines = lines;
+            lines = text.stream()
+                .flatMap(line -> LINE_BOUNDARY.splitToStream(line))
+                .flatMap(line -> processLine(line))
+                .toList();
         }
+    }
+
+    /**
+     * Breaks a line from the input text into the lines that should be
+     * displayed. How this will be done depends on whether an explicit
+     * line width has been defined.
+     */
+    private Stream<String> processLine(String line) {
+        if (lineWidth <= 0 || line.isEmpty()) {
+            return Stream.of(line);
+        }
+
+        List<String> result = new ArrayList<>();
+        StringBuilder currentLineBuffer = new StringBuilder();
+        int estimatedCharactersPerLine = (int) Math.floor(lineWidth / estimateCharWidth());
+
+        for (String word : WORD_BOUNDARY.split(line)) {
+            if (!currentLineBuffer.isEmpty()) {
+                if (currentLineBuffer.length() + word.length() + 1 > estimatedCharactersPerLine) {
+                    result.add(currentLineBuffer.toString());
+                    currentLineBuffer.setLength(0);
+                } else {
+                    currentLineBuffer.append(" ");
+                }
+            }
+
+            currentLineBuffer.append(word);
+        }
+
+        if (!currentLineBuffer.isEmpty()) {
+            result.add(currentLineBuffer.toString());
+        }
+
+        return result.stream();
     }
 
     public void forLines(BiConsumer<Integer, String> callback) {
@@ -83,17 +135,24 @@ public class Text implements Graphic2D {
             .max()
             .orElse(1);
 
-        float approximateWidth = font.getStyle().size() * longestLine;
-        float approximateHeight = font.getStyle().size() * lines.size();
+        float approximateWidth = longestLine * estimateCharWidth();
+        float approximateHeight = font.style().size() * lines.size();
         return Rect.around(position, approximateWidth, approximateHeight);
+    }
+
+    private float estimateCharWidth() {
+        return font.style().size() * ESTIMATED_CHAR_WIDTH_FACTOR;
     }
 
     @Override
     public String toString() {
-        String displayText = text.replace("\n", " ");
-        if (displayText.length() > 20) {
-            displayText = displayText.substring(0, 20) + "...";
+        String preview = "";
+        if (!lines.isEmpty()) {
+            preview = lines.getFirst();
         }
-        return "Text [" + displayText + "]";
+        if (preview.length() > 20) {
+            preview = preview.substring(0, 20) + "...";
+        }
+        return "Text [" + preview + "]";
     }
 }

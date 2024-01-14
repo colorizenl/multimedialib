@@ -11,7 +11,7 @@ import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.stage.OutlineFont;
+import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
 import nl.colorize.util.LoadUtils;
@@ -65,13 +65,13 @@ public interface MediaLoader {
      *
      * @throws MediaException if the format is not supported by the renderer.
      */
-    public OutlineFont loadFont(FilePointer file, String family, FontStyle style);
+    public FontFace loadFont(FilePointer file, String family, FontStyle style);
 
     /**
      * Loads the default font, the open source font Open Sans. This is included
      * in MultimediaLib and therefore guaranteed to be always available.
      */
-    default OutlineFont loadDefaultFont(ColorRGB color) {
+    default FontFace loadDefaultFont(ColorRGB color) {
         FilePointer file = new FilePointer("OpenSans-Regular.ttf");
         FontStyle style = new FontStyle(12, false, color);
         return loadFont(file, "Open Sans", style);

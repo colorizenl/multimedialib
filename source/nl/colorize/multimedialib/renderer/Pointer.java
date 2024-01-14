@@ -14,11 +14,12 @@ import nl.colorize.multimedialib.math.Rect;
 
 /**
  * Represents a pointer device, which can be a mouse, a trackpad, or touch
- * controls depending on the current platform and device.
+ * controls, depending on the current platform and device.
  * <p>
  * Devices that support multi-touch will allow multiple pointers to be active
- * simultaneously. In such situations, the pointer {@code id} can be used to
- * differentiate between different pointers.
+ * simultaneously. In such situations the render will provide access to
+ * multiple {@code Pointer} instances that can be tracked individually, using
+ * {@link #getId()} to identify each pointer.
  */
 @Getter
 @Setter
@@ -26,33 +27,51 @@ public class Pointer {
 
     private String id;
     private Point2D position;
-    private boolean pressed;
-    private boolean released;
+    private int state;
+
+    public static final int STATE_IDLE = 0;
+    public static final int STATE_PRESSED = 1;
+    public static final int STATE_RELEASED = 2;
 
     public Pointer(String id) {
         Preconditions.checkArgument(!id.isEmpty(), "Empty pointer ID");
 
         this.id = id;
         this.position = Point2D.ORIGIN;
-        this.pressed = false;
-        this.released = false;
+        this.state = STATE_IDLE;
     }
 
     /**
-     * Convenience method that returns true if this pointer is currently in
-     * the pressed state <em>and</em> currently located within the specified
-     * bounds.
+     * Returns true if this pointer is currently in the pressed state,
+     * regardless of the pointer's current position.
+     */
+    public boolean isPressed() {
+        return state == STATE_PRESSED;
+    }
+
+    /**
+     * Returns true if this pointer is currently in the pressed state
+     * <em>and</em> the pointer's position is currently located within the
+     * specified area.
      */
     public boolean isPressed(Rect bounds) {
-        return pressed && bounds.contains(position);
+        return state == STATE_PRESSED && bounds.contains(position);
     }
 
     /**
-     * Convenience method that returns true if this pointer is currently in
-     * the released state <em>and</em> currently located within the specified
-     * bounds.
+     * Returns true if this pointer is currently in the released state,
+     * regardless of the pointer's current position.
+     */
+    public boolean isReleased() {
+        return state == STATE_RELEASED;
+    }
+
+    /**
+     * Returns true if this pointer is currently in the released state
+     * <em>and</em> the pointer's position is currently located within the
+     * specified area.
      */
     public boolean isReleased(Rect bounds) {
-        return released && bounds.contains(position);
+        return state == STATE_RELEASED && bounds.contains(position);
     }
 }

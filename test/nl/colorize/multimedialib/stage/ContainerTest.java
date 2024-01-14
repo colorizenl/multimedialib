@@ -6,6 +6,8 @@
 
 package nl.colorize.multimedialib.stage;
 
+import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.mock.MockImage;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -43,5 +45,20 @@ class ContainerTest {
 
         assertEquals("[Text [a], Text [x]]", container.getChildren().toString());
         assertEquals("[add-Text [a], add-Text [b], add-Text [x], remove-Text [b]]", events.toString());
+    }
+
+    @Test
+    void getStageBounds() {
+        Sprite a = new Sprite(new MockImage(100, 100));
+        a.setPosition(10, 20);
+
+        Sprite b = new Sprite(new MockImage(50, 50));
+        b.setPosition(70, 20);
+
+        Container container = new Container();
+        container.addChild(a);
+        container.addChild(b);
+
+        assertEquals(Rect.fromPoints(-40, -30, 95, 70), container.getStageBounds());
     }
 }

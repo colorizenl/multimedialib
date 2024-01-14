@@ -6,33 +6,40 @@
 
 package nl.colorize.multimedialib.renderer;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import nl.colorize.util.swing.ApplicationMenuListener;
 
 /**
- * Configuration options for when the renderer is displayed in a window when
- * running on a desktop platform.
+ * Window options that are used by the renderer when starting applications on
+ * desktop platforms. Note that some options will only be used on certain
+ * platforms.
  * <p>
- * When the window is set to "embedded mode", it is assumes the multimedia
- * application is embedded within a regular desktop application. Note that not
- * all renderers might support this mode.
+ * When the window is set to "embedded mode", it is assumed the MultimediaLib
+ * application is embedded within a regular desktop application. Some renderers
+ * will use special behavior when started in this mode.
  */
-@Data
+@Getter
+@Setter
 public class WindowOptions {
 
     private String title;
     private FilePointer iconFile;
-    private ApplicationMenuListener appMenuListener;
     private boolean fullscreen;
+    private ApplicationMenuListener appMenu;
     private boolean embedded;
 
-    private static final FilePointer DEFAULT_ICON = new FilePointer("colorize-icon-32.png");
+    public static final FilePointer DEFAULT_ICON = new FilePointer("colorize-icon-32.png");
+
+    public WindowOptions(String title, FilePointer iconFile, boolean fullscreen) {
+        this.title = title;
+        this.iconFile = iconFile;
+        this.fullscreen = fullscreen;
+        this.appMenu = null;
+        this.embedded = false;
+    }
 
     public WindowOptions(String title) {
-        this.title = title;
-        this.iconFile = DEFAULT_ICON;
-        this.appMenuListener = null;
-        this.fullscreen = false;
-        this.embedded = false;
+        this(title, DEFAULT_ICON, false);
     }
 }

@@ -63,6 +63,7 @@ public class TeaVMTranspilerTool {
     private static final ResourceFile INDEX_FILE = new ResourceFile("browser/index.html");
     private static final ResourceFile RESOURCES_LIST = new ResourceFile("browser/browser-resources.txt");
     private static final ResourceFile JS_LIST = new ResourceFile("browser/javascript-libraries.txt");
+    private static final String SCRIPT_FILE_NAME = "script-" + System.currentTimeMillis() + ".js";
     private static final Logger LOGGER = LogHelper.getLogger(TeaVMTranspilerTool.class);
 
     private static final List<String> TEXT_FILE_TYPES = List.of(
@@ -119,6 +120,7 @@ public class TeaVMTranspilerTool {
         checkMainClass();
 
         try {
+            cleanOldScripts();
             copyResources();
             transpile();
             printSummary();
@@ -138,7 +140,7 @@ public class TeaVMTranspilerTool {
 
     private void printSummary() throws IOException {
         long htmlSize = new File(outputDir, "index.html").length();
-        long jsSize = new File(outputDir, "classes.js").length();
+        long jsSize = getScriptFile().length();
         long appFileSize = FileUtils.countDirectorySize(outputDir);
 
         LOGGER.info("HTML file size:                   " + FileUtils.formatFileSize(htmlSize));
@@ -161,6 +163,7 @@ public class TeaVMTranspilerTool {
         transpiler.setSourceMapsFileGenerated(!minify);
         transpiler.setTargetDirectory(outputDir);
         transpiler.setTargetType(TeaVMTargetType.JAVASCRIPT);
+        transpiler.setTargetFileName(SCRIPT_FILE_NAME);
         transpiler.generate();
 
         checkTranspilerOutput(transpiler);
@@ -210,7 +213,7 @@ public class TeaVMTranspilerTool {
             }
         }
 
-        rewriteHTML(INDEX_FILE, textFiles, jsLibraries);
+        rewriteHTML(textFiles, jsLibraries);
     }
 
     private List<String> copyJavaScriptLibraries() {
@@ -241,13 +244,14 @@ public class TeaVMTranspilerTool {
             .anyMatch(type -> needle.getName().toLowerCase().endsWith(type));
     }
 
-    private void rewriteHTML(ResourceFile file, List<ResourceFile> textFiles, List<String> jsLibraries) {
-        File outputFile = getOutputFile(file);
+    private void rewriteHTML(List<ResourceFile> textFiles, List<String> jsLibraries) {
+        File outputFile = getOutputFile(INDEX_FILE);
 
         try (PrintWriter writer = new PrintWriter(outputFile, Charsets.UTF_8.displayName())) {
-            for (String line : file.readLines(Charsets.UTF_8)) {
+            for (String line : INDEX_FILE.readLines(Charsets.UTF_8)) {
                 line = line.replace("{project}", projectName);
                 line = line.replace("{js-libraries}", generateScriptTags(jsLibraries));
+                line = line.replace("{teavm-js-file}", SCRIPT_FILE_NAME);
                 line = line.replace("{timestamp}", generateTimestampTag());
                 if (line.trim().equals("{resources}")) {
                     line = generateTextResourceFilesHTML(textFiles);
@@ -349,7 +353,17 @@ public class TeaVMTranspilerTool {
         }
     }
 
+    protected File getScriptFile() {
+        return new File(outputDir, SCRIPT_FILE_NAME);
+    }
+
     private String normalizeFileName(ResourceFile file) {
         return file.getName().replace("/", "_");
+    }
+
+    private void cleanOldScripts() throws IOException {
+        for (File file : FileUtils.walkFiles(outputDir, f -> f.getName().startsWith("script-"))) {
+            FileUtils.delete(file);
+        }
     }
 }

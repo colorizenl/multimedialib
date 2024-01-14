@@ -6,12 +6,13 @@
 
 package nl.colorize.multimedialib.stage;
 
+import com.google.common.collect.ImmutableList;
 import nl.colorize.multimedialib.mock.MockImage;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableList;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AnimationTest {
 
@@ -188,5 +189,20 @@ public class AnimationTest {
         assertEquals(0.2f, mirrored.getFrameTime(1), EPSILON);
         assertEquals(0.2f, mirrored.getFrameTime(2), EPSILON);
         assertEquals(0.1f, mirrored.getFrameTime(3), EPSILON);
+    }
+
+    @Test
+    void setFrameTimes() {
+        MockImage a = new MockImage("A");
+        MockImage b = new MockImage("B");
+        MockImage c = new MockImage("C");
+
+        Animation animation = new Animation(List.of(a, b, c), 1f, false);
+        animation.setFrameTime(2f);
+        animation.setFrameTimes(List.of(1f, 2f, 3f));
+
+        assertEquals(1f, animation.getFrameTime(0), EPSILON);
+        assertEquals(2f, animation.getFrameTime(1), EPSILON);
+        assertEquals(3f, animation.getFrameTime(2), EPSILON);
     }
 }

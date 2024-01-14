@@ -117,14 +117,11 @@ public class GDXInput implements InputDevice {
         pointer.setPosition(new Point2D(pointerX, pointerY));
 
         if (Gdx.input.isTouched()) {
-            pointer.setPressed(true);
-            pointer.setReleased(false);
+            pointer.setState(Pointer.STATE_PRESSED);
         } else if (pointer.isPressed()) {
-            pointer.setPressed(false);
-            pointer.setReleased(true);
+            pointer.setState(Pointer.STATE_RELEASED);
         } else {
-            pointer.setPressed(false);
-            pointer.setReleased(false);
+            pointer.setState(Pointer.STATE_IDLE);
         }
     }
 
@@ -152,7 +149,7 @@ public class GDXInput implements InputDevice {
 
     @Override
     public void clearPointerState() {
-        pointer.setReleased(false);
+        pointer.setState(Pointer.STATE_IDLE);
     }
 
     @Override

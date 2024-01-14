@@ -8,14 +8,10 @@ package nl.colorize.multimedialib.demo;
 
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
-import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
-import nl.colorize.multimedialib.renderer.Renderer;
+import nl.colorize.multimedialib.renderer.RendererLauncher;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.renderer.WindowOptions;
-import nl.colorize.multimedialib.renderer.java2d.Java2DRenderer;
-import nl.colorize.multimedialib.renderer.libgdx.GDXRenderer;
-import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.util.cli.Arg;
 import nl.colorize.util.cli.CommandLineArgumentParser;
 import nl.colorize.util.swing.ApplicationMenuListener;
@@ -33,7 +29,7 @@ import static nl.colorize.multimedialib.demo.Demo2D.DEFAULT_CANVAS_WIDTH;
  */
 public class DemoLauncher implements ApplicationMenuListener {
 
-    @Arg(name = "-renderer", usage = "Either 'java2d' or 'gdx'")
+    @Arg(name = "-renderer", usage = "Either 'java2d', 'javafx, or 'gdx'")
     protected String rendererName;
 
     @Arg(usage = "Either '2d' or '3d'")
@@ -57,19 +53,25 @@ public class DemoLauncher implements ApplicationMenuListener {
     private void start() {
         Canvas canvas = initCanvas();
         DisplayMode displayMode = new DisplayMode(canvas, framerate);
+        GraphicsMode graphicsMode = getGraphicsMode();
 
         WindowOptions window = new WindowOptions("MultimediaLib - Demo");
-        window.setAppMenuListener(this);
+        window.setAppMenu(this);
         window.setFullscreen(fullscreen);
 
-        Renderer renderer = switch (rendererName) {
-            case "java2d" -> new Java2DRenderer(displayMode, window);
-            case "libgdx", "gdx" -> new GDXRenderer(getGraphicsMode(), displayMode, window);
-            default -> throw new UnsupportedOperationException("Unknown renderer: " + rendererName);
-        };
+        if (graphicsMode == GraphicsMode.MODE_2D) {
+            Demo2D demo = new Demo2D();
 
-        Scene demo = createDemoScene();
-        renderer.start(demo, (ErrorHandler) demo);
+            RendererLauncher.configure(displayMode, window)
+                .forDesktop2D(rendererName)
+                .start(demo, demo);
+        } else {
+            Demo3D demo = new Demo3D();
+
+            RendererLauncher.configure(displayMode, window)
+                .forDesktop3D(rendererName)
+                .start(demo, demo);
+        }
     }
 
     private Canvas initCanvas() {
@@ -81,14 +83,6 @@ public class DemoLauncher implements ApplicationMenuListener {
         return switch (graphics) {
             case "2d" -> GraphicsMode.MODE_2D;
             case "3d" -> GraphicsMode.MODE_3D;
-            default -> throw new UnsupportedOperationException("Unknown graphics mode");
-        };
-    }
-
-    private Scene createDemoScene() {
-        return switch (graphics) {
-            case "2d" -> new Demo2D();
-            case "3d" -> new Demo3D();
             default -> throw new UnsupportedOperationException("Unknown graphics mode");
         };
     }

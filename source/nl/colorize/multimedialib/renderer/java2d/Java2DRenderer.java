@@ -11,14 +11,11 @@ import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
-import nl.colorize.multimedialib.renderer.InputDevice;
-import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.ResourceFile;
@@ -28,14 +25,11 @@ import nl.colorize.util.swing.SwingUtils;
 import nl.colorize.util.swing.Utils2D;
 
 import javax.swing.JFrame;
-import java.awt.AWTException;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Insets;
-import java.awt.Rectangle;
-import java.awt.Robot;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
@@ -43,9 +37,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.image.BufferStrategy;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -93,10 +84,11 @@ public class Java2DRenderer implements Renderer {
     public void start(Scene initialScene, ErrorHandler errorHandler) {
         window = initializeWindow(windowOptions);
         input = initializeInput();
-        graphicsContext = new Java2DGraphicsContext(canvas);
         mediaLoader = new StandardMediaLoader();
+        graphicsContext = new Java2DGraphicsContext(canvas, StandardMediaLoader.fontCache);
+        Network network = new StandardNetwork();
 
-        context = new SceneContext(this, new Stopwatch());
+        context = new SceneContext(this, mediaLoader, input, network);
         context.changeScene(initialScene);
 
         Runnable animationLoop = () -> runAnimationLoop(errorHandler);
@@ -123,8 +115,8 @@ public class Java2DRenderer implements Renderer {
         window.setVisible(true);
         window.createBufferStrategy(2);
 
-        if (Platform.isMac()) {
-            MacIntegration.setApplicationMenuListener(windowOptions.getAppMenuListener());
+        if (Platform.isMac() && windowOptions.getAppMenu() != null && !windowOptions.isEmbedded()) {
+            MacIntegration.setApplicationMenuListener(windowOptions.getAppMenu());
         }
 
         return window;
@@ -140,6 +132,7 @@ public class Java2DRenderer implements Renderer {
 
     private ComponentListener createResizeListener() {
         return new ComponentAdapter() {
+            @Override
             public void componentResized(ComponentEvent e) {
                 canvasDirty.set(true);
             }
@@ -188,8 +181,9 @@ public class Java2DRenderer implements Renderer {
                     prepareCanvas();
                 }
 
-                context.syncFrame();
-                renderFrame();
+                if (context.syncFrame() > 0) {
+                    renderFrame();
+                }
 
                 long frameTime = timer.tock();
                 long sleepTime = displayMode.getFrameTimeMS() - frameTime - oversleep;
@@ -204,7 +198,7 @@ public class Java2DRenderer implements Renderer {
     }
 
     private void renderFrame() {
-        BufferStrategy windowBuffer = prepareWindowBuffer();
+        BufferStrategy windowBuffer = window.getBufferStrategy();
         Graphics bufferGraphics = accessWindowGraphics(windowBuffer);
 
         if (bufferGraphics != null) {
@@ -238,17 +232,6 @@ public class Java2DRenderer implements Renderer {
         canvas.offsetScreen(windowInsets.left, windowInsets.top);
     }
 
-    /**
-     * Prepares the window buffer for the current frame. This buffer will be
-     * used to display the graphics once the entire frame has been rendered.
-     */
-    private BufferStrategy prepareWindowBuffer() {
-        return window.getBufferStrategy();
-    }
-
-    /**
-     * Updates the window graphics with the contents of the buffer.
-     */
     private void blitGraphicsContext(BufferStrategy windowBuffer) {
         if (!windowBuffer.contentsLost()) {
             windowBuffer.show();
@@ -271,56 +254,12 @@ public class Java2DRenderer implements Renderer {
     }
 
     @Override
-    public StageVisitor getGraphics() {
-        return graphicsContext;
-    }
-
-    @Override
-    public InputDevice getInput() {
-        return input;
-    }
-
-    @Override
-    public MediaLoader getMediaLoader() {
-        return mediaLoader;
-    }
-
-    @Override
-    public Network getNetwork() {
-        return new StandardNetwork();
-    }
-
-    @Override
-    public void takeScreenshot(File outputFile) {
-        try {
-            Rectangle windowBounds = window.getBounds();
-            Insets insets = window.getInsets();
-
-            Rectangle bounds = new Rectangle(
-                windowBounds.x + insets.left,
-                windowBounds.y + insets.top,
-                windowBounds.width - insets.left - insets.right,
-                windowBounds.height - insets.top - insets.bottom
-            );
-
-            Robot robot = new Robot();
-            BufferedImage screenshot = robot.createScreenCapture(bounds);
-            Utils2D.savePNG(screenshot, outputFile);
-        } catch (AWTException e) {
-            LOGGER.warning("AWT Robot not supported");
-        } catch (IOException e) {
-            LOGGER.warning("Failed to write screenshot to " + outputFile.getAbsolutePath());
-        }
-    }
-
-    @Override
-    public boolean isDevelopmentEnvironment() {
-        File workDir = Platform.getUserWorkingDirectory();
-        return new File(workDir, "build.gradle").exists();
-    }
-
-    @Override
     public void terminate() {
         System.exit(0);
+    }
+
+    @Override
+    public String toString() {
+        return "Java2D renderer";
     }
 }

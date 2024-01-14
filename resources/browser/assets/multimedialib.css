@@ -12,7 +12,7 @@ body {
     touch-action: none;
 }
 
-#multimediaLibContainer, #multimediaLibContainer canvas, #console {
+#multimediaLibContainer, #multimediaLibContainer canvas {
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -27,25 +27,7 @@ body {
     display: none;
 }
 
-#overlayCanvas {
-    pointer-events: none;
-    position: absolute;
-    left: 0px;
-    top: 0px;
-    z-index: 2;
-}
-
 #loading {
-    text-align: center;
-    margin-top: 100px;
-    margin-bottom: 100px;
-}
-
-#console {
-    position: absolute;
-    width: 200px;
-    font-size: 8px;
-    background-color: #ffffff;
-    z-index: 2;
-    opacity: 0.5;
+    display: block;
+    margin: 100px auto 100px auto;
 }

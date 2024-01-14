@@ -35,13 +35,13 @@ to the dependencies section in `pom.xml`:
     <dependency>
         <groupId>nl.colorize</groupId>
         <artifactId>multimedialib</artifactId>
-        <version>2024.1</version>
+        <version>2024.2</version>
     </dependency>  
     
 The library can also be used in Gradle projects:
 
     dependencies {
-        implementation "nl.colorize:multimedialib:2024.1"
+        implementation "nl.colorize:multimedialib:2024.2"
     }
     
 Supported platforms
@@ -57,12 +57,17 @@ The following renderer implementations are available:
 | Renderer                                                  | Graphics | Platforms                      |
 |-----------------------------------------------------------|----------|--------------------------------|
 | Java2D renderer                                           | 2D       | Windows, Mac                   |
+| [JavaFX](https://openjfx.io) renderer                     | 2D       | Windows, Mac                   |
 | [libGDX](https://libgdx.badlogicgames.com) renderer       | 2D + 3D  | Windows, Mac, Android          |
 | HTML5 canvas renderer                                     | 2D       | Browser, iOS, Android, Windows |
 | WebGL renderer (*experimental*)                           | 2D + 3D  | Browser, iOS, Android, Windows |
 | [PixiJS](https://www.pixijs.com) renderer                 | 2D       | Browser, iOS, Android, Windows |
 | [three.js](https://threejs.org) renderer (*experimental*) | 2D + 3D  | Browser, iOS, Android, Windows |
 | Headless renderer                                         | Headless | Testing/simulation             |
+
+That is clearly a ridiculous number of renderers, but that's unfortunately what is necessary to
+get multimedia application implemented in Java to run on such a wide variery of platforms and
+environments.
 
 When using a browser-based renderer, the application needs to be transpiled to JavaScript
 using via [TeaVM](https://teavm.org) in order for it to run. MultimediaLib comes with a
@@ -117,7 +122,7 @@ parameters:
 
 | Name                | Required | Description                                   |
 |---------------------|----------|-----------------------------------------------|
-| `--renderer`        | yes      | Either 'java2d' or 'gdx'.                     |
+| `--renderer`        | yes      | Either 'java2d', 'javafx', or gdx'.           |
 | `--graphics`        | yes      | Either '2d' or '3d'.                          |
 | `--framerate`       | no       | Demo framerate, default is 60 fps.            |
 | `--canvas`          | no       | Uses a fixed canvas size to display graphics. |

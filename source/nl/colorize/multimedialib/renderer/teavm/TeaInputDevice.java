@@ -12,6 +12,8 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Pointer;
+import org.teavm.jso.JSObject;
+import org.teavm.jso.JSProperty;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.dom.events.Event;
 import org.teavm.jso.dom.events.KeyboardEvent;
@@ -145,8 +147,8 @@ public class TeaInputDevice implements InputDevice {
         mousePointer.setPosition(position);
 
         switch (event.getType()) {
-            case "mousedown" -> mousePointer.setPressed(true);
-            case "mouseup" -> mousePointer.setReleased(true);
+            case "mousedown" -> mousePointer.setState(Pointer.STATE_PRESSED);
+            case "mouseup" -> mousePointer.setState(Pointer.STATE_RELEASED);
             default -> {}
         }
 
@@ -190,8 +192,8 @@ public class TeaInputDevice implements InputDevice {
         touchPointer.setPosition(getPointerCanvasPosition(pageX, pageY));
 
         switch (event.getType()) {
-            case "custom:touchstart" -> touchPointer.setPressed(true);
-            case "custom:touchend" -> touchPointer.setReleased(true);
+            case "custom:touchstart" -> touchPointer.setState(Pointer.STATE_PRESSED);
+            case "custom:touchend" -> touchPointer.setState(Pointer.STATE_RELEASED);
             default -> {}
         }
 
@@ -259,5 +261,35 @@ public class TeaInputDevice implements InputDevice {
 
     @Override
     public void update(float deltaTime) {
+    }
+
+    /**
+     * Interface for custom events that are used to simulate touch events.
+     * This is necessary because TeaVM does not provide bindings for "native"
+     * touch events yet. Since these events are simulated, the API is a bit
+     * different from the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Touch_events">
+     * browser touch event API</a>. The custom events are created and
+     * dispatched from the MultimediaLib JavaScript code.
+     */
+    private static interface CustomTouchEvent extends Event {
+
+        @JSProperty
+        public CustomTouchEventDetails getDetail();
+    }
+
+    /**
+     * Used in combination with {@link CustomTouchEvent}. Custom JavaScript
+     * events only allow custom properties through the {@code detail} property.
+     */
+    private static interface CustomTouchEventDetails extends JSObject {
+
+        @JSProperty
+        public int getIdentifier();
+
+        @JSProperty
+        public int getPageX();
+
+        @JSProperty
+        public int getPageY();
     }
 }

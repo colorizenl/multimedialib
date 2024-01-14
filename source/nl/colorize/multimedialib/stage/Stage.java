@@ -87,7 +87,7 @@ public class Stage implements Updatable {
     }
 
     private void visitGraphic(Graphic2D graphic, StageVisitor visitor) {
-        if (visitor.visitGraphic(graphic)) {
+        if (visitor.visitGraphic(this, graphic)) {
             if (graphic instanceof Container container) {
                 visitContainer(container, visitor);
             } else if (graphic instanceof Sprite sprite) {
@@ -131,6 +131,20 @@ public class Stage implements Updatable {
     }
 
     /**
+     * Returns true if the specified graphic is entirely or partially visible
+     * within the canvas. Note this method will always return false if the
+     * graphic has been marked as invisible.
+     */
+    public boolean isVisible(Graphic2D graphic) {
+        if (!graphic.getTransform().isVisible() || !graphic.getGlobalTransform().isVisible()) {
+            return false;
+        }
+
+        Rect bounds = graphic.getStageBounds();
+        return canvas.getBounds().intersects(bounds);
+    }
+
+    /**
      * Removes all 2D and 3D graphics from the stage. This is always called at
      * the end of a scene, but can also be used manually mid-scene.
      */
@@ -156,10 +170,7 @@ public class Stage implements Updatable {
     }
 
     private void append(StringBuilder buffer, Graphic2D graphic, int depth) {
-        for (int i = 0; i < depth; i++) {
-            buffer.append("    ");
-        }
-
+        buffer.append("    ".repeat(depth));
         buffer.append(graphic.toString());
         buffer.append("\n");
 

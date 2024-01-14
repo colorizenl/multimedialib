@@ -8,9 +8,6 @@ package nl.colorize.multimedialib.renderer;
 
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.multimedialib.stage.StageVisitor;
-
-import java.io.File;
 
 /**
  * The renderer acts as the entry point from the application to the underlying
@@ -22,19 +19,22 @@ import java.io.File;
  * current <em>scene</em>, after which the contents of the <em>stage</em> are
  * rendered.
  * <p>
- * Applications should only interact with the renderer from within this
- * animation loop. The only exceptions are {@link #start(Scene, ErrorHandler)}
- * and {@link #terminate()} which will respectively start and end the animation
- * loop. Then, during the animation loop, the {@link SceneContext} interface is
- * passed to the currently active scene, which allows that scene to interact
- * with the renderer.
+ * Application code has little direct interaction with the {@link Renderer}
+ * instance, apart from using {@link #start(Scene, ErrorHandler)} and
+ * {@link #terminate()} to start and stop the animation loop. The application
+ * will then receive a callback from the renderer during every frame update,
+ * for as long as the animation loop is active. These callbacks have access to
+ * the underlying renderer via the {@link SceneContext}. This explains why
+ * renderer capabilities such as graphics and input devices cannot be accessed
+ * directly from the {@link Renderer} instance, since they should only be
  * <p>
  * When it comes to display mode and screen resolution, the renderer has two
  * different concepts: the screen and the "canvas". The former refers to the
  * resolution at which the graphics are <em>displayed</em>, the latter refers
  * to the resolution at which the graphics are <em>rendered</em>. This allows
  * applications to support multiple resolutions that may be different from the
- * native screen resolution.
+ * native screen resolution. The canvas is accessible to the application during
+ * frame updates, via the aforementioned {@link SceneContext}.
  */
 public interface Renderer {
 
@@ -58,42 +58,12 @@ public interface Renderer {
      * terminated renderer is not possible.
      *
      * @throws UnsupportedOperationException if this renderer does not support
-     *         termination, for example because the underlying platform does
-     *         not support the concept of quitting applications.
+     *         termination, for if the underlying platform does not support
+     *         explicitly terminating applications.
      */
     public void terminate();
 
     public GraphicsMode getGraphicsMode();
 
     public DisplayMode getDisplayMode();
-
-    default Canvas getCanvas() {
-        return getDisplayMode().canvas();
-    }
-
-    public StageVisitor getGraphics();
-
-    public InputDevice getInput();
-
-    public MediaLoader getMediaLoader();
-
-    public Network getNetwork();
-
-    /**
-     * Captures a screenshot of the renderer's currently displayed graphics,
-     * then saves the screenshot to a PNG file.
-     *
-     * @throws UnsupportedOperationException if this renderer does not support
-     *         taking screenshots at runtime, or does not support saving
-     *         screenshots to files.
-     */
-    public void takeScreenshot(File outputFile);
-
-    /**
-     * Returns true if the renderer is currently running within a development
-     * environment. This method can be used for testing and debugging
-     * purposes. What exactly "counts" as a development environment depends
-     * on the renderer and platform.
-     */
-    public boolean isDevelopmentEnvironment();
 }

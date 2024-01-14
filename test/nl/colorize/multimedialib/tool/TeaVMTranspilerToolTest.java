@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TeaVMTranspilerToolTest {
@@ -34,7 +35,7 @@ public class TeaVMTranspilerToolTest {
         tool.mainClassName = MockApp.class.getName();
         tool.run();
 
-        String generatedCode = Files.toString(new File(outputDir, "classes.js"), Charsets.UTF_8);
+        String generatedCode = Files.toString(tool.getScriptFile(), Charsets.UTF_8);
 
         String expected = "";
         expected += "    function ncmt_TeaVMTranspilerToolTest$MockApp_main($args) {\n";
@@ -131,8 +132,6 @@ public class TeaVMTranspilerToolTest {
             multimedialib.css
             particle-circle.png
             particle-diamond.png
-            sepia-fragment.glsl
-            sepia-vertex.glsl
             test1.txt
             test2.txt
             vertex-shader.glsl
@@ -142,9 +141,20 @@ public class TeaVMTranspilerToolTest {
         assertTrue(generatedHTML.contains(expected), "Generated HTML:\n" + generatedHTML);
     }
 
+    @Test
+    void reportErrorIfClassIsUnavailableInTeaVM(@TempDir File resourcesDir, @TempDir File outputDir) {
+        TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
+        tool.projectName = "test";
+        tool.resourceDir = resourcesDir;
+        tool.outputDir = outputDir;
+        tool.mainClassName = BrokenMockApp.class.getName();
+
+        assertThrows(UnsupportedOperationException.class, () -> tool.run());
+    }
+
     /**
-     * This only exists so that the generated TeaVM code can have
-     * an entry point during the tests.
+     * This only exists so that the generated TeaVM code can have an entry
+     * point during the tests.
      */
     private static class MockApp {
 
@@ -154,6 +164,18 @@ public class TeaVMTranspilerToolTest {
             result.add("a");
             result.add("2");
             result.clear();;
+        }
+    }
+
+    /**
+     * Entry point for an application that intentionally uses a class that
+     * is not supported by TeaVM.
+     */
+    private static class BrokenMockApp {
+
+        @VisibleForTesting
+        public static void main(String[] args) {
+            new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
         }
     }
 }

@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.renderer.webgl;
 
 import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +20,7 @@ class WebGLTest {
 
     @Test
     void convertCoordinates() {
-        WebGL gl = new WebGL(CANVAS);
+        WebGL gl = new WebGL(GraphicsMode.HEADLESS, CANVAS);
 
         assertEquals(-1f, gl.toGLX(0f), EPSILON);
         assertEquals(-0.5f, gl.toGLX(200f), EPSILON);

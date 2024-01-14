@@ -15,7 +15,7 @@ import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Graphic2D;
-import nl.colorize.multimedialib.stage.OutlineFont;
+import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.util.TextUtils;
@@ -61,7 +61,7 @@ public class PerformanceMonitor implements Scene {
         frameDataContainer = new Container();
         container.addChild(frameDataContainer);
 
-        OutlineFont font = context.getMediaLoader().loadDefaultFont(WHITE);
+        FontFace font = context.getMediaLoader().loadDefaultFont(WHITE);
         framerate = new Text("", font.derive(30, true), Align.RIGHT);
         framerate.getTransform().setPosition(290, 30);
         container.addChild(framerate);

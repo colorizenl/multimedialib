@@ -6,11 +6,11 @@
 
 package nl.colorize.multimedialib.scene;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
-import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.InputDevice;
@@ -18,47 +18,46 @@ import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.stage.Stage;
-import nl.colorize.multimedialib.stage.StageVisitor;
-import nl.colorize.util.LogHelper;
-import nl.colorize.util.Platform;
 import nl.colorize.util.Stopwatch;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Provides access to the contents of the currently active scene, including
- * the stage and the scene's graphics, and to the underlying renderer. The
- * {@link SceneContext} is passed to the scene during each frame update, and
- * enables the scene to perform the application's frame update logic.
+ * the stage, the scene's graphics, and the underlying renderer. The renderer
+ * passes the {@link SceneContext} to the currently active scene during each
+ * frame update, which allows the scene to perform frame update logic. The
+ * renderer then renders the frame based on the current contents of the stage.
  * <p>
  * The {@link SceneContext} also allows <em>sub-scenes</em> to be attached to
  * the current scene. These sub-scenes can contain their own logic, but cannot
  * outlive their parent scene. When the active scene is changed, both the scene
  * itself and its sub-scenes will be terminated and the stage will be cleared
  * in preparation for the next scene.
- * <p>
- * This class implements the {@link Renderer} interface so that it can be used
- * as a delegate for accessing the actual underlying renderer.
  */
-public final class SceneContext implements Renderer, Updatable {
+public final class SceneContext implements Updatable {
 
     private Renderer renderer;
+    @Getter private GraphicsMode graphicsMode;
+    @Getter private DisplayMode displayMode;
+    @Getter private Canvas canvas;
+    @Getter private Stage stage;
+    @Getter private MediaLoader mediaLoader;
+    @Getter private InputDevice input;
+    @Getter private Network network;
+
     private Stopwatch timer;
     private long elapsedTime;
     @Getter private FrameStats frameStats;
-    @Getter private Stage stage;
 
     private SceneLogic activeScene;
     private Queue<SceneLogic> requestedSceneQueue;
-    private List<Scene> globalScenes;
+    private List<Scene> globalSubScenes;
 
     private int lastCanvasWidth;
     private int lastCanvasHeight;
@@ -67,63 +66,78 @@ public final class SceneContext implements Renderer, Updatable {
     private static final float MIN_FRAME_TIME = 0.01f;
     private static final float MAX_FRAME_TIME = 0.2f;
     private static final int RESIZE_TOLERANCE = 20;
-    private static final Logger LOGGER = LogHelper.getLogger(SceneContext.class);
 
     /**
-     * Creates a new {@code SceneContext} that is based on the provided
-     * underlying renderer.
-     * <p>
-     * Applications should not call this constructor directly. This
-     * constructor is public so different renderer implementations can
-     * create {@code SceneContext} instances, but this is normally done
-     * by the renderer itself during initialization.
+     * Creates a new {@code SceneContext} from the specified renderer. This
+     * constructor should not be called from application code. The renderer
+     * will create the {@code SceneContext} from the animation loop thread.
      */
-    public SceneContext(Renderer renderer, Stopwatch timer) {
+    public SceneContext(Renderer renderer, MediaLoader media, InputDevice input, Network network) {
         Preconditions.checkArgument(renderer != null, "Context not attached to renderer");
 
         this.renderer = renderer;
-        this.timer = timer;
+        this.graphicsMode = renderer.getGraphicsMode();
+        this.displayMode = renderer.getDisplayMode();
+        this.canvas = displayMode.canvas();
+        this.stage = new Stage(graphicsMode, canvas);
+        this.mediaLoader = media;
+        this.input = input;
+        this.network = network;
+
+        this.timer = new Stopwatch();
         this.elapsedTime = 0L;
-        this.frameStats = new FrameStats(renderer.getDisplayMode());
+        this.frameStats = new FrameStats(displayMode);
 
-        this.stage = new Stage(renderer.getGraphicsMode(), renderer.getCanvas());
+
         this.requestedSceneQueue = new LinkedList<>();
-        this.globalScenes = new ArrayList<>();
+        this.globalSubScenes = new ArrayList<>();
 
-        this.lastCanvasWidth = renderer.getCanvas().getWidth();
-        this.lastCanvasHeight = renderer.getCanvas().getHeight();
+        this.lastCanvasWidth = canvas.getWidth();
+        this.lastCanvasHeight = canvas.getHeight();
+    }
+
+    /**
+     * Replaces the {@link Stopwatch} that is used as a timer for the animation
+     * loop and frame updates.
+     */
+    @VisibleForTesting
+    protected void replaceTimer(Stopwatch timer) {
+        this.timer = timer;
     }
 
     /**
      * Synchronizes between "native" frames and application frame updates.
      * Should be called by the renderer during every "native" frame. Depending
      * on the elapsed time and target framerate, this method will then manage
-     * application frame updates by calling {@link #update(float)} accordingly.
+     * application frame updates by calling {@link #update(float)}
+     * accordingly.
      * <p>
-     * Although this class provides the renderer with the delta time since the last
-     * frame update, this may not always reflect the <em>actual</em> elapsed time.
-     * it is not realistic to expect applications to be able to function correctly
-     * for every possible {@code deltaTime} value, so this method will attempt to
-     * produce frame updates that try to find a balance between the targeted
-     * framerate and the actual elapsed time.
+     * Although this class provides the renderer with the delta time since the
+     * last frame update, this may not always reflect the <em>actual</em>
+     * elapsed time. it is not realistic to expect applications to be able to
+     * function correctly for every possible {@code deltaTime} value, so this
+     * method will attempt to produce frame updates that try to find a balance
+     * between the targeted framerate and the actual elapsed time.
      * <p>
-     * Note that rendering the frame is <em>not</em> managed by this method. The
-     * renderer should make sure that every "native" frame is rendered, even if
-     * that frame did not lead to an application frame update.
+     * Note that rendering the frame is <em>not</em> managed by this method.
+     * The renderer should make sure that every "native" frame is rendered,
+     * even if that frame did not lead to an application frame update.
      * <p>
      * Calling this method will also register the corresponding performance
      * statistics with the {@code FrameStats} instance provided in the
      * constructor.
      *
-     * @return True if calling this method resulted in at least one application
-     *         frame update.
+     * @return The number of application frame updates that were performed
+     *         during the frame synchronization process. A value of zero
+     *         indicates no frame updates were performed, meaning that it is
+     *         not necessary for the renderer to render the frame.
      */
-    public boolean syncFrame() {
+    public int syncFrame() {
         long frameTime = timer.tick();
         elapsedTime += frameTime;
 
         if (elapsedTime < getDisplayMode().getFrameTimeMS() - FRAME_LEEWAY_MS) {
-            return false;
+            return 0;
         }
 
         // Only count the frame when calling this method actually leads
@@ -135,9 +149,9 @@ public final class SceneContext implements Renderer, Updatable {
         frameStats.markStart(FrameStats.PHASE_FRAME_UPDATE);
         update(deltaTime);
         frameStats.markEnd(FrameStats.PHASE_FRAME_UPDATE);
-
         elapsedTime = 0L;
-        return true;
+
+        return 1;
     }
 
     /**
@@ -160,7 +174,7 @@ public final class SceneContext implements Renderer, Updatable {
         }
 
         updateSceneGraph(activeScene, deltaTime);
-        updateGlobalScenes(deltaTime);
+        updateGlobalSubScenes(deltaTime);
 
         lastCanvasWidth = getCanvas().getWidth();
         lastCanvasHeight = getCanvas().getHeight();
@@ -234,8 +248,8 @@ public final class SceneContext implements Renderer, Updatable {
         }
     }
 
-    private void updateGlobalScenes(float deltaTime) {
-        Iterator<Scene> iterator = globalScenes.iterator();
+    private void updateGlobalSubScenes(float deltaTime) {
+        Iterator<Scene> iterator = globalSubScenes.iterator();
 
         while (iterator.hasNext()) {
             Scene globalScene = iterator.next();
@@ -295,23 +309,20 @@ public final class SceneContext implements Renderer, Updatable {
      * will remain active for the rest of the application. Multiple global
      * scenes can be attached.
      */
-    public void attachGlobal(Scene globalScene) {
-        globalScenes.add(globalScene);
-        globalScene.start(this);
+    public void attachGlobal(Scene globalSubScene) {
+        globalSubScenes.add(globalSubScene);
+        globalSubScene.start(this);
     }
 
     /**
-     * Returns the display name for the renderer that is powering this context.
-     * The display name does not include the word "renderer" itself.
+     * Returns the display name for the underlying renderer. The display name
+     * will not include the word "renderer".
      */
     public String getRendererName() {
-        if (renderer.getGraphics() == null) {
-            return "<headless>";
-        }
-
-        return renderer.getGraphics().getClass().getSimpleName()
-            .replace("GraphicsContext", "")
-            .replace("Graphics", "");
+        return renderer.toString()
+            .replace("Renderer", "")
+            .replace("renderer", "")
+            .trim();
     }
 
     /**
@@ -341,93 +352,13 @@ public final class SceneContext implements Renderer, Updatable {
         return info;
     }
 
-    //-------------------------------------------------------------------------
-    // Renderer delegate
-    //-------------------------------------------------------------------------
-
     /**
-     * This method cannot be used on {@link SceneContext}. It is inherited
-     * from {@link Renderer}, but the {@link SceneContext} is only available
-     * when the renderer has already started. Therefore, calling this method
-     * will result in an {@link UnsupportedOperationException}.
+     * Terminates the application. This method will forward to the underlying
+     * {@link Renderer#terminate()}. It is exposed by this class to allow it
+     * to be used during frame updates.
      */
-    @Override
-    public void start(Scene initialScene, ErrorHandler errorHandler) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * The {@link SceneContext} does not allow direct access to the
-     * renderer's graphics. This method is inherited from {@link Renderer},
-     * but trying to call it on this {@link SceneContext} will result in an
-     * {@link UnsupportedOperationException}.
-     */
-    @Override
-    public StageVisitor getGraphics() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void terminate() {
         renderer.terminate();
-    }
-
-    @Override
-    public GraphicsMode getGraphicsMode() {
-        return renderer.getGraphicsMode();
-    }
-
-    @Override
-    public DisplayMode getDisplayMode() {
-        return renderer.getDisplayMode();
-    }
-
-    @Override
-    public Canvas getCanvas() {
-        return renderer.getCanvas();
-    }
-
-    @Override
-    public InputDevice getInput() {
-        return renderer.getInput();
-    }
-
-    @Override
-    public MediaLoader getMediaLoader() {
-        return renderer.getMediaLoader();
-    }
-
-    @Override
-    public Network getNetwork() {
-        return renderer.getNetwork();
-    }
-
-    @Override
-    public boolean isDevelopmentEnvironment() {
-        return renderer.isDevelopmentEnvironment();
-    }
-
-    @Override
-    public void takeScreenshot(File outputFile) {
-        renderer.takeScreenshot(outputFile);
-    }
-
-    /**
-     * Convenience method that captures a screenshot and saves it to a PNG
-     * file on the user's desktop. Only supported on desktop platforms, does
-     * nothing on mobile platforms or in the browser.
-     */
-    public void takeScreenshot() {
-        Preconditions.checkState(Platform.isWindows() || Platform.isMac(),
-            "Taking screenshots is not supported on platform " + Platform.getPlatform());
-
-        try {
-            File outputFile = new File(Platform.getUserDesktopDir(),
-                "screenshot-" + System.currentTimeMillis() + ".png");
-            renderer.takeScreenshot(outputFile);
-        } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Failed to save screenshot", e);
-        }
     }
 
     /**

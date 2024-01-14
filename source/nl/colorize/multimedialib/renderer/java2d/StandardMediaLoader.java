@@ -17,14 +17,15 @@ import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.UnsupportedGraphicsModeException;
 import nl.colorize.multimedialib.renderer.headless.HeadlessAudio;
 import nl.colorize.multimedialib.stage.Audio;
+import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.stage.OutlineFont;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.util.LoadUtils;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.ResourceFile;
+import nl.colorize.util.stats.Cache;
 import nl.colorize.util.swing.Utils2D;
 
 import java.awt.Font;
@@ -36,6 +37,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
@@ -53,6 +56,11 @@ public class StandardMediaLoader implements MediaLoader {
 
     private Function<FilePointer, ResourceFile> locator;
     private Set<String> classPathResources;
+
+    // The font cache is global because loaded AWT fonts need to
+    // be registered with the graphics environment.
+    public static Map<String, Font> fontFamilies = new HashMap<>();
+    public static Cache<FontFace, Font> fontCache = Cache.from(key -> prepareFont(key));
 
     private static final String APPLICATION_DATA_FILE_NAME = "data.properties";
     private static final Logger LOGGER = LogHelper.getLogger(StandardMediaLoader.class);
@@ -98,7 +106,12 @@ public class StandardMediaLoader implements MediaLoader {
         try {
             ResourceFile source = toResourceFile(file);
             BufferedImage original = Utils2D.loadImage(source.openStream());
-            return prepareImage(file, original);
+
+            if (Platform.isWindows()) {
+                return prepareImage(file, original);
+            } else {
+                return new AWTImage(original, file);
+            }
         } catch (IOException e) {
             throw new MediaException("Cannot load image from " + file.path(), e);
         }
@@ -129,18 +142,20 @@ public class StandardMediaLoader implements MediaLoader {
     }
 
     @Override
-    public OutlineFont loadFont(FilePointer file, String family, FontStyle style) {
+    public FontFace loadFont(FilePointer file, String family, FontStyle style) {
         ResourceFile source = toResourceFile(file);
 
         try (InputStream stream = source.openStream()) {
             Font font = Font.createFont(Font.TRUETYPE_FONT, stream);
 
-            GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
-            env.registerFont(font);
+            if (!fontFamilies.containsKey(family)) {
+                fontFamilies.put(family, font);
+                GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(font);
+            }
 
             // Immediately derive a version of the font with the correct
             // style, since we have no idea what size the loaded font has.
-            return new AWTFont(font, family, style).derive(style);
+            return new FontFace(this, file, family, style).derive(style);
         } catch (IOException | FontFormatException e) {
             throw new MediaException("Cannot load font from " + file.path(), e);
         }
@@ -202,7 +217,17 @@ public class StandardMediaLoader implements MediaLoader {
         }
     }
 
-    private ResourceFile toResourceFile(FilePointer file) {
+    public ResourceFile toResourceFile(FilePointer file) {
         return locator.apply(file);
+    }
+
+    private static Font prepareFont(FontFace key) {
+        Font baseFont = fontFamilies.get(key.family());
+        if (baseFont == null) {
+            LOGGER.warning("Unknown font family: " + key.family());
+            baseFont = new Font("sans-serif", Font.PLAIN, 10);
+        }
+        int variant = key.style().bold() ? Font.BOLD : Font.PLAIN;
+        return baseFont.deriveFont(variant, key.style().size());
     }
 }

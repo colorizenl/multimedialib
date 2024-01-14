@@ -16,7 +16,7 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
-import nl.colorize.multimedialib.stage.FontStyle;
+import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Graphic2D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
@@ -50,15 +50,17 @@ public class Java2DGraphicsContext implements StageVisitor {
     private Cache<ColorRGB, Color> colorCache;
     private Cache<MaskImage, BufferedImage> maskCache;
     private Cache<CircleImage, BufferedImage> circleCache;
+    private Cache<FontFace, Font> fontCache;
 
     private static final int CACHE_CAPACITY = 1000;
 
-    public Java2DGraphicsContext(Canvas canvas) {
+    protected Java2DGraphicsContext(Canvas canvas, Cache<FontFace, Font> fontCache) {
         this.canvas = canvas;
 
         this.colorCache = Cache.from(this::convertColor, CACHE_CAPACITY);
         this.maskCache = Cache.from(MaskImage::render, CACHE_CAPACITY);
         this.circleCache = Cache.from(CircleImage::render, CACHE_CAPACITY);
+        this.fontCache = fontCache;
     }
 
     public Canvas getCanvas() {
@@ -89,8 +91,8 @@ public class Java2DGraphicsContext implements StageVisitor {
     }
 
     @Override
-    public boolean visitGraphic(Graphic2D graphic) {
-        return graphic.getTransform().isVisible();
+    public boolean visitGraphic(Stage stage, Graphic2D graphic) {
+        return stage.isVisible(graphic);
     }
 
     @Override
@@ -161,7 +163,7 @@ public class Java2DGraphicsContext implements StageVisitor {
         transform.set(graphic.getGlobalTransform());
         transform.setPosition(circle.getCenter());
 
-        drawImage(image, graphic.getGlobalTransform());
+        drawImage(image, transform);
     }
 
     @Override
@@ -205,14 +207,14 @@ public class Java2DGraphicsContext implements StageVisitor {
 
     @Override
     public void drawText(Text text) {
-        Font font = ((AWTFont) text.getFont().scale(canvas)).getFont();
-        FontStyle style = text.getFont().getStyle();
+        Font font = fontCache.get(text.getFont().scale(canvas));
+        ColorRGB color = text.getFont().style().color();
         Transform transform = text.getGlobalTransform();
 
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(transform.getAlpha());
 
-        g2.setColor(colorCache.get(style.color()));
+        g2.setColor(colorCache.get(color));
         g2.setFont(font);
         drawLines(text.getLines(), transform.getPosition(), text.getAlign(), text.getLineHeight());
         g2.setComposite(originalComposite);

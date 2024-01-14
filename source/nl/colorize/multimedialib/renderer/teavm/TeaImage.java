@@ -106,7 +106,7 @@ public class TeaImage implements Image {
             canvas.setWidth(region.width());
             canvas.setHeight(region.height());
             imageData = (CanvasRenderingContext2D) canvas.getContext("2d");
-            imageData.drawImage(imageElement, 0, 0);
+            imageData.drawImage(imageElement, -region.x(), -region.y());
         }
 
         ImageData pixels = imageData.getImageData(x, y, 1, 1);

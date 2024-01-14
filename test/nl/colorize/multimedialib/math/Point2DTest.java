@@ -28,6 +28,7 @@ public class Point2DTest {
         assertEquals(0f, new Point2D(1f, 1f).angleTo(new Point2D(2f, 1f)), EPSILON);
         assertEquals(180f, new Point2D(1f, 1f).angleTo(new Point2D(-2f, 1f)), EPSILON);
         assertEquals(45f, new Point2D(1f, 1f).angleTo(new Point2D(2f, 2f)), EPSILON);
+        assertEquals(26.565f, new Point2D(1f, 1f).angleTo(new Point2D(3f, 2f)), EPSILON);
     }
 
     @Test

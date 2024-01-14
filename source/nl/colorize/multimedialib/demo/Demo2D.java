@@ -25,6 +25,7 @@ import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.multimedialib.scene.Effect;
 import nl.colorize.multimedialib.scene.ParticleWipe;
+import nl.colorize.multimedialib.scene.PerformanceMonitor;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.SwipeTracker;
@@ -34,9 +35,8 @@ import nl.colorize.multimedialib.stage.Animation;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
+import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.stage.OutlineFont;
-import nl.colorize.multimedialib.scene.PerformanceMonitor;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
@@ -78,7 +78,7 @@ public class Demo2D implements Scene, ErrorHandler {
     private Container hudLayer;
 
     private SpriteAtlas marioSpriteSheet;
-    private OutlineFont font;
+    private FontFace font;
     private List<Mario> marios;
     private Audio audioClip;
     private Text hud;
@@ -90,8 +90,6 @@ public class Demo2D implements Scene, ErrorHandler {
     private static final FilePointer MARIO_SPRITES_FILE = new FilePointer("demo/demo.png");
     private static final FilePointer AUDIO_FILE = new FilePointer("demo/demo-sound.mp3");
     private static final FilePointer COLORIZE_LOGO = new FilePointer("colorize-logo.png");
-    private static final FilePointer FRAGMENT_SHADER = new FilePointer("demo/sepia-fragment.glsl");
-    private static final FilePointer VERTEX_SHADER = new FilePointer("demo/sepia-vertex.glsl");
 
     private static final List<String> DIRECTIONS = List.of("north", "east", "south", "west");
     private static final int BUTTON_WIDTH = 100;
@@ -349,8 +347,6 @@ public class Demo2D implements Scene, ErrorHandler {
     private void handleSystemControls(InputDevice input) {
         if (input.isKeyReleased(KeyCode.N9) || input.isKeyReleased(KeyCode.B)) {
             toggleBackgroundColor();
-        } else if (input.isKeyReleased(KeyCode.F12)) {
-            context.takeScreenshot();
         }
     }
 

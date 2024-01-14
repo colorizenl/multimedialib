@@ -44,7 +44,7 @@ public interface StageVisitor {
      * method will <em>not</em> be called for this graphic (or any of its
      * children).
      */
-    public boolean visitGraphic(Graphic2D graphic);
+    public boolean visitGraphic(Stage stage, Graphic2D graphic);
 
     public void drawBackground(ColorRGB color);
 

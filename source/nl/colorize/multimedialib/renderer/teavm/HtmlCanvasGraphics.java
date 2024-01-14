@@ -18,6 +18,8 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
+import nl.colorize.multimedialib.stage.FontFace;
+import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Graphic2D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
@@ -74,8 +76,8 @@ public class HtmlCanvasGraphics implements TeaGraphics {
     }
 
     @Override
-    public boolean visitGraphic(Graphic2D graphic) {
-        return graphic.getTransform().isVisible();
+    public boolean visitGraphic(Stage stage, Graphic2D graphic) {
+        return stage.isVisible(graphic);
     }
 
     @Override
@@ -195,18 +197,23 @@ public class HtmlCanvasGraphics implements TeaGraphics {
 
     @Override
     public void drawText(Text text) {
-        TeaFont font = (TeaFont) text.getFont().scale(sceneCanvas);
+        FontFace font = text.getFont().scale(sceneCanvas);
         Transform transform = text.getGlobalTransform();
 
         context.setGlobalAlpha(transform.getAlpha() / 100f);
-        context.setFont(font.getFontString());
-        context.setFillStyle(font.getStyle().color().toHex());
+        context.setFont(getFontString(font));
+        context.setFillStyle(font.style().color().toHex());
         context.setTextAlign(text.getAlign().toString().toLowerCase());
         text.forLines((i, line) -> {
             float y = toScreenY(transform.getPosition().getY() + i * text.getLineHeight());
             context.fillText(line, toScreenX(transform.getPosition()), y);
         });
         context.setGlobalAlpha(1f);
+    }
+
+    private String getFontString(FontFace font) {
+        FontStyle style = font.style();
+        return (style.bold() ? "bold " : "") + style.size() + "px " + font.family();
     }
 
     private float toScreenX(float x) {

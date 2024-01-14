@@ -11,10 +11,7 @@ import com.badlogic.gdx.Files;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
-import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.glutils.HdpiMode;
 import com.badlogic.gdx.graphics.glutils.HdpiUtils;
 import nl.colorize.multimedialib.renderer.Canvas;
@@ -22,8 +19,6 @@ import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
-import nl.colorize.multimedialib.renderer.InputDevice;
-import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.WindowOptions;
@@ -31,19 +26,13 @@ import nl.colorize.multimedialib.renderer.java2d.StandardNetwork;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.Stage;
-import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
-import nl.colorize.util.Stopwatch;
 import nl.colorize.util.swing.SwingUtils;
 
 import java.awt.Dimension;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.zip.Deflater;
 
 /**
  * Renderer built on top of the libGDX framework. In turn, libGDX supports multiple
@@ -60,9 +49,10 @@ public class GDXRenderer implements Renderer, ApplicationListener {
     private GDXGraphics graphicsContext;
     private GDXInput input;
     private GDXMediaLoader mediaLoader;
+    private Network network;
+
     private SceneContext context;
     private Scene initialScene;
-    private List<FileHandle> requestedScreenshots;
 
     private static final Logger LOGGER = LogHelper.getLogger(GDXRenderer.class);
 
@@ -71,8 +61,6 @@ public class GDXRenderer implements Renderer, ApplicationListener {
         this.canvas = displayMode.canvas();
         this.framerate = displayMode.framerate();
         this.window = window;
-
-        this.requestedScreenshots = new ArrayList<>();
     }
 
     @Override
@@ -137,11 +125,12 @@ public class GDXRenderer implements Renderer, ApplicationListener {
     public void create() {
         input = new GDXInput(canvas);
         mediaLoader = new GDXMediaLoader();
-        graphicsContext = new GDXGraphics(canvas);
+        graphicsContext = new GDXGraphics(canvas, mediaLoader);
+        network = new StandardNetwork();
 
         resize(canvas.getWidth(), canvas.getHeight());
 
-        context = new SceneContext(this, new Stopwatch());
+        context = new SceneContext(this, mediaLoader, input, network);
         context.changeScene(initialScene);
     }
 
@@ -174,8 +163,6 @@ public class GDXRenderer implements Renderer, ApplicationListener {
         context.syncFrame();
         renderStage(context.getStage());
         graphicsContext.switchMode(false, false);
-
-        renderRequestedScreenshots();
     }
 
     private void renderStage(Stage stage) {
@@ -201,61 +188,12 @@ public class GDXRenderer implements Renderer, ApplicationListener {
     }
 
     @Override
-    public StageVisitor getGraphics() {
-        return graphicsContext;
-    }
-
-    @Override
-    public InputDevice getInput() {
-        return input;
-    }
-
-    @Override
-    public MediaLoader getMediaLoader() {
-        return mediaLoader;
-    }
-
-    @Override
-    public Network getNetwork() {
-        return new StandardNetwork();
-    }
-
-    @Override
-    public void takeScreenshot(File outputFile) {
-        requestedScreenshots.add(new FileHandle(outputFile));
-    }
-
-    @Override
-    public boolean isDevelopmentEnvironment() {
-        File workDir = Platform.getUserWorkingDirectory();
-        return new File(workDir, "build.gradle").exists();
-    }
-
-    /**
-     * Renders all screenshots that were requested during the frame update.
-     * This is not done immediately in {@link #takeScreenshot(File)}, as that
-     * would result in an empty or partial frame. Screenshots are therefore
-     * delayed until the entire frame has been rendered.
-     */
-    private void renderRequestedScreenshots() {
-        if (requestedScreenshots.isEmpty()) {
-            return;
-        }
-
-        int width = Gdx.graphics.getBackBufferWidth();
-        int height = Gdx.graphics.getBackBufferHeight();
-        Pixmap pixels = Pixmap.createFromFrameBuffer(0, 0, width, height);
-
-        for (FileHandle outputFile : requestedScreenshots) {
-            PixmapIO.writePNG(outputFile, pixels, Deflater.DEFAULT_COMPRESSION, true);
-        }
-
-        pixels.dispose();
-        requestedScreenshots.clear();
-    }
-
-    @Override
     public void terminate() {
         System.exit(0);
+    }
+
+    @Override
+    public String toString() {
+        return "libGDX renderer";
     }
 }

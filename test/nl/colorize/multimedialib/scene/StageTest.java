@@ -69,7 +69,7 @@ class StageTest {
             }
 
             @Override
-            public boolean visitGraphic(Graphic2D graphic) {
+            public boolean visitGraphic(Stage stage, Graphic2D graphic) {
                 return true;
             }
 

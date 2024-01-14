@@ -28,5 +28,3 @@ browser/assets/OpenSans-Regular.ttf
 demo/demo.png
 demo/demo-sound.mp3
 demo/colorize-logo.gltf
-demo/sepia-vertex.glsl
-demo/sepia-fragment.glsl

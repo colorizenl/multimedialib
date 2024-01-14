@@ -20,7 +20,7 @@ import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.stage.OutlineFont;
+import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
@@ -39,7 +39,7 @@ import static nl.colorize.multimedialib.stage.ColorRGB.WHITE;
 public class Demo3D implements Scene, ErrorHandler {
 
     private SceneContext context;
-    private OutlineFont font;
+    private FontFace font;
     private Image logo;
     private List<PolygonModel> models;
     private List<Point2D> walkVectors;

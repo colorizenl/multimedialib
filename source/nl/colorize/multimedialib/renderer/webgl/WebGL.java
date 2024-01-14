@@ -56,6 +56,7 @@ import org.teavm.jso.webgl.WebGLUniformLocation;
  */
 public class WebGL implements TeaGraphics {
 
+    private GraphicsMode graphicsMode;
     private Canvas canvas;
     private BrowserDOM dom;
     private HTMLCanvasElement glCanvas;
@@ -79,14 +80,18 @@ public class WebGL implements TeaGraphics {
     private static final FilePointer VERTEX_SHADER_FILE = new FilePointer("vertex-shader.glsl");
     private static final FilePointer FRAGMENT_SHADER_FILE = new FilePointer("fragment-shader.glsl");
 
-    public WebGL(Canvas canvas) {
+    public WebGL(GraphicsMode graphicsMode, Canvas canvas) {
+        this.graphicsMode = graphicsMode;
         this.canvas = canvas;
-        this.dom = new BrowserDOM();
+
+        if (graphicsMode != GraphicsMode.HEADLESS) {
+            dom = new BrowserDOM();
+        }
     }
 
     @Override
     public GraphicsMode getGraphicsMode() {
-        return GraphicsMode.MODE_3D;
+        return graphicsMode;
     }
 
     @Override
@@ -301,8 +306,8 @@ public class WebGL implements TeaGraphics {
     }
 
     @Override
-    public boolean visitGraphic(Graphic2D graphic) {
-        return graphic.getTransform().isVisible();
+    public boolean visitGraphic(Stage stage, Graphic2D graphic) {
+        return stage.isVisible(graphic);
     }
 
     @Override

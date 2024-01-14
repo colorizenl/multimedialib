@@ -33,6 +33,10 @@ public class Sprite implements Graphic2D {
     @Getter private StageLocation location;
     private Map<String, Animation> graphics;
     private StateMachine<String> stateMachine;
+    // Cached for performance reasons. The current graphics can
+    // only change during frame updates or when force-changing
+    // the current state.
+    private Image currentGraphics;
 
     private static final String DEFAULT_STATE = "$$default";
 
@@ -69,9 +73,12 @@ public class Sprite implements Graphic2D {
             "Sprite already contains graphics for " + stateName);
 
         graphics.put(stateName, stateGraphics);
+
         if (graphics.size() == 1) {
             changeGraphics(stateName);
         }
+
+        updateCurrentGraphics();
     }
 
     /**
@@ -97,6 +104,7 @@ public class Sprite implements Graphic2D {
 
         if (!stateMachine.getActiveState().equals(stateName)) {
             stateMachine.forceState(stateName);
+            updateCurrentGraphics();
         }
     }
 
@@ -106,9 +114,9 @@ public class Sprite implements Graphic2D {
      */
     public void resetCurrentGraphics() {
         stateMachine.getActiveStateTimer().reset();
+        updateCurrentGraphics();
     }
 
-    @Deprecated
     public String getActiveState() {
         return stateMachine.getActiveState();
     }
@@ -139,17 +147,15 @@ public class Sprite implements Graphic2D {
     }
 
     public Image getCurrentGraphics() {
-        Animation currentGraphics = graphics.get(stateMachine.getActiveState());
-        float time = stateMachine.getActiveStateTimer().getTime();
-        return currentGraphics.getFrameAtTime(time);
+        return currentGraphics;
     }
 
     public int getCurrentWidth() {
-        return getCurrentGraphics().getWidth();
+        return currentGraphics.getWidth();
     }
 
     public int getCurrentHeight() {
-        return getCurrentGraphics().getHeight();
+        return currentGraphics.getHeight();
     }
 
     @Override
@@ -157,6 +163,13 @@ public class Sprite implements Graphic2D {
         Preconditions.checkState(!graphics.isEmpty(), "Sprite does not contain any graphics");
 
         stateMachine.update(deltaTime);
+        updateCurrentGraphics();
+    }
+
+    private void updateCurrentGraphics() {
+        Animation currentStateGraphics = graphics.get(stateMachine.getActiveState());
+        float time = stateMachine.getActiveStateTimer().getTime();
+        currentGraphics = currentStateGraphics.getFrameAtTime(time);
     }
 
     @Override

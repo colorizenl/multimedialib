@@ -6,7 +6,8 @@
 
 package nl.colorize.multimedialib.stage;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import nl.colorize.multimedialib.math.Point2D;
 
 /**
@@ -27,8 +28,15 @@ import nl.colorize.multimedialib.math.Point2D;
  * | Alpha             | Percentage, 100% indicates opaque          | Sprite, Primitive  |
  * | Mask color        | Replaces non-transparent pixels with color | Sprite             |
  * </pre>
+ * <p>
+ * {@link Transform} instances can be used standalone, but they can also be
+ * linked to a parent transform. In the latter case, the term "local transform"
+ * refers to this {@link Transform} instance, and "global transform" refers to
+ * the combination of this {@link Transform} and its parent (which in turn
+ * might also have a parent, and so on).
  */
-@Data
+@Getter
+@Setter
 public final class Transform {
 
     private boolean visible;
@@ -40,6 +48,8 @@ public final class Transform {
     private boolean flipVertical;
     private float alpha;
     private ColorRGB maskColor;
+
+    private Transform parent;
 
     public Transform() {
         this.visible = true;
@@ -135,37 +145,33 @@ public final class Transform {
     }
 
     /**
-     * Combines this transform with the specified parent transform, and returns
-     * the result as a new {@link Transform} instance.
+     * Returns a {@link Transform} that represents the combination of this
+     * {@link Transform}'s properties with the properties of its parent
+     * transform. If the parent transform <em>also</em> has a parent, this
+     * logic will be applied recursively.
      */
-    public Transform combine(Transform parent) {
+    public Transform toGlobalTransform() {
+        if (parent == null) {
+            return this;
+        }
+        return combine(parent.toGlobalTransform());
+    }
+
+    private Transform combine(Transform other) {
         Transform global = new Transform();
-        global.setVisible(visible || parent.visible);
-        global.setPosition(position.getX() + parent.position.getX(),
-            position.getY() + parent.position.getY());
-        global.setRotation(rotation + parent.rotation);
-        global.setScale(combinePercentage(scaleX, parent.scaleX),
-            combinePercentage(scaleY, parent.scaleY));
-        global.setFlipHorizontal(flipHorizontal || parent.flipHorizontal);
-        global.setFlipVertical(flipVertical || parent.flipVertical);
-        global.setAlpha(combinePercentage(alpha, parent.alpha));
-        global.setMaskColor(maskColor != null ? maskColor : parent.maskColor);
+        global.setVisible(visible && other.visible);
+        global.setPosition(position.move(other.position));
+        global.setRotation(rotation + other.rotation);
+        global.setScale(combinePercentage(scaleX, other.scaleX),
+            combinePercentage(scaleY, other.scaleY));
+        global.setFlipHorizontal(flipHorizontal || other.flipHorizontal);
+        global.setFlipVertical(flipVertical || other.flipVertical);
+        global.setAlpha(combinePercentage(alpha, other.alpha));
+        global.setMaskColor(maskColor != null ? maskColor : other.maskColor);
         return global;
     }
 
     private float combinePercentage(float value, float parentValue) {
         return ((value / 100f) * (parentValue / 100f)) * 100f;
-    }
-
-    /**
-     * Returns the distance between two angles in degrees. The result will be
-     * in the range between 0 and 180.
-     */
-    public static float angleDistance(float a, float b) {
-        float phi = Math.abs(b - a) % 360f;
-        if (phi > 180f) {
-            return 360f - phi;
-        }
-        return phi;
     }
 }

@@ -13,7 +13,10 @@ import nl.colorize.util.http.URLResponse;
 
 /**
  * Interface for the platform-specific mechanism for network access. HTTP
- * requests are sent asynchronously to avoid blocking the application.
+ * requests are sent asynchronously to avoid blocking the application. These
+ * asynchronous operations will return a {@link Subscribable} that
+ * applications can use to await the result. Callback methods will be invoked
+ * from a thread that is compatible with the current renderer.
  */
 public interface Network {
 

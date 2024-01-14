@@ -13,7 +13,6 @@ import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
 import nl.colorize.multimedialib.stage.Animation;
 import nl.colorize.multimedialib.stage.Sprite;
-import nl.colorize.util.Stopwatch;
 import nl.colorize.util.animation.Timeline;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +33,8 @@ public class EffectTest {
 
     @BeforeEach
     public void before() {
-        context = new SceneContext(new HeadlessRenderer(), new Stopwatch());
+        HeadlessRenderer renderer = new HeadlessRenderer();
+        context = renderer.getContext();
         context.changeScene(new MockScene());
     }
 

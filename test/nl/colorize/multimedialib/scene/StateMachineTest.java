@@ -41,6 +41,18 @@ public class StateMachineTest {
     }
 
     @Test
+    void restrictTransitionsWithPredicate() {
+        StateMachine<String> stateMachine = new StateMachine<>("a");
+        stateMachine.allowTransitions((state1, state2) -> state2.equals("b"));
+
+        assertTrue(stateMachine.requestState("b"));
+        assertEquals("b", stateMachine.getActiveState());
+        assertFalse(stateMachine.requestState("c"));
+        assertFalse(stateMachine.requestState("c", 2f));
+        assertEquals("b", stateMachine.getActiveState());
+    }
+
+    @Test
     void stateReceivesUpdates() {
         List<String> frames = new ArrayList<>();
         Updatable a = deltaTime -> frames.add("a");

@@ -7,6 +7,8 @@
 package nl.colorize.multimedialib.stage;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import nl.colorize.multimedialib.math.Point3D;
 
 /**
@@ -17,7 +19,8 @@ import nl.colorize.multimedialib.math.Point3D;
  * Rotation is expressed in the number of degrees. Scale is represented
  * relative to the model's original scale, with 1.0 being the original scale.
  */
-@Data
+@Getter
+@Setter
 public class Transform3D {
 
     private Point3D position;

@@ -29,7 +29,8 @@ class TransformTest {
         child.setPosition(30f, 40f);
         child.setScaleX(150f);
 
-        Transform global = child.combine(parent);
+        child.setParent(parent);
+        Transform global = child.toGlobalTransform();
 
         assertEquals(40f, global.getPosition().getX(), EPSILON);
         assertEquals(60f, global.getPosition().getY(), EPSILON);
@@ -42,11 +43,20 @@ class TransformTest {
     }
 
     @Test
-    void angleDistance() {
-        assertEquals(40f, Transform.angleDistance(90f, 130f), EPSILON);
-        assertEquals(40f, Transform.angleDistance(130f, 90f), EPSILON);
-        assertEquals(90f, Transform.angleDistance(90f, 180f), EPSILON);
-        assertEquals(180f, Transform.angleDistance(90f, 270f), EPSILON);
-        assertEquals(170f, Transform.angleDistance(90f, 280f), EPSILON);
+    void inheritVisibleField() {
+        Transform transform = new Transform();
+        transform.setVisible(true);
+
+        Transform parent = new Transform();
+        parent.setVisible(false);
+        transform.setParent(parent);
+
+        Transform grandpa = new Transform();
+        grandpa.setVisible(true);
+        parent.setParent(grandpa);
+
+        assertFalse(transform.toGlobalTransform().isVisible());
+        assertFalse(parent.toGlobalTransform().isVisible());
+        assertTrue(grandpa.toGlobalTransform().isVisible());
     }
 }

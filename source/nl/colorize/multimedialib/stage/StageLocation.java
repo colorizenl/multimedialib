@@ -32,6 +32,7 @@ public class StageLocation {
     public void attach(Container parent) {
         Preconditions.checkState(this.parent == null, "Graphic is already attached to parent");
         this.parent = parent;
+        localTransform.setParent(parent.getTransform());
     }
 
     public void detach() {
@@ -40,12 +41,5 @@ public class StageLocation {
 
     public boolean isAttached() {
         return parent != null;
-    }
-
-    public Transform getGlobalTransform() {
-        if (parent == null) {
-            return localTransform;
-        }
-        return localTransform.combine(parent.getGlobalTransform());
     }
 }

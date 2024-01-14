@@ -32,7 +32,7 @@ import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.stage.OutlineFont;
+import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.util.stats.Cache;
 
@@ -50,7 +50,7 @@ import java.util.Properties;
 public class GDXMediaLoader implements MediaLoader, Disposable {
 
     private List<Disposable> loaded;
-    private Cache<FontCacheKey, BitmapFont> fontCache;
+    private Cache<FontFace, BitmapFont> fontCache;
     private StandardMediaLoader appDataDelegate;
 
     private static final Texture.TextureFilter TEXTURE_FILTER = Texture.TextureFilter.Linear;
@@ -80,24 +80,26 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
     }
 
     @Override
-    public OutlineFont loadFont(FilePointer file, String family, FontStyle style) {
-        return new GDXBitmapFont(this, getFileHandle(file), family, style);
+    public FontFace loadFont(FilePointer file, String family, FontStyle style) {
+        FontFace font = new FontFace(this, file, family, style);
+        getBitmapFont(font);
+        return font;
     }
 
-    protected BitmapFont getBitmapFont(FileHandle source, String family, FontStyle style) {
-        FontCacheKey cacheKey = new FontCacheKey(source, family, style);
-        return fontCache.get(cacheKey);
+    protected BitmapFont getBitmapFont(FontFace font) {
+        return fontCache.get(font);
     }
 
-    private BitmapFont generateBitmapFont(FontCacheKey cacheKey) {
-        FreeTypeFontGenerator.FreeTypeFontParameter config =
-            new FreeTypeFontGenerator.FreeTypeFontParameter();
-        config.size = cacheKey.style.size() * BITMAP_FONT_SCALE;
-        config.color = toColor(cacheKey.style.color());
+    private BitmapFont generateBitmapFont(FontFace font) {
+        var config = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        config.size = font.style().size() * BITMAP_FONT_SCALE;
+        config.color = toColor(font.style().color());
         config.minFilter = TEXTURE_FILTER;
         config.magFilter = TEXTURE_FILTER;
 
-        FreeTypeFontGenerator fontGenerator = new FreeTypeFontGenerator(cacheKey.source());
+        FileHandle file = getFileHandle(font.origin());
+
+        FreeTypeFontGenerator fontGenerator = new FreeTypeFontGenerator(file);
         BitmapFont bitmapFont = fontGenerator.generateFont(config);
         bitmapFont.getData().setScale(1f / BITMAP_FONT_SCALE);
         fontGenerator.dispose();
@@ -170,8 +172,5 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
 
     public static Color toColor(ColorRGB color) {
         return new Color(color.r() / 255f, color.g() / 255f, color.b() / 255f, 1f);
-    }
-
-    private record FontCacheKey(FileHandle source, String family, FontStyle style) {
     }
 }

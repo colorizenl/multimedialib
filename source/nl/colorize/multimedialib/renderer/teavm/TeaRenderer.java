@@ -10,20 +10,13 @@ import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
-import nl.colorize.multimedialib.renderer.InputDevice;
-import nl.colorize.multimedialib.renderer.MediaLoader;
-import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.pixi.PixiGraphics;
 import nl.colorize.multimedialib.renderer.three.ThreeGraphics;
 import nl.colorize.multimedialib.renderer.webgl.WebGL;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.multimedialib.stage.StageVisitor;
-import nl.colorize.util.Stopwatch;
 import org.teavm.jso.browser.Window;
-
-import java.io.File;
 
 /**
  * Renderer based on <a href="http://teavm.org">TeaVM</a> that is transpiled to
@@ -36,8 +29,6 @@ public class TeaRenderer implements Renderer {
     private DisplayMode displayMode;
     private TeaGraphics graphics;
     private TeaInputDevice inputDevice;
-    private TeaMediaLoader mediaLoader;
-    private TeaNetwork network;
     private SceneContext context;
 
     /**
@@ -53,14 +44,14 @@ public class TeaRenderer implements Renderer {
 
     @Override
     public void start(Scene initialScene, ErrorHandler errorHandler) {
-        mediaLoader = new TeaMediaLoader(graphics);
-        network = new TeaNetwork();
-
-        context = new SceneContext(this, new Stopwatch());
-        context.changeScene(initialScene);
+        TeaMediaLoader mediaLoader = new TeaMediaLoader(graphics);
+        TeaNetwork network = new TeaNetwork();
 
         inputDevice.bindEventHandlers();
         graphics.init(mediaLoader);
+
+        context = new SceneContext(this, mediaLoader, inputDevice, network);
+        context.changeScene(initialScene);
 
         Browser.prepareAnimationLoop();
         Browser.registerErrorHandler(error -> handleError(errorHandler, error));
@@ -74,7 +65,7 @@ public class TeaRenderer implements Renderer {
      */
     private void onAnimationFrame(double timestamp) {
         if (prepareCanvas()) {
-            if (context.syncFrame()) {
+            if (context.syncFrame() > 0) {
                 renderFrame();
                 inputDevice.reset();
             }
@@ -124,38 +115,23 @@ public class TeaRenderer implements Renderer {
     }
 
     @Override
-    public StageVisitor getGraphics() {
-        return graphics;
-    }
-
-    @Override
-    public InputDevice getInput() {
-        return inputDevice;
-    }
-
-    @Override
-    public MediaLoader getMediaLoader() {
-        return mediaLoader;
-    }
-
-    @Override
-    public Network getNetwork() {
-        return network;
-    }
-
-    @Override
-    public void takeScreenshot(File outputFile) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean isDevelopmentEnvironment() {
-        return BrowserDOM.getQueryString().contains("local");
-    }
-
-    @Override
     public void terminate() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String toString() {
+        if (graphics instanceof HtmlCanvasGraphics) {
+            return "HTML5 Canvas renderer";
+        } else if (graphics instanceof WebGL) {
+            return "WebGL renderer";
+        } else if (graphics instanceof PixiGraphics) {
+            return "Pixi.js renderer";
+        } else if (graphics instanceof ThreeGraphics) {
+            return "Three.js renderer";
+        } else {
+            return "TeaVM renderer";
+        }
     }
 
     public static TeaRenderer withCanvas(DisplayMode displayMode) {
@@ -163,8 +139,8 @@ public class TeaRenderer implements Renderer {
         return new TeaRenderer(displayMode, graphics);
     }
 
-    public static TeaRenderer withWebGL(DisplayMode displayMode) {
-        TeaGraphics graphics = new WebGL(displayMode.canvas());
+    public static TeaRenderer withWebGL(GraphicsMode graphicsMode, DisplayMode displayMode) {
+        TeaGraphics graphics = new WebGL(graphicsMode, displayMode.canvas());
         return new TeaRenderer(displayMode, graphics);
     }
 

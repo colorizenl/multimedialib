@@ -45,11 +45,7 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
     private static final int KEY_STATE_DEFAULT = 0;
     private static final int KEY_STATE_PRESSED = 1;
     private static final int KEY_STATE_RELEASED = 2;
-    
-    private static final int MOUSE_STATE_DEFAULT = 0;
-    private static final int MOUSE_STATE_PRESSED = 1;
-    private static final int MOUSE_STATE_RELEASED = 2;
-    
+
     private static final int MAX_KEY_CODES = 600;
 
     private static final Map<KeyCode, Integer> KEY_CODE_MAPPING =
@@ -124,7 +120,7 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
         keyStates = new int[MAX_KEY_CODES];
         mouseX = 0;
         mouseY = 0;
-        mouseState = MOUSE_STATE_DEFAULT;
+        mouseState = Pointer.STATE_IDLE;
     }
     
     /**
@@ -154,8 +150,8 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
             }
         }
         
-        if (mouseState == MOUSE_STATE_RELEASED) {
-            mouseState = MOUSE_STATE_DEFAULT;
+        if (mouseState == Pointer.STATE_RELEASED) {
+            mouseState = Pointer.STATE_IDLE;
         }
     }
     
@@ -174,10 +170,11 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
         mouseY = event.getY();
         
         int eventID = event.getID();
+
         if (eventID == MouseEvent.MOUSE_PRESSED) {
-            mouseState = MOUSE_STATE_PRESSED;
+            mouseState = Pointer.STATE_PRESSED;
         } else if (eventID == MouseEvent.MOUSE_RELEASED) {
-            mouseState = MOUSE_STATE_RELEASED;
+            mouseState = Pointer.STATE_RELEASED;
         }    
     }
     
@@ -250,14 +247,13 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
 
         Pointer pointer = new Pointer("mouse");
         pointer.setPosition(mouseCanvasPosition);
-        pointer.setPressed(mouseState == MOUSE_STATE_PRESSED);
-        pointer.setReleased(mouseState == MOUSE_STATE_RELEASED);
+        pointer.setState(mouseState);
         return List.of(pointer);
     }
 
     @Override
     public void clearPointerState() {
-        mouseState = MOUSE_STATE_DEFAULT;
+        mouseState = Pointer.STATE_IDLE;
     }
 
     @Override

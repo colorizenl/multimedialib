@@ -32,6 +32,7 @@ import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.util.LogHelper;
+import nl.colorize.util.TextUtils;
 import nl.colorize.util.stats.Cache;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
 import org.teavm.jso.dom.html.HTMLImageElement;
@@ -117,7 +118,7 @@ public class PixiGraphics implements TeaGraphics {
     }
 
     @Override
-    public boolean visitGraphic(Graphic2D graphic) {
+    public boolean visitGraphic(Stage stage, Graphic2D graphic) {
         Pixi.DisplayObject displayObject = getDisplayObject(graphic);
         displayObject.setVisible(graphic.getTransform().isVisible());
         return true;
@@ -151,8 +152,8 @@ public class PixiGraphics implements TeaGraphics {
     }
 
     private Pixi.DisplayObject createTextDisplayObject(Text text) {
-        String family = text.getFont().getFamily();
-        FontStyle style = text.getFont().scale(canvas).getStyle();
+        String family = text.getFont().family();
+        FontStyle style = text.getFont().scale(canvas).style();
 
         return pixi.createText(family, style.size(), style.bold(),
             text.getAlign().toString(), text.getLineHeight(), style.color().getRGB());
@@ -344,7 +345,7 @@ public class PixiGraphics implements TeaGraphics {
         Transform transform = text.getGlobalTransform();
         float offset = -0.65f * text.getLineHeight();
 
-        displayObject.setText(text.getText());
+        displayObject.setText(TextUtils.LINE_JOINER.join(text.getLines()));
         displayObject.setX(toScreenX(transform.getPosition()));
         displayObject.setY(toScreenY(transform.getPosition().getY() + offset));
         displayObject.setAlpha(transform.getAlpha() / 100f);

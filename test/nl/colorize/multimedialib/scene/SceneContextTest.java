@@ -12,7 +12,6 @@ import nl.colorize.multimedialib.mock.MockStopwatch;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
-import nl.colorize.util.Stopwatch;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -25,12 +24,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SceneContextTest {
 
-    private static final Canvas CANVAS = new Canvas(800, 600, ScaleStrategy.scale());
-    private static final HeadlessRenderer RENDERER = new HeadlessRenderer(CANVAS, 10);
+    private Canvas canvas;
+    private HeadlessRenderer renderer;
 
     @BeforeEach
     public void before() {
-        CANVAS.resizeScreen(800, 600);
+        canvas = new Canvas(800, 600, ScaleStrategy.scale());
+        renderer = new HeadlessRenderer(canvas, 10);
     }
 
     @Test
@@ -38,7 +38,7 @@ public class SceneContextTest {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        SceneContext app = new SceneContext(RENDERER, new Stopwatch());
+        SceneContext app = renderer.getContext();
         app.changeScene(sceneA);
         app.update(1f);
         app.update(1f);
@@ -55,7 +55,7 @@ public class SceneContextTest {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        SceneContext app = new SceneContext(RENDERER, new Stopwatch());
+        SceneContext app = renderer.getContext();
         app.changeScene(sceneA);
         app.update(1f);
         app.changeScene(sceneB);
@@ -74,7 +74,7 @@ public class SceneContextTest {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        SceneContext app = new SceneContext(RENDERER, new Stopwatch());
+        SceneContext app = renderer.getContext();
         app.changeScene(sceneA);
         app.update(1f);
         app.changeScene(sceneB);
@@ -91,7 +91,7 @@ public class SceneContextTest {
         MockScene sceneA = new MockScene();
         List<String> tracker = new ArrayList<>();
 
-        SceneContext app = new SceneContext(RENDERER, new Stopwatch());
+        SceneContext app = renderer.getContext();
         app.changeScene(sceneA);
         app.attach((context, deltaTime) -> tracker.add("a"));
         app.attach((context, deltaTime) -> tracker.add("b"));
@@ -106,7 +106,7 @@ public class SceneContextTest {
         MockScene sceneB = new MockScene();
         List<String> tracker = new ArrayList<>();
 
-        SceneContext app = new SceneContext(RENDERER, new Stopwatch());
+        SceneContext app = renderer.getContext();
         app.changeScene(sceneA);
         app.attach((context, deltaTime) -> tracker.add("a"));
         app.attach((context, deltaTime) -> tracker.add("b"));
@@ -121,7 +121,7 @@ public class SceneContextTest {
 
     @Test
     void addSystemDuringIteration() {
-        SceneContext context = new SceneContext(RENDERER, new Stopwatch());
+        SceneContext context = renderer.getContext();
         context.changeScene(new MockScene());
 
         List<String> buffer = new ArrayList<>();
@@ -143,7 +143,7 @@ public class SceneContextTest {
     void completedSubSceneIsStopped() {
         MockScene parent = new MockScene();
         MockScene child = new MockScene();
-        SceneContext context = new SceneContext(RENDERER, new Stopwatch());
+        SceneContext context = renderer.getContext();
         context.changeScene(parent);
         context.attach(child);
         context.update(1f);
@@ -160,7 +160,7 @@ public class SceneContextTest {
     @Test
     void completedParentSceneIsNotStopped() {
         MockScene parent = new MockScene();
-        SceneContext context = new SceneContext(RENDERER, new Stopwatch());
+        SceneContext context = renderer.getContext();
         context.changeScene(parent);
         context.update(1f);
         context.update(1f);
@@ -177,7 +177,7 @@ public class SceneContextTest {
         MockScene child1 = new MockScene();
         MockScene child2 = new MockScene();
 
-        SceneContext context = new SceneContext(RENDERER, new Stopwatch());
+        SceneContext context = renderer.getContext();
         context.changeScene(parent);
         context.attach(child1);
         context.update(1f);
@@ -196,7 +196,7 @@ public class SceneContextTest {
         MockScene newParent = new MockScene();
         MockScene child2 = new MockScene();
 
-        SceneContext context = new SceneContext(RENDERER, new Stopwatch());
+        SceneContext context = renderer.getContext();
         context.changeScene(parent);
         context.attach(child1);
         context.update(1f);
@@ -219,7 +219,7 @@ public class SceneContextTest {
         MockScene scene3 = new MockScene();
         MockScene scene4 = new MockScene();
 
-        SceneContext context = new SceneContext(RENDERER, new Stopwatch());
+        SceneContext context = renderer.getContext();
         context.changeScene(scene1);
         context.attach(scene2);
         context.attachGlobal(scene3);
@@ -238,7 +238,7 @@ public class SceneContextTest {
         MockScene parent = new MockScene();
         MockScene child = new MockScene();
 
-        SceneContext context = new SceneContext(RENDERER, new Stopwatch());
+        SceneContext context = renderer.getContext();
         context.changeScene(parent);
         context.attach(Effect.delay(2f, () -> child.start(context)));
 
@@ -254,8 +254,8 @@ public class SceneContextTest {
 
     @Test
     void nativeFramerate() {
-        MockStopwatch timer = new MockStopwatch(1000, 1100, 1200);
-        SceneContext context = new SceneContext(RENDERER, timer);
+        SceneContext context = renderer.getContext();
+        context.replaceTimer(new MockStopwatch(1000, 1100, 1200));
         Counter counter = new Counter();
         context.changeScene(counter);
 
@@ -268,8 +268,8 @@ public class SceneContextTest {
 
     @Test
     void applicationFramerateSlowerThanRefreshRate() {
-        MockStopwatch timer = new MockStopwatch(1000, 1100, 1150, 1200, 1300);
-        SceneContext context = new SceneContext(RENDERER, timer);
+        SceneContext context = renderer.getContext();
+        context.replaceTimer(new MockStopwatch(1000, 1100, 1150, 1200, 1300));
         Counter counter = new Counter();
         context.changeScene(counter);
 
@@ -282,8 +282,8 @@ public class SceneContextTest {
 
     @Test
     void slowerFramerateWithNonExactMatch() {
-        MockStopwatch timer = new MockStopwatch(1000, 1100, 1130, 1160, 1190, 1220, 1250, 1300);
-        SceneContext context = new SceneContext(RENDERER, timer);
+        SceneContext context = renderer.getContext();
+        context.replaceTimer(new MockStopwatch(1000, 1100, 1130, 1160, 1190, 1220, 1250, 1300));
         Counter counter = new Counter();
         context.changeScene(counter);
 
@@ -296,8 +296,8 @@ public class SceneContextTest {
 
     @Test
     void applicationFramerateFasterThanRefreshRate() {
-        MockStopwatch timer = new MockStopwatch(1000, 1200, 1400);
-        SceneContext context = new SceneContext(RENDERER, timer);
+        SceneContext context = renderer.getContext();
+        context.replaceTimer(new MockStopwatch(1000, 1200, 1400));
         Counter counter = new Counter();
         context.changeScene(counter);
 
@@ -310,8 +310,8 @@ public class SceneContextTest {
 
     @Test
     void limitExtremelyLargeDeltaTime() {
-        MockStopwatch timer = new MockStopwatch(1000, 1100, 9999);
-        SceneContext context = new SceneContext(RENDERER, timer);
+        SceneContext context = renderer.getContext();
+        context.replaceTimer(new MockStopwatch(1000, 1100, 9999));
         Counter counter = new Counter();
         context.changeScene(counter);
 
@@ -324,8 +324,8 @@ public class SceneContextTest {
 
     @Test
     void allowFramesThatAreLittleBitTooShort() {
-        MockStopwatch timer = new MockStopwatch(1000, 1100, 1195, 1300);
-        SceneContext context = new SceneContext(RENDERER, timer);
+        SceneContext context = renderer.getContext();
+        context.replaceTimer(new MockStopwatch(1000, 1100, 1195, 1300));
         Counter counter = new Counter();
         context.changeScene(counter);
 
@@ -341,9 +341,7 @@ public class SceneContextTest {
         Counter a = new Counter();
         Counter b = new Counter();
 
-        MockStopwatch timer = new MockStopwatch(1000, 1100, 1200, 1300, 1400);
-
-        SceneContext context = new SceneContext(RENDERER, timer);
+        SceneContext context = renderer.getContext();
         context.changeScene(new Scene() {
             @Override
             public void start(SceneContext context) {
@@ -361,6 +359,7 @@ public class SceneContextTest {
                 a.update(context, 1f);
             }
         });
+        context.replaceTimer(new MockStopwatch(1000, 1100, 1200, 1300, 1400));
         context.syncFrame();
         context.syncFrame();
 
@@ -370,13 +369,13 @@ public class SceneContextTest {
 
     @Test
     void trackResize() {
-        MockStopwatch timer = new MockStopwatch(1000, 1100, 1200, 1300, 1400);
         Counter counter = new Counter();
 
-        SceneContext context = new SceneContext(RENDERER, timer);
+        SceneContext context = renderer.getContext();
+        context.replaceTimer(new MockStopwatch(1000, 1100, 1200, 1300, 1400));
         context.changeScene(counter);
         context.syncFrame();
-        CANVAS.resizeScreen(1000, 1000);
+        canvas.resizeScreen(1000, 1000);
         context.syncFrame();
         context.syncFrame();
 
@@ -385,13 +384,13 @@ public class SceneContextTest {
 
     @Test
     void doNotTrackVerySmallResize() {
-        MockStopwatch timer = new MockStopwatch(1000, 1100, 1200, 1300, 1400);
         Counter counter = new Counter();
 
-        SceneContext context = new SceneContext(RENDERER, timer);
+        SceneContext context = renderer.getContext();
+        context.replaceTimer(new MockStopwatch(1000, 1100, 1200, 1300, 1400));
         context.changeScene(counter);
         context.syncFrame();
-        CANVAS.resizeScreen(810, 610);
+        canvas.resizeScreen(810, 610);
         context.syncFrame();
 
         assertEquals(List.of("start", "0.10", "0.10"), counter.frames);
@@ -412,7 +411,7 @@ public class SceneContextTest {
             }
         };
 
-        SceneContext context = new SceneContext(RENDERER, new Stopwatch());
+        SceneContext context = renderer.getContext();
         context.changeScene(new Scene() {
             @Override
             public void start(SceneContext context) {
@@ -428,6 +427,20 @@ public class SceneContextTest {
         context.update(1f);
 
         assertEquals(List.of("parent", "child"), events);
+    }
+
+    @Test
+    void getDebugInformation() {
+        SceneContext context = renderer.getContext();
+
+        String expected = """
+            Renderer:  <headless>
+            Canvas:  800x600 @ 1.0x
+            Framerate:  1000 / 10
+            Update time:  0ms
+            Render time:  0ms""";
+
+        assertEquals(expected, String.join("\n", context.getDebugInformation()));
     }
 
     private record Counter(List<String> frames) implements Scene {

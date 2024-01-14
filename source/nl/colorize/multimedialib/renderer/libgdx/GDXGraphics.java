@@ -13,6 +13,7 @@ import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.TextureData;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g3d.Environment;
@@ -55,6 +56,7 @@ import static com.badlogic.gdx.utils.Align.right;
 public class GDXGraphics implements StageVisitor {
 
     private Canvas canvas;
+    private GDXMediaLoader mediaLoader;
 
     private SpriteBatch spriteBatch;
     private ShapeRenderer shapeBatch;
@@ -71,9 +73,11 @@ public class GDXGraphics implements StageVisitor {
     private static final int CIRCLE_SEGMENTS = 32;
     private static final int MASK_CACHE_SIZE = 1024;
 
-    protected GDXGraphics(Canvas canvas) {
+    protected GDXGraphics(Canvas canvas, GDXMediaLoader mediaLoader) {
         this.canvas = canvas;
+        this.mediaLoader = mediaLoader;
         this.maskCache = Cache.from(this::createMask, MASK_CACHE_SIZE);
+
         prepareWorld();
         restartBatch();
     }
@@ -108,8 +112,8 @@ public class GDXGraphics implements StageVisitor {
     }
 
     @Override
-    public boolean visitGraphic(Graphic2D graphic) {
-        return graphic.getTransform().isVisible();
+    public boolean visitGraphic(Stage stage, Graphic2D graphic) {
+        return stage.isVisible(graphic);
     }
 
     @Override
@@ -276,8 +280,7 @@ public class GDXGraphics implements StageVisitor {
 
     @Override
     public void drawText(Text text) {
-        GDXBitmapFont baseFont = (GDXBitmapFont) text.getFont();
-        GDXBitmapFont displayFont = (GDXBitmapFont) baseFont.scale(canvas);
+        BitmapFont bitmapFont = mediaLoader.getBitmapFont(text.getFont().scale(canvas));
         Transform transform = text.getGlobalTransform();
         float screenX = toScreenX(transform.getPosition().getX());
         int align = getTextAlign(text.getAlign());
@@ -286,8 +289,8 @@ public class GDXGraphics implements StageVisitor {
 
         text.forLines((i, line) -> {
             float lineY = transform.getPosition().getY() + i * text.getLineHeight();
-            float screenY = toScreenY(lineY - displayFont.getLineOffset());
-            displayFont.getBitmapFont().draw(spriteBatch, line, screenX, screenY, 0, align, false);
+            float screenY = toScreenY(lineY) + bitmapFont.getXHeight();
+            bitmapFont.draw(spriteBatch, line, screenX, screenY, 0, align, false);
         });
     }
 

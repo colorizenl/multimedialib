@@ -60,4 +60,20 @@ public class VectorTest {
         vector = Vector.fromPoint(new Point2D(-10f, -10f));
         assertEquals("[ -135 14 ]", vector.toString());
     }
+
+    @Test
+    void withDirection() {
+        Vector vector = new Vector(new Point2D(10, 20), 90, 20);
+        Vector result = vector.withDirection(180);
+
+        assertEquals(result, new Vector(new Point2D(10, 20), 180, 20));
+    }
+
+    @Test
+    void withMagnitude() {
+        Vector vector = new Vector(new Point2D(10, 20), 90, 20);
+        Vector result = vector.withMagnitude(30);
+
+        assertEquals(result, new Vector(new Point2D(10, 20), 90, 30));
+    }
 }

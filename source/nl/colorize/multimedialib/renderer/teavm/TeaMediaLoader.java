@@ -16,7 +16,7 @@ import nl.colorize.multimedialib.renderer.three.ThreeGraphics;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.stage.OutlineFont;
+import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.LogHelper;
@@ -75,11 +75,11 @@ public class TeaMediaLoader implements MediaLoader {
     }
 
     @Override
-    public OutlineFont loadFont(FilePointer file, String family, FontStyle style) {
+    public FontFace loadFont(FilePointer file, String family, FontStyle style) {
         Subscribable<Boolean> fontPromise = new Subscribable<>();
         String url = "url('resources/" + normalizeFilePath(file, false) + "')";
         Browser.preloadFontFace(family, url, fontPromise::next);
-        return new TeaFont(family, style);
+        return new FontFace(this, file, family, style);
     }
 
     @Override

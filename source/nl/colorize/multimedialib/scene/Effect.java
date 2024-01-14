@@ -15,6 +15,7 @@ import nl.colorize.multimedialib.stage.Graphic2D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Text;
+import nl.colorize.util.TextUtils;
 import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
 
@@ -75,9 +76,24 @@ public final class Effect implements Scene {
     }
 
     /**
-     * Adds a frame handler that will update the specified timeline every frame,
-     * and then invoke the callback function based on the timeline's new value.
-     * When the timeline ends, this effect will be marked as completed.
+     * Adds a frame handler that will update the specified timer during every
+     * update, then invokes the callback function based on the timer's new
+     * value. This effect will be marked as completed once the timer ends.
+     */
+    public Effect addTimerHandler(Timer timer, Consumer<Float> callback) {
+        addFrameHandler(deltaTime -> {
+            timer.update(deltaTime);
+            callback.accept(timer.getTime());
+        });
+        stopIf(() -> timer.isCompleted());
+        return this;
+    }
+
+    /**
+     * Adds a frame handler that will update the specified timeline during
+     * every frame update, then invokes the callback function based on the
+     * timeline's new value. The effect will be marked as completed once the
+     * timeline ends.
      */
     public Effect addTimelineHandler(Timeline timeline, Consumer<Float> callback) {
         addFrameHandler(deltaTime -> {
@@ -89,13 +105,16 @@ public final class Effect implements Scene {
     }
 
     public Effect addClickHandler(Rect bounds, Runnable handler) {
-        clickHandlers.add(new ClickHandler(() -> bounds, handler));
+        return addClickHandler(() -> bounds, handler);
+    }
+
+    public Effect addClickHandler(Supplier<Rect> bounds, Runnable handler) {
+        clickHandlers.add(new ClickHandler(bounds, handler));
         return this;
     }
 
     public Effect addClickHandler(Graphic2D graphic, Runnable handler) {
-        clickHandlers.add(new ClickHandler(graphic::getStageBounds, handler));
-        return this;
+        return addClickHandler(() -> graphic.getStageBounds(), handler);
     }
 
     public Effect addCompletionHandler(Runnable handler) {
@@ -409,7 +428,7 @@ public final class Effect implements Scene {
     public static Effect forTextAppear(Text text, float duration) {
         Preconditions.checkArgument(duration > 0f, "Invalid duration: " + duration);
 
-        String originalText = text.getText();
+        String originalText = TextUtils.LINE_JOINER.join(text.getLines());
 
         Timeline timeline = new Timeline();
         timeline.addKeyFrame(0f, 0f);

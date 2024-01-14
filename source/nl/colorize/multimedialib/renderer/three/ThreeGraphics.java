@@ -65,7 +65,7 @@ public class ThreeGraphics implements TeaGraphics {
     }
 
     @Override
-    public boolean visitGraphic(Graphic2D graphic) {
+    public boolean visitGraphic(Stage stage, Graphic2D graphic) {
         //TODO
         return true;
     }

@@ -47,11 +47,11 @@ public class Vector {
     }
 
     public Vector withDirection(float newDirection) {
-        return new Vector(newDirection, magnitude);
+        return new Vector(origin, newDirection, magnitude);
     }
 
     public Vector withMagnitude(float newMagnitude) {
-        return new Vector(direction, newMagnitude);
+        return new Vector(origin, direction, newMagnitude);
     }
 
     @Override
