@@ -50,6 +50,10 @@ public class World3D implements Updatable {
         }
     }
 
+    public void clear() {
+        children.clear();
+    }
+
     @Override
     public String toString() {
         return "World3D";

@@ -7,14 +7,13 @@
 package nl.colorize.multimedialib.stage;
 
 import lombok.Getter;
-import lombok.Setter;
+import nl.colorize.multimedialib.math.Angle;
 import nl.colorize.multimedialib.math.Point2D;
 
 /**
- * Defines the list of transformations that should be applied to graphics
- * when displaying them on the {@link Stage}. The table below shows all
- * available transformation properties, along with the graphics types that
- * support them:
+ * Defines the list of transformation properties that should be applied
+ * to graphics when displaying them. The table below shows all available
+ * properties, along with the graphics types that support them:
  * <p>
  * <pre>
  * | Property          | Defined as                                 | Supported by       |
@@ -29,19 +28,18 @@ import nl.colorize.multimedialib.math.Point2D;
  * | Mask color        | Replaces non-transparent pixels with color | Sprite             |
  * </pre>
  * <p>
- * {@link Transform} instances can be used standalone, but they can also be
- * linked to a parent transform. In the latter case, the term "local transform"
- * refers to this {@link Transform} instance, and "global transform" refers to
- * the combination of this {@link Transform} and its parent (which in turn
- * might also have a parent, and so on).
+ * {@link Transform} instances represent a <em>local</em> transforms, with
+ * their properties interpreted relative to their parent. In contrast,
+ * <em>global</em> transforms are interpreted relative to the stage. Changing
+ * a property in a local transform will automatically propagate to the
+ * attached global transform.
  */
 @Getter
-@Setter
-public final class Transform {
+public final class Transform implements Transformable {
 
     private boolean visible;
     private Point2D position;
-    private float rotation;
+    private Angle rotation;
     private float scaleX;
     private float scaleY;
     private boolean flipHorizontal;
@@ -49,12 +47,10 @@ public final class Transform {
     private float alpha;
     private ColorRGB maskColor;
 
-    private Transform parent;
-
     public Transform() {
         this.visible = true;
         this.position = new Point2D(0f, 0f);
-        this.rotation = 0f;
+        this.rotation = Angle.ORIGIN;
         this.scaleX = 100f;
         this.scaleY = 100f;
         this.flipHorizontal = false;
@@ -63,40 +59,48 @@ public final class Transform {
         this.maskColor = null;
     }
 
+    public void setVisible(boolean visible) {
+        this.visible = visible;
+    }
+
+    public void setPosition(Point2D position) {
+        this.position = position;
+    }
+
     public void setPosition(float x, float y) {
-        position = new Point2D(x, y);
+        setPosition(new Point2D(x, y));
     }
 
     public void setX(float x) {
-        position = new Point2D(x, position.getY());
+        setPosition(new Point2D(x, position.y()));
     }
 
     public void setY(float y) {
-        position = new Point2D(position.getX(), y);
+        setPosition(new Point2D(position.x(), y));
     }
 
     public void addPosition(float deltaX, float deltaY) {
-        position = new Point2D(position.getX() + deltaX, position.getY() + deltaY);
+        setPosition(position.move(deltaX, deltaY));
     }
 
     public float getX() {
-        return position.getX();
+        return position.x();
     }
 
     public float getY() {
-        return position.getY();
+        return position.y();
+    }
+
+    public void setRotation(Angle rotation) {
+        this.rotation = rotation;
     }
 
     public void setRotation(float degrees) {
-        this.rotation = degrees % (degrees >= 0f ? 360f : -360f);
+        setRotation(new Angle(degrees));
     }
 
     public void addRotation(float degrees) {
-        setRotation(getRotation() + degrees);
-    }
-
-    public float getRotationInRadians() {
-        return (float) Math.toRadians(rotation);
+        setRotation(rotation.move(degrees));
     }
 
     public void setScale(float scale) {
@@ -104,13 +108,8 @@ public final class Transform {
         setScaleY(scale);
     }
 
-    public void setScale(float scaleX, float scaleY) {
-        setScaleX(scaleX);
-        setScaleY(scaleY);
-    }
-
     public void setScaleX(float scaleX) {
-        this.scaleX = Math.max(scaleX, 0f);
+        this.scaleX = Math.abs(scaleX);
     }
     
     public float getScaleX() {
@@ -118,15 +117,27 @@ public final class Transform {
     }
 
     public void setScaleY(float scaleY) {
-        this.scaleY = Math.max(scaleY, 0f);
+        this.scaleY = Math.abs(scaleY);
     }
 
     public float getScaleY() {
         return flipVertical ? -scaleY : scaleY;
     }
 
+    public void setFlipHorizontal(boolean flipHorizontal) {
+        this.flipHorizontal = flipHorizontal;
+    }
+
+    public void setFlipVertical(boolean flipVertical) {
+        this.flipVertical = flipVertical;
+    }
+
     public void setAlpha(float alpha) {
         this.alpha = Math.clamp(alpha, 0f, 100f);
+    }
+
+    public void setMaskColor(ColorRGB maskColor) {
+        this.maskColor = maskColor;
     }
 
     /**
@@ -135,9 +146,10 @@ public final class Transform {
      */
     public void set(Transform other) {
         setVisible(other.visible);
-        setPosition(other.position.getX(), other.position.getY());
-        setRotation(other.rotation);
-        setScale(other.scaleX, other.scaleY);
+        setPosition(other.position.x(), other.position.y());
+        setRotation(other.rotation.degrees());
+        setScaleX(other.scaleX);
+        setScaleY(other.scaleY);
         setFlipHorizontal(other.flipHorizontal);
         setFlipVertical(other.flipVertical);
         setAlpha(other.alpha);
@@ -145,33 +157,24 @@ public final class Transform {
     }
 
     /**
-     * Returns a {@link Transform} that represents the combination of this
-     * {@link Transform}'s properties with the properties of its parent
-     * transform. If the parent transform <em>also</em> has a parent, this
-     * logic will be applied recursively.
+     * Updates this {@link Transform}, by combining all properties with those
+     * of the specified other {@link Transform}.
      */
-    public Transform toGlobalTransform() {
-        if (parent == null) {
-            return this;
-        }
-        return combine(parent.toGlobalTransform());
+    public void combine(Transform other) {
+        setVisible(visible && other.visible);
+        setPosition(position.move(other.position));
+        setRotation(rotation.degrees() + other.rotation.degrees());
+        setScaleX(combinePercentage(scaleX, other.scaleX));
+        setScaleY(combinePercentage(scaleY, other.scaleY));
+        setFlipHorizontal(flipHorizontal || other.flipHorizontal);
+        setFlipVertical(flipVertical || other.flipVertical);
+        setAlpha(combinePercentage(alpha, other.alpha));
+        setMaskColor(maskColor != null ? maskColor : other.maskColor);
     }
 
-    private Transform combine(Transform other) {
-        Transform global = new Transform();
-        global.setVisible(visible && other.visible);
-        global.setPosition(position.move(other.position));
-        global.setRotation(rotation + other.rotation);
-        global.setScale(combinePercentage(scaleX, other.scaleX),
-            combinePercentage(scaleY, other.scaleY));
-        global.setFlipHorizontal(flipHorizontal || other.flipHorizontal);
-        global.setFlipVertical(flipVertical || other.flipVertical);
-        global.setAlpha(combinePercentage(alpha, other.alpha));
-        global.setMaskColor(maskColor != null ? maskColor : other.maskColor);
-        return global;
-    }
-
-    private float combinePercentage(float value, float parentValue) {
-        return ((value / 100f) * (parentValue / 100f)) * 100f;
+    private float combinePercentage(float value, float otherValue) {
+        float normalizedValue = value / 100f;
+        float normalizedOtherValue = otherValue / 100f;
+        return (normalizedValue * normalizedOtherValue) * 100f;
     }
 }

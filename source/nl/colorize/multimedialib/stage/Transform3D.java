@@ -6,7 +6,6 @@
 
 package nl.colorize.multimedialib.stage;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Point3D;
@@ -32,7 +31,7 @@ public class Transform3D {
     private float scaleZ;
 
     public Transform3D() {
-        this.position = new Point3D(0f, 0f, 0f);
+        this.position = Point3D.ORIGIN;
         this.rotationX = 0f;
         this.rotationY = 0f;
         this.rotationZ = 0f;
@@ -47,9 +46,9 @@ public class Transform3D {
 
     public void addPosition(float deltaX, float deltaY, float deltaZ) {
         position = new Point3D(
-            position.getX() + deltaX,
-            position.getY() + deltaY,
-            position.getZ() + deltaZ
+            position.x() + deltaX,
+            position.y() + deltaY,
+            position.z() + deltaZ
         );
     }
 

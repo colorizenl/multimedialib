@@ -32,18 +32,4 @@ class BufferTest {
 
         assertEquals("[c, d]", Iterables.toString(buffer.flush()));
     }
-
-    @Test
-    void peekDoesNotFlush() {
-        Buffer<String> buffer = new Buffer<>();
-        buffer.push("a");
-        buffer.push("b");
-
-        String[] result = Iterables.toArray(buffer.peek(), String.class);
-
-        assertEquals(2, result.length);
-        assertEquals("a", result[0]);
-        assertEquals("b", result[1]);
-        assertEquals("[a, b]", buffer.toString());
-    }
 }

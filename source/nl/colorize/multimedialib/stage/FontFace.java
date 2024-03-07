@@ -49,4 +49,9 @@ public record FontFace(MediaLoader owner, FilePointer origin, String family, Fon
         int actualDisplaySize = Math.round(canvas.getZoomLevel() * style.size());
         return derive(new FontStyle(actualDisplaySize, style.bold(), style.color()));
     }
+
+    @Override
+    public String toString() {
+        return family + " @ " + style;
+    }
 }

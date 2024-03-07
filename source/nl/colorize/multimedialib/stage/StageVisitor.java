@@ -13,8 +13,8 @@ import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.SegmentedLine;
 
 /**
- * Visitor interface for rendering graphics based on the stage contents.
- * Graphics are visited in the order in which they should be drawn.
+ * Visitor interface that visits all graphics currently on the stage, visiting
+ * them in the order in which they should be drawn.
  * <p>
  * For the various {@code drawX} methods that operate on {@link Primitive}s,
  * the provided shape is already normalized to the position and size how it
@@ -26,25 +26,27 @@ public interface StageVisitor {
 
     /**
      * Prepares visiting the stage. This method is called before any of the
-     * stage's graphics are visited.
+     * stage's graphics are visited. It can be used to add initialization
+     * logic that should be performed before any graphics can be drawn.
      */
     public void prepareStage(Stage stage);
 
-    public void onGraphicAdded(Container parent, Graphic2D graphic);
-
-    public void onGraphicRemoved(Container parent, Graphic2D graphic);
+    /**
+     * Indicates whether this visitor should visit <em>all</em> graphics, or
+     * only graphics that are currently visible.
+     */
+    public boolean shouldVisitAllGraphics();
 
     /**
-     * Visits the specified graphic in the scene graph. If the graphic is a
-     * {@link Container}, the container itself will be visited <em>before</em>
-     * any of its children.
-     * <p>
-     * Returns a boolean that indicates whether this graphic should be drawn
-     * by the renderer. If this returns false, the corresponding {@code drawX}
-     * method will <em>not</em> be called for this graphic (or any of its
-     * children).
+     * Visits a container. This method does not actually need to <em>draw</em>
+     * the container's graphics, since the corresponding {@code drawX} methods
+     * will be called for all the container's children. This method will be
+     * called <em>before</em> the container's children are visited. It can be
+     * used to handle logic related to the container itself, for example to
+     * process children that were added or removed since the last frame
+     * update.
      */
-    public boolean visitGraphic(Stage stage, Graphic2D graphic);
+    public void visitContainer(Container container);
 
     public void drawBackground(ColorRGB color);
 

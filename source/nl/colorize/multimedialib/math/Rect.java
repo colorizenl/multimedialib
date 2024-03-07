@@ -7,7 +7,6 @@
 package nl.colorize.multimedialib.math;
 
 import com.google.common.base.Preconditions;
-import lombok.Value;
 
 /**
  * Two-dimensional rectangle with coordinates defined with float precision.
@@ -15,22 +14,11 @@ import lombok.Value;
  * height. Methods are provided for obtaining the rectangle's X1 and Y1
  * coordinates and its center.
  */
-@Value
-public class Rect implements Shape {
+public record Rect(float x, float y, float width, float height) implements Shape {
 
-    private float x;
-    private float y;
-    private float width;
-    private float height;
-
-    public Rect(float x, float y, float width, float height) {
+    public Rect {
         Preconditions.checkArgument(width >= 0f, "Invalid width: %s", width);
         Preconditions.checkArgument(height >= 0f, "Invalid height: %s", height);
-
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
     }
 
     public float getEndX() {
@@ -55,7 +43,7 @@ public class Rect implements Shape {
 
     @Override
     public boolean contains(Point2D p) {
-        return contains(p.getX(), p.getY());
+        return contains(p.x(), p.y());
     }
 
     public boolean contains(float px, float py) {
@@ -77,7 +65,7 @@ public class Rect implements Shape {
 
     @Override
     public Rect reposition(Point2D offset) {
-        return new Rect(x + offset.getX(), y + offset.getY(), width, height);
+        return new Rect(x + offset.x(), y + offset.y(), width, height);
     }
 
     public Polygon toPolygon() {
@@ -116,6 +104,6 @@ public class Rect implements Shape {
      * point becomes its center.
      */
     public static Rect around(Point2D center, float width, float height) {
-        return new Rect(center.getX() - width / 2f, center.getY() - height / 2f, width, height);
+        return new Rect(center.x() - width / 2f, center.y() - height / 2f, width, height);
     }
 }

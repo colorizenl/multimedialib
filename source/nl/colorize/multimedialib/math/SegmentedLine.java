@@ -8,7 +8,6 @@ package nl.colorize.multimedialib.math;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import lombok.Value;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,29 +20,26 @@ import java.util.List;
  * of the next segment. Alternatively, segments can also be described by
  * {@link Line} instances using {@link #getSegments()}.
  */
-@Value
-public class SegmentedLine implements Shape {
+public record SegmentedLine(List<Point2D> points) implements Shape {
 
-    private List<Point2D> points;
-    private List<Line> segments;
+    public SegmentedLine {
+        Preconditions.checkArgument(points.size() >= 2, "Too few points: " + points.size());
+    }
 
-    public SegmentedLine(List<Point2D> points) {
-        Preconditions.checkArgument(points.size() >= 2, "Insufficient points: " + points.size());
-
-        this.points = points;
-        this.segments = new ArrayList<>();
-
+    public List<Line> getSegments() {
+        List<Line> segments = new ArrayList<>();
         for (int i = 1; i < points.size(); i++) {
             segments.add(new Line(points.get(i - 1), points.get(i)));
         }
+        return segments;
     }
 
     public Point2D getHead() {
-        return points.get(0);
+        return points.getFirst();
     }
 
     public Point2D getTail() {
-        return points.get(points.size() - 1);
+        return points.getLast();
     }
 
     @Override
@@ -53,16 +49,16 @@ public class SegmentedLine implements Shape {
 
     @Override
     public Rect getBoundingBox() {
-        float minX = points.get(0).getX();
-        float maxX = points.get(0).getX();
-        float minY = points.get(0).getY();
-        float maxY = points.get(0).getY();
+        float minX = points.getFirst().x();
+        float maxX = points.getFirst().x();
+        float minY = points.getFirst().y();
+        float maxY = points.getFirst().y();
 
         for (int i = 1; i < points.size(); i++) {
-            minX = Math.min(minX, points.get(i).getX());
-            maxX = Math.max(maxX, points.get(i).getX());
-            minY = Math.min(minY, points.get(i).getY());
-            maxY = Math.max(maxY, points.get(i).getY());
+            minX = Math.min(minX, points.get(i).x());
+            maxX = Math.max(maxX, points.get(i).x());
+            minY = Math.min(minY, points.get(i).y());
+            maxY = Math.max(maxY, points.get(i).y());
         }
 
         return Rect.fromPoints(minX, minY, maxX, maxY);
@@ -71,7 +67,7 @@ public class SegmentedLine implements Shape {
     @Override
     public SegmentedLine reposition(Point2D offset) {
         List<Point2D> pointsCopy = points.stream()
-            .map(p -> new Point2D(p.getX() + offset.getX(), p.getY() + offset.getY()))
+            .map(p -> new Point2D(p.x() + offset.x(), p.y() + offset.y()))
             .toList();
 
         return new SegmentedLine(pointsCopy);

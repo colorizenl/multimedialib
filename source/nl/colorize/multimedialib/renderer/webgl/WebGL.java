@@ -26,12 +26,12 @@ import nl.colorize.multimedialib.renderer.teavm.TeaImage;
 import nl.colorize.multimedialib.renderer.teavm.TeaMediaLoader;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
-import nl.colorize.multimedialib.stage.Graphic2D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
+import nl.colorize.multimedialib.stage.Transformable;
 import nl.colorize.util.stats.Cache;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
@@ -298,16 +298,12 @@ public class WebGL implements TeaGraphics {
     }
 
     @Override
-    public void onGraphicAdded(Container parent, Graphic2D graphic) {
+    public boolean shouldVisitAllGraphics() {
+        return false;
     }
 
     @Override
-    public void onGraphicRemoved(Container parent, Graphic2D graphic) {
-    }
-
-    @Override
-    public boolean visitGraphic(Stage stage, Graphic2D graphic) {
-        return stage.isVisible(graphic);
+    public void visitContainer(Container container) {
     }
 
     @Override
@@ -328,7 +324,7 @@ public class WebGL implements TeaGraphics {
 
         VertexData vertexData = spriteVertexCache.get(image);
         Region region = image.getRegion();
-        Transform transform = sprite.getGlobalTransform();
+        Transformable transform = sprite.getGlobalTransform();
         Point2D position = transform.getPosition();
         float zoomLevel = canvas.getZoomLevel();
 
@@ -352,8 +348,8 @@ public class WebGL implements TeaGraphics {
             1f - (region.y1() / (float) imageElement.getHeight())
         );
 
-        vertexData.setPosition(toGLX(position.getX()), toGLY(position.getY()));
-        vertexData.setRotationInRadians(transform.getRotationInRadians());
+        vertexData.setPosition(toGLX(position.x()), toGLY(position.y()));
+        vertexData.setRotationInRadians(transform.getRotation().getRadians());
         vertexData.setScale(transform.getScaleX() * zoomLevel, transform.getScaleY() * zoomLevel);
 
         render(vertexData);
@@ -376,7 +372,7 @@ public class WebGL implements TeaGraphics {
     @Override
     public void drawRect(Primitive graphic, Rect rect) {
         VertexData vertexData = shapeVertexCache.get(rect);
-        Transform transform = graphic.getGlobalTransform();
+        Transformable transform = graphic.getGlobalTransform();
 
         fillBuffer(vertexData.getVertexBuffer(), toVertices(rect));
         vertexData.setColor(graphic.getColor(), transform.getAlpha());
@@ -409,8 +405,8 @@ public class WebGL implements TeaGraphics {
     }
 
     private float[] toVertices(Rect rect) {
-        float x0 = toGLX(rect.getX());
-        float y0 = toGLY(rect.getY());
+        float x0 = toGLX(rect.x());
+        float y0 = toGLY(rect.y());
         float x1 = toGLX(rect.getEndX());
         float y1 = toGLY(rect.getEndY());
 

@@ -7,7 +7,6 @@
 package nl.colorize.multimedialib.math;
 
 import com.google.common.base.Preconditions;
-import lombok.Value;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,33 +16,14 @@ import java.util.List;
  * A two-dimensional convex polygon with float precision coordinates. The
  * polygon is described by an array of points, e.g. [x0, y0, x1, y1, ...].
  */
-@Value
-public class Polygon implements Shape {
+public record Polygon(float... points) implements Shape {
 
-    private float[] points;
-
-    public Polygon(float... points) {
+    public Polygon {
         Preconditions.checkArgument(points.length >= 6,
             "Convex polygon must have at least 3 points, got " + points.length);
 
         Preconditions.checkArgument(points.length % 2 != 1,
             "Points array must have equal number of X and Y coordinates: " + points.length);
-
-        this.points = points;
-    }
-
-    public Polygon(Point2D... points) {
-        Preconditions.checkArgument(points.length >= 3, 
-            "Convex polygon must have at least 3 points, got" + points.length);
-        
-        this.points = new float[points.length * 2];
-        int offset = 0;
-        
-        for (Point2D point : points) {
-            this.points[offset] = point.getX();
-            this.points[offset + 1] = point.getY();
-            offset += 2;
-        }
     }
 
     public int getNumPoints() {
@@ -60,8 +40,7 @@ public class Polygon implements Shape {
 
     @Override
     public boolean contains(Point2D p) {
-        return isPointInPolygon(p.getX(), p.getY()) ||
-            isPointOnLineSegment(p.getX(), p.getY());
+        return isPointInPolygon(p.x(), p.y()) || isPointOnLineSegment(p.x(), p.y());
     }
 
     /**
@@ -122,7 +101,7 @@ public class Polygon implements Shape {
      * Implementation based on <a href="http://slick.cokeandcode.com">Slick</a>.
      */
     public boolean intersects(Polygon p) {
-        float[] pPoints = p.getPoints();
+        float[] pPoints = p.points();
         double unknownA;
         double unknownB;
         
@@ -195,8 +174,11 @@ public class Polygon implements Shape {
         List<Polygon> triangles = new ArrayList<>();
 
         for (int i = 0; i < vertices.size(); i += 3) {
-            Polygon triangle = new Polygon(vertices.get(i), vertices.get(i + 1), vertices.get(i + 2));
-            triangles.add(triangle);
+            triangles.add(new Polygon(
+                vertices.get(i).x(), vertices.get(i).y(),
+                vertices.get(i + 1).x(), vertices.get(i + 1).y(),
+                vertices.get(i + 2).x(), vertices.get(i + 2).y()
+            ));
         }
 
         return triangles;
@@ -228,8 +210,8 @@ public class Polygon implements Shape {
         float[] newPoints = new float[points.length];
 
         for (int i = 0; i < points.length; i += 2) {
-            newPoints[i] = points[i] + offset.getX();
-            newPoints[i + 1] = points[i + 1] + offset.getY();
+            newPoints[i] = points[i] + offset.x();
+            newPoints[i + 1] = points[i + 1] + offset.y();
         }
 
         return new Polygon(newPoints);
@@ -255,8 +237,8 @@ public class Polygon implements Shape {
 
         for (int i = 0; i < numPoints; i++) {
             Vector vector = new Vector(i * (360f / numPoints), radius);
-            points[i * 2] = origin.getX() + vector.getX();
-            points[i * 2 + 1] = origin.getY() + vector.getY();
+            points[i * 2] = origin.x() + vector.getX();
+            points[i * 2 + 1] = origin.y() + vector.getY();
         }
 
         return new Polygon(points);
@@ -276,10 +258,10 @@ public class Polygon implements Shape {
         Vector right = new Vector((angle % 360) + arc / 2f, length);
 
         return new Polygon(
-            origin.getX(), origin.getY(),
-            origin.getX() + left.getX(), origin.getY() + left.getY(),
-            origin.getX() + center.getX(), origin.getY() + center.getY(),
-            origin.getX() + right.getX(), origin.getY() + right.getY()
+            origin.x(), origin.y(),
+            origin.x() + left.getX(), origin.y() + left.getY(),
+            origin.x() + center.getX(), origin.y() + center.getY(),
+            origin.x() + right.getX(), origin.y() + right.getY()
         );
     }
 }

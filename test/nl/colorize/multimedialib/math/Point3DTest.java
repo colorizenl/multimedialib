@@ -19,8 +19,8 @@ public class Point3DTest {
         Point3D point = new Point3D(10f, 2f, 0f);
         Point3D normalized = point.normalize();
 
-        assertEquals(0.98f, normalized.getX(), EPSILON);
-        assertEquals(0.196f, normalized.getY(), EPSILON);
-        assertEquals(0f, normalized.getZ(), EPSILON);
+        assertEquals(0.98f, normalized.x(), EPSILON);
+        assertEquals(0.196f, normalized.y(), EPSILON);
+        assertEquals(0f, normalized.z(), EPSILON);
     }
 }

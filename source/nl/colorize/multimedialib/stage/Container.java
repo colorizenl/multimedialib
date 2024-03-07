@@ -6,14 +6,10 @@
 
 package nl.colorize.multimedialib.stage;
 
-import com.google.common.base.Preconditions;
 import lombok.Getter;
-import nl.colorize.multimedialib.math.Buffer;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -29,31 +25,27 @@ import java.util.function.Consumer;
  * be retrieved in two ways: by registering observers that are notified
  * whenever a child is added or removed, or via a queue that can be polled on
  * a frame-by-frame basis.
+ * <p>
+ * Containers can optionally be given a name. This name should be used purely
+ * for information purposes. Trying to look up containers by name during each
+ * frame will be too slow for most applications.
  */
 public class Container implements Graphic2D {
 
-    @Getter private StageLocation location;
-    private List<Graphic2D> children;
-    @Getter private Buffer<Graphic2D> addedChildren;
-    @Getter private Buffer<Graphic2D> removedChildren;
+    @Getter private DisplayListLocation location;
+    private String name;
+
+    public Container(String name) {
+        this.location = new DisplayListLocation(this);
+        this.name = name;
+    }
 
     public Container() {
-        this.location = new StageLocation();
-        this.children = new ArrayList<>();
-        this.addedChildren = new Buffer<>();
-        this.removedChildren = new Buffer<>();
+        this(null);
     }
 
     public void addChild(Graphic2D child) {
-        Preconditions.checkArgument(!child.equals(this),
-            "Cannot add container to itself");
-
-        Preconditions.checkArgument(!child.getLocation().isAttached(),
-            "Graphic is already attached to a different parent");
-
         child.getLocation().attach(this);
-        children.add(child);
-        addedChildren.push(child);
     }
 
     /**
@@ -85,28 +77,33 @@ public class Container implements Graphic2D {
     }
 
     public void removeChild(Graphic2D child) {
-        if (children.remove(child)) {
-            child.getLocation().detach();
-            removedChildren.push(child);
-        }
+        child.getLocation().detach();
     }
 
     public void clearChildren() {
-        children.forEach(removedChildren::push);
-        children.clear();
-        addedChildren.flush();
+        location.getRemovedChildren().push(location.getChildren());
+        location.getChildren().clear();
+        location.getAddedChildren().clear();
     }
 
     public Iterable<Graphic2D> getChildren() {
-        return children;
+        return location.getChildren();
     }
 
-    public void forEach(Consumer<Graphic2D> callback) {
-        children.forEach(callback);
-    }
-
+    /**
+     * Invokes the specified callback function for all matching graphics
+     * within this container.
+     *
+     * @deprecated This method requires the container to iterate over all
+     *             of its children, which has a performance impact if the
+     *             container is large and this is done every frame. Prefer
+     *             direct references to the relevant graphics over using
+     *             this method.
+     */
+    @SuppressWarnings("unchecked")
+    @Deprecated
     public <T extends Graphic2D> void forEach(Class<T> type, Consumer<T> callback) {
-        for (Graphic2D child : children) {
+        for (Graphic2D child : location.getChildren()) {
             if (child.getClass() == type) {
                 callback.accept((T) child);
             }
@@ -115,7 +112,7 @@ public class Container implements Graphic2D {
 
     @Override
     public void update(float deltaTime) {
-        for (Graphic2D child : children) {
+        for (Graphic2D child : location.getChildren()) {
             child.update(deltaTime);
         }
     }
@@ -126,19 +123,20 @@ public class Container implements Graphic2D {
      */
     @Override
     public Rect getStageBounds() {
-        if (children.isEmpty()) {
+        if (location.getChildren().isEmpty()) {
             return new Rect(0f, 0f, 0f, 0f);
         }
 
-        float x0 = Integer.MAX_VALUE;
-        float y0 = Integer.MAX_VALUE;
-        float x1 = Integer.MIN_VALUE;
-        float y1 = Integer.MIN_VALUE;
+        Rect firstChildBounds = location.getChildren().getFirst().getStageBounds();
+        float x0 = firstChildBounds.x();
+        float y0 = firstChildBounds.y();
+        float x1 = firstChildBounds.getEndX();
+        float y1 = firstChildBounds.getEndY();
 
-        for (Graphic2D child : children) {
-            Rect childBounds = child.getStageBounds();
-            x0 = Math.min(x0, childBounds.getX());
-            y0 = Math.min(y0, childBounds.getY());
+        for (int i = 1; i < location.getChildren().size(); i++) {
+            Rect childBounds = location.getChildren().get(i).getStageBounds();
+            x0 = Math.min(x0, childBounds.x());
+            y0 = Math.min(y0, childBounds.y());
             x1 = Math.max(x1, childBounds.getEndX());
             y1 = Math.max(y1, childBounds.getEndY());
         }
@@ -148,6 +146,10 @@ public class Container implements Graphic2D {
 
     @Override
     public String toString() {
-        return "Container";
+        if (name == null) {
+            return "Container [" + location.getChildren().size() + "]";
+        } else {
+            return "Container [" + name + ", " + location.getChildren().size() + "]";
+        }
     }
 }

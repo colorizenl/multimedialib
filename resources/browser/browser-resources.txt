@@ -21,7 +21,7 @@ browser/vertex-shader.glsl
 browser/fragment-shader.glsl
 browser/assets/multimedialib.css
 browser/assets/favicon.png
-browser/assets/apple-icon.png
+browser/assets/apple-favicon.png
 browser/assets/loading.gif
 browser/assets/OpenSans-Regular.ttf
 

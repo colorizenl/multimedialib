@@ -7,23 +7,15 @@
 package nl.colorize.multimedialib.math;
 
 import com.google.common.base.Preconditions;
-import lombok.Value;
 
 /**
  * Circle that is defined by its center point and a radius. Circles are
  * immutable and are defined with float precision.
  */
-@Value
-public class Circle implements Shape {
+public record Circle(Point2D center, float radius) implements Shape {
 
-    private Point2D center;
-    private float radius;
-
-    public Circle(Point2D center, float radius) {
+    public Circle {
         Preconditions.checkArgument(radius > 0f, "Invalid radius: " + radius);
-
-        this.center = center;
-        this.radius = radius;
     }
 
     public Circle(float x, float y, float radius) {
@@ -57,12 +49,12 @@ public class Circle implements Shape {
 
     @Override
     public Rect getBoundingBox() {
-        return new Rect(center.getX() - radius, center.getY() - radius, 2f * radius, 2f * radius);
+        return new Rect(center.x() - radius, center.y() - radius, 2f * radius, 2f * radius);
     }
 
     @Override
     public Circle reposition(Point2D offset) {
-        Point2D newCenter = center.move(offset.getX(), offset.getY());
+        Point2D newCenter = center.move(offset.x(), offset.y());
         return new Circle(newCenter, radius);
     }
 

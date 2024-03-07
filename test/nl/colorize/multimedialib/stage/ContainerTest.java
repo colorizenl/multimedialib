@@ -30,8 +30,8 @@ class ContainerTest {
         container.addChild(a);
         container.addChild(b);
 
-        container.getAddedChildren().flush().forEach(e -> events.add("add-" + e));
-        container.getRemovedChildren().flush().forEach(e -> events.add("remove-" + e));
+        container.getLocation().getAddedChildren().flush().forEach(e -> events.add("add-" + e));
+        container.getLocation().getRemovedChildren().flush().forEach(e -> events.add("remove-" + e));
 
         assertEquals("[Text [a], Text [b]]", container.getChildren().toString());
         assertEquals("[add-Text [a], add-Text [b]]", events.toString());
@@ -40,8 +40,8 @@ class ContainerTest {
         container.removeChild(b);
         container.removeChild(c);
 
-        container.getAddedChildren().flush().forEach(e -> events.add("add-" + e));
-        container.getRemovedChildren().flush().forEach(e -> events.add("remove-" + e));
+        container.getLocation().getAddedChildren().flush().forEach(e -> events.add("add-" + e));
+        container.getLocation().getRemovedChildren().flush().forEach(e -> events.add("remove-" + e));
 
         assertEquals("[Text [a], Text [x]]", container.getChildren().toString());
         assertEquals("[add-Text [a], add-Text [b], add-Text [x], remove-Text [b]]", events.toString());

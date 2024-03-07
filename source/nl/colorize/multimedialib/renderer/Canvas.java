@@ -114,7 +114,7 @@ public class Canvas {
     }
 
     public float toCanvasX(Point2D point) {
-        return toCanvasX(Math.round(point.getX()));
+        return toCanvasX(Math.round(point.x()));
     }
 
     public float toCanvasY(int screenY) {
@@ -122,7 +122,7 @@ public class Canvas {
     }
 
     public float toCanvasY(Point2D point) {
-        return toCanvasY(Math.round(point.getY()));
+        return toCanvasY(Math.round(point.y()));
     }
 
     public float toScreenX(float canvasX) {
@@ -130,7 +130,7 @@ public class Canvas {
     }
 
     public float toScreenX(Point2D point) {
-        return toScreenX(point.getX());
+        return toScreenX(point.x());
     }
 
     public float toScreenY(float canvasY) {
@@ -138,7 +138,7 @@ public class Canvas {
     }
 
     public float toScreenY(Point2D point) {
-        return toScreenY(point.getY());
+        return toScreenY(point.y());
     }
 
     @Override

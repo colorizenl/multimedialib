@@ -14,7 +14,7 @@ import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
-import nl.colorize.util.LoadUtils;
+import nl.colorize.util.PropertyUtils;
 import nl.colorize.util.TranslationBundle;
 
 import java.util.List;
@@ -121,7 +121,7 @@ public interface MediaLoader {
      */
     default Properties loadProperties(FilePointer file) {
         String contents = loadText(file);
-        return LoadUtils.loadProperties(contents);
+        return PropertyUtils.loadProperties(contents);
     }
 
     /**
@@ -132,7 +132,7 @@ public interface MediaLoader {
      */
     default TranslationBundle loadTranslationBundle(FilePointer file) {
         Properties properties = loadProperties(file);
-        return TranslationBundle.fromProperties(properties);
+        return TranslationBundle.from(properties);
     }
 
     /**

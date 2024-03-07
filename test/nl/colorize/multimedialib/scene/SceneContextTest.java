@@ -12,6 +12,7 @@ import nl.colorize.multimedialib.mock.MockStopwatch;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
+import nl.colorize.multimedialib.scene.effect.Effect;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

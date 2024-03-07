@@ -7,7 +7,9 @@
 package nl.colorize.multimedialib.renderer.jfx;
 
 import javafx.scene.image.Image;
+import javafx.scene.media.Media;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GeometryBuilder;
@@ -23,6 +25,9 @@ import nl.colorize.util.stats.Cache;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -34,10 +39,12 @@ import java.util.Properties;
 public class JFXMediaLoader implements MediaLoader {
 
     private StandardMediaLoader delegate;
+    private Map<String, Font> loadedFontFamilies;
     private Cache<FontFace, Font> fontCache;
 
     public JFXMediaLoader() {
         this.delegate = new StandardMediaLoader();
+        this.loadedFontFamilies = new HashMap<>();
         this.fontCache = Cache.from(this::loadFont);
     }
 
@@ -56,7 +63,15 @@ public class JFXMediaLoader implements MediaLoader {
 
     @Override
     public Audio loadAudio(FilePointer file) {
-        return delegate.loadAudio(file);
+        ClassLoader classLoader = JFXMediaLoader.class.getClassLoader();
+        URL resourceURL = classLoader.getResource(file.path());
+
+        if (resourceURL == null) {
+            throw new MediaException("Cannot locate media file: " + file);
+        }
+
+        Media media = new Media(resourceURL.toString());
+        return new JFXAudioPlayer(media);
     }
 
     @Override
@@ -68,13 +83,20 @@ public class JFXMediaLoader implements MediaLoader {
     }
 
     private Font loadFont(FontFace key) {
+        Font family = loadedFontFamilies.get(key.family());
         ResourceFile source = delegate.toResourceFile(key.origin());
 
-        try (InputStream stream = source.openStream()) {
-            return Font.loadFont(stream, key.style().size());
-        } catch (IOException e) {
-            throw new MediaException("Could not load font: " + key.origin(), e);
+        if (family == null) {
+            try (InputStream stream = source.openStream()) {
+                family = Font.loadFont(stream, 12f);
+                loadedFontFamilies.put(key.family(), family);
+            } catch (IOException e) {
+                throw new MediaException("Could not load font: " + key.origin(), e);
+            }
         }
+
+        FontWeight weight = key.style().bold() ? FontWeight.BOLD : FontWeight.NORMAL;
+        return Font.font(family.getFamily(), weight, key.style().size());
     }
 
     protected Font getFont(FontFace key) {

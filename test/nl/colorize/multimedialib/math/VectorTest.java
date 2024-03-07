@@ -40,40 +40,40 @@ public class VectorTest {
     @Test
     void setToPoint() {
         Vector vector = Vector.fromPoint(new Point2D(0f, 0f));
-        assertEquals("[ 0 0 ]", vector.toString());
+        assertEquals("[ 0\u00B0 0 ]", vector.toString());
 
         vector = Vector.fromPoint(new Point2D(10f, 0f));
-        assertEquals("[ 0 10 ]", vector.toString());
+        assertEquals("[ 0\u00B0 10 ]", vector.toString());
 
         vector = Vector.fromPoint(new Point2D(-10f, 0f));
-        assertEquals("[ 180 10 ]", vector.toString());
+        assertEquals("[ 180\u00B0 10 ]", vector.toString());
 
         vector = Vector.fromPoint(new Point2D(0f, 10f));
-        assertEquals("[ 90 10 ]", vector.toString());
+        assertEquals("[ 90\u00B0 10 ]", vector.toString());
 
         vector = Vector.fromPoint(new Point2D(0f, -10f));
-        assertEquals("[ -90 10 ]", vector.toString());
+        assertEquals("[ 270\u00B0 10 ]", vector.toString());
 
         vector = Vector.fromPoint(new Point2D(10f, 10f));
-        assertEquals("[ 45 14 ]", vector.toString());
+        assertEquals("[ 45\u00B0 14 ]", vector.toString());
 
         vector = Vector.fromPoint(new Point2D(-10f, -10f));
-        assertEquals("[ -135 14 ]", vector.toString());
+        assertEquals("[ 225\u00B0 14 ]", vector.toString());
     }
 
     @Test
     void withDirection() {
-        Vector vector = new Vector(new Point2D(10, 20), 90, 20);
+        Vector vector = new Vector(new Point2D(10, 20), new Angle(90), 20);
         Vector result = vector.withDirection(180);
 
-        assertEquals(result, new Vector(new Point2D(10, 20), 180, 20));
+        assertEquals(result, new Vector(new Point2D(10, 20), new Angle(180), 20));
     }
 
     @Test
     void withMagnitude() {
-        Vector vector = new Vector(new Point2D(10, 20), 90, 20);
+        Vector vector = new Vector(new Point2D(10, 20), new Angle(90), 20);
         Vector result = vector.withMagnitude(30);
 
-        assertEquals(result, new Vector(new Point2D(10, 20), 90, 30));
+        assertEquals(result, new Vector(new Point2D(10, 20), new Angle(90), 30));
     }
 }

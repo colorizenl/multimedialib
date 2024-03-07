@@ -35,13 +35,13 @@ to the dependencies section in `pom.xml`:
     <dependency>
         <groupId>nl.colorize</groupId>
         <artifactId>multimedialib</artifactId>
-        <version>2024.2</version>
+        <version>2024.3</version>
     </dependency>  
     
 The library can also be used in Gradle projects:
 
     dependencies {
-        implementation "nl.colorize:multimedialib:2024.2"
+        implementation "nl.colorize:multimedialib:2024.3"
     }
     
 Supported platforms
@@ -109,8 +109,8 @@ Starting the demo applications
 ------------------------------
 
 MultimediaLib includes simple demo applications that showcase some of its features, and can be 
-used as an example when using the framework to create applications. The demo applications can also
-be used for verification purposes when testing the framework on new platforms. Two demo
+used as an example when using the framework to create applications. The demo applications can
+also be used for verification purposes when testing the framework on new platforms. Two demo
 applications are included: one for 2D graphics and one for 3D graphics. 
 
 To run the demo for desktop platforms, create a normal build of the library using
@@ -127,26 +127,6 @@ parameters:
 | `--framerate`       | no       | Demo framerate, default is 60 fps.            |
 | `--canvas`          | no       | Uses a fixed canvas size to display graphics. |
 
-Note that when using 3D graphics on Mac OS the command line argument `-XstartOnFirstThread` must
-be present.
-
-The demo application can also be tested as a (native) app for various platforms. Building native
-applications uses the
-[Colorize Gradle application plugin](https://plugins.gradle.org/plugin/nl.colorize.gradle.application).
-Refer to the plugin documentation for the system requirements to build native applications for each
-platform.
-
-- **Browser:** The browser version of the demo applications can be created by running 
-  `gradle transpileDemoApplication2D` and `gradle transpileDemoApplication3D` respectively.
-  The build output is then saved to the directories `build/browserdemo2d` and `browserdemo3d`,
-  and can be started by opening the corresponding `index.html` in a browser.
-- **Mac:** Running `gradle createApplicationBundle` will generate the native Mac application
-  bundle in `build/mac`. 
-- **iOS:** Running `gradle xcodeGen` will generate an Xcode project for a native iOS version of
-  the demo application. The Xcode project will be located in `build/xcode`. 
-- **Windows:** Running `gradle packageEXE` will generate the Windows application, which is then
-  packages and saved to the `build` directory.
-
 Transpiling applications to HTML/JavaScript
 -------------------------------------------
 
@@ -162,6 +142,7 @@ included as part of the library, and supports the following arguments:
 | `--resources` | yes      | Directory containing the application's resource files.       |
 | `--out`       | yes      | Output directory for the generated files.                    |
 | `--minify`    | no       | Minifies the generated JavaScript, off by default.           |
+| `--meta`      | no       | Inserts `<meta>` tags into the HTML, passed as `name:value`. |
 
 Loading image contents in JavaScript is not allowed unless when running on a remote host. This is
 not a problem for "true" web applications, but can be problematic if the JavaScript version of the
@@ -200,13 +181,16 @@ MultimediaLib does not include a distribution mechanism for applications, but it
 other tools for each supported platform. Other tools can be used to create a native distribution:
 
 - The [Colorize Gradle application plugin](https://plugins.gradle.org/plugin/nl.colorize.gradle.application)
-  is capable of building executables and installers for various platforms.
+  is capable of building native applications and installers for various platforms.
 - [Launch4j](http://launch4j.sourceforge.net) can generate `.exe` files for Windows.
   Alternatively, the browser version can be submitted to the Windows Store as a PWA.
 - [PWA Builder](https://www.pwabuilder.com) can generate native apps for Windows, Android, and
-  iOS that use a PWA as input.
+  iOS based on a PWA.
 - [Cordova](https://cordova.apache.org) can wrap the web application in a hybrid web/native app
   for Android, iOS, and Mac.
+
+MultimediaLib includes a command line tool that generates application icons for various platforms,
+based on a PNG image. This tool is called `IconTool`. 
 
 More documentation
 ------------------
@@ -225,7 +209,6 @@ The following Gradle build tasks are available:
 
 - `gradle clean` cleans the build directory
 - `gradle assemble` creates the JAR file for distribution
-- `gradle npmInstall` updates NPM libraries and packages them inside the library
 - `gradle test` runs all unit tests
 - `gradle coverage` runs all unit tests and reports on test coverage
 - `gradle javadoc` generates the JavaDoc API documentation

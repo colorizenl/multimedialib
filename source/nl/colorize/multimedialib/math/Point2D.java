@@ -6,8 +6,6 @@
 
 package nl.colorize.multimedialib.math;
 
-import com.google.common.base.Preconditions;
-import lombok.Value;
 import nl.colorize.util.animation.Interpolation;
 
 import static nl.colorize.multimedialib.math.Shape.EPSILON;
@@ -16,18 +14,9 @@ import static nl.colorize.multimedialib.math.Shape.EPSILON;
  * Describes a point with X and Y coordinates within a two-dimensional space.
  * Point coordinates have float precision, and point instances are immutable.
  */
-@Value
-public class Point2D {
-
-    private float x;
-    private float y;
+public record Point2D(float x, float y) {
 
     public static final Point2D ORIGIN = new Point2D(0f, 0f);
-
-    public Point2D(float x, float y) {
-        this.x = x;
-        this.y = y;
-    }
 
     public boolean isOrigin() {
         return Math.abs(x) < EPSILON && Math.abs(y) < EPSILON;
@@ -73,11 +62,9 @@ public class Point2D {
      * between 0.0 (position of this point) and 1.0 (position of the other point).
      */
     public Point2D interpolate(Point2D other, float delta, Interpolation method) {
-        Preconditions.checkArgument(delta >= 0f && delta <= 1f,
-            "Delta value out of range: " + delta);
-        
-        return new Point2D(method.interpolate(x, other.x, delta),
-            method.interpolate(y, other.y, delta));
+        float interpolatedX = method.interpolate(x, other.x, delta);
+        float interpolatedY = method.interpolate(y, other.y, delta);
+        return new Point2D(interpolatedX, interpolatedY);
     }
     
     /**
@@ -103,7 +90,7 @@ public class Point2D {
      * specified offset.
      */
     public Point2D move(Point2D other) {
-        return move(other.getX(), other.getY());
+        return move(other.x(), other.y());
     }
 
     @Override

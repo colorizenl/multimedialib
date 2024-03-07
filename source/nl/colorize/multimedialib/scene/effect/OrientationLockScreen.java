@@ -4,9 +4,11 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.scene;
+package nl.colorize.multimedialib.scene.effect;
 
 import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.Graphic2D;
 
 /**

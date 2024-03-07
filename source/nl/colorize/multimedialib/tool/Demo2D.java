@@ -4,7 +4,7 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.demo;
+package nl.colorize.multimedialib.tool;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -23,12 +23,12 @@ import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Pointer;
-import nl.colorize.multimedialib.scene.Effect;
-import nl.colorize.multimedialib.scene.ParticleWipe;
-import nl.colorize.multimedialib.scene.PerformanceMonitor;
+import nl.colorize.multimedialib.scene.effect.Effect;
+import nl.colorize.multimedialib.scene.effect.ParticleWipe;
+import nl.colorize.multimedialib.scene.effect.PerformanceMonitor;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.multimedialib.scene.SwipeTracker;
+import nl.colorize.multimedialib.scene.effect.SwipeTracker;
 import nl.colorize.multimedialib.scene.Updatable;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.Animation;
@@ -43,7 +43,7 @@ import nl.colorize.multimedialib.stage.SpriteAtlas;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.util.DateParser;
-import nl.colorize.util.LoadUtils;
+import nl.colorize.util.PropertyUtils;
 import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
 import nl.colorize.util.http.Headers;
@@ -127,7 +127,7 @@ public class Demo2D implements Scene, ErrorHandler {
         sendHttpRequest(context.getNetwork());
 
         context.getMediaLoader().saveApplicationData("MultimediaLib-Demo2D",
-            LoadUtils.loadProperties("demo=" + DateParser.format(new Date(), "yyyy-MM-dd HH:mm")));
+            PropertyUtils.loadProperties("demo=" + DateParser.format(new Date(), "yyyy-MM-dd HH:mm")));
 
         performanceMonitor = new PerformanceMonitor(false);
         performanceMonitor.setActive(false);
@@ -427,10 +427,10 @@ public class Demo2D implements Scene, ErrorHandler {
             Point2D position = sprite.getTransform().getPosition();
 
             Point2D newPosition = switch (direction) {
-                case 0 -> new Point2D(position.getX(), position.getY() - speed * deltaTime);
-                case 1 -> new Point2D(position.getX() + speed * deltaTime, position.getY());
-                case 2 -> new Point2D(position.getX(), position.getY() + speed * deltaTime);
-                case 3 -> new Point2D(position.getX() - speed * deltaTime, position.getY());
+                case 0 -> new Point2D(position.x(), position.y() - speed * deltaTime);
+                case 1 -> new Point2D(position.x() + speed * deltaTime, position.y());
+                case 2 -> new Point2D(position.x(), position.y() + speed * deltaTime);
+                case 3 -> new Point2D(position.x() - speed * deltaTime, position.y());
                 default -> position;
             };
 

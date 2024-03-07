@@ -4,11 +4,12 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.scene;
+package nl.colorize.multimedialib.scene.effect;
 
 import com.google.common.collect.Iterables;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
+import nl.colorize.multimedialib.scene.effect.SwipeTracker;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

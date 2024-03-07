@@ -29,34 +29,34 @@ class TransformTest {
         child.setPosition(30f, 40f);
         child.setScaleX(150f);
 
-        child.setParent(parent);
-        Transform global = child.toGlobalTransform();
+        child.combine(parent);
 
-        assertEquals(40f, global.getPosition().getX(), EPSILON);
-        assertEquals(60f, global.getPosition().getY(), EPSILON);
-        assertTrue(global.isFlipHorizontal());
-        assertFalse(global.isFlipVertical());
-        assertEquals(100f, global.getRotation(), EPSILON);
-        assertEquals(-75f, global.getScaleX(), EPSILON);
-        assertEquals(100f, global.getScaleY(), EPSILON);
-        assertEquals(80f, global.getAlpha(), EPSILON);
+        assertEquals(40f, child.getPosition().x(), EPSILON);
+        assertEquals(60f, child.getPosition().y(), EPSILON);
+        assertTrue(child.isFlipHorizontal());
+        assertFalse(child.isFlipVertical());
+        assertEquals(100f, child.getRotation().degrees(), EPSILON);
+        assertEquals(-75f, child.getScaleX(), EPSILON);
+        assertEquals(100f, child.getScaleY(), EPSILON);
+        assertEquals(80f, child.getAlpha(), EPSILON);
     }
 
     @Test
     void inheritVisibleField() {
-        Transform transform = new Transform();
-        transform.setVisible(true);
+        Transform first = new Transform();
+        first.setVisible(true);
 
-        Transform parent = new Transform();
-        parent.setVisible(false);
-        transform.setParent(parent);
+        Transform second = new Transform();
+        second.setVisible(false);
 
-        Transform grandpa = new Transform();
-        grandpa.setVisible(true);
-        parent.setParent(grandpa);
+        Transform third = new Transform();
+        third.setVisible(true);
 
-        assertFalse(transform.toGlobalTransform().isVisible());
-        assertFalse(parent.toGlobalTransform().isVisible());
-        assertTrue(grandpa.toGlobalTransform().isVisible());
+        second.combine(first);
+        third.combine(second);
+
+        assertTrue(first.isVisible());
+        assertFalse(second.isVisible());
+        assertFalse(third.isVisible());
     }
 }

@@ -76,7 +76,7 @@ public class Animation {
         Preconditions.checkState(!frames.isEmpty(), "Animation does not contain any frames");
 
         if (frames.size() == 1) {
-            return frames.get(0).image;
+            return frames.getFirst().image;
         }
 
         if (loop) {
@@ -90,7 +90,7 @@ public class Animation {
             }
         }
 
-        return frames.get(frames.size() - 1).image;
+        return frames.getLast().image;
     }
 
     public float getDuration() {

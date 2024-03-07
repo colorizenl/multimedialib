@@ -47,16 +47,16 @@ public class Point2DTest {
         Point2D origin = new Point2D(10, 20);
         
         Point2D center = origin.findCenter(new Point2D(10, 20));
-        assertEquals(10f, center.getX(), EPSILON);
-        assertEquals(20f, center.getY(), EPSILON);
+        assertEquals(10f, center.x(), EPSILON);
+        assertEquals(20f, center.y(), EPSILON);
         
         center = origin.findCenter(new Point2D(40, 20));
-        assertEquals(25f, center.getX(), EPSILON);
-        assertEquals(20f, center.getY(), EPSILON);
+        assertEquals(25f, center.x(), EPSILON);
+        assertEquals(20f, center.y(), EPSILON);
         
         center = origin.findCenter(new Point2D(-20, -20));
-        assertEquals(-5f, center.getX(), EPSILON);
-        assertEquals(0f, center.getY(), EPSILON);
+        assertEquals(-5f, center.x(), EPSILON);
+        assertEquals(0f, center.y(), EPSILON);
     }
     
     @Test
@@ -64,17 +64,17 @@ public class Point2DTest {
         Point2D a = new Point2D(10f, 20f);
         Point2D b = new Point2D(30f, 30f);
         
-        assertEquals(10f, a.interpolate(b, 0f).getX(), EPSILON);
-        assertEquals(20f, a.interpolate(b, 0f).getY(), EPSILON);
+        assertEquals(10f, a.interpolate(b, 0f).x(), EPSILON);
+        assertEquals(20f, a.interpolate(b, 0f).y(), EPSILON);
         
-        assertEquals(20f, a.interpolate(b, 0.5f).getX(), EPSILON);
-        assertEquals(25f, a.interpolate(b, 0.5f).getY(), EPSILON);
+        assertEquals(20f, a.interpolate(b, 0.5f).x(), EPSILON);
+        assertEquals(25f, a.interpolate(b, 0.5f).y(), EPSILON);
         
-        assertEquals(25f, a.interpolate(b, 0.75f).getX(), EPSILON);
-        assertEquals(27.5f, a.interpolate(b, 0.75f).getY(), EPSILON);
+        assertEquals(25f, a.interpolate(b, 0.75f).x(), EPSILON);
+        assertEquals(27.5f, a.interpolate(b, 0.75f).y(), EPSILON);
         
-        assertEquals(30f, a.interpolate(b, 1f).getX(), EPSILON);
-        assertEquals(30f, a.interpolate(b, 1f).getY(), EPSILON);
+        assertEquals(30f, a.interpolate(b, 1f).x(), EPSILON);
+        assertEquals(30f, a.interpolate(b, 1f).y(), EPSILON);
     }
 
     @Test

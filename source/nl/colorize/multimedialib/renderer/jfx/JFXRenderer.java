@@ -19,8 +19,9 @@ import nl.colorize.multimedialib.renderer.java2d.StandardNetwork;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.util.LogHelper;
-import nl.colorize.util.Stopwatch;
+import nl.colorize.util.swing.SwingUtils;
 
+import javax.swing.SwingUtilities;
 import java.util.logging.Logger;
 
 /**
@@ -56,12 +57,16 @@ public class JFXRenderer implements Renderer {
 
     @Override
     public void start(Scene initialScene, ErrorHandler errorHandler) {
+        // The JavaFX relies on Swing for certain operations. There is
+        // no point in avoiding the usage of Swing entirely, since it
+        // is still part of the Java runtime.
+        SwingUtilities.invokeLater(SwingUtils::initializeSwing);
+
         mediaLoader = new JFXMediaLoader();
         network = new StandardNetwork();
         input = new JFXInput(displayMode.canvas());
         graphics = new JFXGraphics(displayMode, mediaLoader);
 
-        Stopwatch timer = new Stopwatch();
         context = new SceneContext(this, mediaLoader, input, network);
         context.changeScene(initialScene);
 

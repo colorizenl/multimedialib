@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,7 +25,7 @@ public class PolygonTest {
         Polygon polygon = new Polygon(points);
 
         assertEquals(4, polygon.getNumPoints());
-        assertEquals(8, polygon.getPoints().length);
+        assertEquals(8, polygon.points().length);
         assertEquals(1, polygon.getPointX(0), EPSILON);
         assertEquals(2, polygon.getPointY(0), EPSILON);
         assertEquals(5, polygon.getPointX(2), EPSILON);
@@ -38,7 +37,7 @@ public class PolygonTest {
         float[] points = {100, 100, 200, 150, 100, 200};
         Polygon polygon = new Polygon(points);
         Polygon moved = polygon.reposition(new Point2D(100, 50));
-        assertEquals("[200.0, 150.0, 300.0, 200.0, 200.0, 250.0]", Arrays.toString(moved.getPoints()));
+        assertEquals("[200.0, 150.0, 300.0, 200.0, 200.0, 250.0]", Arrays.toString(moved.points()));
     }
 
     @Test
@@ -91,14 +90,6 @@ public class PolygonTest {
         assertTrue(Polygon.createCircle(new Point2D(10f, 0f), 10f, 16).intersects(circle));
         assertFalse(Polygon.createCircle(new Point2D(21f, 0f), 10f, 16).intersects(circle));
     }
-    
-    @Test
-    public void testCreatePolygonFromPoints() {
-        Polygon polygon = new Polygon(new Point2D(1, 2), new Point2D(3, 4), new Point2D(5, 6));
-        
-        assertEquals(3, polygon.getNumPoints());
-        assertArrayEquals(new float[] {1, 2, 3, 4, 5, 6}, polygon.getPoints());
-    }
 
     @Test
     void getBounds() {
@@ -121,17 +112,17 @@ public class PolygonTest {
 
         assertEquals(6, result.size());
         assertEquals("[160.0, 140.0, 240.0, 140.0, 200.0, 200.0]",
-            Arrays.toString(result.get(0).getPoints()));
+            Arrays.toString(result.get(0).points()));
         assertEquals("[240.0, 140.0, 270.0, 200.0, 200.0, 200.0]",
-            Arrays.toString(result.get(1).getPoints()));
+            Arrays.toString(result.get(1).points()));
         assertEquals("[270.0, 200.0, 240.0, 260.0, 200.0, 200.0]",
-            Arrays.toString(result.get(2).getPoints()));
+            Arrays.toString(result.get(2).points()));
         assertEquals("[240.0, 260.0, 160.0, 260.0, 200.0, 200.0]",
-            Arrays.toString(result.get(3).getPoints()));
+            Arrays.toString(result.get(3).points()));
         assertEquals("[160.0, 260.0, 130.0, 200.0, 200.0, 200.0]",
-            Arrays.toString(result.get(4).getPoints()));
+            Arrays.toString(result.get(4).points()));
         assertEquals("[130.0, 200.0, 160.0, 140.0, 200.0, 200.0]",
-            Arrays.toString(result.get(5).getPoints()));
+            Arrays.toString(result.get(5).points()));
     }
 
     @Test
@@ -140,10 +131,10 @@ public class PolygonTest {
         List<Polygon> result = polygon.subdivide();
 
         assertEquals(4, result.size());
-        assertEquals("[10.0, 20.0, 40.0, 20.0, 25.0, 40.0]", Arrays.toString(result.get(0).getPoints()));
-        assertEquals("[40.0, 20.0, 40.0, 60.0, 25.0, 40.0]", Arrays.toString(result.get(1).getPoints()));
-        assertEquals("[40.0, 60.0, 10.0, 60.0, 25.0, 40.0]", Arrays.toString(result.get(2).getPoints()));
-        assertEquals("[10.0, 60.0, 10.0, 20.0, 25.0, 40.0]", Arrays.toString(result.get(3).getPoints()));
+        assertEquals("[10.0, 20.0, 40.0, 20.0, 25.0, 40.0]", Arrays.toString(result.get(0).points()));
+        assertEquals("[40.0, 20.0, 40.0, 60.0, 25.0, 40.0]", Arrays.toString(result.get(1).points()));
+        assertEquals("[40.0, 60.0, 10.0, 60.0, 25.0, 40.0]", Arrays.toString(result.get(2).points()));
+        assertEquals("[10.0, 60.0, 10.0, 20.0, 25.0, 40.0]", Arrays.toString(result.get(3).points()));
     }
 
     @Test
@@ -152,6 +143,6 @@ public class PolygonTest {
         List<Polygon> result = polygon.subdivide();
 
         assertEquals(1, result.size());
-        assertEquals("[10.0, 10.0, 20.0, 10.0, 20.0, 20.0]", Arrays.toString(result.get(0).getPoints()));
+        assertEquals("[10.0, 10.0, 20.0, 10.0, 20.0, 20.0]", Arrays.toString(result.get(0).points()));
     }
 }

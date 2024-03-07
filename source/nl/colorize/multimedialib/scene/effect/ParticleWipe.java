@@ -4,11 +4,13 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.scene;
+package nl.colorize.multimedialib.scene.effect;
 
 import lombok.Getter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.renderer.FilePointer;
+import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Image;
@@ -101,7 +103,7 @@ public class ParticleWipe implements Scene {
 
     @Override
     public void end(SceneContext context) {
-        container.detach();
+        container.getLocation().detach();
     }
 
     /**

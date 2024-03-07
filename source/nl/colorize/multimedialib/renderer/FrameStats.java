@@ -6,8 +6,10 @@
 
 package nl.colorize.multimedialib.renderer;
 
+import lombok.Getter;
+import nl.colorize.multimedialib.stage.Graphic2D;
 import nl.colorize.util.Stopwatch;
-import nl.colorize.util.stats.Statistics;
+import nl.colorize.util.stats.Aggregate;
 
 import java.util.Deque;
 import java.util.LinkedHashMap;
@@ -30,15 +32,17 @@ public class FrameStats {
 
     private DisplayMode displayMode;
     private Map<String, PhaseStats> stats;
+    @Getter private int graphicsCount;
 
     public static final String PHASE_FRAME_TIME = "$$frameTime";
     public static final String PHASE_FRAME_UPDATE = "$$frameUpdate";
     public static final String PHASE_FRAME_RENDER = "$$frameRender";
-    public static final int BUFFER_CAPACITY = 100;
+    public static final int BUFFER_CAPACITY = 60;
 
     public FrameStats(DisplayMode displayMode) {
         this.displayMode = displayMode;
         this.stats = new LinkedHashMap<>();
+        this.graphicsCount = 0;
     }
 
     private PhaseStats prepare(String phase) {
@@ -89,7 +93,7 @@ public class FrameStats {
      */
     public int getAverageTimeMS(String phase) {
         PhaseStats phaseStats = prepare(phase);
-        return (int) Statistics.average(phaseStats.values);
+        return (int) Aggregate.average(phaseStats.values);
     }
 
     /**
@@ -127,6 +131,14 @@ public class FrameStats {
      */
     public int getBufferSize() {
         return prepare(PHASE_FRAME_TIME).values().size();
+    }
+
+    public void countGraphics(Graphic2D graphic) {
+        graphicsCount++;
+    }
+
+    public void resetGraphicsCount() {
+        graphicsCount = 0;
     }
 
     /**

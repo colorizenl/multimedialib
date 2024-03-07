@@ -15,11 +15,12 @@ import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.SegmentedLine;
 import nl.colorize.multimedialib.mock.MockImage;
 import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.DisplayMode;
+import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
-import nl.colorize.multimedialib.stage.Graphic2D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
@@ -37,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class StageTest {
 
     private static final Canvas CANVAS = new Canvas(800, 600, ScaleStrategy.flexible());
+    private static final FrameStats STATS = new FrameStats(new DisplayMode(CANVAS, 60));
 
     @Test
     void visitStage() {
@@ -46,7 +48,7 @@ class StageTest {
         Sprite spriteB = new Sprite();
         spriteB.addGraphics("b", new MockImage());
 
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
+        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS, STATS);
         stage.getRoot().addChild(spriteA);
         stage.getRoot().addChild(new Primitive(new Rect(10, 20, 30, 40), ColorRGB.RED));
         stage.getRoot().addChild(spriteB);
@@ -57,20 +59,15 @@ class StageTest {
         stage.visit(new StageVisitor() {
             @Override
             public void prepareStage(Stage stage) {
-
             }
 
             @Override
-            public void onGraphicAdded(Container parent, Graphic2D graphic) {
-            }
-
-            @Override
-            public void onGraphicRemoved(Container parent, Graphic2D graphic) {
-            }
-
-            @Override
-            public boolean visitGraphic(Stage stage, Graphic2D graphic) {
+            public boolean shouldVisitAllGraphics() {
                 return true;
+            }
+
+            @Override
+            public void visitContainer(Container container) {
             }
 
             @Override
@@ -121,7 +118,7 @@ class StageTest {
         Rect rect = new Rect(100, 200, 100, 100);
         Primitive primitive = new Primitive(rect, ColorRGB.RED);
 
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
+        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS, STATS);
         stage.getRoot().addChild(primitive);
 
         assertFalse(primitive.getStageBounds().contains(new Point2D(0, 200)));
@@ -140,7 +137,7 @@ class StageTest {
 
     @Test
     void stringForm() {
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
+        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS, STATS);
         Container layer = stage.addContainer();
         layer.addChild(new Sprite(new MockImage()));
         layer.addChild(new Primitive(new Rect(10, 10, 200, 200), ColorRGB.RED));
@@ -148,10 +145,10 @@ class StageTest {
 
         String expected = """
             Stage
-                Container
-                    Container
-                        Sprite [$$default@0.0]
-                        Primitive [(10, 10, 200, 200)]
+                Container [$$root, 1]
+                    Container [3]
+                        Sprite [$$default]
+                        Rect
                         Text [test]
             """;
 

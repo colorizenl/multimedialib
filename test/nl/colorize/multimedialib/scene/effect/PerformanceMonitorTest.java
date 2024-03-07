@@ -4,7 +4,7 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.scene;
+package nl.colorize.multimedialib.scene.effect;
 
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
@@ -34,29 +34,29 @@ class PerformanceMonitorTest {
 
         String expected = """
             Stage
-                Container
-                    Container
-                        Primitive [(0, 0, 300, 100)]
-                        Container
-                            Primitive [(0, 100) -> (3, 100) -> (6, 100) -> (9, 100) -> (12, 100) -> (15, 100) -> (18, 100) -> (21, 100) -> (24, 100) -> (27, 100) -> (30, 100) -> (33, 100) -> (36, 100) -> (39, 100) -> (42, 100) -> (45, 100) -> (48, 100) -> (51, 100) -> (54, 100) -> (57, 100)]
-                            Primitive [(0, 100) -> (3, 100) -> (6, 100) -> (9, 100) -> (12, 100) -> (15, 100) -> (18, 100) -> (21, 100) -> (24, 100) -> (27, 100) -> (30, 100) -> (33, 100) -> (36, 100) -> (39, 100) -> (42, 100) -> (45, 100) -> (48, 100) -> (51, 100) -> (54, 100) -> (57, 100)]
-                            Primitive [(0, 100) -> (3, 100) -> (6, 100) -> (9, 100) -> (12, 100) -> (15, 100) -> (18, 100) -> (21, 100) -> (24, 100) -> (27, 100) -> (30, 100) -> (33, 100) -> (36, 100) -> (39, 100) -> (42, 100) -> (45, 100) -> (48, 100) -> (51, 100) -> (54, 100) -> (57, 100)]
+                Container [$$root, 1]
+                    Container [18]
+                        Rect
+                        Container [3]
+                            SegmentedLine
+                            SegmentedLine
+                            SegmentedLine
                         Text [1,000.0]
-                        Primitive [(0, 0) -> (300, 0)]
-                        Primitive [(0, 20) -> (300, 20)]
+                        Line
+                        Line
                         Text [10ms]
-                        Primitive [(0, 40) -> (300, 40)]
+                        Line
                         Text [20ms]
-                        Primitive [(0, 60) -> (300, 60)]
+                        Line
                         Text [30ms]
-                        Primitive [(0, 80) -> (300, 80)]
+                        Line
                         Text [40ms]
-                        Primitive [(0, 100) -> (300, 100)]
+                        Line
                         Text [50ms]
-                        Primitive [(0, 0) -> (300, 0)]
-                        Primitive [(0, 100) -> (300, 100)]
-                        Primitive [(0, 0) -> (0, 100)]
-                        Primitive [(300, 0) -> (300, 100)]
+                        Line
+                        Line
+                        Line
+                        Line
             """;
 
         assertEquals(expected, renderer.getContext().getStage().toString());

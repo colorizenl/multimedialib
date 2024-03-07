@@ -68,9 +68,15 @@ public class Browser {
     )
     public static native void writeClipboard(String text);
 
-    // ----------------------------------------
+    @JSBody(
+        params = {"name", "defaultValue"},
+        script = "return window.getMeta(name, defaultValue);"
+    )
+    public static native String getMeta(String name, String defaultValue);
+
+    // -------------------------------
     // JavaScript framework interfaces
-    // ----------------------------------------
+    // -------------------------------
 
     @JSBody(script = "return window.pixiBridge;")
     public static native PixiBridge getPixiBridge();

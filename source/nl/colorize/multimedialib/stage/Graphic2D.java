@@ -10,63 +10,65 @@ import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.Updatable;
 
-import java.util.UUID;
-
 /**
  * Shared interface for all types of 2D graphics that are part of the scene
- * graph. It defines a common API for managing graphics, with subclasses
- * adding the specific behavior for controlling the appearance.
- * <p>
- * Graphics have both a <em>local</em> transform, which is relative to the
- * graphic's parent in the scene graph, and a <em>global</em> transform that
- * is relative to the stage.
+ * graph. It defines a common API for managing graphics. Each graphic is part
+ * of the <em>display list</em>, which is controlled by the renderer and
+ * determines when and how graphics should be displayed.
  */
 public interface Graphic2D extends Updatable {
 
-    public StageLocation getLocation();
-
-    default UUID getId() {
-        return getLocation().getId();
-    }
-
-    default void detach() {
-        if (getLocation().getParent() != null) {
-            getLocation().getParent().removeChild(this);
-        }
-    }
+    /**
+     * Returns the {@link DisplayListLocation} attached to this graphic, which
+     * is used by the renderer to determine how this graphic should be drawn.
+     */
+    public DisplayListLocation getLocation();
 
     /**
-     * Returns this graphic's <em>local</em> transform, which indicates how the
-     * graphic should be displayed relative to its parent. The graphic's global
-     * transform can be derived from its local transform when necessary.
+     * Provides access to this graphic's <em>local</em> transform, which can
+     * be used to influence how the graphic should be displayed. As the
+     * "local" implies, these properties are relative to the graphic's parent.
+     * The graphic's <em>global</em> transform is then calculated by combining
+     * the graphic's transform properties with those of its parent.
      */
     default Transform getTransform() {
         return getLocation().getLocalTransform();
     }
 
+    /**
+     * Returns this graphic's <em>global</em> transform, which is calculated
+     * by combining the graphic's <em>local</em> transform with that of its
+     * parents.
+     */
+    default Transformable getGlobalTransform() {
+        return getLocation().getGlobalTransform();
+    }
+
+    /**
+     * Convenience method of changing this graphic's position. The X and Y
+     * coordinates are relative to the graphic's local transform.
+     *
+     * @deprecated Prefer {@code getTransform().setPosition(x, y)}.
+     */
     @Deprecated
     default void setPosition(float x, float y) {
         getTransform().setPosition(x, y);
     }
 
-    @Deprecated
-    default void setPosition(Point2D position) {
-        getTransform().setPosition(position);
-    }
-
     /**
-     * Returns this graphic's <em>global</em> transform, which indicates how
-     * the graphic should be displayed on the stage. This method is a
-     * shorthand for {@code getTransform().toGlobalTransform()}.
-     */
-    default Transform getGlobalTransform() {
-        return getLocation().getLocalTransform().toGlobalTransform();
-    }
-
-    /**
-     * Returns the position and size of this graphic on the stage. For
-     * non-rectangular graphics this returns the smallest possible
-     * rectangle that contains this graphic.
+     * Returns the smallest possible rectangle that can contain this graphic,
+     * based on its current position and size. The returned coordinates are
+     * relative to the stage, <em>not</em> relative to the graphic's parent.
      */
     public Rect getStageBounds();
+
+    /**
+     * Returns true if the specified stage coordinates are included within
+     * this graphic's bounds. The default implementation does not perform
+     * a pixel-perfect check, and instead relies on the graphic's bounding
+     * rectangle as returned by {@link #getStageBounds()}.
+     */
+    default boolean hitTest(Point2D p) {
+        return getStageBounds().contains(p);
+    }
 }

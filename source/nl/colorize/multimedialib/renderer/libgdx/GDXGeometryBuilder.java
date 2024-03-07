@@ -32,18 +32,18 @@ public class GDXGeometryBuilder implements GeometryBuilder {
 
     @Override
     public PolygonModel createQuad(Point2D size, ColorRGB color) {
-        return createBox(new Point3D(size.getX(), 0.001f, size.getY()), color);
+        return createBox(new Point3D(size.x(), 0.001f, size.y()), color);
     }
 
     @Override
     public PolygonModel createQuad(Point2D size, Image texture) {
-        return createBox(new Point3D(size.getX(), 0.001f, size.getY()), texture);
+        return createBox(new Point3D(size.x(), 0.001f, size.y()), texture);
     }
 
     @Override
     public PolygonModel createBox(Point3D size, ColorRGB color) {
         ModelBuilder modelBuilder = new ModelBuilder();
-        Model model = modelBuilder.createBox(size.getX(), size.getY(), size.getZ(),
+        Model model = modelBuilder.createBox(size.x(), size.y(), size.z(),
             createMaterial(color), Position | Normal);
         return media.createInstance(model);
     }
@@ -51,7 +51,7 @@ public class GDXGeometryBuilder implements GeometryBuilder {
     @Override
     public PolygonModel createBox(Point3D size, Image texture) {
         ModelBuilder modelBuilder = new ModelBuilder();
-        Model model = modelBuilder.createBox(size.getX(), size.getY(), size.getZ(),
+        Model model = modelBuilder.createBox(size.x(), size.y(), size.z(),
             createMaterial((GDXImage) texture), Position | Normal | TextureCoordinates);
         return media.createInstance(model);
     }

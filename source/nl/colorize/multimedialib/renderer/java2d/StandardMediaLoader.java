@@ -21,7 +21,7 @@ import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.PolygonModel;
-import nl.colorize.util.LoadUtils;
+import nl.colorize.util.PropertyUtils;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.ResourceFile;
@@ -196,7 +196,7 @@ public class StandardMediaLoader implements MediaLoader {
 
         if (dataFile.exists()) {
             try {
-                return LoadUtils.loadProperties(dataFile, Charsets.UTF_8);
+                return PropertyUtils.loadProperties(dataFile, Charsets.UTF_8);
             } catch (IOException e) {
                 LOGGER.log(Level.WARNING, "Unable to load application data", e);
             }
@@ -211,7 +211,7 @@ public class StandardMediaLoader implements MediaLoader {
     public void saveApplicationData(String appName, Properties data) {
         try {
             File dataFile = getApplicationDataFile(appName);
-            LoadUtils.saveProperties(data, dataFile, Charsets.UTF_8);
+            PropertyUtils.saveProperties(data, dataFile, Charsets.UTF_8);
         } catch (IOException e) {
             LOGGER.log(Level.WARNING, "Unable to save application data", e);
         }

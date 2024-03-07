@@ -6,8 +6,6 @@
 
 package nl.colorize.multimedialib.math;
 
-import lombok.Value;
-
 /**
  * A two-dimensional vector expressed using an origin, a direction, and a
  * magnitude. All coordinates are defined with float precision.
@@ -17,37 +15,34 @@ import lombok.Value;
  * in a clockwise direction, so an angle of 180 degress would represent the
  * vector (-1, 0).
  */
-@Value
-public class Vector {
+public record Vector(Point2D origin, Angle direction, float magnitude) {
 
-    private Point2D origin;
-    private float direction;
-    private float magnitude;
-
-    public Vector(Point2D origin, float direction, float magnitude) {
-        this.origin = origin;
-        this.direction = direction;
-        this.magnitude = Math.max(magnitude, 0f);
-    }
-
-    public Vector(float direction, float magnitude) {
+    public Vector(Angle direction, float magnitude) {
         this(Point2D.ORIGIN, direction, magnitude);
     }
 
+    public Vector(float direction, float magnitude) {
+        this(Point2D.ORIGIN, new Angle(direction), magnitude);
+    }
+
     public float getX() {
-        return origin.getX() + (magnitude * (float) Math.cos(Math.toRadians(direction)));
+        return origin.x() + (magnitude * (float) Math.cos(direction.getRadians()));
     }
 
     public float getY() {
-        return origin.getY() + (magnitude * (float) Math.sin(Math.toRadians(direction)));
+        return origin.y() + (magnitude * (float) Math.sin(direction.getRadians()));
     }
 
     public Point2D toPoint() {
         return new Point2D(getX(), getY());
     }
 
-    public Vector withDirection(float newDirection) {
+    public Vector withDirection(Angle newDirection) {
         return new Vector(origin, newDirection, magnitude);
+    }
+
+    public Vector withDirection(float newDirection) {
+        return new Vector(origin, new Angle(newDirection), magnitude);
     }
 
     public Vector withMagnitude(float newMagnitude) {
@@ -56,7 +51,7 @@ public class Vector {
 
     @Override
     public String toString() {
-        String result = String.format("[ %d %d ]", Math.round(direction), Math.round(magnitude));
+        String result = String.format("[ %s %d ]", direction, Math.round(magnitude));
         if (!origin.equals(Point2D.ORIGIN)) {
             result = origin + " " + result;
         }
@@ -73,7 +68,7 @@ public class Vector {
             return new Vector(0f, 0f);
         }
 
-        float direction = (float) Math.toDegrees(Math.atan2(p.getY(), p.getX()));
+        float direction = (float) Math.toDegrees(Math.atan2(p.y(), p.x()));
         float magnitude = new Point2D(0f, 0f).distanceTo(p);
         return new Vector(direction, magnitude);
     }

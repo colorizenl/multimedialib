@@ -4,7 +4,7 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.scene;
+package nl.colorize.multimedialib.scene.effect;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
@@ -12,6 +12,8 @@ import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Buffer;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.renderer.Pointer;
+import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.multimedialib.scene.SceneContext;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -4,7 +4,7 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.demo;
+package nl.colorize.multimedialib.tool;
 
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Point3D;
@@ -150,12 +150,12 @@ public class Demo3D implements Scene, ErrorHandler {
         for (int i = 0; i < models.size(); i++) {
             PolygonModel model = models.get(i);
             Point2D walkVector = walkVectors.get(i);
-            model.getTransform().addPosition(walkVector.getX(), 0f, walkVector.getY());
+            model.getTransform().addPosition(walkVector.x(), 0f, walkVector.y());
 
             Point3D position = model.getTransform().getPosition();
 
-            if (!areaBounds.contains(position.getX(), position.getZ())) {
-                Point2D walk = new Point2D(-walkVectors.get(i).getX(), -walkVectors.get(i).getY());
+            if (!areaBounds.contains(position.x(), position.z())) {
+                Point2D walk = new Point2D(-walkVectors.get(i).x(), -walkVectors.get(i).y());
                 walkVectors.set(i, walk);
 
                 model.playAnimation("Cube|Spin");

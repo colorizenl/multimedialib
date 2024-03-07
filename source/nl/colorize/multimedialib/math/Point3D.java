@@ -6,8 +6,6 @@
 
 package nl.colorize.multimedialib.math;
 
-import lombok.Value;
-
 import static nl.colorize.multimedialib.math.Shape.EPSILON;
 
 /**
@@ -15,20 +13,9 @@ import static nl.colorize.multimedialib.math.Shape.EPSILON;
  * space. Point coordinates have float precision, and point instances are
  * immutable.
  */
-@Value
-public class Point3D {
-
-    private float x;
-    private float y;
-    private float z;
+public record Point3D(float x, float y, float z) {
 
     public static final Point3D ORIGIN = new Point3D(0f, 0f, 0f);
-
-    public Point3D(float x, float y, float z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-    }
 
     public boolean isOrigin() {
         return Math.abs(x) < EPSILON && Math.abs(y) < EPSILON && Math.abs(z) < EPSILON;

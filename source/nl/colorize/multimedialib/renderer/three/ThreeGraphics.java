@@ -55,19 +55,13 @@ public class ThreeGraphics implements TeaGraphics {
     }
 
     @Override
-    public void onGraphicAdded(Container parent, Graphic2D graphic) {
-        //TODO
-    }
-
-    @Override
-    public void onGraphicRemoved(Container parent, Graphic2D graphic) {
-        //TODO
-    }
-
-    @Override
-    public boolean visitGraphic(Stage stage, Graphic2D graphic) {
-        //TODO
+    public boolean shouldVisitAllGraphics() {
         return true;
+    }
+
+    @Override
+    public void visitContainer(Container container) {
+        //TODO
     }
 
     @Override

@@ -27,13 +27,12 @@ import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.FontFace;
-import nl.colorize.multimedialib.stage.Graphic2D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
-import nl.colorize.multimedialib.stage.Transform;
+import nl.colorize.multimedialib.stage.Transformable;
 import nl.colorize.util.stats.Cache;
 
 import java.util.List;
@@ -70,16 +69,12 @@ public class JFXGraphics implements StageVisitor {
     }
 
     @Override
-    public void onGraphicAdded(Container parent, Graphic2D graphic) {
+    public boolean shouldVisitAllGraphics() {
+        return false;
     }
 
     @Override
-    public void onGraphicRemoved(Container parent, Graphic2D graphic) {
-    }
-
-    @Override
-    public boolean visitGraphic(Stage stage, Graphic2D graphic) {
-        return stage.isVisible(graphic);
+    public void visitContainer(Container container) {
     }
 
     @Override
@@ -93,7 +88,7 @@ public class JFXGraphics implements StageVisitor {
         JFXImage image = (JFXImage) sprite.getCurrentGraphics();
         Image fxImage = image.getImage();
         Region region = image.getRegion();
-        Transform transform = sprite.getGlobalTransform();
+        Transformable transform = sprite.getGlobalTransform();
         float zoom = displayMode.canvas().getZoomLevel();
 
         if (transform.getMaskColor() != null) {
@@ -103,7 +98,7 @@ public class JFXGraphics implements StageVisitor {
 
         gc.setGlobalAlpha(transform.getAlpha() / 100.0);
         gc.translate(toScreenX(transform.getX()), toScreenY(transform.getY()));
-        gc.rotate(transform.getRotation());
+        gc.rotate(transform.getRotation().degrees());
         gc.scale((transform.getScaleX() * zoom) / 100.0, (transform.getScaleY() * zoom) / 100.0);
         gc.drawImage(fxImage, region.x(), region.y(), region.width(), region.height(),
             -region.width() / 2f, -region.height() / 2f, region.width(), region.height());
@@ -113,26 +108,26 @@ public class JFXGraphics implements StageVisitor {
 
     @Override
     public void drawLine(Primitive graphic, Line line) {
-        Transform transform = graphic.getGlobalTransform();
+        Transformable transform = graphic.getGlobalTransform();
 
         gc.setStroke(toColor(graphic.getColor(), transform.getAlpha()));
         gc.beginPath();
-        gc.moveTo(toScreenX(line.getStart().getX()), toScreenY(line.getStart().getY()));
-        gc.lineTo(toScreenX(line.getEnd().getX()), toScreenY(line.getEnd().getY()));
+        gc.moveTo(toScreenX(line.start().x()), toScreenY(line.start().y()));
+        gc.lineTo(toScreenX(line.end().x()), toScreenY(line.end().y()));
         gc.closePath();
         gc.stroke();
     }
 
     @Override
     public void drawSegmentedLine(Primitive graphic, SegmentedLine line) {
-        List<Point2D> points = line.getPoints();
-        Transform transform = graphic.getGlobalTransform();
+        List<Point2D> points = line.points();
+        Transformable transform = graphic.getGlobalTransform();
 
         gc.setStroke(toColor(graphic.getColor(), transform.getAlpha()));
         gc.beginPath();
-        gc.moveTo(toScreenX(points.getFirst().getX()), toScreenY(points.getFirst().getY()));
+        gc.moveTo(toScreenX(points.getFirst().x()), toScreenY(points.getFirst().y()));
         for (int i = 1; i < points.size(); i++) {
-            gc.lineTo(toScreenX(points.get(i).getX()), toScreenY(points.get(i).getY()));
+            gc.lineTo(toScreenX(points.get(i).x()), toScreenY(points.get(i).y()));
         }
         gc.closePath();
         gc.stroke();
@@ -140,9 +135,9 @@ public class JFXGraphics implements StageVisitor {
 
     @Override
     public void drawRect(Primitive graphic, Rect rect) {
-        Transform transform = graphic.getGlobalTransform();
-        float screenX = toScreenX(rect.getX());
-        float screenY = toScreenY(rect.getY());
+        Transformable transform = graphic.getGlobalTransform();
+        float screenX = toScreenX(rect.x());
+        float screenY = toScreenY(rect.y());
         float screenWidth = toScreenX(rect.getEndX()) - screenX;
         float screenHeight = toScreenY(rect.getEndY()) - screenY;
 
@@ -152,11 +147,11 @@ public class JFXGraphics implements StageVisitor {
 
     @Override
     public void drawCircle(Primitive graphic, Circle circle) {
-        Transform transform = graphic.getGlobalTransform();
-        float screenX0 = toScreenX(circle.getCenter().getX() - circle.getRadius());
-        float screenY0 = toScreenY(circle.getCenter().getY() - circle.getRadius());
-        float screenX1 = toScreenX(circle.getCenter().getX() + circle.getRadius());
-        float screenY1 = toScreenY(circle.getCenter().getY() + circle.getRadius());
+        Transformable transform = graphic.getGlobalTransform();
+        float screenX0 = toScreenX(circle.center().x() - circle.radius());
+        float screenY0 = toScreenY(circle.center().y() - circle.radius());
+        float screenX1 = toScreenX(circle.center().x() + circle.radius());
+        float screenY1 = toScreenY(circle.center().y() + circle.radius());
 
         gc.setFill(toColor(graphic.getColor(), transform.getAlpha()));
         gc.fillOval(screenX0, screenY0, screenX1 - screenX0, screenY1 - screenY0);
@@ -164,7 +159,7 @@ public class JFXGraphics implements StageVisitor {
 
     @Override
     public void drawPolygon(Primitive graphic, Polygon polygon) {
-        Transform transform = graphic.getGlobalTransform();
+        Transformable transform = graphic.getGlobalTransform();
         double[] screenX = new double[polygon.getNumPoints()];
         double[] screenY = new double[polygon.getNumPoints()];
 
@@ -181,7 +176,7 @@ public class JFXGraphics implements StageVisitor {
     public void drawText(Text text) {
         FontFace scaled = text.getFont().scale(displayMode.canvas());
         Font font = media.getFont(scaled);
-        Transform transform = text.getGlobalTransform();
+        Transformable transform = text.getGlobalTransform();
 
         gc.setFont(font);
         gc.setTextAlign(toTextAlignment(text.getAlign()));

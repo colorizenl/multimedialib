@@ -119,7 +119,7 @@ public class TeaVMTranspilerToolTest {
 
         String expected = """
             <div id="resource-file-manifest">OpenSans-Regular.ttf
-            apple-icon.png
+            apple-favicon.png
             colorize-icon-256.png
             colorize-icon-32.png
             colorize-logo.gltf
@@ -150,6 +150,22 @@ public class TeaVMTranspilerToolTest {
         tool.mainClassName = BrokenMockApp.class.getName();
 
         assertThrows(UnsupportedOperationException.class, () -> tool.run());
+    }
+
+    @Test
+    void insertMetaIntoHTML(@TempDir File resourcesDir, @TempDir File outputDir) throws IOException {
+        TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
+        tool.projectName = "test";
+        tool.resourceDir = resourcesDir;
+        tool.outputDir = outputDir;
+        tool.mainClassName = MockApp.class.getName();
+        tool.meta = "first=value,second=other value";
+        tool.run();
+
+        String generatedHTML = Files.toString(new File(outputDir, "index.html"), Charsets.UTF_8);
+
+        assertTrue(generatedHTML.contains("<meta name=\"first\" content=\"value\" />"));
+        assertTrue(generatedHTML.contains("<meta name=\"second\" content=\"other value\" />"));
     }
 
     /**

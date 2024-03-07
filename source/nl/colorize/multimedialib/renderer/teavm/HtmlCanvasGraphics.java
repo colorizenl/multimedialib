@@ -20,12 +20,11 @@ import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.FontStyle;
-import nl.colorize.multimedialib.stage.Graphic2D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
-import nl.colorize.multimedialib.stage.Transform;
+import nl.colorize.multimedialib.stage.Transformable;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.canvas.CanvasImageSource;
 import org.teavm.jso.canvas.CanvasRenderingContext2D;
@@ -68,16 +67,12 @@ public class HtmlCanvasGraphics implements TeaGraphics {
     }
 
     @Override
-    public void onGraphicAdded(Container parent, Graphic2D graphic) {
+    public boolean shouldVisitAllGraphics() {
+        return false;
     }
 
     @Override
-    public void onGraphicRemoved(Container parent, Graphic2D graphic) {
-    }
-
-    @Override
-    public boolean visitGraphic(Stage stage, Graphic2D graphic) {
-        return stage.isVisible(graphic);
+    public void visitContainer(Container container) {
     }
 
     @Override
@@ -100,7 +95,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
         }
     }
 
-    private void drawImage(TeaImage image, Region region, Transform transform) {
+    private void drawImage(TeaImage image, Region region, Transformable transform) {
         CanvasImageSource source = prepareImage(image, transform.getMaskColor());
         Point2D position = transform.getPosition();
 
@@ -111,7 +106,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
 
         context.setGlobalAlpha(transform.getAlpha() / 100f);
         context.translate(toScreenX(position), toScreenY(position));
-        context.rotate(transform.getRotation() * Math.PI / 180f);
+        context.rotate(transform.getRotation().degrees() * Math.PI / 180f);
         context.scale((transform.getScaleX() * sceneCanvas.getZoomLevel()) / 100f,
             (transform.getScaleY() * sceneCanvas.getZoomLevel()) / 100f);
         context.drawImage(source, region.x(), region.y(), region.width(), region.height(),
@@ -135,8 +130,8 @@ public class HtmlCanvasGraphics implements TeaGraphics {
         context.setStrokeStyle(graphic.getColor().toHex());
         context.setLineWidth(graphic.getStroke());
         context.beginPath();
-        context.moveTo(toScreenX(line.getStart()), toScreenY(line.getStart()));
-        context.lineTo(toScreenX(line.getEnd()), toScreenY(line.getEnd()));
+        context.moveTo(toScreenX(line.start()), toScreenY(line.start()));
+        context.lineTo(toScreenX(line.end()), toScreenY(line.end()));
         context.stroke();
     }
 
@@ -146,7 +141,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
         context.setLineWidth(graphic.getStroke());
         context.beginPath();
         context.moveTo(toScreenX(line.getHead()), toScreenY(line.getHead()));
-        for (Point2D p : line.getPoints()) {
+        for (Point2D p : line.points()) {
             context.lineTo(toScreenX(p), toScreenY(p));
         }
         context.stroke();
@@ -154,35 +149,35 @@ public class HtmlCanvasGraphics implements TeaGraphics {
 
     @Override
     public void drawRect(Primitive graphic, Rect rect) {
-        Transform transform = graphic.getGlobalTransform();
+        Transformable transform = graphic.getGlobalTransform();
 
         context.setGlobalAlpha(transform.getAlpha() / 100f);
         context.setFillStyle(graphic.getColor().toHex());
         context.fillRect(
-            toScreenX(rect.getX()),
-            toScreenY(rect.getY()),
-            rect.getWidth() * sceneCanvas.getZoomLevel(),
-            rect.getHeight() * sceneCanvas.getZoomLevel()
+            toScreenX(rect.x()),
+            toScreenY(rect.y()),
+            rect.width() * sceneCanvas.getZoomLevel(),
+            rect.height() * sceneCanvas.getZoomLevel()
         );
         context.setGlobalAlpha(1f);
     }
 
     @Override
     public void drawCircle(Primitive graphic, Circle circle) {
-        Transform transform = graphic.getGlobalTransform();
+        Transformable transform = graphic.getGlobalTransform();
 
         context.setGlobalAlpha(transform.getAlpha() / 100f);
         context.setFillStyle(graphic.getColor().toHex());
         context.beginPath();
-        context.arc(toScreenX(circle.getCenter().getX()), toScreenY(circle.getCenter().getY()),
-            circle.getRadius() * sceneCanvas.getZoomLevel(), 0f, 2f * Math.PI);
+        context.arc(toScreenX(circle.center().x()), toScreenY(circle.center().y()),
+            circle.radius() * sceneCanvas.getZoomLevel(), 0f, 2f * Math.PI);
         context.fill();
         context.setGlobalAlpha(1f);
     }
 
     @Override
     public void drawPolygon(Primitive graphic, Polygon polygon) {
-        Transform transform = graphic.getGlobalTransform();
+        Transformable transform = graphic.getGlobalTransform();
 
         context.setGlobalAlpha(transform.getAlpha() / 100f);
         context.setFillStyle(graphic.getColor().toHex());
@@ -198,14 +193,14 @@ public class HtmlCanvasGraphics implements TeaGraphics {
     @Override
     public void drawText(Text text) {
         FontFace font = text.getFont().scale(sceneCanvas);
-        Transform transform = text.getGlobalTransform();
+        Transformable transform = text.getGlobalTransform();
 
         context.setGlobalAlpha(transform.getAlpha() / 100f);
         context.setFont(getFontString(font));
         context.setFillStyle(font.style().color().toHex());
         context.setTextAlign(text.getAlign().toString().toLowerCase());
         text.forLines((i, line) -> {
-            float y = toScreenY(transform.getPosition().getY() + i * text.getLineHeight());
+            float y = toScreenY(transform.getPosition().y() + i * text.getLineHeight());
             context.fillText(line, toScreenX(transform.getPosition()), y);
         });
         context.setGlobalAlpha(1f);
@@ -221,7 +216,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
     }
 
     private float toScreenX(Point2D point) {
-        return sceneCanvas.toScreenX(point.getX());
+        return sceneCanvas.toScreenX(point.x());
     }
 
     private float toScreenY(float y) {
@@ -229,7 +224,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
     }
 
     private float toScreenY(Point2D point) {
-        return sceneCanvas.toScreenY(point.getY());
+        return sceneCanvas.toScreenY(point.y());
     }
 
     @Override

@@ -4,7 +4,7 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.demo;
+package nl.colorize.multimedialib.tool;
 
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
@@ -17,8 +17,8 @@ import nl.colorize.util.cli.CommandLineArgumentParser;
 import nl.colorize.util.swing.ApplicationMenuListener;
 import nl.colorize.util.swing.Popups;
 
-import static nl.colorize.multimedialib.demo.Demo2D.DEFAULT_CANVAS_HEIGHT;
-import static nl.colorize.multimedialib.demo.Demo2D.DEFAULT_CANVAS_WIDTH;
+import static nl.colorize.multimedialib.tool.Demo2D.DEFAULT_CANVAS_HEIGHT;
+import static nl.colorize.multimedialib.tool.Demo2D.DEFAULT_CANVAS_WIDTH;
 
 /**
  * Launches one of the demo applications from the command line. The behavior of

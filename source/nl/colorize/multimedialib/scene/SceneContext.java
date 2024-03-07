@@ -79,7 +79,6 @@ public final class SceneContext implements Updatable {
         this.graphicsMode = renderer.getGraphicsMode();
         this.displayMode = renderer.getDisplayMode();
         this.canvas = displayMode.canvas();
-        this.stage = new Stage(graphicsMode, canvas);
         this.mediaLoader = media;
         this.input = input;
         this.network = network;
@@ -88,12 +87,13 @@ public final class SceneContext implements Updatable {
         this.elapsedTime = 0L;
         this.frameStats = new FrameStats(displayMode);
 
-
         this.requestedSceneQueue = new LinkedList<>();
         this.globalSubScenes = new ArrayList<>();
 
         this.lastCanvasWidth = canvas.getWidth();
         this.lastCanvasHeight = canvas.getHeight();
+
+        stage = new Stage(graphicsMode, canvas, frameStats);
     }
 
     /**
@@ -144,6 +144,7 @@ public final class SceneContext implements Updatable {
         // to a frame update. Otherwise, this would just count the
         // precision of the underlying animation loop.
         frameStats.markEnd(FrameStats.PHASE_FRAME_TIME);
+        frameStats.resetGraphicsCount();
 
         float deltaTime = Math.clamp(elapsedTime / 1000f, MIN_FRAME_TIME, MAX_FRAME_TIME);
         frameStats.markStart(FrameStats.PHASE_FRAME_UPDATE);

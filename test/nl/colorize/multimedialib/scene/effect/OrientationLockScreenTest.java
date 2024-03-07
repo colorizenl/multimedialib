@@ -4,10 +4,11 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.scene;
+package nl.colorize.multimedialib.scene.effect;
 
 import nl.colorize.multimedialib.mock.MockImage;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
+import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.Sprite;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +27,7 @@ class OrientationLockScreenTest {
 
         String expected = """
             Stage
-                Container
+                Container [$$root, 0]
             """;
 
         assertEquals(expected, context.getStage().toString());
@@ -46,8 +47,8 @@ class OrientationLockScreenTest {
 
         String expected = """
             Stage
-                Container
-                    Sprite [$$default@0.0]
+                Container [$$root, 1]
+                    Sprite [$$default]
             """;
 
         assertEquals(expected, context.getStage().toString());
@@ -70,7 +71,8 @@ class OrientationLockScreenTest {
 
         String expected = """
             Stage
-                Container
+                Container [$$root, 1]
+                    Sprite [$$default]
             """;
 
         assertEquals(expected, context.getStage().toString());

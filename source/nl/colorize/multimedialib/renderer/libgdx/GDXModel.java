@@ -40,8 +40,11 @@ public class GDXModel implements PolygonModel {
 
     @Override
     public void update(float deltaTime) {
-        instance.transform.setToTranslation(transform.getPosition().getX(),
-            transform.getPosition().getY(), transform.getPosition().getZ());
+        instance.transform.setToTranslation(
+            transform.getPosition().x(),
+            transform.getPosition().y(),
+            transform.getPosition().z()
+        );
 
         instance.transform.rotate(1f, 0f, 0f, transform.getRotationX());
         instance.transform.rotate(0f, 1f, 0f, transform.getRotationY());
@@ -87,5 +90,10 @@ public class GDXModel implements PolygonModel {
     public PolygonModel copy() {
         ModelInstance instanceCopy = new ModelInstance(instance.model);
         return new GDXModel(instanceCopy);
+    }
+
+    @Override
+    public String toString() {
+        return "GDXModel";
     }
 }

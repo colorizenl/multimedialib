@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 @Setter
 public class Text implements Graphic2D {
 
-    private final StageLocation location;
+    private final DisplayListLocation location;
     private List<String> lines;
     private FontFace font;
     private Align align;
@@ -47,7 +47,7 @@ public class Text implements Graphic2D {
     private static final float ESTIMATED_LINE_HEIGHT_FACTOR = 1.8f;
 
     public Text(String text, FontFace font, Align align, int lineWidth) {
-        this.location = new StageLocation();
+        this.location = new DisplayListLocation(this);
         this.lines = Collections.emptyList();
         this.font = font;
         this.align = align;
@@ -127,7 +127,7 @@ public class Text implements Graphic2D {
 
     @Override
     public Rect getStageBounds() {
-        Transform globalTransform = getGlobalTransform();
+        Transformable globalTransform = getGlobalTransform();
         Point2D position = globalTransform.getPosition();
 
         int longestLine = lines.stream()

@@ -4,12 +4,16 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.scene;
+package nl.colorize.multimedialib.scene.effect;
 
 import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.Pointer;
+import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.scene.Timer;
+import nl.colorize.multimedialib.scene.Updatable;
 import nl.colorize.multimedialib.stage.Animation;
 import nl.colorize.multimedialib.stage.Graphic2D;
 import nl.colorize.multimedialib.stage.Primitive;
@@ -237,7 +241,7 @@ public final class Effect implements Scene {
         }
 
         for (Graphic2D graphic : linkedGraphics) {
-            graphic.detach();
+            graphic.getLocation().detach();
         }
     }
 
@@ -393,7 +397,8 @@ public final class Effect implements Scene {
             if (uniform) {
                 sprite.getTransform().setScale(Math.max(scaleX, scaleY) * 100f);
             } else {
-                sprite.getTransform().setScale(scaleX * 100f, scaleY * 100f);
+                sprite.getTransform().setScaleX(scaleX * 100f);
+                sprite.getTransform().setScaleY(scaleY * 100f);
             }
         });
     }

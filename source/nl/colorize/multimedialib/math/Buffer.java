@@ -6,10 +6,8 @@
 
 package nl.colorize.multimedialib.math;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
-import java.util.stream.Stream;
 
 /**
  * Data structure that can be flushed to obtain values that have accumulated
@@ -20,10 +18,10 @@ import java.util.stream.Stream;
  */
 public class Buffer<E> {
 
-    private Queue<E> contents;
+    private List<E> contents;
 
     public Buffer() {
-        this.contents = new LinkedList<>();
+        this.contents = new ArrayList<>();
     }
 
     public void push(E element) {
@@ -40,6 +38,10 @@ public class Buffer<E> {
         }
     }
 
+    public void remove(E element) {
+        contents.remove(element);
+    }
+
     /**
      * Returns all elements that were pushed to the queue since the last time
      * this method was called, then clears the queue. This method exists to
@@ -52,21 +54,11 @@ public class Buffer<E> {
     }
 
     /**
-     * Returns all elements that were pushed to the queue since the last time
-     * this method was called, then clears the queue. Similar to
-     * {@link #flush()}, but returns a stream instead of an {@link Iterable}.
+     * Removes all contents from this buffer. This method is the same as
+     * calling {@link #flush()} and ignoring the result.
      */
-    public Stream<E> flushStream() {
-        List<E> buffer = List.copyOf(contents);
+    public void clear() {
         contents.clear();
-        return buffer.stream();
-    }
-
-    /**
-     * Peeks at the contents of this buffer without flushing it.
-     */
-    public Iterable<E> peek() {
-        return contents;
     }
 
     @Override
