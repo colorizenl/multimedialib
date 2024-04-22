@@ -47,6 +47,14 @@ public record Angle(float degrees) {
         return new Angle(degrees + byDegrees);
     }
 
+    /**
+     * Returns an {@link Angle} that is the exact opposite of this angle. For
+     * example, the opposite angle of 90 degrees is 270 degrees.
+     */
+    public Angle opposite() {
+        return new Angle(degrees + 180f);
+    }
+
     @Override
     public String toString() {
         return Math.round(degrees) + "\u00B0";

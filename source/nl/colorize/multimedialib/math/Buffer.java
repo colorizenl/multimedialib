@@ -6,6 +6,8 @@
 
 package nl.colorize.multimedialib.math;
 
+import nl.colorize.util.Subscriber;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,10 +15,15 @@ import java.util.List;
  * Data structure that can be flushed to obtain values that have accumulated
  * over time. This is suitable for events that should be handled during each
  * frame update, but that can occur at any point.
+ * <p>
+ * The buffer can also be used as a {@link Subscriber}, where events
+ * accumulate in the buffer until it is flushed. This is useful in situations
+ * where asynchronous events are performed on a different thread, but the
+ * results need to be processed during the animation loop.
  *
  * @param <E> The type of element that is stored in the queue.
  */
-public class Buffer<E> {
+public class Buffer<E> implements Subscriber<E> {
 
     private List<E> contents;
 
@@ -59,6 +66,11 @@ public class Buffer<E> {
      */
     public void clear() {
         contents.clear();
+    }
+
+    @Override
+    public void onEvent(E event) {
+        push(event);
     }
 
     @Override

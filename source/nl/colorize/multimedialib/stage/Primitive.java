@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Shape;
+import nl.colorize.multimedialib.scene.Timer;
 
 /**
  * Draws a graphical primitive to the screen. The on-screen position of the
@@ -42,13 +43,13 @@ public class Primitive implements Graphic2D {
     }
 
     @Override
-    public void update(float deltaTime) {
+    public Rect getStageBounds() {
+        Transform globalTransform = getGlobalTransform();
+        return shape.reposition(globalTransform.getPosition()).getBoundingBox();
     }
 
     @Override
-    public Rect getStageBounds() {
-        Transformable globalTransform = getGlobalTransform();
-        return shape.reposition(globalTransform.getPosition()).getBoundingBox();
+    public void updateGraphics(Timer sceneTime) {
     }
 
     @Override

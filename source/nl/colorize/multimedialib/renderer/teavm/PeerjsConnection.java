@@ -8,59 +8,63 @@ package nl.colorize.multimedialib.renderer.teavm;
 
 import nl.colorize.multimedialib.math.Buffer;
 import nl.colorize.multimedialib.renderer.PeerConnection;
-import nl.colorize.util.LogHelper;
-import nl.colorize.util.Subscribable;
 
-import java.util.logging.Logger;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implements the {@link PeerConnection} interface in Java, which is then
  * bridged to the PeerJS implementation in JavaScript via TeaVM.
  */
-public class PeerjsConnection implements PeerConnection {
+public class PeerjsConnection implements PeerConnection, MessageCallback {
 
     private PeerjsBridge bridge;
-
-    private static final Logger LOGGER = LogHelper.getLogger(PeerjsConnection.class);
+    private Buffer<String> connectionQueue;
+    private Buffer<PeerMessage> receivedBuffer;
+    private List<String> sendHistory;
 
     protected PeerjsConnection(PeerjsBridge bridge) {
         this.bridge = bridge;
+        this.connectionQueue = new Buffer<>();
+        this.receivedBuffer = new Buffer<>();
+        this.sendHistory = new ArrayList<>();
+
+        bridge.open(this);
     }
 
     @Override
-    public String getId() {
-        return bridge.getId();
+    public void connect(String peerId) {
+        connectionQueue.push(peerId);
+        processConnectionQueue();
     }
 
-    @Override
-    public Subscribable<String> connect(String peerId) {
-        Subscribable<String> subscribable = new Subscribable<>();
-
-        bridge.connect(peerId, success -> {
-            if (success) {
-                subscribable.next(peerId);
-            } else {
-                subscribable.nextError(new RuntimeException("Failed to connect to peer"));
+    private void processConnectionQueue() {
+        if (bridge.isInitialized()) {
+            for (String peerId : connectionQueue.flush()) {
+                bridge.connect(peerId, this);
             }
-        });
-
-        return subscribable;
+        }
     }
 
     @Override
     public void sendMessage(String message) {
         bridge.sendMessage(message);
+        sendHistory.add(message);
     }
 
     @Override
-    public Buffer<String> getReceivedMessages() {
-        Buffer<String> received = new Buffer<>();
-        received.push(bridge.flushReceivedMessages());
-        return received;
+    public Buffer<PeerMessage> getReceivedMessages() {
+        return receivedBuffer;
     }
 
     @Override
-    public void close() {
-        bridge.close();
+    public void onMessage(String type, String value) {
+        receivedBuffer.push(new PeerMessage(type, value));
+
+        if (type.equals(PeerMessage.TYPE_INIT)) {
+            processConnectionQueue();
+        } else if (type.equals(PeerMessage.TYPE_CONNECT)) {
+            sendHistory.forEach(message -> bridge.sendMessageToPeer(value, message));
+        }
     }
 }

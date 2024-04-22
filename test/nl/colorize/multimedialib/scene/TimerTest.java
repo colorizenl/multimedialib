@@ -37,4 +37,26 @@ public class TimerTest {
         assertEquals(2.0f, timer.getTime(), EPSILON);
         assertTrue(timer.isCompleted());
     }
+
+    @Test
+    void limitTime() {
+        Timer timer = new Timer(10f);
+
+        timer.setTime(-1f);
+        assertEquals(0f, timer.getTime(), EPSILON);
+
+        timer.setTime(3f);
+        assertEquals(3f, timer.getTime(), EPSILON);
+
+        timer.setTime(12f);
+        assertEquals(10f, timer.getTime(), EPSILON);
+    }
+
+    @Test
+    void at() {
+        assertEquals("0.0 / 2.0", Timer.at(0f, 2f).toString());
+        assertEquals("1.0 / 2.0", Timer.at(1f, 2f).toString());
+        assertEquals("2.0 / 2.0", Timer.at(2f, 2f).toString());
+        assertEquals("2.0", Timer.at(2f).toString());
+    }
 }

@@ -7,18 +7,23 @@
 package nl.colorize.multimedialib.scene;
 
 import com.google.common.collect.ImmutableList;
+import nl.colorize.multimedialib.mock.MockImage;
 import nl.colorize.multimedialib.mock.MockScene;
+import nl.colorize.multimedialib.mock.MockStageVisitor;
 import nl.colorize.multimedialib.mock.MockStopwatch;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
 import nl.colorize.multimedialib.scene.effect.Effect;
+import nl.colorize.multimedialib.stage.Animation;
+import nl.colorize.multimedialib.stage.Sprite;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static nl.colorize.multimedialib.math.Shape.EPSILON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -442,6 +447,37 @@ public class SceneContextTest {
             Render time:  0ms""";
 
         assertEquals(expected, String.join("\n", context.getDebugInformation()));
+    }
+
+    @Test
+    void updateBasedOnGlobalSceneTimer() {
+        MockImage a = new MockImage();
+        MockImage b = new MockImage();
+        Sprite sprite = new Sprite(new Animation(List.of(a, b), 10f, false));
+        sprite.updateGraphics(Timer.none());
+
+        SceneContext context = renderer.getContext();
+        context.changeScene(new MockScene());
+        context.getStage().getRoot().addChild(sprite);
+
+        MockStageVisitor visitor = new MockStageVisitor();
+
+        context.update(1f);
+        context.getStage().visit(visitor, context.getSceneTime());
+        assertEquals(List.of("background", "sprite"), visitor.getRendered());
+        assertEquals(1f, sprite.getCurrentStateTimer().getTime(), EPSILON);
+
+        sprite.getTransform().setVisible(false);
+        context.update(2f);
+        context.getStage().visit(visitor, context.getSceneTime());
+        assertEquals(List.of("background"), visitor.getRendered());
+        assertEquals(1f, sprite.getCurrentStateTimer().getTime(), EPSILON);
+
+        sprite.getTransform().setVisible(true);
+        context.update(3f);
+        context.getStage().visit(visitor, context.getSceneTime());
+        assertEquals(List.of("background", "sprite"), visitor.getRendered());
+        assertEquals(6f, sprite.getCurrentStateTimer().getTime(), EPSILON);
     }
 
     private record Counter(List<String> frames) implements Scene {

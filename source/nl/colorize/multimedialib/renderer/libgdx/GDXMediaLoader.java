@@ -170,7 +170,12 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
         fontCache.forgetAll();
     }
 
-    public static Color toColor(ColorRGB color) {
+    protected static Color toColor(ColorRGB color) {
         return new Color(color.r() / 255f, color.g() / 255f, color.b() / 255f, 1f);
+    }
+
+    protected static ColorRGB toColor(Color color) {
+        return new ColorRGB(Math.round(color.r * 255f), Math.round(color.g * 255f),
+            Math.round(color.b * 255f));
     }
 }

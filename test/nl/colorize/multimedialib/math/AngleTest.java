@@ -50,4 +50,12 @@ class AngleTest {
         assertEquals(60f, new Angle(320f).move(new Angle(100)).degrees(), EPSILON);
         assertEquals(80f, new Angle(400).move(new Angle(400)).degrees(), EPSILON);
     }
+
+    @Test
+    void opposite() {
+        assertEquals(180f, new Angle(0f).opposite().degrees(), EPSILON);
+        assertEquals(0f, new Angle(180f).opposite().degrees(), EPSILON);
+        assertEquals(270f, new Angle(90f).opposite().degrees(), EPSILON);
+        assertEquals(90f, new Angle(270f).opposite().degrees(), EPSILON);
+    }
 }

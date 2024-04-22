@@ -31,7 +31,6 @@ import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
-import nl.colorize.multimedialib.stage.Transformable;
 import nl.colorize.util.stats.Cache;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
@@ -324,7 +323,7 @@ public class WebGL implements TeaGraphics {
 
         VertexData vertexData = spriteVertexCache.get(image);
         Region region = image.getRegion();
-        Transformable transform = sprite.getGlobalTransform();
+        Transform transform = sprite.getGlobalTransform();
         Point2D position = transform.getPosition();
         float zoomLevel = canvas.getZoomLevel();
 
@@ -372,7 +371,7 @@ public class WebGL implements TeaGraphics {
     @Override
     public void drawRect(Primitive graphic, Rect rect) {
         VertexData vertexData = shapeVertexCache.get(rect);
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
 
         fillBuffer(vertexData.getVertexBuffer(), toVertices(rect));
         vertexData.setColor(graphic.getColor(), transform.getAlpha());

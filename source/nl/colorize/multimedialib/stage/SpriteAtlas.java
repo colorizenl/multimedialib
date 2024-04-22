@@ -47,9 +47,8 @@ public class SpriteAtlas {
     public void add(String name, Image atlas, Region region) {
         name = normalizeSubImageName(name);
 
-        Preconditions.checkArgument(!subImages.containsKey(name),
-            "Duplicate sub-image: " + name);
-
+        Preconditions.checkArgument(!name.isEmpty(), "Invalid sub-image name: " + name);
+        Preconditions.checkArgument(!subImages.containsKey(name), "Duplicate sub-image: " + name);
         Preconditions.checkArgument(subImages.size() < subImageCache.getCapacity(),
             "Maximum number of sub-images exceeded");
 
@@ -138,9 +137,5 @@ public class SpriteAtlas {
      * atlas image.
      */
     private record SubImage(String name, Image atlas, Region region) {
-
-        public SubImage {
-            Preconditions.checkArgument(!name.isEmpty(), "Invalid sub-image name: " + name);
-        }
     }
 }

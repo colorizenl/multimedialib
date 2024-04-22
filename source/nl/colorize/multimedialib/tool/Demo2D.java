@@ -22,14 +22,16 @@ import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
+import nl.colorize.multimedialib.renderer.PeerConnection;
 import nl.colorize.multimedialib.renderer.Pointer;
+import nl.colorize.multimedialib.renderer.teavm.PeerMessage;
+import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.scene.Updatable;
 import nl.colorize.multimedialib.scene.effect.Effect;
 import nl.colorize.multimedialib.scene.effect.ParticleWipe;
 import nl.colorize.multimedialib.scene.effect.PerformanceMonitor;
-import nl.colorize.multimedialib.scene.Scene;
-import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.effect.SwipeTracker;
-import nl.colorize.multimedialib.scene.Updatable;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.Animation;
 import nl.colorize.multimedialib.stage.Audio;
@@ -43,6 +45,7 @@ import nl.colorize.multimedialib.stage.SpriteAtlas;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.util.DateParser;
+import nl.colorize.util.LogHelper;
 import nl.colorize.util.PropertyUtils;
 import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
@@ -52,6 +55,7 @@ import nl.colorize.util.http.PostData;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Logger;
 
 import static nl.colorize.multimedialib.stage.ColorRGB.BLUE;
 import static nl.colorize.multimedialib.stage.ColorRGB.GREEN;
@@ -103,6 +107,7 @@ public class Demo2D implements Scene, ErrorHandler {
     private static final ColorRGB COLORIZE_COLOR = ColorRGB.parseHex("#e45d61");
     private static final String EXAMPLE_URL = "https://dashboard.clrz.nl/rest/echo";
     private static final List<ColorRGB> SWIPE_COLORS = List.of(RED, GREEN, BLUE, YELLOW);
+    private static final Logger LOGGER = LogHelper.getLogger(Demo2D.class);
 
     @Override
     public void start(SceneContext context) {
@@ -267,28 +272,30 @@ public class Demo2D implements Scene, ErrorHandler {
         performanceMonitor.setActive(!performanceMonitor.isActive());
     }
 
-    private void openPeerConnection() {
-        context.getNetwork().openPeerConnection().subscribe(connection -> {
-            showNotification("Peer connection:\n" + connection.getId());
-            context.getInput().fillClipboard(connection.getId());
+    private PeerConnection openPeerConnection() {
+        PeerConnection peerConnection = context.getNetwork().openPeerConnection();
 
-            context.attach(() -> {
-                for (String message : connection.getReceivedMessages().flush()) {
-                    showNotification("Message received:\n\n" + message);
+        context.attach(() -> {
+            for (PeerMessage message : peerConnection.getReceivedMessages().flush()) {
+                LOGGER.info("Received message: " + message.type() + " / " + message.value());
+                if (message.type().equals(PeerMessage.TYPE_INIT)) {
+                    context.getInput().fillClipboard(message.value());
+                } else if (!message.type().equals(PeerMessage.TYPE_CONNECT)) {
+                    showNotification("Received message: " + message.value());
                 }
-            });
+            }
         });
+
+        return peerConnection;
     }
 
     private void joinPeerConnection() {
         String id = context.getInput().requestTextInput("Peer-to-peer connection ID", "");
 
         if (id != null && !id.isEmpty()) {
-            context.getNetwork().openPeerConnection().subscribe(connection -> {
-                connection.connect(id).subscribe(result -> {
-                    connection.sendMessage("Hello from a peer-to-peer connection");
-                });
-            });
+            PeerConnection peerConnection = openPeerConnection();
+            peerConnection.connect(id);
+            peerConnection.sendMessage("Hello from a peer-to-peer connection");
         }
     }
 
@@ -302,7 +309,13 @@ public class Demo2D implements Scene, ErrorHandler {
         notification.getTransform().setPosition(context.getCanvas().getCenter());
         hudLayer.addChild(notification);
 
-        Effect.delay(4f, () -> hudLayer.removeChild(notification)).attach(context);
+        Timeline timeline = new Timeline(Interpolation.LINEAR)
+            .addKeyFrame(0f, context.getCanvas().getCenter().y())
+            .addKeyFrame(4f, context.getCanvas().getCenter().y() - 100f);
+
+        Effect.delay(4f, () -> hudLayer.removeChild(notification))
+            .addTimelineHandler(timeline, value -> notification.getTransform().setY(value))
+            .attach(context);
     }
 
     @Override
@@ -422,7 +435,6 @@ public class Demo2D implements Scene, ErrorHandler {
         @Override
         public void update(float deltaTime) {
             sprite.changeGraphics(DIRECTIONS.get(direction));
-            sprite.update(deltaTime);
 
             Point2D position = sprite.getTransform().getPosition();
 

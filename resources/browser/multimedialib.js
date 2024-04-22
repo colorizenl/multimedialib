@@ -94,7 +94,7 @@ window.registerErrorHandler = function(callback) {
  * indicates whether the font was loaded successfully. Called from the
  * animation loop via TeaVM.
  */
-window.preloadFontFace = function(family, url, callback) {
+window.preloadFontFace = function(family, url, errorCallback) {
     const fontFace = new FontFace(family, url, {
         style: "normal",
         weight: "normal"
@@ -103,8 +103,8 @@ window.preloadFontFace = function(family, url, callback) {
     document.fonts.add(fontFace);
 
     fontFace.load()
-        .then(result => callback(true))
-        .catch(error => callback(false));
+        .then(result => errorCallback(""))
+        .catch(error => errorCallback(error.name));
 }
 
 /**

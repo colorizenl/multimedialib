@@ -19,6 +19,7 @@ import nl.colorize.multimedialib.stage.Graphic2D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Text;
+import nl.colorize.util.LogHelper;
 import nl.colorize.util.TextUtils;
 import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
@@ -29,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.logging.Logger;
 
 /**
  * Effects are short-lived sub-scenes that can be defined in a declarative
@@ -54,6 +56,8 @@ public final class Effect implements Scene {
     private List<Graphic2D> linkedGraphics;
     private List<BooleanSupplier> completionConditions;
     private boolean completed;
+
+    private static final Logger LOGGER = LogHelper.getLogger(Effect.class);
 
     /**
      * Creates a new effect that initially does not define any behavior and
@@ -142,11 +146,15 @@ public final class Effect implements Scene {
      * sprite animation has ended.
      */
     public Effect stopAfterAnimation(Sprite sprite) {
-        return stopIf(() -> {
-            Animation animation = sprite.getCurrentStateGraphics();
-            Timer timer = sprite.getCurrentStateTimer();
-            return animation.getDuration() > 0f && timer.getTime() >= animation.getDuration();
-        });
+        Animation currentStateGraphics = sprite.getCurrentStateGraphics();
+        float duration = currentStateGraphics.getDuration();
+
+        if (duration == 0f) {
+            LOGGER.warning("Cannot bind effect to zero-length animation");
+            return this;
+        }
+
+        return stopAfter(duration);
     }
 
     /**

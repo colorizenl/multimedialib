@@ -12,7 +12,7 @@ package nl.colorize.multimedialib.math;
  */
 public interface Shape {
 
-    public static final float EPSILON = 0.001f;
+    public static final float EPSILON = Point2D.EPSILON;
 
     /**
      * Returns whether this shape contains the specified point.

@@ -18,6 +18,7 @@ import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.stage.Stage;
+import nl.colorize.util.LogHelper;
 import nl.colorize.util.Stopwatch;
 
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
 
 /**
  * Provides access to the contents of the currently active scene, including
@@ -55,8 +57,8 @@ public final class SceneContext implements Updatable {
     private long elapsedTime;
     @Getter private FrameStats frameStats;
 
-    private SceneLogic activeScene;
-    private Queue<SceneLogic> requestedSceneQueue;
+    private SceneState activeScene;
+    private Queue<SceneState> requestedSceneQueue;
     private List<Scene> globalSubScenes;
 
     private int lastCanvasWidth;
@@ -66,6 +68,7 @@ public final class SceneContext implements Updatable {
     private static final float MIN_FRAME_TIME = 0.01f;
     private static final float MAX_FRAME_TIME = 0.2f;
     private static final int RESIZE_TOLERANCE = 20;
+    private static final Logger LOGGER = LogHelper.getLogger(SceneContext.class);
 
     /**
      * Creates a new {@code SceneContext} from the specified renderer. This
@@ -168,21 +171,20 @@ public final class SceneContext implements Updatable {
     public void update(float deltaTime) {
         getInput().update(deltaTime);
 
-        stage.update(deltaTime);
-
         if (!requestedSceneQueue.isEmpty()) {
             activateRequestedScene();
         }
 
-        updateSceneGraph(activeScene, deltaTime);
+        updateCurrentScene(activeScene, deltaTime);
         updateGlobalSubScenes(deltaTime);
 
         lastCanvasWidth = getCanvas().getWidth();
         lastCanvasHeight = getCanvas().getHeight();
     }
 
-    private void updateSceneGraph(SceneLogic current, float deltaTime) {
+    private void updateCurrentScene(SceneState current, float deltaTime) {
         checkCanvasResize(current);
+        current.sceneTimer.update(deltaTime);
         current.scene.update(this, deltaTime);
 
         // Iterate the list of systems backwards to handle
@@ -202,7 +204,7 @@ public final class SceneContext implements Updatable {
         }
     }
 
-    private void checkCanvasResize(SceneLogic current) {
+    private void checkCanvasResize(SceneState current) {
         int width = getCanvas().getWidth();
         int height = getCanvas().getHeight();
 
@@ -212,7 +214,7 @@ public final class SceneContext implements Updatable {
         }
     }
 
-    private boolean checkCompleted(SceneLogic parent, Scene subScene) {
+    private boolean checkCompleted(SceneState parent, Scene subScene) {
         if (subScene.isCompleted()) {
             subScene.end(this);
             parent.subScenes.remove(subScene);
@@ -236,7 +238,7 @@ public final class SceneContext implements Updatable {
             stage.clear();
         }
 
-        SceneLogic requestedScene = requestedSceneQueue.peek();
+        SceneState requestedScene = requestedSceneQueue.peek();
 
         if (requestedScene != null) {
             activeScene = requestedScene;
@@ -268,7 +270,7 @@ public final class SceneContext implements Updatable {
      * this method again will overrule that request.
      */
     public void changeScene(Scene requestedScene) {
-        requestedSceneQueue.offer(new SceneLogic(requestedScene));
+        requestedSceneQueue.offer(new SceneState(requestedScene));
     }
 
     /**
@@ -280,7 +282,7 @@ public final class SceneContext implements Updatable {
             activeScene.attachSubScene(subScene);
             subScene.start(this);
         } else {
-            SceneLogic requestedScene = requestedSceneQueue.peek();
+            SceneState requestedScene = requestedSceneQueue.peek();
             requestedScene.attachSubScene(subScene);
         }
     }
@@ -316,6 +318,20 @@ public final class SceneContext implements Updatable {
     }
 
     /**
+     * Returns a timer that returns the elapsed time in the currently active
+     * scene. in seconds. The scene time is updated at the start of every
+     * frame update.
+     */
+    public Timer getSceneTime() {
+        if (activeScene == null) {
+            LOGGER.warning("Scene timer is not yet available");
+            return Timer.none();
+        }
+
+        return activeScene.sceneTimer;
+    }
+
+    /**
      * Returns the display name for the underlying renderer. The display name
      * will not include the word "renderer".
      */
@@ -343,7 +359,7 @@ public final class SceneContext implements Updatable {
         info.add("Render time:  " + frameStats.getFrameRenderTime() + "ms");
 
         if (!frameStats.getCustomStats().isEmpty()) {
-            info.add("--------");
+            info.add("");
         }
 
         for (String customStat : frameStats.getCustomStats()) {
@@ -367,20 +383,22 @@ public final class SceneContext implements Updatable {
      * consisting of both the scene itself plus all of its attached
      * sub-scenes.
      */
-    private static class SceneLogic {
+    private static class SceneState {
 
         private Scene scene;
         private List<Scene> subScenes;
+        private Timer sceneTimer;
 
-        public SceneLogic(Scene scene) {
+        public SceneState(Scene scene) {
             this.scene = scene;
             this.subScenes = new ArrayList<>();
+            this.sceneTimer = Timer.infinite();
         }
 
         public void attachSubScene(Scene subScene) {
             // We iterate the sub-scenes backwards, but still want
             // to preserve the expected order.
-            subScenes.add(0, subScene);
+            subScenes.addFirst(subScene);
         }
 
         public void walk(Consumer<Scene> callback) {

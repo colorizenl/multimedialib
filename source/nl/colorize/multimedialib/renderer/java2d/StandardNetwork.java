@@ -50,7 +50,7 @@ public class StandardNetwork implements Network {
     }
 
     @Override
-    public Subscribable<PeerConnection> openPeerConnection() {
+    public PeerConnection openPeerConnection() {
         throw new UnsupportedOperationException();
     }
 

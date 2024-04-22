@@ -24,7 +24,7 @@ import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
-import nl.colorize.multimedialib.stage.Transformable;
+import nl.colorize.multimedialib.stage.Transform;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.canvas.CanvasImageSource;
 import org.teavm.jso.canvas.CanvasRenderingContext2D;
@@ -95,7 +95,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
         }
     }
 
-    private void drawImage(TeaImage image, Region region, Transformable transform) {
+    private void drawImage(TeaImage image, Region region, Transform transform) {
         CanvasImageSource source = prepareImage(image, transform.getMaskColor());
         Point2D position = transform.getPosition();
 
@@ -149,7 +149,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
 
     @Override
     public void drawRect(Primitive graphic, Rect rect) {
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
 
         context.setGlobalAlpha(transform.getAlpha() / 100f);
         context.setFillStyle(graphic.getColor().toHex());
@@ -164,7 +164,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
 
     @Override
     public void drawCircle(Primitive graphic, Circle circle) {
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
 
         context.setGlobalAlpha(transform.getAlpha() / 100f);
         context.setFillStyle(graphic.getColor().toHex());
@@ -177,7 +177,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
 
     @Override
     public void drawPolygon(Primitive graphic, Polygon polygon) {
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
 
         context.setGlobalAlpha(transform.getAlpha() / 100f);
         context.setFillStyle(graphic.getColor().toHex());
@@ -193,7 +193,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
     @Override
     public void drawText(Text text) {
         FontFace font = text.getFont().scale(sceneCanvas);
-        Transformable transform = text.getGlobalTransform();
+        Transform transform = text.getGlobalTransform();
 
         context.setGlobalAlpha(transform.getAlpha() / 100f);
         context.setFont(getFontString(font));

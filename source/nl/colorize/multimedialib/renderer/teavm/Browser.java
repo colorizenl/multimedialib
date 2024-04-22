@@ -57,10 +57,10 @@ public class Browser {
     public static native void registerErrorHandler(ErrorCallback callback);
 
     @JSBody(
-        params = {"family", "url", "callback"},
-        script = "return window.preloadFontFace(family, url, callback);"
+        params = {"family", "url", "errorCallback"},
+        script = "return window.preloadFontFace(family, url, errorCallback);"
     )
-    public static native void preloadFontFace(String family, String url, SuccessCallback callback);
+    public static native void preloadFontFace(String family, String url, ErrorCallback errorCallback);
 
     @JSBody(
         params = {"text"},

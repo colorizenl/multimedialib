@@ -24,11 +24,11 @@ public class Point2DTest {
 
     @Test
     public void testCalculateAngle() {
-        assertEquals(0f, new Point2D(1f, 1f).angleTo(new Point2D(1f, 1f)), EPSILON);
-        assertEquals(0f, new Point2D(1f, 1f).angleTo(new Point2D(2f, 1f)), EPSILON);
-        assertEquals(180f, new Point2D(1f, 1f).angleTo(new Point2D(-2f, 1f)), EPSILON);
-        assertEquals(45f, new Point2D(1f, 1f).angleTo(new Point2D(2f, 2f)), EPSILON);
-        assertEquals(26.565f, new Point2D(1f, 1f).angleTo(new Point2D(3f, 2f)), EPSILON);
+        assertEquals(0f, new Point2D(1f, 1f).angleTo(new Point2D(1f, 1f)).degrees(), EPSILON);
+        assertEquals(0f, new Point2D(1f, 1f).angleTo(new Point2D(2f, 1f)).degrees(), EPSILON);
+        assertEquals(180f, new Point2D(1f, 1f).angleTo(new Point2D(-2f, 1f)).degrees(), EPSILON);
+        assertEquals(45f, new Point2D(1f, 1f).angleTo(new Point2D(2f, 2f)).degrees(), EPSILON);
+        assertEquals(26.565f, new Point2D(1f, 1f).angleTo(new Point2D(3f, 2f)).degrees(), EPSILON);
     }
 
     @Test
@@ -81,5 +81,12 @@ public class Point2DTest {
     void move() {
         assertEquals("(40, 60)", new Point2D(10, 20).move(30, 40).toString());
         assertEquals("(40, 60)", new Point2D(10, 20).move(new Point2D(30, 40)).toString());
+    }
+
+    @Test
+    void multiply() {
+        assertEquals("(10, 20)", new Point2D(10, 20).multiply(1f).toString());
+        assertEquals("(20, 40)", new Point2D(10, 20).multiply(2f).toString());
+        assertEquals("(5, 10)", new Point2D(10, 20).multiply(0.5f).toString());
     }
 }

@@ -41,7 +41,7 @@ import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
-import nl.colorize.multimedialib.stage.Transformable;
+import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.multimedialib.stage.World3D;
 import nl.colorize.util.stats.Cache;
 
@@ -181,7 +181,7 @@ public class GDXGraphics implements StageVisitor {
 
     @Override
     public void drawRect(Primitive graphic, Rect rect) {
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
         float x = toScreenX(rect.x());
         float y = toScreenY(rect.getEndY());
         float width = rect.width() * canvas.getZoomLevel();
@@ -194,7 +194,7 @@ public class GDXGraphics implements StageVisitor {
 
     @Override
     public void drawCircle(Primitive graphic, Circle circle) {
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
         float x = toScreenX(circle.center().x());
         float y = toScreenY(circle.center().y());
         float radius = circle.radius() * canvas.getZoomLevel();
@@ -206,7 +206,7 @@ public class GDXGraphics implements StageVisitor {
 
     @Override
     public void drawPolygon(Primitive graphic, Polygon polygon) {
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
 
         if (polygon.getNumPoints() == 3) {
             drawTriangle(polygon.points(), graphic.getColor(), transform.getAlpha());
@@ -228,11 +228,11 @@ public class GDXGraphics implements StageVisitor {
     @Override
     public void drawSprite(Sprite sprite) {
         TextureRegion textureRegion = ((GDXImage) sprite.getCurrentGraphics()).getTextureRegion();
-        Transformable transform = sprite.getGlobalTransform();
+        Transform transform = sprite.getGlobalTransform();
         drawSprite(textureRegion, transform);
     }
 
-    private void drawSprite(TextureRegion textureRegion, Transformable transform) {
+    private void drawSprite(TextureRegion textureRegion, Transform transform) {
         float screenX = toScreenX(transform.getPosition().x());
         float screenY = toScreenY(transform.getPosition().y());
         float screenWidth = textureRegion.getRegionWidth() * canvas.getZoomLevel();
@@ -277,7 +277,7 @@ public class GDXGraphics implements StageVisitor {
     @Override
     public void drawText(Text text) {
         BitmapFont bitmapFont = mediaLoader.getBitmapFont(text.getFont().scale(canvas));
-        Transformable transform = text.getGlobalTransform();
+        Transform transform = text.getGlobalTransform();
         float screenX = toScreenX(transform.getPosition().x());
         int align = getTextAlign(text.getAlign());
 

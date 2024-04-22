@@ -43,6 +43,7 @@ public class TeaMediaLoader implements MediaLoader {
     private HTMLDocument document;
     private StageVisitor graphics;
     private List<FilePointer> manifest;
+    private long timestamp;
 
     private static final FilePointer MANIFEST_FILE = new FilePointer("resource-file-manifest");
     private static final Splitter LINE_SPLITTER = Splitter.on("\n").trimResults().omitEmptyStrings();
@@ -52,6 +53,7 @@ public class TeaMediaLoader implements MediaLoader {
         this.document = Window.current().getDocument();
         this.graphics = graphics;
         this.manifest = Collections.emptyList();
+        this.timestamp = System.currentTimeMillis();
     }
 
     @Override
@@ -60,7 +62,7 @@ public class TeaMediaLoader implements MediaLoader {
         Subscribable<HTMLImageElement> imagePromise = new Subscribable<>();
         imageElement.setCrossOrigin("anonymous");
         imageElement.addEventListener("load", event -> imagePromise.next(imageElement));
-        imageElement.setSrc("resources/" + normalizeFilePath(file, false));
+        imageElement.setSrc("resources/" + normalizeFilePath(file, false) + "?t=" + timestamp);
         return new TeaImage(imagePromise, null);
     }
 
@@ -70,15 +72,20 @@ public class TeaMediaLoader implements MediaLoader {
         Subscribable<HTMLAudioElement> audioPromise = new Subscribable<>();
         audioElement.setCrossOrigin("anonymous");
         audioElement.addEventListener("loadeddata", event -> audioPromise.next(audioElement));
-        audioElement.setSrc("resources/" + normalizeFilePath(file, false));
+        audioElement.setSrc("resources/" + normalizeFilePath(file, false) + "?t=" + timestamp);
         return new TeaAudio(audioPromise);
     }
 
     @Override
     public FontFace loadFont(FilePointer file, String family, FontStyle style) {
-        Subscribable<Boolean> fontPromise = new Subscribable<>();
         String url = "url('resources/" + normalizeFilePath(file, false) + "')";
-        Browser.preloadFontFace(family, url, fontPromise::next);
+
+        Browser.preloadFontFace(family, url, error -> {
+            if (error != null && !error.isEmpty()) {
+                LOGGER.warning("Failed to load font '" + family + "': " + error);
+            }
+        });
+
         return new FontFace(this, file, family, style);
     }
 

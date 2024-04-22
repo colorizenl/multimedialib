@@ -23,7 +23,6 @@ import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
-import nl.colorize.multimedialib.stage.Transformable;
 import nl.colorize.util.stats.Cache;
 import nl.colorize.util.swing.Utils2D;
 
@@ -136,7 +135,7 @@ public class Java2DGraphicsContext implements StageVisitor {
 
     @Override
     public void drawRect(Primitive graphic, Rect rect) {
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
         float screenX = canvas.toScreenX(rect.x());
         float screenY = canvas.toScreenY(rect.y());
         float screenWidth = canvas.toScreenX(rect.getEndX()) - screenX;
@@ -164,7 +163,7 @@ public class Java2DGraphicsContext implements StageVisitor {
 
     @Override
     public void drawPolygon(Primitive graphic, Polygon polygon) {
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
         int[] px = new int[polygon.getNumPoints()];
         int[] py = new int[polygon.getNumPoints()];
 
@@ -186,7 +185,7 @@ public class Java2DGraphicsContext implements StageVisitor {
         drawImage(image.getImage(), sprite.getGlobalTransform());
     }
 
-    private void drawImage(BufferedImage image, Transformable transform) {
+    private void drawImage(BufferedImage image, Transform transform) {
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(transform.getAlpha());
 
@@ -205,7 +204,7 @@ public class Java2DGraphicsContext implements StageVisitor {
     public void drawText(Text text) {
         Font font = fontCache.get(text.getFont().scale(canvas));
         ColorRGB color = text.getFont().style().color();
-        Transformable transform = text.getGlobalTransform();
+        Transform transform = text.getGlobalTransform();
 
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(transform.getAlpha());
@@ -232,7 +231,7 @@ public class Java2DGraphicsContext implements StageVisitor {
         }
     }
 
-    private AffineTransform applyTransform(Transformable transform, int width, int height) {
+    private AffineTransform applyTransform(Transform transform, int width, int height) {
         float screenX = canvas.toScreenX(transform.getPosition());
         float screenY = canvas.toScreenY(transform.getPosition());
 

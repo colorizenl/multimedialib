@@ -148,11 +148,11 @@ public class TeaVMTranspilerTool {
     private void printSummary() throws IOException {
         long htmlSize = new File(outputDir, "index.html").length();
         long jsSize = getScriptFile().length();
-        long appFileSize = FileUtils.countDirectorySize(outputDir);
+        long resourceSize = FileUtils.countDirectorySize(new File(outputDir, "resources"));
 
         LOGGER.info("HTML file size:                   " + FileUtils.formatFileSize(htmlSize));
         LOGGER.info("Transpiled JavaScript file size:  " + FileUtils.formatFileSize(jsSize));
-        LOGGER.info("Total application file size:      " + FileUtils.formatFileSize(appFileSize));
+        LOGGER.info("Resource file size:               " + FileUtils.formatFileSize(resourceSize));
         LOGGER.info("Results saved to " + outputDir.getAbsolutePath());
     }
 

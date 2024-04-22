@@ -5,4 +5,4 @@
 
 https://unpkg.com/pixi.js@7.3.2/dist/pixi.min.js
 https://unpkg.com/three@0.149.0/build/three.min.js
-https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js
+https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js

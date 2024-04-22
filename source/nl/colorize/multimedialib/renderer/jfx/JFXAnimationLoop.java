@@ -84,7 +84,7 @@ public class JFXAnimationLoop extends Application {
                 try {
                     if (context.syncFrame() > 0) {
                         context.getFrameStats().markStart(FrameStats.PHASE_FRAME_RENDER);
-                        context.getStage().visit(graphics);
+                        context.getStage().visit(graphics, context.getSceneTime());
                         context.getFrameStats().markEnd(FrameStats.PHASE_FRAME_RENDER);
                     }
                 } catch (Exception e) {

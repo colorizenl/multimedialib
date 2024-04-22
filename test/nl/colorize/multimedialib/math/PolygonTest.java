@@ -30,6 +30,8 @@ public class PolygonTest {
         assertEquals(2, polygon.getPointY(0), EPSILON);
         assertEquals(5, polygon.getPointX(2), EPSILON);
         assertEquals(6, polygon.getPointY(2), EPSILON);
+        assertEquals("(1, 2)", polygon.getPoint(0).toString());
+        assertEquals("(3, 4)", polygon.getPoint(1).toString());
     }
     
     @Test

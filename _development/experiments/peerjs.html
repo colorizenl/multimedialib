@@ -4,7 +4,7 @@
     <meta charset="UTF-8"/>
     <title>MultimediaLib | PeerJS</title>
     <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no"/>
-    <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 
 <body>
@@ -22,7 +22,7 @@
     </form>
 
     <script>
-        const peer = new Peer();
+        let peer = null;
         let connection = null;
 
         function log(message) {
@@ -31,6 +31,7 @@
         }
 
         function init() {
+            log("Initializing connection");
             configurePeer();
             return false;
         }
@@ -44,6 +45,7 @@
         }
 
         function configurePeer() {
+            peer = new Peer();
             peer.on("open", id => log("Receiving ID:\n" + id));
             peer.on("connection", c => receiveConnection(c));
             peer.on("close", c => log("Connection closed"));

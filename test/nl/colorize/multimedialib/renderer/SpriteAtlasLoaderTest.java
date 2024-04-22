@@ -9,6 +9,7 @@ package nl.colorize.multimedialib.renderer;
 import com.google.common.base.Charsets;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
 import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
+import nl.colorize.util.ResourceFile;
 import nl.colorize.util.swing.Utils2D;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -44,7 +45,12 @@ class SpriteAtlasLoaderTest {
         Files.writeString(new File(tempDir, "test.atlas").toPath(), contents, Charsets.UTF_8);
         Utils2D.savePNG(Utils2D.createTestImage(256, 256), new File(tempDir, "test.png"));
 
-        MediaLoader mediaLoader = new StandardMediaLoader(tempDir);
+        MediaLoader mediaLoader = new StandardMediaLoader() {
+            @Override
+            protected ResourceFile locateFile(FilePointer location) {
+                return new ResourceFile(new File(tempDir, location.path()));
+            }
+        };
         SpriteAtlasLoader loader = new SpriteAtlasLoader(mediaLoader);
         SpriteAtlas atlas = loader.load(new FilePointer("test.atlas"));
 
@@ -78,7 +84,12 @@ class SpriteAtlasLoaderTest {
         Utils2D.savePNG(Utils2D.createTestImage(256, 256), new File(tempDir, "test.png"));
         Utils2D.savePNG(Utils2D.createTestImage(256, 256), new File(tempDir, "other.png"));
 
-        MediaLoader mediaLoader = new StandardMediaLoader(tempDir);
+        MediaLoader mediaLoader = new StandardMediaLoader() {
+            @Override
+            protected ResourceFile locateFile(FilePointer location) {
+                return new ResourceFile(new File(tempDir, location.path()));
+            }
+        };
         SpriteAtlasLoader loader = new SpriteAtlasLoader(mediaLoader);
         SpriteAtlas atlas = loader.load(new FilePointer("test.atlas"));
 

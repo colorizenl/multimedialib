@@ -116,6 +116,10 @@ public class StateMachine<S> implements Updatable {
             allowedTransitions.test(precedingState, requestedState);
     }
 
+    /**
+     * Updates this state machine based on the elapsed <em>relative</em> time,
+     * as specified by the {@link Updatable} interface.
+     */
     @Override
     public void update(float deltaTime) {
         if (isActiveStateCompleted()) {

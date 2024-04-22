@@ -10,12 +10,12 @@ import org.teavm.jso.JSFunctor;
 import org.teavm.jso.JSObject;
 
 /**
- * Semi-generic JavaScript function callback that can be used to return the
- * result of an asynchronous operation that can either succeed or fail.
+ * JavaScript function interface that is used to construct {@link PeerMessage}s
+ * from messages received in callback functions.
  */
 @JSFunctor
 @FunctionalInterface
-public interface SuccessCallback extends JSObject {
+public interface MessageCallback extends JSObject {
 
-    public void onOperationCompleted(boolean success);
+    public void onMessage(String type, String value);
 }

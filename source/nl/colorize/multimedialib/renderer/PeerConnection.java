@@ -7,32 +7,31 @@
 package nl.colorize.multimedialib.renderer;
 
 import nl.colorize.multimedialib.math.Buffer;
-import nl.colorize.util.Subscribable;
+import nl.colorize.multimedialib.renderer.teavm.PeerMessage;
 
 /**
  * Access to a currently active peer-to-peer connection, which can be obtained
  * from {@link Network}. The protocol used for the connection depends on both
- * the renderer and the current platform. This also means that it is generally
- * not possible to connect to peers on other platforms.
- * <p>
- * Since this is a peer-to-peer connection, it is possible to connect to
- * <em>multiple</em> peers. In that situation, messages will be sent to
- * <em>all</em> peers, and received messages will similarly include all peers.
+ * the renderer and the current platform. The same {@link PeerConnection}
+ * instance can be connected to <em>multiple</em> peers.
  */
 public interface PeerConnection {
 
-    public String getId();
+    /**
+     * Attempts to connect to the peer with the specified ID. This will lead
+     * to a message of type {@link PeerMessage#TYPE_CONNECT} or type
+     * {@link PeerMessage#TYPE_ERROR}, depending on the result.
+     */
+    public void connect(String peerId);
 
     /**
-     * Attempts to connect to the peer with the specified ID. If the connection
-     * is successful, messages will be sent to and received from the peer until
-     * it disconnects.
+     * Sends the specified data message to all connected peers. The recipients
+     * will receive a message of type {@link PeerMessage#TYPE_DATA}.
      */
-    public Subscribable<String> connect(String peerId);
-
     public void sendMessage(String message);
 
-    public Buffer<String> getReceivedMessages();
-
-    public void close();
+    /**
+     * Returns all received messages from all connected peers.
+     */
+    public Buffer<PeerMessage> getReceivedMessages();
 }

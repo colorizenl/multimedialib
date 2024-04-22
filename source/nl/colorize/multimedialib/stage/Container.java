@@ -9,6 +9,7 @@ package nl.colorize.multimedialib.stage;
 import lombok.Getter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.scene.Timer;
 
 import java.util.function.Consumer;
 
@@ -110,13 +111,6 @@ public class Container implements Graphic2D {
         }
     }
 
-    @Override
-    public void update(float deltaTime) {
-        for (Graphic2D child : location.getChildren()) {
-            child.update(deltaTime);
-        }
-    }
-
     /**
      * Returns the smallest rectangle that can contain the bounds of all
      * graphics within this container.
@@ -142,6 +136,13 @@ public class Container implements Graphic2D {
         }
 
         return Rect.fromPoints(x0, y0, x1, y1);
+    }
+
+    @Override
+    public void updateGraphics(Timer sceneTime) {
+        for (Graphic2D child : location.getChildren()) {
+            child.updateGraphics(sceneTime);
+        }
     }
 
     @Override

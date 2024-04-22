@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.stage;
 
 import lombok.Getter;
+import lombok.Setter;
 import nl.colorize.multimedialib.math.Angle;
 import nl.colorize.multimedialib.math.Point2D;
 
@@ -28,24 +29,25 @@ import nl.colorize.multimedialib.math.Point2D;
  * | Mask color        | Replaces non-transparent pixels with color | Sprite             |
  * </pre>
  * <p>
- * {@link Transform} instances represent a <em>local</em> transforms, with
- * their properties interpreted relative to their parent. In contrast,
- * <em>global</em> transforms are interpreted relative to the stage. Changing
- * a property in a local transform will automatically propagate to the
- * attached global transform.
+ * {@link Transform} instances do not enforce or define against what base
+ * their properties should be interpreted. A <em>local</em> transform's
+ * properties are interpreted relative to the transform's parent. A
+ * <em>global</em> transform's properties are interpreted relative to the
+ * stage.
  */
 @Getter
-public final class Transform implements Transformable {
+@Setter
+public class Transform {
 
-    private boolean visible;
-    private Point2D position;
-    private Angle rotation;
-    private float scaleX;
-    private float scaleY;
-    private boolean flipHorizontal;
-    private boolean flipVertical;
-    private float alpha;
-    private ColorRGB maskColor;
+    protected boolean visible;
+    protected Point2D position;
+    protected Angle rotation;
+    protected float scaleX;
+    protected float scaleY;
+    protected boolean flipHorizontal;
+    protected boolean flipVertical;
+    protected float alpha;
+    protected ColorRGB maskColor;
 
     public Transform() {
         this.visible = true;
@@ -57,10 +59,6 @@ public final class Transform implements Transformable {
         this.flipVertical = false;
         this.alpha = 100f;
         this.maskColor = null;
-    }
-
-    public void setVisible(boolean visible) {
-        this.visible = visible;
     }
 
     public void setPosition(Point2D position) {
@@ -124,20 +122,8 @@ public final class Transform implements Transformable {
         return flipVertical ? -scaleY : scaleY;
     }
 
-    public void setFlipHorizontal(boolean flipHorizontal) {
-        this.flipHorizontal = flipHorizontal;
-    }
-
-    public void setFlipVertical(boolean flipVertical) {
-        this.flipVertical = flipVertical;
-    }
-
     public void setAlpha(float alpha) {
         this.alpha = Math.clamp(alpha, 0f, 100f);
-    }
-
-    public void setMaskColor(ColorRGB maskColor) {
-        this.maskColor = maskColor;
     }
 
     /**
@@ -154,27 +140,5 @@ public final class Transform implements Transformable {
         setFlipVertical(other.flipVertical);
         setAlpha(other.alpha);
         setMaskColor(other.maskColor);
-    }
-
-    /**
-     * Updates this {@link Transform}, by combining all properties with those
-     * of the specified other {@link Transform}.
-     */
-    public void combine(Transform other) {
-        setVisible(visible && other.visible);
-        setPosition(position.move(other.position));
-        setRotation(rotation.degrees() + other.rotation.degrees());
-        setScaleX(combinePercentage(scaleX, other.scaleX));
-        setScaleY(combinePercentage(scaleY, other.scaleY));
-        setFlipHorizontal(flipHorizontal || other.flipHorizontal);
-        setFlipVertical(flipVertical || other.flipVertical);
-        setAlpha(combinePercentage(alpha, other.alpha));
-        setMaskColor(maskColor != null ? maskColor : other.maskColor);
-    }
-
-    private float combinePercentage(float value, float otherValue) {
-        float normalizedValue = value / 100f;
-        float normalizedOtherValue = otherValue / 100f;
-        return (normalizedValue * normalizedOtherValue) * 100f;
     }
 }

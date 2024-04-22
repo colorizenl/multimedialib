@@ -8,8 +8,6 @@ package nl.colorize.multimedialib.math;
 
 import nl.colorize.util.animation.Interpolation;
 
-import static nl.colorize.multimedialib.math.Shape.EPSILON;
-
 /**
  * Describes a point with X and Y coordinates within a two-dimensional space.
  * Point coordinates have float precision, and point instances are immutable.
@@ -17,6 +15,7 @@ import static nl.colorize.multimedialib.math.Shape.EPSILON;
 public record Point2D(float x, float y) {
 
     public static final Point2D ORIGIN = new Point2D(0f, 0f);
+    public static final float EPSILON = 0.001f;
 
     public boolean isOrigin() {
         return Math.abs(x) < EPSILON && Math.abs(y) < EPSILON;
@@ -35,15 +34,10 @@ public record Point2D(float x, float y) {
      * Returns the angle in degrees from this point towards the specified other
      * point. If the points are identical this will return an angle of 0.
      */
-    public float angleTo(Point2D other) {
+    public Angle angleTo(Point2D other) {
         double radians = Math.atan2(other.y - y, other.x - x);
-        float angle = (float) Math.toDegrees(radians);
-
-        if (angle < 0f) {
-            angle += 360f;
-        }
-
-        return angle;
+        float degrees = (float) Math.toDegrees(radians);
+        return new Angle(degrees);
     }
     
     /**
@@ -91,6 +85,14 @@ public record Point2D(float x, float y) {
      */
     public Point2D move(Point2D other) {
         return move(other.x(), other.y());
+    }
+
+    /**
+     * Returns a new point by multiplying this point's X and Y values with
+     * the specified factor.
+     */
+    public Point2D multiply(float factor) {
+        return new Point2D(x * factor, y * factor);
     }
 
     @Override

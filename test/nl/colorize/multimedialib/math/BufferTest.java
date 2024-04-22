@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.math;
 
 import com.google.common.collect.Iterables;
+import nl.colorize.util.Subscribable;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,5 +32,15 @@ class BufferTest {
         buffer.push("d");
 
         assertEquals("[c, d]", Iterables.toString(buffer.flush()));
+    }
+
+    @Test
+    void useAsSubscriber() {
+        Buffer<String> buffer = new Buffer<>();
+        Subscribable<String> subscribable = Subscribable.of("a", "b");
+        subscribable.subscribe(buffer);
+
+        assertEquals("[a, b]", buffer.flush().toString());
+        assertEquals("[]", buffer.flush().toString());
     }
 }

@@ -17,7 +17,7 @@ import nl.colorize.multimedialib.math.Shape;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
-import nl.colorize.multimedialib.scene.Updatable;
+import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.util.LogHelper;
 
 import java.util.logging.Logger;
@@ -35,7 +35,7 @@ import java.util.logging.Logger;
  * stage are cleared so the next scene can take over.
  */
 @Getter
-public class Stage implements Updatable {
+public class Stage {
 
     private Canvas canvas;
     private FrameStats frameStats;
@@ -45,6 +45,7 @@ public class Stage implements Updatable {
     @Setter private ColorRGB backgroundColor;
 
     private static final String ROOT_CONTAINER_NAME = "$$root";
+    private static final float SAFE_ZONE = 128f;
     private static final Logger LOGGER = LogHelper.getLogger(Stage.class);
 
     public Stage(GraphicsMode graphicsMode, Canvas canvas, FrameStats frameStats) {
@@ -54,14 +55,6 @@ public class Stage implements Updatable {
         this.root = new Container(ROOT_CONTAINER_NAME);
         this.world = graphicsMode == GraphicsMode.MODE_3D ? new World3D() : null;
         this.backgroundColor = ColorRGB.BLACK;
-    }
-
-    @Override
-    public void update(float deltaTime) {
-        root.update(deltaTime);
-        if (world != null) {
-            world.update(deltaTime);
-        }
     }
 
     /**
@@ -91,10 +84,10 @@ public class Stage implements Updatable {
      * should be drawn. This method is called by the renderer following each
      * frame update.
      */
-    public void visit(StageVisitor visitor) {
+    public void visit(StageVisitor visitor, Timer sceneTime) {
         visitor.prepareStage(this);
         visitor.drawBackground(backgroundColor);
-        visitGraphic(root, visitor);
+        visitGraphic(root, visitor, sceneTime);
     }
 
     /**
@@ -103,13 +96,21 @@ public class Stage implements Updatable {
      * performance, this method will only recurse if the specified graphic is
      * currently visible.
      */
-    private void visitGraphic(Graphic2D graphic, StageVisitor visitor) {
-        if (!shouldVisitGraphic(graphic, visitor)) {
+    private void visitGraphic(Graphic2D graphic, StageVisitor visitor, Timer sceneTime) {
+        if (!shouldDraw(graphic, visitor)) {
             return;
         }
 
+        // We don't want to unnecessarily update the container's
+        // children if some of those children are not currently
+        // visible. The visible children are still updated once
+        // we reach them while rendering.
+        if (!(graphic instanceof Container)) {
+            graphic.updateGraphics(sceneTime);
+        }
+
         switch (graphic) {
-            case Container container -> visitContainer(container, visitor);
+            case Container container -> visitContainer(container, visitor, sceneTime);
             case Sprite sprite -> visitor.drawSprite(sprite);
             case Primitive primitive -> visitPrimitive(primitive, visitor);
             case Text text -> visitor.drawText(text);
@@ -120,48 +121,47 @@ public class Stage implements Updatable {
     }
 
     /**
-     * Returns whether the specified graphic should be visited. Stateful
-     * renderers will need to track the status of every single graphic.
-     * Stateless renderers only care about what needs to be drawn this
-     * frame, so visiting non-visible graphics would result in needless
-     * overhead.
+     * Returns true if the specified graphic should be rendered. Stateful
+     * renderers will need to track the status of every graphic. Stateless
+     * renderers only care about what needs to be drawn this frame, so
+     * visiting non-visible graphics would result in needless overhead.
      * <p>
-     * This method will <em>always</em> visit containers. This is done for
-     * performance reasons: calculating the stage bounds for containers is
-     * an expensive operation, so this negates the performance benefit of
-     * not visiting non-visible containers. The actual graphics within the
-     * container will still perform the visibility check.
+     * This method will <em>always</em> visit containers. Hypothetically,
+     * this could be skipped if it is already known the container is not
+     * visible. However, performing this check is quite expensive, so for
+     * most renderers it is actually faster to skip the visibility check
+     * for the container, and just perform the visibility check for the
+     * container's children.
      */
-    private boolean shouldVisitGraphic(Graphic2D graphic, StageVisitor visitor) {
-        return visitor.shouldVisitAllGraphics() ||
-            graphic instanceof Container ||
-            isVisible(graphic);
-    }
+    private boolean shouldDraw(Graphic2D graphic, StageVisitor visitor) {
+        if (visitor.shouldVisitAllGraphics() || graphic instanceof Container) {
+            return true;
+        }
 
-    /**
-     * Returns true if the specified graphic is entirely or partially visible
-     * within the canvas, based on its current transform and the value
-     * returned by {@link Transform#isVisible()}.
-     */
-    private boolean isVisible(Graphic2D graphic) {
         if (!graphic.getTransform().isVisible() || !graphic.getGlobalTransform().isVisible()) {
             return false;
         }
 
-        Rect bounds = graphic.getStageBounds();
-        return canvas.getBounds().intersects(bounds);
+        Rect safeCanvasBounds = new Rect(
+            canvas.getBounds().x() - SAFE_ZONE,
+            canvas.getBounds().y() - SAFE_ZONE,
+            canvas.getBounds().width() + 2f * SAFE_ZONE,
+            canvas.getBounds().height() + 2f * SAFE_ZONE
+        );
+
+        return graphic.getStageBounds().intersects(safeCanvasBounds);
     }
 
-    private void visitContainer(Container container, StageVisitor visitor) {
+    private void visitContainer(Container container, StageVisitor visitor, Timer sceneTime) {
         visitor.visitContainer(container);
 
         for (Graphic2D child : container.getChildren()) {
-            visitGraphic(child, visitor);
+            visitGraphic(child, visitor, sceneTime);
         }
     }
 
     private void visitPrimitive(Primitive graphic, StageVisitor visitor) {
-        Transformable globalTransform = graphic.getGlobalTransform();
+        Transform globalTransform = graphic.getGlobalTransform();
         Shape displayedShape = graphic.getShape().reposition(globalTransform.getPosition());
 
         switch (displayedShape) {
@@ -197,7 +197,7 @@ public class Stage implements Updatable {
         if (world != null) {
             buffer.append("World\n");
             for (PolygonModel model : world.getChildren()) {
-                append(buffer, model, 1);
+                append(buffer, model);
             }
         }
         return buffer.toString();
@@ -215,8 +215,8 @@ public class Stage implements Updatable {
         }
     }
 
-    private void append(StringBuilder buffer, PolygonModel model, int depth) {
-        buffer.append("    ".repeat(depth));
+    private void append(StringBuilder buffer, PolygonModel model) {
+        buffer.append("    ");
         buffer.append(model.toString());
         buffer.append("\n");
     }

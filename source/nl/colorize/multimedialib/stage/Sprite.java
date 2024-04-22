@@ -10,7 +10,6 @@ import com.google.common.base.Preconditions;
 import lombok.Getter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.multimedialib.scene.StateMachine;
 import nl.colorize.multimedialib.scene.Timer;
 
 import java.util.HashMap;
@@ -31,24 +30,40 @@ public class Sprite implements Graphic2D {
 
     @Getter private final DisplayListLocation location;
     private Map<String, SpriteState> stateGraphics;
-    private StateMachine<SpriteState> stateMachine;
-    // Cached for performance reasons.
+
+    private SpriteState currentState;
+    private float currentStateTime;
     private Image currentGraphics;
+    private float lastTick;
 
     private static final String NULL_STATE = "$$null";
     private static final String DEFAULT_STATE = "$$default";
 
+    /**
+     * Creates a sprite without default graphics. Trying to use the sprite
+     * before graphics have been added will result in an exception.
+     */
     public Sprite() {
         this.location = new DisplayListLocation(this);
         this.stateGraphics = new HashMap<>();
-        this.stateMachine = new StateMachine<>(new SpriteState(NULL_STATE, null));
+
+        currentState = new SpriteState(NULL_STATE, null);
+        currentStateTime = 0f;
+        lastTick = -1f;
     }
 
+    /**
+     * Creates a sprite that uses the specified animation as its default
+     * graphics.
+     */
     public Sprite(Animation anim) {
         this();
         addGraphics(DEFAULT_STATE, anim);
     }
 
+    /**
+     * Creates a sprite that uses the specified image as its default graphics.
+     */
     public Sprite(Image image) {
         this();
         addGraphics(DEFAULT_STATE, image);
@@ -103,8 +118,9 @@ public class Sprite implements Graphic2D {
 
         Preconditions.checkNotNull(state, "No graphics defined for " + stateName);
 
-        if (!stateMachine.getActiveState().equals(state)) {
-            stateMachine.forceState(state);
+        if (!currentState.equals(state)) {
+            currentState = state;
+            currentStateTime = 0f;
             updateCurrentGraphics();
         }
     }
@@ -114,12 +130,12 @@ public class Sprite implements Graphic2D {
      * state to play from the beginning.
      */
     public void resetCurrentGraphics() {
-        stateMachine.getActiveStateTimer().reset();
+        currentStateTime = 0f;
         updateCurrentGraphics();
     }
 
     public String getActiveState() {
-        return stateMachine.getActiveState().name;
+        return currentState.name;
     }
 
     public Set<String> getPossibleStates() {
@@ -131,50 +147,63 @@ public class Sprite implements Graphic2D {
     }
 
     public Animation getGraphics(String stateName) {
-        Preconditions.checkArgument(hasGraphics(stateName), "No graphics defined for " + stateName);
-        return stateGraphics.get(stateName).graphics;
+        SpriteState state = stateGraphics.get(stateName);
+        Preconditions.checkArgument(state != null, "No graphics defined: " + stateName);
+        return state.graphics;
     }
 
     @Deprecated
     public Animation getCurrentStateGraphics() {
-        return stateMachine.getActiveState().graphics;
+        Preconditions.checkState(currentGraphics != null, "Sprite is without graphics");
+        return currentState.graphics;
     }
 
     @Deprecated
     public Timer getCurrentStateTimer() {
-        return stateMachine.getActiveStateTimer();
+        if (currentState.graphics.isLoop() || currentState.graphics.getFrameCount() == 1) {
+            return Timer.at(currentStateTime);
+        } else {
+            return Timer.at(currentStateTime, currentState.graphics.getDuration());
+        }
     }
 
     public Image getCurrentGraphics() {
+        Preconditions.checkState(currentGraphics != null, "Sprite is without graphics");
         return currentGraphics;
     }
 
     public int getCurrentWidth() {
+        Preconditions.checkState(currentGraphics != null, "Sprite is without graphics");
         return currentGraphics.getWidth();
     }
 
     public int getCurrentHeight() {
+        Preconditions.checkState(currentGraphics != null, "Sprite is without graphics");
         return currentGraphics.getHeight();
     }
 
     @Override
-    public void update(float deltaTime) {
-        Preconditions.checkState(!stateGraphics.isEmpty(),
-            "Cannot animate sprite that does not yet have any graphics");
+    public void updateGraphics(Timer sceneTime) {
+        Preconditions.checkState(currentGraphics != null, "Sprite is without graphics");
 
-        stateMachine.update(deltaTime);
+        float tick = sceneTime.getTime();
+
+        if (lastTick >= 0f) {
+            float deltaTime = tick - lastTick;
+            currentStateTime += deltaTime;
+        }
+
         updateCurrentGraphics();
+        lastTick = tick;
     }
 
     private void updateCurrentGraphics() {
-        SpriteState activeState = stateMachine.getActiveState();
-        float time = stateMachine.getActiveStateTimer().getTime();
-        currentGraphics = activeState.graphics.getFrameAtTime(time);
+        currentGraphics = currentState.graphics.getFrameAtTime(currentStateTime);
     }
 
     @Override
     public Rect getStageBounds() {
-        Transformable globalTransform = getGlobalTransform();
+        Transform globalTransform = getGlobalTransform();
         Point2D position = globalTransform.getPosition();
         float width = Math.max(getCurrentWidth() * (globalTransform.getScaleX() / 100f), 1f);
         float height = Math.max(getCurrentHeight() * (globalTransform.getScaleY() / 100f), 1f);
@@ -190,15 +219,14 @@ public class Sprite implements Graphic2D {
         for (SpriteState state : stateGraphics.values()) {
             copy.addGraphics(state.name, state.graphics);
         }
-        copy.changeGraphics(stateMachine.getActiveState().name);
+        copy.changeGraphics(currentState.name);
         copy.getTransform().set(getTransform());
         return copy;
     }
 
     @Override
     public String toString() {
-        SpriteState activeState = stateMachine.getActiveState();
-        return "Sprite [" + activeState.name + "]";
+        return "Sprite [" + currentState.name + "]";
     }
 
     /**

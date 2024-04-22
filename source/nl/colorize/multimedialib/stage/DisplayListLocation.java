@@ -8,7 +8,10 @@ package nl.colorize.multimedialib.stage;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
+import nl.colorize.multimedialib.math.Angle;
 import nl.colorize.multimedialib.math.Buffer;
+import nl.colorize.multimedialib.math.Point2D;
+import nl.colorize.util.stats.Aggregate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +37,7 @@ public final class DisplayListLocation {
     protected DisplayListLocation(Graphic2D graphic) {
         this.id = UUID.randomUUID();
         this.graphic = graphic;
-        this.localTransform = new Transform();
+        this.localTransform = new LocalTransform();
         this.globalTransform = new Transform();
 
         this.parent = null;
@@ -58,6 +61,7 @@ public final class DisplayListLocation {
         parent = newParent;
         parent.getLocation().children.add(graphic);
         parent.getLocation().addedChildren.push(graphic);
+        ((LocalTransform) localTransform).propagate();
     }
 
     /**
@@ -74,14 +78,91 @@ public final class DisplayListLocation {
     }
 
     /**
-     * Returns the current <em>global transform</em>, which is relative to the
-     * stage. See {@link Graphic2D#getGlobalTransform()} for more information.
+     * Extends a {@link Transform} so that changes to properties are
+     * automatically synchronized to the global transform. This might
+     * in turn propagate to the global transform of all child graphics,
+     * since they are affected by transform changes in the parent.
      */
-    public Transformable getGlobalTransform() {
-        globalTransform.set(localTransform);
-        if (parent != null) {
-            globalTransform.combine((Transform) parent.getLocation().getGlobalTransform());
+    private class LocalTransform extends Transform {
+
+        @Override
+        public void setVisible(boolean visible) {
+            super.setVisible(visible);
+            propagate();
         }
-        return globalTransform;
+
+        @Override
+        public void setPosition(Point2D position) {
+            super.setPosition(position);
+            propagate();
+        }
+
+        @Override
+        public void setRotation(Angle rotation) {
+            super.setRotation(rotation);
+            propagate();
+        }
+
+        @Override
+        public void setScaleX(float scaleX) {
+            super.setScaleX(scaleX);
+            propagate();
+        }
+
+        @Override
+        public void setScaleY(float scaleY) {
+            super.setScaleY(scaleY);
+            propagate();
+        }
+
+        @Override
+        public void setFlipHorizontal(boolean flipHorizontal) {
+            super.setFlipHorizontal(flipHorizontal);
+            propagate();
+        }
+
+        @Override
+        public void setFlipVertical(boolean flipVertical) {
+            super.setFlipVertical(flipVertical);
+            propagate();
+        }
+
+        @Override
+        public void setAlpha(float alpha) {
+            super.setAlpha(alpha);
+            propagate();
+        }
+
+        @Override
+        public void setMaskColor(ColorRGB maskColor) {
+            super.setMaskColor(maskColor);
+            propagate();
+        }
+
+        private void propagate() {
+            if (parent == null) {
+                globalTransform.set(this);
+            } else {
+                Transform parentTransform = parent.getLocation().globalTransform;
+                propagate(parentTransform);
+            }
+
+            for (Graphic2D child : children) {
+                LocalTransform childTransform = (LocalTransform) child.getLocation().localTransform;
+                childTransform.propagate();
+            }
+        }
+
+        private void propagate(Transform parentTransform) {
+            globalTransform.setVisible(visible && parentTransform.visible);
+            globalTransform.setPosition(position.move(parentTransform.position));
+            globalTransform.setRotation(rotation.degrees() + parentTransform.rotation.degrees());
+            globalTransform.setScaleX(Aggregate.multiplyPercentage(scaleX, parentTransform.scaleX));
+            globalTransform.setScaleY(Aggregate.multiplyPercentage(scaleY, parentTransform.scaleY));
+            globalTransform.setFlipHorizontal(flipHorizontal || parentTransform.flipHorizontal);
+            globalTransform.setFlipVertical(flipVertical || parentTransform.flipVertical);
+            globalTransform.setAlpha(Aggregate.multiplyPercentage(alpha, parentTransform.alpha));
+            globalTransform.setMaskColor(maskColor != null ? maskColor : parentTransform.maskColor);
+        }
     }
 }

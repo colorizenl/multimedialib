@@ -32,7 +32,7 @@ import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
-import nl.colorize.multimedialib.stage.Transformable;
+import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.util.stats.Cache;
 
 import java.util.List;
@@ -88,7 +88,7 @@ public class JFXGraphics implements StageVisitor {
         JFXImage image = (JFXImage) sprite.getCurrentGraphics();
         Image fxImage = image.getImage();
         Region region = image.getRegion();
-        Transformable transform = sprite.getGlobalTransform();
+        Transform transform = sprite.getGlobalTransform();
         float zoom = displayMode.canvas().getZoomLevel();
 
         if (transform.getMaskColor() != null) {
@@ -108,7 +108,7 @@ public class JFXGraphics implements StageVisitor {
 
     @Override
     public void drawLine(Primitive graphic, Line line) {
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
 
         gc.setStroke(toColor(graphic.getColor(), transform.getAlpha()));
         gc.beginPath();
@@ -121,7 +121,7 @@ public class JFXGraphics implements StageVisitor {
     @Override
     public void drawSegmentedLine(Primitive graphic, SegmentedLine line) {
         List<Point2D> points = line.points();
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
 
         gc.setStroke(toColor(graphic.getColor(), transform.getAlpha()));
         gc.beginPath();
@@ -135,7 +135,7 @@ public class JFXGraphics implements StageVisitor {
 
     @Override
     public void drawRect(Primitive graphic, Rect rect) {
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
         float screenX = toScreenX(rect.x());
         float screenY = toScreenY(rect.y());
         float screenWidth = toScreenX(rect.getEndX()) - screenX;
@@ -147,7 +147,7 @@ public class JFXGraphics implements StageVisitor {
 
     @Override
     public void drawCircle(Primitive graphic, Circle circle) {
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
         float screenX0 = toScreenX(circle.center().x() - circle.radius());
         float screenY0 = toScreenY(circle.center().y() - circle.radius());
         float screenX1 = toScreenX(circle.center().x() + circle.radius());
@@ -159,7 +159,7 @@ public class JFXGraphics implements StageVisitor {
 
     @Override
     public void drawPolygon(Primitive graphic, Polygon polygon) {
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
         double[] screenX = new double[polygon.getNumPoints()];
         double[] screenY = new double[polygon.getNumPoints()];
 
@@ -176,7 +176,7 @@ public class JFXGraphics implements StageVisitor {
     public void drawText(Text text) {
         FontFace scaled = text.getFont().scale(displayMode.canvas());
         Font font = media.getFont(scaled);
-        Transformable transform = text.getGlobalTransform();
+        Transform transform = text.getGlobalTransform();
 
         gc.setFont(font);
         gc.setTextAlign(toTextAlignment(text.getAlign()));

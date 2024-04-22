@@ -206,7 +206,7 @@ public class Java2DRenderer implements Renderer {
 
             Graphics2D g2 = Utils2D.createGraphics(bufferGraphics, ANTI_ALIASING, BILINEAR_SCALING);
             graphicsContext.bind(g2);
-            context.getStage().visit(graphicsContext);
+            context.getStage().visit(graphicsContext, context.getSceneTime());
             blitGraphicsContext(windowBuffer);
             graphicsContext.dispose();
 

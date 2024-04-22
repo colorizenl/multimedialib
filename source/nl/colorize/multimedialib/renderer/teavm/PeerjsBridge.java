@@ -16,15 +16,13 @@ import org.teavm.jso.JSProperty;
 public interface PeerjsBridge extends JSObject {
 
     @JSProperty
-    public String getId();
+    public boolean isInitialized();
 
-    public void open(SuccessCallback callback);
+    public void open(MessageCallback messageCallback);
 
-    public void connect(String peerId, SuccessCallback callback);
+    public void connect(String peerId, MessageCallback messageCallback);
 
     public void sendMessage(String message);
 
-    public String[] flushReceivedMessages();
-
-    public void close();
+    public void sendMessageToPeer(String peerId, String message);
 }

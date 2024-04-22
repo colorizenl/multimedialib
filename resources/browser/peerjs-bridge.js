@@ -12,75 +12,58 @@ class PeerJsBridge {
 
     constructor() {
         this.peer = null;
-        this.id = null;
-        this.connections = [];
-        this.receivedMessages = [];
-        this.errors = [];
+        this.connections = {};
+        this.initialized = false;
     }
 
-    open(callback) {
-        if (this.peer) {
-            throw new Error("Peer connection is already open");
-        }
-
+    open(messageCallback) {
         this.peer = new Peer();
-        this.peer.on("open", id => this.handleOpen(id, callback));
-        this.peer.on("connection", connection => this.handleConnection(connection));
-        this.peer.on("close", () => this.id = null);
+        this.connections = {};
+        this.initialized = false;
+
+        this.peer.on("open", peerId => this.handleInit(peerId, messageCallback));
+        this.peer.on("connection", connection => this.handleConnect(connection, messageCallback));
+        this.peer.on("close", () => console.warn("Peer closed"));
         this.peer.on("disconnected", () => console.warn("Peer disconnected"));
-        this.peer.on("error", error => this.handleError(error));
+        this.peer.on("error", error => messageCallback("error", error.type));
     }
 
-    handleOpen(id, callback) {
-        this.id = id;
-        callback(id != null);
-        if (!id) {
-            console.warn("Failed to open peer connection");
-        }
+    handleInit(peerId, messageCallback) {
+        this.initialized = true;
+        messageCallback("init", peerId);
     }
 
-    handleConnection(connection, callback) {
-        this.connections.push(connection);
+    handleConnect(connection, messageCallback) {
+        this.connections[connection.label] = connection;
 
         connection.on("open", () => {
-            if (callback) {
-                callback(true);
-            }
+            connection.on("data", data => messageCallback("data", data));
+            connection.on("close", () => this.handleDisconnect(connection, messageCallback));
+            connection.on("error", error => messageCallback("error", error.type));
 
-            connection.on("data", message => this.receivedMessages.push(message));
-            connection.on("close", () => console.warn("Connection closed"));
-            connection.on("error", error => this.handleError(error));
+            messageCallback("connect", connection.label);
         });
     }
 
-    handleError(error) {
-        this.errors.push(error);
-        console.warn("Peer connection error: " + error);
+    handleDisconnect(connection, messageCallback) {
+        delete this.connections[connection.label];
+        messageCallback("disconnect", connection.label);
     }
 
-    connect(peerId, callback) {
+    connect(peerId, messageCallback) {
         const connection = this.peer.connect(peerId);
-        this.handleConnection(connection, callback);
+        this.handleConnect(connection, messageCallback);
     }
 
     sendMessage(message) {
-        for (let connection of this.connections) {
+        for (let connection of Object.values(this.connections)) {
             connection.send(message);
         }
     }
 
-    flushReceivedMessages() {
-        const flushed = this.receivedMessages;
-        this.receivedMessages = [];
-        return flushed;
-    }
-
-    close() {
-        this.peer.destroy();
-        this.peer = null;
-        this.id = null;
-        this.connections = [];
-        this.receivedMessages = [];
-        this.errors = [];
+    sendMessageToPeer(peerId, message) {
+        if (this.connections[peerId]) {
+            this.connections[peerId].send(message);
+        }
     }
 }

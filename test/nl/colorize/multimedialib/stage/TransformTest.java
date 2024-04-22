@@ -9,54 +9,20 @@ package nl.colorize.multimedialib.stage;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TransformTest {
 
-    private static final float EPSILON = 0.1f;
-
     @Test
-    void combineTransform() {
-        Transform parent = new Transform();
-        parent.setPosition(10f, 20f);
-        parent.setFlipHorizontal(true);
-        parent.setScaleX(50f);
-        parent.setAlpha(80f);
+    void bulkSet() {
+        Transform a = new Transform();
+        a.setPosition(10, 20);
 
-        Transform child = new Transform();
-        child.setRotation(100f);
-        child.setPosition(30f, 40f);
-        child.setScaleX(150f);
+        Transform b = new Transform();
+        b.setPosition(30, 40);
 
-        child.combine(parent);
+        a.set(b);
 
-        assertEquals(40f, child.getPosition().x(), EPSILON);
-        assertEquals(60f, child.getPosition().y(), EPSILON);
-        assertTrue(child.isFlipHorizontal());
-        assertFalse(child.isFlipVertical());
-        assertEquals(100f, child.getRotation().degrees(), EPSILON);
-        assertEquals(-75f, child.getScaleX(), EPSILON);
-        assertEquals(100f, child.getScaleY(), EPSILON);
-        assertEquals(80f, child.getAlpha(), EPSILON);
-    }
-
-    @Test
-    void inheritVisibleField() {
-        Transform first = new Transform();
-        first.setVisible(true);
-
-        Transform second = new Transform();
-        second.setVisible(false);
-
-        Transform third = new Transform();
-        third.setVisible(true);
-
-        second.combine(first);
-        third.combine(second);
-
-        assertTrue(first.isVisible());
-        assertFalse(second.isVisible());
-        assertFalse(third.isVisible());
+        assertEquals("(30, 40)", a.getPosition().toString());
+        assertEquals("(30, 40)", b.getPosition().toString());
     }
 }

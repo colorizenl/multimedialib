@@ -30,7 +30,7 @@ import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
-import nl.colorize.multimedialib.stage.Transformable;
+import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.TextUtils;
 import nl.colorize.util.stats.Cache;
@@ -205,7 +205,7 @@ public class PixiGraphics implements TeaGraphics {
 
     private void updateSprite(Sprite sprite, Pixi.DisplayObject displayObject) {
         TeaImage image = getImage(sprite);
-        Transformable transform = sprite.getGlobalTransform();
+        Transform transform = sprite.getGlobalTransform();
         float zoom = canvas.getZoomLevel();
 
         displayObject.setX(toScreenX(transform.getPosition()));
@@ -263,7 +263,7 @@ public class PixiGraphics implements TeaGraphics {
     @Override
     public void drawLine(Primitive graphic, Line line) {
         Pixi.DisplayObject displayObject = getDisplayObject(graphic);
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
 
         displayObject.clear();
         displayObject.lineStyle(Math.round(graphic.getStroke()), graphic.getColor().getRGB());
@@ -275,7 +275,7 @@ public class PixiGraphics implements TeaGraphics {
     @Override
     public void drawSegmentedLine(Primitive graphic, SegmentedLine line) {
         Pixi.DisplayObject displayObject = getDisplayObject(graphic);
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
 
         displayObject.clear();
         displayObject.lineStyle(Math.round(graphic.getStroke()), graphic.getColor().getRGB());
@@ -289,7 +289,7 @@ public class PixiGraphics implements TeaGraphics {
     @Override
     public void drawRect(Primitive graphic, Rect rect) {
         Pixi.DisplayObject displayObject = getDisplayObject(graphic);
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
 
         displayObject.clear();
         displayObject.beginFill(graphic.getColor().getRGB(), 1f);
@@ -306,7 +306,7 @@ public class PixiGraphics implements TeaGraphics {
     @Override
     public void drawCircle(Primitive graphic, Circle circle) {
         Pixi.DisplayObject displayObject = getDisplayObject(graphic);
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
 
         displayObject.clear();
         displayObject.beginFill(graphic.getColor().getRGB(), 1f);
@@ -322,7 +322,7 @@ public class PixiGraphics implements TeaGraphics {
     @Override
     public void drawPolygon(Primitive graphic, Polygon polygon) {
         Pixi.DisplayObject displayObject = getDisplayObject(graphic);
-        Transformable transform = graphic.getGlobalTransform();
+        Transform transform = graphic.getGlobalTransform();
 
         float[] points = new float[polygon.getNumPoints() * 2];
         for (int i = 0; i < polygon.getNumPoints(); i++) {
@@ -341,7 +341,7 @@ public class PixiGraphics implements TeaGraphics {
     @Override
     public void drawText(Text text) {
         Pixi.DisplayObject displayObject = getDisplayObject(text);
-        Transformable transform = text.getGlobalTransform();
+        Transform transform = text.getGlobalTransform();
         float offset = -0.65f * text.getLineHeight();
 
         displayObject.setText(TextUtils.LINE_JOINER.join(text.getLines()));

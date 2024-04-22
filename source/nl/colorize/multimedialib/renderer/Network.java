@@ -20,24 +20,34 @@ import nl.colorize.util.http.URLResponse;
  */
 public interface Network {
 
+    /**
+     * Sends a HTTP GET request to the specified URL. The request will be
+     * performed asyncrhonously, the returned {@link Subscribable} can be
+     * used to subscribe to the response.
+     */
     public Subscribable<URLResponse> get(String url, Headers headers);
 
+    /**
+     * Sends a HTTP POST request to the specified URL. The request will be
+     * performed asyncrhonously, the returned {@link Subscribable} can be
+     * used to subscribe to the response.
+     */
     public Subscribable<URLResponse> post(String url, Headers headers, PostData body);
 
     /**
      * Opens a peer-to-peer connection. The protocol used for the connection
-     * depends on both the renderer and the current platform. This also means
-     * that it is generally not possible to connect to peers on other
-     * platforms.
+     * depends on both the renderer and the current platform.
      *
      * @throws UnsupportedOperationException if peer-to-peer connections are
      *         not supported by the current platform and/or renderer.
      */
-    public Subscribable<PeerConnection> openPeerConnection();
+    public PeerConnection openPeerConnection();
 
     /**
-     * Returns true if this renderer supports peer-to-peer connectios on the
-     * current platform. See {@link #openPeerConnection()}.
+     * Returns true if this renderer supports peer-to-peer connections on
+     * the current platform. If this method returns false, trying to open
+     * peer-to-peer connections using {@link #openPeerConnection()} will
+     * result in an exception.
      */
     public boolean isPeerToPeerSupported();
 }

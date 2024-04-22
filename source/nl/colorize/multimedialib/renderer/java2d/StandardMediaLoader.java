@@ -6,10 +6,8 @@
 
 package nl.colorize.multimedialib.renderer.java2d;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
-import com.google.common.reflect.ClassPath;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaException;
@@ -21,9 +19,9 @@ import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.PolygonModel;
-import nl.colorize.util.PropertyUtils;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
+import nl.colorize.util.PropertyUtils;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.stats.Cache;
 import nl.colorize.util.swing.Utils2D;
@@ -36,15 +34,11 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 /**
  * Uses APIs from the Java standard library to load media files: Java2D and ImageIO
@@ -53,9 +47,6 @@ import java.util.stream.Collectors;
  * server environments and not on Android.
  */
 public class StandardMediaLoader implements MediaLoader {
-
-    private Function<FilePointer, ResourceFile> locator;
-    private Set<String> classPathResources;
 
     // The font cache is global because loaded AWT fonts need to
     // be registered with the graphics environment.
@@ -66,45 +57,19 @@ public class StandardMediaLoader implements MediaLoader {
     private static final Logger LOGGER = LogHelper.getLogger(StandardMediaLoader.class);
 
     /**
-     * Creates a {@link StandardMediaLoader} that will look for resource files
-     * in the classpath, with a fallback to the local file system.
+     * Returns a {@link ResourceFile} for the resource file at the specified
+     * location. The default implementation loads files from the classpath,
+     * subclasses can override this method to load files from alternative
+     * locations.
      */
-    public StandardMediaLoader() {
-        this.locator = file -> new ResourceFile(file.path());
-        this.classPathResources = Collections.emptySet();
-
-        try {
-            ClassLoader classLoader = StandardMediaLoader.class.getClassLoader();
-
-            classPathResources = ClassPath.from(classLoader).getResources().stream()
-                .map(resource -> resource.getResourceName())
-                .collect(Collectors.toSet());;
-        } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Failed to preload classpath resources", e);
-        }
-    }
-
-    /**
-     * Creates a {@link StandardMediaLoader} that will only look for resource
-     * files in the specified directory. This can be used for testing, where
-     * files are located in a temporary directory and not on the classpath.
-     */
-    @VisibleForTesting
-    public StandardMediaLoader(File resourceDir) {
-        Preconditions.checkArgument(resourceDir.exists() && resourceDir.isDirectory(),
-            "Invalid resource directory: " + resourceDir.getAbsolutePath());
-
-        this.locator = file -> {
-            File localFile = new File(resourceDir.getAbsolutePath() + "/" + file.path());
-            return new ResourceFile(localFile);
-        };
-        this.classPathResources = Collections.emptySet();
+    protected ResourceFile locateFile(FilePointer location) {
+        return new ResourceFile(location.path());
     }
 
     @Override
     public Image loadImage(FilePointer file) {
         try {
-            ResourceFile source = toResourceFile(file);
+            ResourceFile source = locateFile(file);
             BufferedImage original = Utils2D.loadImage(source.openStream());
 
             if (Platform.isWindows()) {
@@ -134,7 +99,7 @@ public class StandardMediaLoader implements MediaLoader {
     @Override
     public Audio loadAudio(FilePointer file) {
         if (Platform.isMac()) {
-            return new JavaSoundPlayer(toResourceFile(file));
+            return new JavaSoundPlayer(locateFile(file));
         } else {
             LOGGER.warning("Java Sound not supported on platform " + Platform.getPlatformName());
             return new HeadlessAudio();
@@ -143,7 +108,7 @@ public class StandardMediaLoader implements MediaLoader {
 
     @Override
     public FontFace loadFont(FilePointer file, String family, FontStyle style) {
-        ResourceFile source = toResourceFile(file);
+        ResourceFile source = locateFile(file);
 
         try (InputStream stream = source.openStream()) {
             Font font = Font.createFont(Font.TRUETYPE_FONT, stream);
@@ -163,7 +128,7 @@ public class StandardMediaLoader implements MediaLoader {
 
     @Override
     public String loadText(FilePointer file) {
-        return toResourceFile(file).read(Charsets.UTF_8);
+        return locateFile(file).read(Charsets.UTF_8);
     }
 
     @Override
@@ -178,11 +143,7 @@ public class StandardMediaLoader implements MediaLoader {
 
     @Override
     public boolean containsResourceFile(FilePointer file) {
-        if (classPathResources.isEmpty()) {
-            return toResourceFile(file).exists();
-        } else {
-            return classPathResources.contains(file.path());
-        }
+        return locateFile(file).exists();
     }
 
     protected File getApplicationDataFile(String appName) {
@@ -215,10 +176,6 @@ public class StandardMediaLoader implements MediaLoader {
         } catch (IOException e) {
             LOGGER.log(Level.WARNING, "Unable to save application data", e);
         }
-    }
-
-    public ResourceFile toResourceFile(FilePointer file) {
-        return locator.apply(file);
     }
 
     private static Font prepareFont(FontFace key) {

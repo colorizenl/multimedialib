@@ -38,6 +38,10 @@ public record Polygon(float... points) implements Shape {
         return points[2 * n + 1];
     }
 
+    public Point2D getPoint(int n) {
+        return new Point2D(getPointX(n), getPointY(n));
+    }
+
     @Override
     public boolean contains(Point2D p) {
         return isPointInPolygon(p.x(), p.y()) || isPointOnLineSegment(p.x(), p.y());
@@ -227,11 +231,8 @@ public record Polygon(float... points) implements Shape {
      * specified properties.
      */
     public static Polygon createCircle(Point2D origin, float radius, int numPoints) {
-        Preconditions.checkArgument(numPoints >= 4,
-            "Circle polygon must consist of at least 4 points, got " + numPoints);
-
-        Preconditions.checkArgument(radius > EPSILON,
-            "Invalid radius: " + radius);
+        Preconditions.checkArgument(numPoints >= 4, "Too few points: " + numPoints);
+        Preconditions.checkArgument(radius > EPSILON, "Invalid radius: " + radius);
 
         float[] points = new float[numPoints * 2];
 
@@ -245,9 +246,18 @@ public record Polygon(float... points) implements Shape {
     }
 
     /**
-     * Convenience method to create a polygon in the shape of a circle with the
-     * specified properties. The cone's start angle and arc are specified in
-     * degrees.
+     * Convenience method to create a cone-shaped polygon. The cone's angle
+     * indicates in which direction the cone is pointed, its arc indicates
+     * its size (in degrees).
+     */
+    public static Polygon createCone(Point2D origin, Angle angle, float arc, float length) {
+        return createCone(origin, angle.degrees(), arc, length);
+    }
+
+    /**
+     * Convenience method to create a cone-shaped polygon. The cone's angle
+     * indicates in which direction the cone is pointed, its arc indicates
+     * its size (in degrees).
      */
     public static Polygon createCone(Point2D origin, float angle, float arc, float length) {
         Preconditions.checkArgument(arc > 0f && arc <= 180f, "Invalid arc: " + arc);

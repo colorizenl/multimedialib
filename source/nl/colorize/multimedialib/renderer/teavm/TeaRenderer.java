@@ -95,7 +95,7 @@ public class TeaRenderer implements Renderer {
 
     private void renderFrame() {
         context.getFrameStats().markStart(FrameStats.PHASE_FRAME_RENDER);
-        context.getStage().visit(graphics);
+        context.getStage().visit(graphics, context.getSceneTime());
         context.getFrameStats().markEnd(FrameStats.PHASE_FRAME_RENDER);
     }
 

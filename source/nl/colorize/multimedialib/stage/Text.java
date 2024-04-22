@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.scene.Timer;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -122,12 +123,8 @@ public class Text implements Graphic2D {
     }
 
     @Override
-    public void update(float deltaTime) {
-    }
-
-    @Override
     public Rect getStageBounds() {
-        Transformable globalTransform = getGlobalTransform();
+        Transform globalTransform = getGlobalTransform();
         Point2D position = globalTransform.getPosition();
 
         int longestLine = lines.stream()
@@ -142,6 +139,10 @@ public class Text implements Graphic2D {
 
     private float estimateCharWidth() {
         return font.style().size() * ESTIMATED_CHAR_WIDTH_FACTOR;
+    }
+
+    @Override
+    public void updateGraphics(Timer sceneTime) {
     }
 
     @Override

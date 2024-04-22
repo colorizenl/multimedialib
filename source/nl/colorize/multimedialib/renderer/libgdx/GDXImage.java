@@ -6,6 +6,7 @@
 
 package nl.colorize.multimedialib.renderer.libgdx;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.TextureData;
@@ -59,15 +60,14 @@ public class GDXImage implements Image {
     @Override
     public ColorRGB getColor(int x, int y) {
         loadTextureData();
-        int rgba = textureData.getPixel(x, y);
-        return new ColorRGB(rgba);
+        int rgba = textureData.getPixel(region.x() + x, region.y() + y);
+        return GDXMediaLoader.toColor(new Color(rgba));
     }
 
     @Override
     public int getAlpha(int x, int y) {
         loadTextureData();
-        int rgba = textureData.getPixel(x, y);
-        int alpha = (rgba >> 24) & 0xFF;
-        return Math.round(alpha / 2.55f);
+        int rgba = textureData.getPixel(region.x() + x, region.y() + y);
+        return Math.round(new Color(rgba).a * 100f);
     }
 }

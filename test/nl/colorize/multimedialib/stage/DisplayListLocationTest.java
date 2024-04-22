@@ -6,13 +6,19 @@
 
 package nl.colorize.multimedialib.stage;
 
+import nl.colorize.multimedialib.mock.MockImage;
+import nl.colorize.util.ReflectionUtils;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.List;
+import java.util.Map;
 
 import static nl.colorize.multimedialib.math.Shape.EPSILON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DisplayListLocationTest {
 
@@ -96,5 +102,58 @@ class DisplayListLocationTest {
         assertEquals(60f, a.getGlobalTransform().getPosition().y(), EPSILON);
         assertEquals(120f, b.getGlobalTransform().getPosition().x(), EPSILON);
         assertEquals(140f, b.getGlobalTransform().getPosition().y(), EPSILON);
+    }
+
+    @Test
+    void flatGlobalTransform() {
+        Sprite child = new Sprite(new MockImage());
+
+        child.getTransform().setPosition(10, 20);
+        child.getTransform().setPosition(30, 40);
+
+        assertEquals("(30, 40)", child.getGlobalTransform().getPosition().toString());
+    }
+
+    @Test
+    void pushGlobalTransformToChildren() {
+        Container parent = new Container();
+        Sprite child = new Sprite(new MockImage());
+        parent.addChild(child);
+
+        parent.getTransform().setPosition(10, 20);
+        child.getTransform().setPosition(30, 40);
+        parent.getTransform().setPosition(50, 60);
+
+        assertEquals("(50, 60)", parent.getGlobalTransform().getPosition().toString());
+        assertEquals("(80, 100)", child.getGlobalTransform().getPosition().toString());
+    }
+
+    @Test
+    void recalculateGlobalTransformFromParent() {
+        Container parent = new Container();
+        Sprite child = new Sprite(new MockImage());
+        parent.addChild(child);
+
+        parent.getTransform().setPosition(10, 20);
+        child.getTransform().setPosition(30, 40);
+        child.getTransform().setPosition(50, 60);
+
+        assertEquals("(10, 20)", parent.getGlobalTransform().getPosition().toString());
+        assertEquals("(60, 80)", child.getGlobalTransform().getPosition().toString());
+    }
+
+    @Test
+    void localTransformImplementsAllSetters() throws Exception {
+        String localTransformClassName = DisplayListLocation.class.getName() + "$LocalTransform";
+        Class<?> localTransformClass = Class.forName(localTransformClassName);
+        Map<String, Class<?>> transformProperties = ReflectionUtils.getPropertyTypes(Transform.class);
+
+        for (String property : transformProperties.keySet()) {
+            String setterName = "set" + property.substring(0, 1).toUpperCase() + property.substring(1);
+            Class<?> setterArg = transformProperties.get(property);
+            Method setter = localTransformClass.getDeclaredMethod(setterName, setterArg);
+
+            assertTrue(Modifier.isPublic(setter.getModifiers()));
+        }
     }
 }

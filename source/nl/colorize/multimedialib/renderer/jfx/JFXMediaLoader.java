@@ -12,14 +12,11 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.renderer.FilePointer;
-import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaException;
-import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.FontStyle;
-import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.stats.Cache;
 
@@ -28,7 +25,6 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 /**
  * Media implementation for JavaFX. Everything related to graphics uses a
@@ -36,21 +32,19 @@ import java.util.Properties;
  * Everything <em>not</em> related to graphics is delegated to the Java2D
  * renderer.
  */
-public class JFXMediaLoader implements MediaLoader {
+public class JFXMediaLoader extends  StandardMediaLoader {
 
-    private StandardMediaLoader delegate;
     private Map<String, Font> loadedFontFamilies;
     private Cache<FontFace, Font> fontCache;
 
     public JFXMediaLoader() {
-        this.delegate = new StandardMediaLoader();
         this.loadedFontFamilies = new HashMap<>();
         this.fontCache = Cache.from(this::loadFont);
     }
 
     @Override
     public JFXImage loadImage(FilePointer file) {
-        ResourceFile source = delegate.toResourceFile(file);
+        ResourceFile source = locateFile(file);
 
         try (InputStream stream = source.openStream()) {
             Image fxImage = new Image(stream);
@@ -84,7 +78,7 @@ public class JFXMediaLoader implements MediaLoader {
 
     private Font loadFont(FontFace key) {
         Font family = loadedFontFamilies.get(key.family());
-        ResourceFile source = delegate.toResourceFile(key.origin());
+        ResourceFile source = locateFile(key.origin());
 
         if (family == null) {
             try (InputStream stream = source.openStream()) {
@@ -101,35 +95,5 @@ public class JFXMediaLoader implements MediaLoader {
 
     protected Font getFont(FontFace key) {
         return fontCache.get(key);
-    }
-
-    @Override
-    public PolygonModel loadModel(FilePointer file) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public GeometryBuilder getGeometryBuilder() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public String loadText(FilePointer file) {
-        return delegate.loadText(file);
-    }
-
-    @Override
-    public boolean containsResourceFile(FilePointer file) {
-        return delegate.containsResourceFile(file);
-    }
-
-    @Override
-    public Properties loadApplicationData(String appName) {
-        return delegate.loadApplicationData(appName);
-    }
-
-    @Override
-    public void saveApplicationData(String appName, Properties data) {
-        delegate.saveApplicationData(appName, data);
     }
 }

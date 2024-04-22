@@ -6,10 +6,12 @@
 
 package nl.colorize.multimedialib.stage;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import nl.colorize.multimedialib.mock.MockImage;
+import nl.colorize.multimedialib.scene.Timer;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -46,17 +48,17 @@ public class SpriteTest {
 
     @Test
     public void testChangingStateResetsAnimation() {
-        Image first = new MockImage(100, 100);
-        Image second = new MockImage(100, 100);
-        Image third = new MockImage(100, 100);
-        Animation animation = new Animation(ImmutableList.of(first, second, third), 1f, false);
+        Image first = new MockImage("first", 100, 100);
+        Image second = new MockImage("second", 100, 100);
+        Image third = new MockImage("third", 100, 100);
+        Image fourth = new MockImage(100, 100);
 
         Sprite sprite = new Sprite();
-        sprite.addGraphics("a", animation);
-        sprite.addGraphics("b", new MockImage(100, 100));
+        sprite.addGraphics("a", new Animation(List.of(first, second, third), 1f, false));
+        sprite.addGraphics("b", fourth);
 
-        sprite.update(1f);
-        sprite.update(1f);
+        sprite.updateGraphics(Timer.at(1f));
+        sprite.updateGraphics(Timer.at(10f));
 
         assertEquals(third, sprite.getCurrentGraphics());
 
@@ -69,7 +71,7 @@ public class SpriteTest {
     @Test
     public void testCannotAnimateSpriteWithoutStates() {
         Sprite sprite = new Sprite();
-        assertThrows(IllegalStateException.class, () -> sprite.update(1f));
+        assertThrows(IllegalStateException.class, () -> sprite.updateGraphics(Timer.at(1f)));
     }
 
     @Test
@@ -78,7 +80,7 @@ public class SpriteTest {
         sprite.addGraphics("a", new MockImage());
         sprite.addGraphics("b", new MockImage());
 
-        assertEquals(ImmutableSet.of("a", "b"), sprite.getPossibleStates());
+        assertEquals(Set.of("a", "b"), sprite.getPossibleStates());
     }
 
     @Test

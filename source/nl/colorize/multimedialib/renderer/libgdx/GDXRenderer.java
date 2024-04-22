@@ -286,7 +286,7 @@ public class GDXRenderer implements Renderer, ApplicationListener {
             graphicsContext.render3D(stage.getWorld());
         }
 
-        stage.visit(graphicsContext);
+        stage.visit(graphicsContext, context.getSceneTime());
 
         context.getFrameStats().markEnd(FrameStats.PHASE_FRAME_RENDER);
     }

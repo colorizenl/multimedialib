@@ -108,7 +108,7 @@ class StageTest {
             public void drawText(Text text) {
                 visited.add("text");
             }
-        });
+        }, Timer.infinite());
 
         assertEquals(ImmutableList.of("sprite", "rect", "sprite", "text"), visited);
     }

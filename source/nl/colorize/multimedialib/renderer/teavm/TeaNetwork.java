@@ -26,8 +26,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /**
  * Sends HTTP requests by delegating them to JavaScript and sending them as
  * AJAX requests. This does mean that any requests sent from the application
- * must be allowed by the CORS (Cross Origin Resource Sharing) headers returned
- * by the server.
+ * must be allowed by the CORS (Cross Origin Resource Sharing) headers
+ * returned by the server.
+ * <p>
+ * Peer-to-peer connections are supported using WebRTC. This is mostly
+ * implemented in JavaScript using the <a href="https://peerjs.com">PeerJS</a>
+ * library.
  */
 public class TeaNetwork implements Network {
 
@@ -97,26 +101,10 @@ public class TeaNetwork implements Network {
         return new Headers(headers);
     }
 
-    /**
-     * Uses WebRTC to open a peer-to-peer connection. This is implemented in
-     * JavaScript using the <a href="https://peerjs.com">PeerJS</a> library.
-     */
     @Override
-    public Subscribable<PeerConnection> openPeerConnection() {
+    public PeerConnection openPeerConnection() {
         PeerjsBridge bridge = Browser.getPeerJsBridge();
-        Subscribable<PeerConnection> promise = new Subscribable<>();
-
-        bridge.open(success -> {
-            if (success) {
-                PeerjsConnection connection = new PeerjsConnection(bridge);
-                promise.next(connection);
-            } else {
-                LOGGER.warning("Peer connection failed");
-                promise.nextError(new RuntimeException("Peer connection failed"));
-            }
-        });
-
-        return promise;
+        return new PeerjsConnection(bridge);
     }
 
     @Override
