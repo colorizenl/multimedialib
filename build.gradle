@@ -9,11 +9,11 @@ apply plugin: "maven-publish"
 apply plugin: "signing"
 
 group = "nl.colorize"
-version = "2024.4"
+version = "2024.5"
 compileJava.options.encoding = "UTF-8"
 
 ext.libgdxVersion = "1.12.1"
-ext.teavmVersion = "0.9.2"
+ext.teavmVersion = "0.10.0"
 ext.jfxVersion = "21.0.2"
 
 java {
@@ -34,7 +34,7 @@ repositories {
 }
 
 dependencies {
-    implementation "nl.colorize:colorize-java-commons:2024.4"
+    implementation "nl.colorize:colorize-java-commons:2024.4.1"
 
     implementation "org.openjfx:javafx-base:${jfxVersion}"
     implementation "org.openjfx:javafx-base:${jfxVersion}:mac"
@@ -61,7 +61,7 @@ dependencies {
     implementation "org.teavm:teavm-classlib:${teavmVersion}"
     implementation "org.teavm:teavm-tooling:${teavmVersion}"
 
-    implementation "com.github.mgsx-dev.gdx-gltf:gltf:2.1.0"
+    implementation "com.github.mgsx-dev.gdx-gltf:gltf:2.2.1"
     implementation "com.tagtraum:casampledsp-complete:0.9.31"
 
     testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"

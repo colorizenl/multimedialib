@@ -15,6 +15,7 @@ import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.util.Platform;
+import nl.colorize.util.Subscribable;
 import nl.colorize.util.swing.Popups;
 import nl.colorize.util.swing.SwingUtils;
 
@@ -93,6 +94,8 @@ public class GDXInput implements InputDevice {
         .put(KeyCode.F10, Input.Keys.F10)
         .put(KeyCode.F11, Input.Keys.F11)
         .put(KeyCode.F12, Input.Keys.F12)
+        .put(KeyCode.COMMA, Input.Keys.COMMA)
+        .put(KeyCode.PERIOD, Input.Keys.PERIOD)
         .put(KeyCode.PLUS, Input.Keys.PLUS)
         .put(KeyCode.MINUS, Input.Keys.MINUS)
         .put(KeyCode.EQUALS, Input.Keys.EQUALS)
@@ -174,7 +177,7 @@ public class GDXInput implements InputDevice {
     }
 
     @Override
-    public String requestTextInput(String labelText, String initialValue) {
+    public Subscribable<String> requestTextInput(String labelText, String initialValue) {
         JLabel label = new JLabel(labelText);
         JTextField field = new JTextField(initialValue);
 
@@ -185,7 +188,11 @@ public class GDXInput implements InputDevice {
 
         Popups.message(null, "", panel);
 
-        return field.getText();
+        Subscribable<String> subscribable = new Subscribable<>();
+        if (field.getText() != null && !field.getText().isEmpty()) {
+            subscribable.next(field.getText());
+        }
+        return subscribable;
     }
 
     @Override

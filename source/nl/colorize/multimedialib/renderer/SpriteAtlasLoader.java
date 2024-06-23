@@ -11,7 +11,6 @@ import nl.colorize.multimedialib.math.Coordinate;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
-import nl.colorize.util.TextUtils;
 
 import java.util.List;
 
@@ -54,7 +53,7 @@ public class SpriteAtlasLoader {
     private void parseLine(String line, ParserState state) {
         if (line.endsWith(".png")) {
             state.currentImage = loadImage(state.file, line);
-        } else if (TextUtils.countIndent(line) == 0) {
+        } else if (countIndent(line) == 0) {
             state.name = line;
         } else if (line.trim().startsWith("xy:")) {
             state.xy = parsePropertyValue(line);
@@ -65,6 +64,20 @@ public class SpriteAtlasLoader {
                 flushEntry(state);
             }
         }
+    }
+
+    private int countIndent(String line) {
+        int indent = 0;
+
+        for (int i = 0; i < Math.min(line.length(), 80); i++) {
+            if (line.charAt(i) == ' ') {
+                indent++;
+            } else if (line.charAt(i) == '\t') {
+                indent += 4;
+            }
+        }
+
+        return indent;
     }
 
     private void flushEntry(ParserState state) {

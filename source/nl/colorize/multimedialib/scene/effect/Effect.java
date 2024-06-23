@@ -225,12 +225,21 @@ public final class Effect implements Scene {
 
         for (Pointer pointer : context.getInput().getPointers()) {
             for (ClickHandler clickHandler : clickHandlers) {
-                if (pointer.isReleased(clickHandler.bounds.get())) {
+                if (pointer.isReleased(clickHandler.bounds.get()) && isVisible()) {
                     clickHandler.action.run();
                     context.getInput().clearPointerState();
                 }
             }
         }
+    }
+
+    private boolean isVisible() {
+        if (linkedGraphics.isEmpty()) {
+            return true;
+        }
+
+        return linkedGraphics.stream()
+            .anyMatch(graphic -> graphic.getGlobalTransform().isVisible());
     }
 
     private boolean checkCompleted() {

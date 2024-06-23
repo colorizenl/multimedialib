@@ -45,7 +45,7 @@ public class Text implements Graphic2D {
     //     can provide the actual width and height of the text
     //     without needing to rendering it.
     private static final float ESTIMATED_CHAR_WIDTH_FACTOR = 0.6f;
-    private static final float ESTIMATED_LINE_HEIGHT_FACTOR = 1.8f;
+    private static final float ESTIMATED_LINE_HEIGHT_FACTOR = 1.7f;
 
     public Text(String text, FontFace font, Align align, int lineWidth) {
         this.location = new DisplayListLocation(this);

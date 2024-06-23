@@ -16,4 +16,8 @@ public record FontStyle(int size, boolean bold, ColorRGB color) {
     public FontStyle {
         Preconditions.checkArgument(size >= 1, "Invalid font size: " + size);
     }
+
+    public FontStyle(int size, ColorRGB color) {
+        this(size, false, color);
+    }
 }

@@ -23,7 +23,7 @@ public class StandardNetworkTest {
         List<Throwable> errors = new ArrayList<>();
 
         StandardNetwork internetAccess = new StandardNetwork();
-        internetAccess.get("http://www.colorize.nl", Headers.none())
+        internetAccess.get("https://clrz.nl", Headers.none())
             .subscribe(response -> responses.add(response.readBody()), errors::add);
 
         Thread.sleep(3000);

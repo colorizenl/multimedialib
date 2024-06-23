@@ -70,7 +70,7 @@ public class JFXMediaLoader extends  StandardMediaLoader {
 
     @Override
     public FontFace loadFont(FilePointer file, String family, FontStyle style) {
-        FontFace font = new FontFace(this, file, family, style);
+        FontFace font = new FontFace(file, family, style);
         // Make sure the font is cached.
         getFont(font);
         return font;

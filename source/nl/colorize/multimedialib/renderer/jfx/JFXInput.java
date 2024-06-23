@@ -14,6 +14,7 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Pointer;
+import nl.colorize.util.Subscribable;
 import nl.colorize.util.swing.Popups;
 import nl.colorize.util.swing.SwingUtils;
 
@@ -99,6 +100,8 @@ public class JFXInput implements InputDevice {
         .put(121, KeyCode.F10)
         .put(122, KeyCode.F11)
         .put(123, KeyCode.F12)
+        .put(44, KeyCode.COMMA)
+        .put(46, KeyCode.PERIOD)
         .put(521, KeyCode.PLUS)
         .put(45, KeyCode.MINUS)
         .put(61, KeyCode.EQUALS)
@@ -191,7 +194,7 @@ public class JFXInput implements InputDevice {
     }
 
     @Override
-    public String requestTextInput(String labelText, String initialValue) {
+    public Subscribable<String> requestTextInput(String labelText, String initialValue) {
         JLabel label = new JLabel(labelText);
         JTextField field = new JTextField(initialValue);
 
@@ -202,7 +205,11 @@ public class JFXInput implements InputDevice {
 
         Popups.message(null, "", panel);
 
-        return field.getText();
+        Subscribable<String> subscribable = new Subscribable<>();
+        if (field.getText() != null && !field.getText().isEmpty()) {
+            subscribable.next(field.getText());
+        }
+        return subscribable;
     }
 
     @Override

@@ -7,11 +7,13 @@
 package nl.colorize.multimedialib.renderer;
 
 import com.google.common.base.Splitter;
+import nl.colorize.multimedialib.math.Buffer;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.stage.FontFace;
+import nl.colorize.multimedialib.stage.LoadStatus;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
 import nl.colorize.util.PropertyUtils;
@@ -83,8 +85,8 @@ public interface MediaLoader {
      * specific renderers.
      *
      * @throws MediaException if the format is not supported by the renderer.
-     * @throws UnsupportedGraphicsModeException if the renderer does not
-     *         support 3D graphics.
+     * @throws UnsupportedOperationException if the renderer does not support
+     *         loading 3D models.
      */
     public PolygonModel loadModel(FilePointer file);
 
@@ -92,8 +94,8 @@ public interface MediaLoader {
      * Provides access to a {@link GeometryBuilder} instance that can be used
      * to create simple 3D geometry in a programmatic way.
      *
-     * @throws UnsupportedGraphicsModeException if the renderer does not
-     *         support 3D graphics.
+     * @throws UnsupportedOperationException if the renderer does not support
+     *         creating 3D geometry.
      */
     public GeometryBuilder getGeometryBuilder();
 
@@ -154,4 +156,10 @@ public interface MediaLoader {
      * data is supported by all platforms.
      */
     public void saveApplicationData(String appName, Properties data);
+
+    /**
+     * Returns a buffer containing the load status of all media files that
+     * have been loaded by this {@link MediaLoader}.
+     */
+    public Buffer<LoadStatus> getLoadStatus();
 }

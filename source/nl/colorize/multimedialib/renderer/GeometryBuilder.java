@@ -13,9 +13,8 @@ import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Point3D;
 
 /**
- * Interface for programmatically create 3D polygon models. This generally
- * concerns simple primitives. In addition to defining models programatically,
- * models can also be loaded from supported file formats using
+ * Interface for programmatically create 3D polygon models. More complex
+ * 3D models can be loaded from supported file formats by using
  * {@link MediaLoader#loadModel(FilePointer)}.
  */
 public interface GeometryBuilder {

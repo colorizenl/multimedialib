@@ -23,6 +23,7 @@ import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.UBJsonReader;
 import net.mgsx.gltf.loaders.gltf.GLTFLoader;
 import net.mgsx.gltf.scene3d.scene.SceneAsset;
+import nl.colorize.multimedialib.math.Buffer;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaException;
@@ -33,6 +34,7 @@ import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.FontFace;
+import nl.colorize.multimedialib.stage.LoadStatus;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.util.stats.Cache;
 
@@ -81,7 +83,7 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
 
     @Override
     public FontFace loadFont(FilePointer file, String family, FontStyle style) {
-        FontFace font = new FontFace(this, file, family, style);
+        FontFace font = new FontFace(file, family, style);
         getBitmapFont(font);
         return font;
     }
@@ -168,6 +170,11 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
         loaded.forEach(Disposable::dispose);
         loaded.clear();
         fontCache.forgetAll();
+    }
+
+    @Override
+    public Buffer<LoadStatus> getLoadStatus() {
+        return new Buffer<>();
     }
 
     protected static Color toColor(ColorRGB color) {

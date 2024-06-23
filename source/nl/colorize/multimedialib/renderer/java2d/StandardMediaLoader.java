@@ -8,16 +8,17 @@ package nl.colorize.multimedialib.renderer.java2d;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
+import nl.colorize.multimedialib.math.Buffer;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
-import nl.colorize.multimedialib.renderer.UnsupportedGraphicsModeException;
 import nl.colorize.multimedialib.renderer.headless.HeadlessAudio;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
+import nl.colorize.multimedialib.stage.LoadStatus;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
@@ -120,7 +121,7 @@ public class StandardMediaLoader implements MediaLoader {
 
             // Immediately derive a version of the font with the correct
             // style, since we have no idea what size the loaded font has.
-            return new FontFace(this, file, family, style).derive(style);
+            return new FontFace(file, family, style).derive(style);
         } catch (IOException | FontFormatException e) {
             throw new MediaException("Cannot load font from " + file.path(), e);
         }
@@ -133,12 +134,12 @@ public class StandardMediaLoader implements MediaLoader {
 
     @Override
     public PolygonModel loadModel(FilePointer file) {
-        throw new UnsupportedGraphicsModeException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public GeometryBuilder getGeometryBuilder() {
-        throw new UnsupportedGraphicsModeException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -176,6 +177,11 @@ public class StandardMediaLoader implements MediaLoader {
         } catch (IOException e) {
             LOGGER.log(Level.WARNING, "Unable to save application data", e);
         }
+    }
+
+    @Override
+    public Buffer<LoadStatus> getLoadStatus() {
+        return new Buffer<>();
     }
 
     private static Font prepareFont(FontFace key) {

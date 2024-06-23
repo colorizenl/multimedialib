@@ -12,6 +12,7 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Pointer;
+import nl.colorize.util.Subscribable;
 import nl.colorize.util.swing.Popups;
 import nl.colorize.util.swing.SwingUtils;
 
@@ -108,6 +109,8 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
         .put(KeyCode.F10, KeyEvent.VK_F10)
         .put(KeyCode.F11, KeyEvent.VK_F11)
         .put(KeyCode.F12, KeyEvent.VK_F12)
+        .put(KeyCode.COMMA, KeyEvent.VK_COMMA)
+        .put(KeyCode.PERIOD, KeyEvent.VK_PERIOD)
         .put(KeyCode.PLUS, KeyEvent.VK_PLUS)
         .put(KeyCode.MINUS, KeyEvent.VK_MINUS)
         .put(KeyCode.EQUALS, KeyEvent.VK_EQUALS)
@@ -285,7 +288,7 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
     }
 
     @Override
-    public String requestTextInput(String labelText, String initialValue) {
+    public Subscribable<String> requestTextInput(String labelText, String initialValue) {
         JLabel label = new JLabel(labelText);
         JTextField field = new JTextField(initialValue);
 
@@ -296,7 +299,11 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
 
         Popups.message(null, "", panel);
 
-        return field.getText();
+        Subscribable<String> subscribable = new Subscribable<>();
+        if (field.getText() != null && !field.getText().isEmpty()) {
+            subscribable.next(field.getText());
+        }
+        return subscribable;
     }
 
     @Override

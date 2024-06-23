@@ -28,6 +28,7 @@ import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.StageVisitor;
+import nl.colorize.util.Subscribable;
 
 import java.util.List;
 
@@ -64,8 +65,8 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     public static final int DEFAULT_HEIGHT = 600;
     public static final int DEFAULT_FRAMERATE = 30;
 
-    public static final FontFace DEFAULT_FONT = new FontFace(null, null, "sans-serif",
-        new FontStyle(10, false, ColorRGB.BLACK));
+    public static final FontStyle DEFAULT_FONT_STYLE = new FontStyle(10, false, ColorRGB.BLACK);
+    public static final FontFace DEFAULT_FONT = new FontFace(null, "sans-serif", DEFAULT_FONT_STYLE);
 
     public HeadlessRenderer(DisplayMode displayMode, boolean graphicsEnvironmentEnabled) {
         this.graphicsMode = GraphicsMode.HEADLESS;
@@ -151,8 +152,8 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     }
 
     @Override
-    public String requestTextInput(String label, String initialValue) {
-        return null;
+    public Subscribable<String> requestTextInput(String label, String initialValue) {
+        return new Subscribable<>();
     }
 
     @Override

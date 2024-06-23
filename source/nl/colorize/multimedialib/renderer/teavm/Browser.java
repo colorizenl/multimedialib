@@ -9,7 +9,6 @@ package nl.colorize.multimedialib.renderer.teavm;
 import nl.colorize.multimedialib.renderer.pixi.PixiBridge;
 import nl.colorize.multimedialib.renderer.three.ThreeBridge;
 import org.teavm.jso.JSBody;
-import org.teavm.jso.browser.Storage;
 
 /**
  * Contains the API for calling JavaScript functions using TeaVM. This consists
@@ -25,6 +24,12 @@ public class Browser {
         script = "console.log(message);"
     )
     public static native void log(String message);
+
+    @JSBody(
+        params = {"message"},
+        script = "window.alert(message);"
+    )
+    public static native void alert(String message);
 
     @JSBody(script = "return navigator.userAgent;")
     public static native String getUserAgent();
@@ -46,9 +51,6 @@ public class Browser {
 
     @JSBody(script = "window.prepareAnimationLoop();")
     public static native void prepareAnimationLoop();
-
-    @JSBody(script = "return window.accessLocalStorage();")
-    public static native Storage accessLocalStorage();
 
     @JSBody(
         params = {"callback"},
@@ -73,6 +75,24 @@ public class Browser {
         script = "return window.getMeta(name, defaultValue);"
     )
     public static native String getMeta(String name, String defaultValue);
+
+    @JSBody(
+        params = {"label", "initial", "callback"},
+        script = "window.requestTextInput(label, initial, callback);"
+    )
+    public static native void requestTextInput(String label, String initial, MessageCallback callback);
+
+    @JSBody(
+        params = {"appName"},
+        script = "window.loadApplicationData(appName);"
+    )
+    public static native void loadApplicationData(String appName);
+
+    @JSBody(
+        params = {"appName", "name", "value"},
+        script = "window.saveApplicationData(appName, name, value);"
+    )
+    public static native void saveApplicationData(String appName, String name, String value);
 
     // -------------------------------
     // JavaScript framework interfaces

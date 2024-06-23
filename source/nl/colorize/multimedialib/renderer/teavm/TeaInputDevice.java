@@ -12,12 +12,14 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Pointer;
+import nl.colorize.util.Subscribable;
 import org.teavm.jso.JSObject;
 import org.teavm.jso.JSProperty;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.dom.events.Event;
 import org.teavm.jso.dom.events.KeyboardEvent;
 import org.teavm.jso.dom.events.MouseEvent;
+import org.teavm.jso.dom.html.HTMLElement;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -100,6 +102,8 @@ public class TeaInputDevice implements InputDevice {
             .put(KeyCode.F10, 121)
             .put(KeyCode.F11, 122)
             .put(KeyCode.F12, 123)
+            .put(KeyCode.COMMA, 188)
+            .put(KeyCode.PERIOD, 190)
             .put(KeyCode.PLUS, 187)
             .put(KeyCode.MINUS, 189)
             // KeyCode.EQUALS is not supported because JavaScript uses
@@ -117,16 +121,19 @@ public class TeaInputDevice implements InputDevice {
 
     public void bindEventHandlers() {
         Window window = Window.current();
-        window.addEventListener("mousedown", this::onMouseEvent);
-        window.addEventListener("mouseup", this::onMouseEvent);
-        window.addEventListener("mousemove", this::onMouseEvent);
-        window.addEventListener("mouseout",this::onMouseEvent);
+        HTMLElement container = window.getDocument().querySelector("#multimediaLibContainer");
+
+        container.addEventListener("mousedown", this::onMouseEvent);
+        container.addEventListener("mouseup", this::onMouseEvent);
+        container.addEventListener("mousemove", this::onMouseEvent);
+        container.addEventListener("mouseout",this::onMouseEvent);
+        container.addEventListener("custom:touchstart", this::onCustomTouchEvent, true);
+        container.addEventListener("custom:touchmove", this::onCustomTouchEvent, true);
+        container.addEventListener("custom:touchend", this::onCustomTouchEvent, true);
+        container.addEventListener("custom:touchcancel", this::onCustomTouchEvent, true);
+
         window.addEventListener("keydown", this::onKeyDown);
         window.addEventListener("keyup", this::onKeyUp);
-        window.addEventListener("custom:touchstart", this::onCustomTouchEvent, true);
-        window.addEventListener("custom:touchmove", this::onCustomTouchEvent, true);
-        window.addEventListener("custom:touchend", this::onCustomTouchEvent, true);
-        window.addEventListener("custom:touchcancel", this::onCustomTouchEvent, true);
     }
 
     private void onMouseEvent(Event event) {
@@ -250,8 +257,14 @@ public class TeaInputDevice implements InputDevice {
     }
 
     @Override
-    public String requestTextInput(String label, String initialValue) {
-        return Window.prompt(label, initialValue);
+    public Subscribable<String> requestTextInput(String label, String initialValue) {
+        Subscribable<String> subscribable = new Subscribable<>();
+
+        Browser.requestTextInput(label, initialValue, (name, value) -> {
+            subscribable.next(value);
+        });
+
+        return subscribable;
     }
 
     @Override

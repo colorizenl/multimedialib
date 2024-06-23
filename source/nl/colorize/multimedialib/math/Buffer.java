@@ -10,6 +10,7 @@ import nl.colorize.util.Subscriber;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Data structure that can be flushed to obtain values that have accumulated
@@ -50,14 +51,23 @@ public class Buffer<E> implements Subscriber<E> {
     }
 
     /**
-     * Returns all elements that were pushed to the queue since the last time
-     * this method was called, then clears the queue. This method exists to
-     * support frame-by-frame polling.
+     * Returns a stream containing all elements within this buffer, clearing
+     * the buffer in the process. This allows for polling the buffer during
+     * frame updates.
      */
     public Iterable<E> flush() {
         List<E> buffer = List.copyOf(contents);
         contents.clear();
         return buffer;
+    }
+
+    /**
+     * Returns a stream containing all elements within this buffer, clearing
+     * the buffer in the process. This allows for polling the buffer during
+     * frame updates.
+     */
+    public Stream<E> flushStream() {
+        return ((List<E>) flush()).stream();
     }
 
     /**

@@ -10,6 +10,8 @@ import com.google.common.collect.Iterables;
 import nl.colorize.util.Subscribable;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class BufferTest {
@@ -42,5 +44,17 @@ class BufferTest {
 
         assertEquals("[a, b]", buffer.flush().toString());
         assertEquals("[]", buffer.flush().toString());
+    }
+
+    @Test
+    void flushStream() {
+        Buffer<String> buffer = new Buffer<>();
+        buffer.push("a");
+        buffer.push("b");
+
+        assertEquals(List.of("a", "b"), buffer.flushStream().toList());
+        assertEquals(List.of(), buffer.flushStream().toList());
+        buffer.push("c");
+        assertEquals(List.of("c"), buffer.flushStream().toList());
     }
 }

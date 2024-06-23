@@ -62,6 +62,9 @@ public class Timer implements Updatable {
     }
 
     public float getRatio() {
+        if (duration == 0f) {
+            return 0f;
+        }
         return position / duration;
     }
 

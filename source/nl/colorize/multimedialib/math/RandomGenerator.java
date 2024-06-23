@@ -156,13 +156,10 @@ public class RandomGenerator {
      * trying to modify the original one.
      */
     public static <T> List<T> shuffle(List<T> original) {
-        List<T> shuffled = new ArrayList<>();
-        shuffled.addAll(original);
-        
+        List<T> shuffled = new ArrayList<>(original);
         if (original.size() >= 2) {
             Collections.shuffle(shuffled, generator);
         }
-        
         return shuffled;
     }
 

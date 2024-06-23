@@ -37,14 +37,16 @@ public class TeaVMTranspilerToolTest {
 
         String generatedCode = Files.toString(tool.getScriptFile(), Charsets.UTF_8);
 
-        String expected = "";
-        expected += "    function ncmt_TeaVMTranspilerToolTest$MockApp_main($args) {\n";
-        expected += "        var $result;\n";
-        expected += "        $result = ju_ArrayList__init_();\n";
-        expected += "        $result.$add($rt_s(2));\n";
-        expected += "        $result.$add($rt_s(3));\n";
-        expected += "        $result.$clear();\n";
-        expected += "    }\n";
+        String expected = """
+            ncmt_TeaVMTranspilerToolTest$MockApp_main = $args => {
+                let $result;
+                ncmt_TeaVMTranspilerToolTest$MockApp_$callClinit();
+                $result = ju_ArrayList__init_1();
+                $result.$add($rt_s(2));
+                $result.$add($rt_s(3));
+                $result.$clear();
+            },
+            """;
 
         assertTrue(generatedCode.contains(expected), "Generated code:\n" + generatedCode);
     }
@@ -166,6 +168,21 @@ public class TeaVMTranspilerToolTest {
 
         assertTrue(generatedHTML.contains("<meta name=\"first\" content=\"value\" />"));
         assertTrue(generatedHTML.contains("<meta name=\"second\" content=\"other value\" />"));
+    }
+
+    @Test
+    void insertBuildId(@TempDir File resourcesDir, @TempDir File outputDir) throws IOException {
+        TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
+        tool.projectName = "test";
+        tool.resourceDir = resourcesDir;
+        tool.outputDir = outputDir;
+        tool.mainClassName = MockApp.class.getName();
+        tool.buildId = "1234";
+        tool.run();
+
+        String generatedHTML = Files.toString(new File(outputDir, "index.html"), Charsets.UTF_8);
+
+        assertTrue(generatedHTML.contains("<meta name=\"build-id\" content=\"1234\" />"));
     }
 
     /**

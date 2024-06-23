@@ -31,6 +31,7 @@ import java.util.logging.Logger;
  *   <li>Generate variants with a horizontal offset to simulate texture animation.</li>
  *   <li>Generate variants with a vertical offset to simulate texture animation.</li>
  *   <li>Mirror the image horizontally and vertically so it can be used for tiling.</li>
+ *   <li>Extract sub-images of the specified width and height</li>
  * </ul>
  */
 public class ImageManipulationTool {
@@ -41,6 +42,7 @@ public class ImageManipulationTool {
     @Arg protected int horizontalOffset;
     @Arg protected int verticalOffset;
     @Arg protected boolean mirror;
+    @Arg protected int subImageSize;
 
     private int counter;
 
@@ -82,6 +84,10 @@ public class ImageManipulationTool {
         if (mirror) {
             mirrorImage(original);
         }
+
+        if (subImageSize > 0) {
+            extractSubImages(original);
+        }
     }
 
     private void applyHorizontalOffset(BufferedImage original) {
@@ -116,6 +122,15 @@ public class ImageManipulationTool {
             g2.drawImage(original, 0, height, width / 2, height / 2, 0, 0, width, height, null);
             g2.drawImage(original, width, height, width / 2, height / 2, 0, 0, width, height, null);
         });
+    }
+
+    private void extractSubImages(BufferedImage original) {
+        for (int y = 0; y < original.getHeight(); y += subImageSize) {
+            for (int x = 0; x < original.getWidth(); x += subImageSize) {
+                BufferedImage subimage = original.getSubimage(x, y, subImageSize, subImageSize);
+                writePNG(subimage);
+            }
+        }
     }
 
     private void generateVariant(BufferedImage original, Consumer<Graphics2D> drawCallback) {

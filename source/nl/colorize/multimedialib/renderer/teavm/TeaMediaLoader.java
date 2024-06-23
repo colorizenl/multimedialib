@@ -7,16 +7,16 @@
 package nl.colorize.multimedialib.renderer.teavm;
 
 import com.google.common.base.Splitter;
+import nl.colorize.multimedialib.math.Buffer;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
-import nl.colorize.multimedialib.renderer.UnsupportedGraphicsModeException;
-import nl.colorize.multimedialib.renderer.three.ThreeGraphics;
 import nl.colorize.multimedialib.stage.Audio;
+import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.stage.FontFace;
+import nl.colorize.multimedialib.stage.LoadStatus;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.LogHelper;
@@ -31,6 +31,7 @@ import org.teavm.jso.dom.html.HTMLImageElement;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 /**
@@ -43,7 +44,8 @@ public class TeaMediaLoader implements MediaLoader {
     private HTMLDocument document;
     private StageVisitor graphics;
     private List<FilePointer> manifest;
-    private long timestamp;
+    private Buffer<LoadStatus> loading;
+    private String timestamp;
 
     private static final FilePointer MANIFEST_FILE = new FilePointer("resource-file-manifest");
     private static final Splitter LINE_SPLITTER = Splitter.on("\n").trimResults().omitEmptyStrings();
@@ -53,13 +55,15 @@ public class TeaMediaLoader implements MediaLoader {
         this.document = Window.current().getDocument();
         this.graphics = graphics;
         this.manifest = Collections.emptyList();
-        this.timestamp = System.currentTimeMillis();
+        this.loading = new Buffer<>();
+        this.timestamp = Browser.getMeta("build-id", String.valueOf(System.currentTimeMillis()));
     }
 
     @Override
     public Image loadImage(FilePointer file) {
         HTMLImageElement imageElement = (HTMLImageElement) document.createElement("img");
         Subscribable<HTMLImageElement> imagePromise = new Subscribable<>();
+        loading.push(LoadStatus.track(file, imagePromise));
         imageElement.setCrossOrigin("anonymous");
         imageElement.addEventListener("load", event -> imagePromise.next(imageElement));
         imageElement.setSrc("resources/" + normalizeFilePath(file, false) + "?t=" + timestamp);
@@ -70,6 +74,7 @@ public class TeaMediaLoader implements MediaLoader {
     public Audio loadAudio(FilePointer file) {
         HTMLAudioElement audioElement = (HTMLAudioElement) document.createElement("audio");
         Subscribable<HTMLAudioElement> audioPromise = new Subscribable<>();
+        loading.push(LoadStatus.track(file, audioPromise));
         audioElement.setCrossOrigin("anonymous");
         audioElement.addEventListener("loadeddata", event -> audioPromise.next(audioElement));
         audioElement.setSrc("resources/" + normalizeFilePath(file, false) + "?t=" + timestamp);
@@ -79,34 +84,27 @@ public class TeaMediaLoader implements MediaLoader {
     @Override
     public FontFace loadFont(FilePointer file, String family, FontStyle style) {
         String url = "url('resources/" + normalizeFilePath(file, false) + "')";
+        AtomicBoolean loaded = new AtomicBoolean(false);
+        loading.push(new LoadStatus(file, loaded::get));
 
         Browser.preloadFontFace(family, url, error -> {
+            loaded.set(true);
             if (error != null && !error.isEmpty()) {
                 LOGGER.warning("Failed to load font '" + family + "': " + error);
             }
         });
 
-        return new FontFace(this, file, family, style);
+        return new FontFace(file, family, style);
     }
 
     @Override
     public PolygonModel loadModel(FilePointer file) {
-        if (graphics instanceof ThreeGraphics three) {
-            //TODO
-            throw new UnsupportedGraphicsModeException();
-        } else {
-            throw new UnsupportedGraphicsModeException();
-        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public GeometryBuilder getGeometryBuilder() {
-        if (graphics instanceof ThreeGraphics three) {
-            //TODO
-            throw new UnsupportedGraphicsModeException();
-        } else {
-            throw new UnsupportedGraphicsModeException();
-        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -153,15 +151,14 @@ public class TeaMediaLoader implements MediaLoader {
 
     @Override
     public Properties loadApplicationData(String appName) {
-        Storage localStorage = Browser.accessLocalStorage();
+        Browser.loadApplicationData(appName);
+        Storage localStorage = Storage.getLocalStorage();
         Properties data = new Properties();
 
-        if (localStorage != null) {
-            for (int i = 0; i < localStorage.getLength(); i++) {
-                String name = localStorage.key(i);
-                String value = localStorage.getItem(name);
-                data.setProperty(name, value);
-            }
+        for (int i = 0; i < localStorage.getLength(); i++) {
+            String name = localStorage.key(i);
+            String value = localStorage.getItem(name);
+            data.setProperty(name, value);
         }
 
         return data;
@@ -169,12 +166,14 @@ public class TeaMediaLoader implements MediaLoader {
 
     @Override
     public void saveApplicationData(String appName, Properties data) {
-        Storage localStorage = Browser.accessLocalStorage();
-
-        if (localStorage != null) {
-            for (String name : data.stringPropertyNames()) {
-                localStorage.setItem(name, data.getProperty(name, ""));
-            }
+        for (String name : data.stringPropertyNames()) {
+            String value = data.getProperty(name);
+            Browser.saveApplicationData(appName, name, value);
         }
+    }
+
+    @Override
+    public Buffer<LoadStatus> getLoadStatus() {
+        return loading;
     }
 }

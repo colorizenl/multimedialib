@@ -11,11 +11,12 @@ if (!("randomUUID" in window.crypto)) {
     };
 }
 
-document.addEventListener("DOMContentLoaded", event => {
-    window.addEventListener("touchstart", handleTouchEvent, true);
-    window.addEventListener("touchmove", handleTouchEvent, true);
-    window.addEventListener("touchend", handleTouchEvent, true);
-    window.addEventListener("touchcancel", handleTouchEvent, true);
+window.addEventListener("load", event => {
+    const container = document.getElementById("multimediaLibContainer");
+    container.addEventListener("touchstart", handleTouchEvent, true);
+    container.addEventListener("touchmove", handleTouchEvent, true);
+    container.addEventListener("touchend", handleTouchEvent, true);
+    container.addEventListener("touchcancel", handleTouchEvent, true);
 
     window.pixiBridge = new PixiBridge();
     window.threeBridge = new ThreeBridge();
@@ -59,20 +60,6 @@ window.prepareAnimationLoop = function() {
 }
 
 /**
- * Wrapper around window.localStorage that returns null in situations where it
- * is not available, for example when running in private mode. Called from the
- * animation loop via TeaVM.
- */
-window.accessLocalStorage = function() {
-    try {
-        return window.localStorage;
-    } catch (e) {
-        console.warn("Browser local storage is unavailable");
-        return null;
-    }
-}
-
-/**
  * Uses the specified callback function to bridge JavaScript errors to TeaVM.
  * Called from the animation loop via TeaVM.
  */
@@ -107,12 +94,56 @@ window.preloadFontFace = function(family, url, errorCallback) {
         .catch(error => errorCallback(error.name));
 }
 
-/**
- * Returns the value of the <meta> element with the specified name. Returns
- * the default value if no such element exists. Called from the animation
- * loop via TeaVM.
- */
 window.getMeta = function(name, defaultValue) {
     const meta = document.querySelector("meta[name='" + encodeURIComponent(name) + "']");
     return meta ? meta.content : defaultValue;
+}
+
+window.loadApplicationData = function(appName) {
+    if (window.loadPreferences) {
+        window.loadPreferences(appName);
+    }
+}
+
+window.saveApplicationData = function(appName, name, value) {
+    window.localStorage.setItem(name, value);
+
+    if (window.savePreferences) {
+        window.savePreferences(appName, name, value);
+    }
+}
+
+window.requestTextInput = function(label, initialValue, callback) {
+    const header = document.createElement("div");
+    header.innerText = label;
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = initialValue;
+
+    const button = document.createElement("button");
+    button.innerText = "OK";
+
+    const inputForm = document.createElement("form");
+    inputForm.appendChild(header);
+    inputForm.appendChild(input);
+    inputForm.appendChild(button);
+
+    const container = document.getElementById("inputContainer");
+    container.appendChild(inputForm);
+
+    button.addEventListener("click", e => submitInputForm(e, inputForm, input.value, callback));
+    inputForm.addEventListener("submit", e => submitInputForm(e, inputForm, input.value, callback));
+    input.focus();
+}
+
+function submitInputForm(event, form, value, callback) {
+    if (event.preventDefault) {
+        event.preventDefault();
+    }
+    if (value) {
+        callback("inputForm", value);
+        form.remove();
+    }
+    return false;
 }

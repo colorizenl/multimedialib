@@ -40,6 +40,7 @@ import org.lwjgl.system.Configuration;
 
 import java.awt.Dimension;
 import java.io.File;
+import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -70,10 +71,7 @@ public class GDXRenderer implements Renderer, ApplicationListener {
 
     private static AtomicBoolean nativeLibrariesLoaded = new AtomicBoolean(false);
 
-    //TODO support both Intel and M1 native libraries, but
-    //     currently the application bundle itself is not
-    //     universal and therefore requires x86 libraries.
-    private static final List<NativeLibrary> NATIVE_LIBRARIES = List.of(
+    private static final List<NativeLibrary> INTEL_MAC_NATIVE_LIBRARIES = List.of(
         new NativeLibrary("gdx", "libgdx64.dylib"),
         new NativeLibrary("lwjgl", "liblwjgl.dylib"),
         new NativeLibrary("lwjgl_opengl", "liblwjgl_opengl.dylib"),
@@ -81,6 +79,16 @@ public class GDXRenderer implements Renderer, ApplicationListener {
         new NativeLibrary("glfw", "libglfw.dylib"),
         new NativeLibrary("openal", "libopenal.dylib"),
         new NativeLibrary("gdx-freetype", "libgdx-freetype64.dylib")
+    );
+
+    private static final List<NativeLibrary> ARM_MAC_NATIVE_LIBRARIES = List.of(
+        new NativeLibrary("gdx", "libgdxarm64.dylib"),
+        new NativeLibrary("lwjgl", "liblwjgl.dylib"),
+        new NativeLibrary("lwjgl_opengl", "liblwjgl_opengl.dylib"),
+        new NativeLibrary("lwjgl_stb", "liblwjgl_stb.dylib"),
+        new NativeLibrary("glfw", "libglfw.dylib"),
+        new NativeLibrary("openal", "libopenal.dylib"),
+        new NativeLibrary("gdx-freetype", "libgdx-freetypearm64.dylib")
     );
 
     private static final Logger LOGGER = LogHelper.getLogger(GDXRenderer.class);
@@ -138,11 +146,29 @@ public class GDXRenderer implements Renderer, ApplicationListener {
 
         GdxNativesLoader.disableNativesLoading = true;
 
-        for (NativeLibrary lib : NATIVE_LIBRARIES) {
+        for (NativeLibrary lib : getMacNativeLibraries()) {
             SharedLibraryLoader.setLoaded(lib.name);
             File dylib = new File(nativeLibraryDir, lib.fileName);
             LOGGER.info("Loading native library " + lib.name + " from " + dylib.getAbsolutePath());
             System.load(dylib.getAbsolutePath());
+        }
+    }
+
+    /**
+     * Returns the list of native libraries for the current Mac CPU
+     * architecture. This detection is based on the CPU architecture
+     * used by the Java runtime, which might be different from the
+     * native hardware architecture.
+     */
+    private List<NativeLibrary> getMacNativeLibraries() {
+        String cpuArchitecture = System.getProperty("os.arch", "");
+
+        if (cpuArchitecture.contains("x86")) {
+            return INTEL_MAC_NATIVE_LIBRARIES;
+        } else if (cpuArchitecture.contains("aarch")) {
+            return ARM_MAC_NATIVE_LIBRARIES;
+        } else {
+            throw new RendererException("Unsupported Mac CPU architecture: " + cpuArchitecture);
         }
     }
 
@@ -163,7 +189,8 @@ public class GDXRenderer implements Renderer, ApplicationListener {
     private void initGLFW() throws Exception {
         Field errorCallback = Lwjgl3Application.class.getDeclaredField("errorCallback");
         errorCallback.setAccessible(true);
-        errorCallback.set(null, GLFWErrorCallback.createPrint(Lwjgl3ApplicationConfiguration.errorStream));
+        PrintStream errorStream = Lwjgl3ApplicationConfiguration.errorStream;
+        errorCallback.set(null, GLFWErrorCallback.createPrint(errorStream));
 
         Method awtInit = Lwjgl3Application.class.getDeclaredMethod("loadGlfwAwtMacos");
         awtInit.setAccessible(true);
@@ -215,7 +242,6 @@ public class GDXRenderer implements Renderer, ApplicationListener {
             // There is an issue in LWJGL that causes the application
             // to crash using LWJGL's own fullscreen display mode.
             Dimension screen = SwingUtils.getScreenSize();
-            config.setDecorated(false);
             config.setWindowedMode(screen.width, screen.height);
             config.setMaximized(true);
         } else {

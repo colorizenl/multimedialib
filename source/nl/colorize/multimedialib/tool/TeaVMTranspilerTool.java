@@ -22,6 +22,7 @@ import nl.colorize.util.cli.CommandLineArgumentParser;
 import nl.colorize.util.cli.CommandLineInterfaceException;
 import nl.colorize.util.http.URLLoader;
 import nl.colorize.util.http.URLResponse;
+import org.teavm.diagnostics.DefaultProblemTextConsumer;
 import org.teavm.diagnostics.Problem;
 import org.teavm.tooling.ConsoleTeaVMToolLog;
 import org.teavm.tooling.TeaVMTargetType;
@@ -34,7 +35,6 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
@@ -59,6 +59,9 @@ public class TeaVMTranspilerTool {
 
     @Arg(name = "out", usage = "Output directory for transpiled application")
     protected File outputDir;
+
+    @Arg(usage = "Build ID used for caching resource files, default is random")
+    protected String buildId = String.valueOf(System.currentTimeMillis());
 
     @Arg(usage = "Minifies the generated JavaScript, off by default")
     protected boolean minify;
@@ -100,17 +103,6 @@ public class TeaVMTranspilerTool {
         ".svg",
         ".ttf",
         ".wav"
-    );
-
-    private static final List<String> KNOWN_MISSING_CLASSES = List.of(
-        "[java.lang.System.exit(I)V]",
-        "[java.lang.reflect.TypeVariable]",
-        "[java.nio.file.Path]",
-        "[java.io.File.toPath()Ljava/nio/file/Path;]",
-        "[java.lang.Class.getGenericSuperclass()Ljava/lang/reflect/Type;]",
-        "[java.util.Properties.load(Ljava/io/Reader;)V]",
-        "[java.util.TimeZone.toZoneId()Ljava/time/ZoneId;]",
-        "[java.util.concurrent.CopyOnWriteArrayList]"
     );
 
     public static void main(String[] argv) {
@@ -162,10 +154,10 @@ public class TeaVMTranspilerTool {
 
         TeaVMTool transpiler = new TeaVMTool();
         transpiler.setClassLoader(getClass().getClassLoader());
-        transpiler.setDebugInformationGenerated(true);
         transpiler.setIncremental(false);
         transpiler.setLog(new ConsoleTeaVMToolLog(true));
         transpiler.setMainClass(mainClassName);
+        transpiler.setEntryPointName("main");
         transpiler.setObfuscated(minify);
         transpiler.setSourceMapsFileGenerated(!minify);
         transpiler.setTargetDirectory(outputDir);
@@ -180,23 +172,23 @@ public class TeaVMTranspilerTool {
 
     private void checkTranspilerOutput(TeaVMTool transpiler) {
         for (Problem problem : transpiler.getProblemProvider().getProblems()) {
-            if (shouldReport(problem)) {
-                String details = format(problem);
-                throw new UnsupportedOperationException("TeaVM transpiler error:\n" + details);
-            }
+            String details = format(problem);
+            LOGGER.warning("TeaVM transpiler warning:\n" + details);
+        }
+
+        for (Problem problem : transpiler.getProblemProvider().getSevereProblems()) {
+            String details = format(problem);
+            throw new UnsupportedOperationException("TeaVM transpiler error:\n" + details);
         }
     }
 
-    private boolean shouldReport(Problem problem) {
-        String params = Arrays.toString(problem.getParams());
-        return KNOWN_MISSING_CLASSES.stream()
-            .noneMatch(entry -> params.equals(entry));
-    }
-
     private String format(Problem problem) {
-        String text = problem.getText() + " " + Arrays.toString(problem.getParams());
+        DefaultProblemTextConsumer textRenderer = new DefaultProblemTextConsumer();
+        problem.render(textRenderer);
+
+        String text = "    " + textRenderer.getText();
         if (problem.getLocation() != null) {
-            text += " (" + problem.getLocation().getSourceLocation() + ")";
+            text += "\n    (" + problem.getLocation().getSourceLocation() + ")";
         }
         return text;
     }
@@ -242,7 +234,7 @@ public class TeaVMTranspilerTool {
             URLResponse response = request.send();
 
             File outputFile = new File(libDir, url.substring(url.lastIndexOf("/") + 1));
-            FileUtils.write(response.getBody(), outputFile);
+            Files.write(outputFile.toPath(), response.getBody());
             return outputFile;
         } catch (IOException e) {
             throw new RuntimeException("Failed to download " + url, e);
@@ -263,6 +255,7 @@ public class TeaVMTranspilerTool {
                 line = line.replace("{js-libraries}", generateScriptTags(jsLibraries));
                 line = line.replace("{teavm-js-file}", SCRIPT_FILE_NAME);
                 line = line.replace("{timestamp}", generateTimestampTag());
+                line = line.replace("{build-id}", buildId);
                 line = line.replace("{meta}", generateMetaTags());
                 if (line.trim().equals("{resources}")) {
                     line = generateTextResourceFilesHTML(textFiles);
@@ -321,7 +314,7 @@ public class TeaVMTranspilerTool {
     private void copyBinaryResourceFile(ResourceFile file, File outputFile) {
         try (InputStream stream = file.openStream()) {
             byte[] contents = stream.readAllBytes();
-            FileUtils.write(contents, outputFile);
+            Files.write(outputFile.toPath(), contents);
         } catch (IOException e) {
             throw new RuntimeException("Cannot copy file: " + file, e);
         }

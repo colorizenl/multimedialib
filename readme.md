@@ -35,13 +35,13 @@ to the dependencies section in `pom.xml`:
     <dependency>
         <groupId>nl.colorize</groupId>
         <artifactId>multimedialib</artifactId>
-        <version>2024.4</version>
+        <version>2024.5</version>
     </dependency>  
     
 The library can also be used in Gradle projects:
 
     dependencies {
-        implementation "nl.colorize:multimedialib:2024.4"
+        implementation "nl.colorize:multimedialib:2024.5"
     }
     
 Supported platforms
@@ -141,6 +141,7 @@ included as part of the library, and supports the following arguments:
 | `--main`      | yes      | Main class that acts as application entry point.             |
 | `--resources` | yes      | Directory containing the application's resource files.       |
 | `--out`       | yes      | Output directory for the generated files.                    |
+| `--buildid`   | no       | Build ID used for caching resource files, default is random. | 
 | `--minify`    | no       | Minifies the generated JavaScript, off by default.           |
 | `--meta`      | no       | Inserts `<meta>` tags into the HTML, passed as `name:value`. |
 

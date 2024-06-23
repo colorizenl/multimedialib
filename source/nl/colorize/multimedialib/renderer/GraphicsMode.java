@@ -7,12 +7,9 @@
 package nl.colorize.multimedialib.renderer;
 
 /**
- * Indicates whether the renderer is capable of displaying 2D or 3D graphics.
- * Certain MultimediaLib features are only available when using a renderer
- * that is actually capable of displaying those features. This can be checked
- * at runtime using {@link Renderer#getGraphicsMode()}. Trying to use renderer
- * features on an unsupported platform will result in a
- * {@link UnsupportedGraphicsModeException}.
+ * Describes the graphics mode supported by the renderer. Note that some
+ * renderers are able to operate in both 2D graphics mode and 3D graphics
+ * mode.
  */
 public enum GraphicsMode {
     HEADLESS,

@@ -59,4 +59,12 @@ public class TimerTest {
         assertEquals("2.0 / 2.0", Timer.at(2f, 2f).toString());
         assertEquals("2.0", Timer.at(2f).toString());
     }
+
+    @Test
+    void ratioForZeroTimer() {
+        Timer zeroTimer = Timer.none();
+
+        assertEquals(0f, zeroTimer.getRatio(), EPSILON);
+        assertTrue(zeroTimer.isCompleted());
+    }
 }

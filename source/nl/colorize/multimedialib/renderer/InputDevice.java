@@ -9,6 +9,7 @@ package nl.colorize.multimedialib.renderer;
 import com.google.common.collect.Streams;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.Updatable;
+import nl.colorize.util.Subscribable;
 
 /**
  * Used to poll the status of the platform's input devices. This includes
@@ -76,13 +77,10 @@ public interface InputDevice extends Updatable {
     public boolean isKeyReleased(KeyCode keyCode);
 
     /**
-     * Shows a dialog window requesting the user to enter text. This method
-     * exists only because text fields, unlike other input elements such as
-     * buttons, cannot be emulated by the renderer without losing common
-     * functionality such as copy/paste. Text input must therefore be delegated
-     * to the platform so that a native text field can be used.
+     * Shows a dialog window with a text input field. The dialog window is not
+     * part of the scene, it uses the platform's native user interface.
      */
-    public String requestTextInput(String label, String initialValue);
+    public Subscribable<String> requestTextInput(String label, String initialValue);
 
     /**
      * Copies the specified text to the system clipboard.

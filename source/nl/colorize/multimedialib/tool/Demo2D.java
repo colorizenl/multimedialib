@@ -44,17 +44,15 @@ import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
-import nl.colorize.util.DateParser;
 import nl.colorize.util.LogHelper;
-import nl.colorize.util.PropertyUtils;
 import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
 import nl.colorize.util.http.Headers;
 import nl.colorize.util.http.PostData;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 import java.util.logging.Logger;
 
 import static nl.colorize.multimedialib.stage.ColorRGB.BLUE;
@@ -130,9 +128,7 @@ public class Demo2D implements Scene, ErrorHandler {
         initEffects();
         attachSwipeTracker();
         sendHttpRequest(context.getNetwork());
-
-        context.getMediaLoader().saveApplicationData("MultimediaLib-Demo2D",
-            PropertyUtils.loadProperties("demo=" + DateParser.format(new Date(), "yyyy-MM-dd HH:mm")));
+        loadApplicationData();
 
         performanceMonitor = new PerformanceMonitor(false);
         performanceMonitor.setActive(false);
@@ -162,11 +158,12 @@ public class Demo2D implements Scene, ErrorHandler {
         createButton(context, "Remove sprites", RED_BUTTON, 30, () -> removeMarios(10));
         createButton(context, "Play sound", GREEN_BUTTON, 60, audioClip::play);
         createButton(context, "Background", GREEN_BUTTON, 90, this::toggleBackgroundColor);
-        createButton(context, "Cause error", PINK_BUTTON, 120, this::causeError);
-        createButton(context, "Performance", PINK_BUTTON, 150, this::togglePerformanceMonitor);
+        createButton(context, "App data", PINK_BUTTON, 120, this::saveApplicationData);
+        createButton(context, "Cause error", PINK_BUTTON, 150, this::causeError);
+        createButton(context, "Performance", PINK_BUTTON, 180, this::togglePerformanceMonitor);
         if (context.getNetwork().isPeerToPeerSupported()) {
-            createButton(context, "Open connection", BLUE_BUTTON, 180, this::openPeerConnection);
-            createButton(context, "Join connection", BLUE_BUTTON, 210, this::joinPeerConnection);
+            createButton(context, "Open connection", BLUE_BUTTON, 210, this::openPeerConnection);
+            createButton(context, "Join connection", BLUE_BUTTON, 240, this::joinPeerConnection);
         }
     }
 
@@ -260,6 +257,29 @@ public class Demo2D implements Scene, ErrorHandler {
         }
     }
 
+    private void loadApplicationData() {
+        MediaLoader mediaLoader = context.getMediaLoader();
+        Properties data = mediaLoader.loadApplicationData("MultimediaLib-Demo2D");
+        String message = data.getProperty("test", "");
+
+        if (!message.isEmpty()) {
+            Text info = new Text("Loaded message:\n" + message, font, Align.RIGHT);
+            info.getTransform().setPosition(context.getCanvas().getWidth() - 20,
+                context.getCanvas().getHeight() - 200);
+            hudLayer.addChild(info);
+        }
+    }
+
+    private void saveApplicationData() {
+        context.getInput().requestTextInput("Enter some text:", "").subscribe(input -> {
+            Properties data = new Properties();
+            data.setProperty("test", input);
+
+            MediaLoader mediaLoader = context.getMediaLoader();
+            mediaLoader.saveApplicationData("MultimediaLib-Demo2D", data);
+        });
+    }
+
     /**
      * This method will intentionally produce an exception, so that the demo
      * application can be used for testing the error handler.
@@ -290,13 +310,11 @@ public class Demo2D implements Scene, ErrorHandler {
     }
 
     private void joinPeerConnection() {
-        String id = context.getInput().requestTextInput("Peer-to-peer connection ID", "");
-
-        if (id != null && !id.isEmpty()) {
+        context.getInput().requestTextInput("Peer-to-peer connection ID", "").subscribe(id -> {
             PeerConnection peerConnection = openPeerConnection();
             peerConnection.connect(id);
             peerConnection.sendMessage("Hello from a peer-to-peer connection");
-        }
+        });
     }
 
     @Override

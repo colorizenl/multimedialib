@@ -22,10 +22,10 @@ import nl.colorize.multimedialib.renderer.MediaLoader;
  * directly, instances are obtained from the {@link MediaLoader} when the font
  * is first loaded.
  */
-public record FontFace(MediaLoader owner, FilePointer origin, String family, FontStyle style) {
+public record FontFace(FilePointer origin, String family, FontStyle style) {
 
     public FontFace derive(FontStyle style) {
-        return new FontFace(owner, origin, family, style);
+        return new FontFace(origin, family, style);
     }
 
     public FontFace derive(int size) {
@@ -47,7 +47,8 @@ public record FontFace(MediaLoader owner, FilePointer origin, String family, Fon
      */
     public FontFace scale(Canvas canvas) {
         int actualDisplaySize = Math.round(canvas.getZoomLevel() * style.size());
-        return derive(new FontStyle(actualDisplaySize, style.bold(), style.color()));
+        FontStyle derivedStyle = new FontStyle(actualDisplaySize, style.bold(), style.color());
+        return derive(derivedStyle);
     }
 
     @Override
