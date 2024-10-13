@@ -14,6 +14,7 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Pointer;
+import nl.colorize.multimedialib.renderer.RendererLauncher;
 import nl.colorize.util.Platform;
 import nl.colorize.util.Subscribable;
 import nl.colorize.util.swing.Popups;
@@ -158,7 +159,8 @@ public class GDXInput implements InputDevice {
     @Override
     public boolean isTouchAvailable() {
         Platform platform = Platform.getPlatform();
-        return platform == Platform.IOS || platform == Platform.ANDROID;
+        String emulation = System.getProperty(RendererLauncher.EMULATION_SYSTEM_PROPERTY);
+        return platform == Platform.IOS || platform == Platform.ANDROID || emulation != null;
     }
 
     @Override

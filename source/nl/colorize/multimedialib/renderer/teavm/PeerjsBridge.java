@@ -10,8 +10,7 @@ import org.teavm.jso.JSObject;
 import org.teavm.jso.JSProperty;
 
 /**
- * Bridge to the parts of the PeerJS interface that are implemented in
- * JavaScript. This interface is used by TeaVM.
+ * TeaVM interface for the {@code peerjs-bridge.js} JavaScript implementation.
  */
 public interface PeerjsBridge extends JSObject {
 

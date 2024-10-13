@@ -36,6 +36,7 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
+import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
@@ -108,7 +109,7 @@ public class GDXGraphics implements StageVisitor {
     }
 
     @Override
-    public void visitContainer(Container container) {
+    public void visitContainer(Container container, Transform globalTransform) {
     }
 
     @Override
@@ -124,7 +125,7 @@ public class GDXGraphics implements StageVisitor {
      * separate and lines are the only shape without a fill.
      */
     @Override
-    public void drawLine(Primitive graphic, Line line) {
+    public void drawLine(Primitive graphic, Line line, Transform globalTransform) {
         if (graphic.getStroke() == 1f) {
             drawBasicLines(List.of(line), graphic.getColor());
         } else {
@@ -133,7 +134,7 @@ public class GDXGraphics implements StageVisitor {
     }
 
     @Override
-    public void drawSegmentedLine(Primitive graphic, SegmentedLine line) {
+    public void drawSegmentedLine(Primitive graphic, SegmentedLine line, Transform globalTransform) {
         if (graphic.getStroke() == 1f) {
             drawBasicLines(line.getSegments(), graphic.getColor());
         } else {
@@ -180,39 +181,35 @@ public class GDXGraphics implements StageVisitor {
     }
 
     @Override
-    public void drawRect(Primitive graphic, Rect rect) {
-        Transform transform = graphic.getGlobalTransform();
+    public void drawRect(Primitive graphic, Rect rect, Transform globalTransform) {
         float x = toScreenX(rect.x());
         float y = toScreenY(rect.getEndY());
         float width = rect.width() * canvas.getZoomLevel();
         float height = rect.height() * canvas.getZoomLevel();
 
         switchMode(false, true);
-        shapeBatch.setColor(convertColor(graphic.getColor(), transform.getAlpha()));
+        shapeBatch.setColor(convertColor(graphic.getColor(), globalTransform.getAlpha()));
         shapeBatch.rect(x, y, width, height);
     }
 
     @Override
-    public void drawCircle(Primitive graphic, Circle circle) {
-        Transform transform = graphic.getGlobalTransform();
+    public void drawCircle(Primitive graphic, Circle circle, Transform globalTransform) {
         float x = toScreenX(circle.center().x());
         float y = toScreenY(circle.center().y());
         float radius = circle.radius() * canvas.getZoomLevel();
 
         switchMode(false, true);
-        shapeBatch.setColor(convertColor(graphic.getColor(), transform.getAlpha()));
+        shapeBatch.setColor(convertColor(graphic.getColor(), globalTransform.getAlpha()));
         shapeBatch.circle(x, y, radius, CIRCLE_SEGMENTS);
     }
 
     @Override
-    public void drawPolygon(Primitive graphic, Polygon polygon) {
-        Transform transform = graphic.getGlobalTransform();
-
+    public void drawPolygon(Primitive graphic, Polygon polygon, Transform globalTransform) {
         if (polygon.getNumPoints() == 3) {
-            drawTriangle(polygon.points(), graphic.getColor(), transform.getAlpha());
+            drawTriangle(polygon.points(), graphic.getColor(), globalTransform.getAlpha());
         } else {
             for (Polygon triangle : polygon.subdivide()) {
-                drawTriangle(triangle.points(), graphic.getColor(), transform.getAlpha());
+                drawTriangle(triangle.points(), graphic.getColor(), globalTransform.getAlpha());
             }
         }
     }
@@ -226,10 +223,9 @@ public class GDXGraphics implements StageVisitor {
     }
 
     @Override
-    public void drawSprite(Sprite sprite) {
+    public void drawSprite(Sprite sprite, Transform globalTransform) {
         TextureRegion textureRegion = ((GDXImage) sprite.getCurrentGraphics()).getTextureRegion();
-        Transform transform = sprite.getGlobalTransform();
-        drawSprite(textureRegion, transform);
+        drawSprite(textureRegion, globalTransform);
     }
 
     private void drawSprite(TextureRegion textureRegion, Transform transform) {
@@ -275,17 +271,20 @@ public class GDXGraphics implements StageVisitor {
     }
 
     @Override
-    public void drawText(Text text) {
-        BitmapFont bitmapFont = mediaLoader.getBitmapFont(text.getFont().scale(canvas));
-        Transform transform = text.getGlobalTransform();
-        float screenX = toScreenX(transform.getPosition().x());
+    public void drawText(Text text, Transform globalTransform) {
+        FontFace scaledFont = text.getFont().scale(canvas);
+        BitmapFont bitmapFont = mediaLoader.getBitmapFont(scaledFont);
+        float screenX = toScreenX(globalTransform.getPosition().x());
         int align = getTextAlign(text.getAlign());
+        // We cannot use the font metrics reported by the BitmapFont
+        // itself, since those numbers don't work well with scaling.
+        float ascent = 0.8f * text.getFont().size();
 
         switchMode(true, false);
 
         text.forLines((i, line) -> {
-            float lineY = transform.getPosition().y() + i * text.getLineHeight();
-            float screenY = toScreenY(lineY) + bitmapFont.getXHeight();
+            float lineY = globalTransform.getPosition().y() + i * text.getLineHeight() - ascent;
+            float screenY = toScreenY(lineY);
             bitmapFont.draw(spriteBatch, line, screenX, screenY, 0, align, false);
         });
     }
@@ -295,7 +294,6 @@ public class GDXGraphics implements StageVisitor {
             case LEFT -> left;
             case CENTER -> center;
             case RIGHT -> right;
-            default -> throw new AssertionError();
         };
     }
 

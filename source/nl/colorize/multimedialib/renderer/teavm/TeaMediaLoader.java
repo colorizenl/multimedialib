@@ -6,24 +6,27 @@
 
 package nl.colorize.multimedialib.renderer.teavm;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
-import nl.colorize.multimedialib.math.Buffer;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.stage.Audio;
+import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontFace;
-import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.LoadStatus;
 import nl.colorize.multimedialib.stage.PolygonModel;
-import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.LogHelper;
+import nl.colorize.util.MessageQueue;
 import nl.colorize.util.Subscribable;
+import nl.colorize.util.stats.Cache;
 import org.teavm.jso.browser.Storage;
 import org.teavm.jso.browser.Window;
+import org.teavm.jso.canvas.CanvasRenderingContext2D;
 import org.teavm.jso.dom.html.HTMLAudioElement;
+import org.teavm.jso.dom.html.HTMLCanvasElement;
 import org.teavm.jso.dom.html.HTMLDocument;
 import org.teavm.jso.dom.html.HTMLElement;
 import org.teavm.jso.dom.html.HTMLImageElement;
@@ -31,7 +34,6 @@ import org.teavm.jso.dom.html.HTMLImageElement;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 /**
@@ -42,28 +44,33 @@ import java.util.logging.Logger;
 public class TeaMediaLoader implements MediaLoader {
 
     private HTMLDocument document;
-    private StageVisitor graphics;
-    private List<FilePointer> manifest;
-    private Buffer<LoadStatus> loading;
+    private BrowserBridge bridge;
     private String timestamp;
+
+    private List<FilePointer> manifest;
+    private MessageQueue<LoadStatus> loading;
+    private Cache<MaskImage, HTMLCanvasElement> maskImageCache;
 
     private static final FilePointer MANIFEST_FILE = new FilePointer("resource-file-manifest");
     private static final Splitter LINE_SPLITTER = Splitter.on("\n").trimResults().omitEmptyStrings();
+    private static final int IMAGE_CACHE_SIZE = 500;
     private static final Logger LOGGER = LogHelper.getLogger(TeaMediaLoader.class);
 
-    protected TeaMediaLoader(StageVisitor graphics) {
+    protected TeaMediaLoader() {
         this.document = Window.current().getDocument();
-        this.graphics = graphics;
+        this.bridge = Browser.getBrowserBridge();
+        this.timestamp = bridge.getMeta("build-id", String.valueOf(System.currentTimeMillis()));
+
         this.manifest = Collections.emptyList();
-        this.loading = new Buffer<>();
-        this.timestamp = Browser.getMeta("build-id", String.valueOf(System.currentTimeMillis()));
+        this.loading = new MessageQueue<>();
+        this.maskImageCache = Cache.from(this::createMaskImage, IMAGE_CACHE_SIZE);
     }
 
     @Override
     public Image loadImage(FilePointer file) {
         HTMLImageElement imageElement = (HTMLImageElement) document.createElement("img");
         Subscribable<HTMLImageElement> imagePromise = new Subscribable<>();
-        loading.push(LoadStatus.track(file, imagePromise));
+        loading.offer(LoadStatus.track(file, imagePromise));
         imageElement.setCrossOrigin("anonymous");
         imageElement.addEventListener("load", event -> imagePromise.next(imageElement));
         imageElement.setSrc("resources/" + normalizeFilePath(file, false) + "?t=" + timestamp);
@@ -74,7 +81,7 @@ public class TeaMediaLoader implements MediaLoader {
     public Audio loadAudio(FilePointer file) {
         HTMLAudioElement audioElement = (HTMLAudioElement) document.createElement("audio");
         Subscribable<HTMLAudioElement> audioPromise = new Subscribable<>();
-        loading.push(LoadStatus.track(file, audioPromise));
+        loading.offer(LoadStatus.track(file, audioPromise));
         audioElement.setCrossOrigin("anonymous");
         audioElement.addEventListener("loadeddata", event -> audioPromise.next(audioElement));
         audioElement.setSrc("resources/" + normalizeFilePath(file, false) + "?t=" + timestamp);
@@ -82,19 +89,19 @@ public class TeaMediaLoader implements MediaLoader {
     }
 
     @Override
-    public FontFace loadFont(FilePointer file, String family, FontStyle style) {
+    public FontFace loadFont(FilePointer file, String family, int size, ColorRGB color) {
         String url = "url('resources/" + normalizeFilePath(file, false) + "')";
-        AtomicBoolean loaded = new AtomicBoolean(false);
-        loading.push(new LoadStatus(file, loaded::get));
+        Subscribable<String> promise = new Subscribable<>();
+        loading.offer(LoadStatus.track(file, promise));
 
-        Browser.preloadFontFace(family, url, error -> {
-            loaded.set(true);
+        bridge.preloadFontFace(family, url, error -> {
+            promise.next(url);
             if (error != null && !error.isEmpty()) {
                 LOGGER.warning("Failed to load font '" + family + "': " + error);
             }
         });
 
-        return new FontFace(file, family, style);
+        return new FontFace(file, family, size, color);
     }
 
     @Override
@@ -151,7 +158,7 @@ public class TeaMediaLoader implements MediaLoader {
 
     @Override
     public Properties loadApplicationData(String appName) {
-        Browser.loadApplicationData(appName);
+        bridge.loadApplicationData();
         Storage localStorage = Storage.getLocalStorage();
         Properties data = new Properties();
 
@@ -168,12 +175,50 @@ public class TeaMediaLoader implements MediaLoader {
     public void saveApplicationData(String appName, Properties data) {
         for (String name : data.stringPropertyNames()) {
             String value = data.getProperty(name);
-            Browser.saveApplicationData(appName, name, value);
+            bridge.saveApplicationData(name, value);
         }
     }
 
     @Override
-    public Buffer<LoadStatus> getLoadStatus() {
+    public MessageQueue<LoadStatus> getLoadStatus() {
         return loading;
+    }
+
+    /**
+     * Creates an alternative version of the image with the specified mask
+     * color applied to every non-transparent pixel. This is a relatively heavy
+     * operation, so masked images are cached to avoid having to create them
+     * every single frame.
+     */
+    public HTMLCanvasElement applyMask(TeaImage image, ColorRGB mask) {
+        MaskImage cacheKey = new MaskImage(image, mask);
+        return maskImageCache.get(cacheKey);
+    }
+
+    private HTMLCanvasElement createMaskImage(MaskImage key) {
+        Preconditions.checkState(key.image().isLoaded(), "Image is still loading");
+
+        HTMLDocument document = Window.current().getDocument();
+        HTMLImageElement img = key.image().getImageElement().get();
+
+        HTMLCanvasElement canvas = (HTMLCanvasElement) this.document.createElement("canvas");
+        canvas.setWidth(img.getWidth());
+        canvas.setHeight(img.getHeight());
+
+        CanvasRenderingContext2D maskContext = (CanvasRenderingContext2D) canvas.getContext("2d");
+        maskContext.drawImage(img, 0, 0, img.getWidth(), img.getHeight());
+        maskContext.setGlobalCompositeOperation("source-atop");
+        maskContext.setFillStyle(key.mask().toHex());
+        maskContext.fillRect(0, 0, img.getWidth(), img.getHeight());
+
+        return canvas;
+    }
+
+    /**
+     * Used as a cache key for masking images. The entire image is masked,
+     * not just the image region. If we need a masked region, we just extract
+     * the corresponding region from the masked image.
+     */
+    private record MaskImage(TeaImage image, ColorRGB mask) {
     }
 }

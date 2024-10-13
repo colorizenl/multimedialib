@@ -8,14 +8,12 @@ package nl.colorize.multimedialib.renderer.headless;
 
 import com.google.common.annotations.VisibleForTesting;
 import nl.colorize.multimedialib.math.Region;
+import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.java2d.AWTImage;
+import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.ColorRGB;
-import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.stage.FontFace;
-import nl.colorize.multimedialib.renderer.FilePointer;
-import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.swing.Utils2D;
 
@@ -55,11 +53,6 @@ public class HeadlessMediaLoader extends StandardMediaLoader {
     @Override
     public Audio loadAudio(FilePointer file) {
         return new HeadlessAudio();
-    }
-
-    @Override
-    public FontFace loadFont(FilePointer file, String family, FontStyle style) {
-        return super.loadFont(file, family, style);
     }
 
     /**

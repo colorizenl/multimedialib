@@ -6,10 +6,11 @@
 
 package nl.colorize.multimedialib.renderer;
 
-import com.google.common.base.Preconditions;
 import lombok.Getter;
+import nl.colorize.multimedialib.math.Coordinate;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.math.Size;
 import nl.colorize.util.TextUtils;
 
 /**
@@ -33,27 +34,20 @@ import nl.colorize.util.TextUtils;
 @Getter
 public class Canvas {
 
-    private int preferredWidth;
-    private int preferredHeight;
+    private Size preferredSize;
     private ScaleStrategy scaleStrategy;
+    private Size screenSize;
+    private Coordinate screenOffset;
 
-    private int screenWidth;
-    private int screenHeight;
-    private int offsetX;
-    private int offsetY;
+    public Canvas(Size preferredSize, ScaleStrategy scaleStrategy) {
+        this.preferredSize = preferredSize;
+        this.scaleStrategy = scaleStrategy;
+        this.screenSize = preferredSize;
+        this.screenOffset = new Coordinate(0, 0);
+    }
 
     public Canvas(int preferredWidth, int preferredHeight, ScaleStrategy scaleStrategy) {
-        Preconditions.checkArgument(preferredWidth > 0, "Invalid width");
-        Preconditions.checkArgument(preferredHeight > 0, "Invalid height");
-
-        this.preferredWidth = preferredWidth;
-        this.preferredHeight = preferredHeight;
-        this.scaleStrategy = scaleStrategy;
-
-        this.screenWidth = preferredWidth;
-        this.screenHeight = preferredHeight;
-        this.offsetX = 0;
-        this.offsetY = 0;
+        this(new Size(preferredWidth, preferredHeight), scaleStrategy);
     }
 
     /**
@@ -62,8 +56,7 @@ public class Canvas {
      * whenever the window is resized.
      */
     public void resizeScreen(int screenWidth, int screenHeight) {
-        this.screenWidth = Math.max(screenWidth, 1);
-        this.screenHeight = Math.max(screenHeight, 1);
+        screenSize = new Size(Math.max(screenWidth, 1), Math.max(screenHeight, 1));
     }
 
     /**
@@ -72,16 +65,19 @@ public class Canvas {
      * no application graphics can be displayed.
      */
     public void offsetScreen(int offsetX, int offsetY) {
-        this.offsetX = offsetX;
-        this.offsetY = offsetY;
+        screenOffset = new Coordinate(offsetX, offsetY);
     }
 
     public int getWidth() {
-        return Math.round(screenWidth / getZoomLevel());
+        return Math.round(screenSize.width() / getZoomLevel());
     }
 
     public int getHeight() {
-        return Math.round(screenHeight / getZoomLevel());
+        return Math.round(screenSize.height() / getZoomLevel());
+    }
+
+    public Size getSize() {
+        return new Size(getWidth(), getHeight());
     }
 
     public Rect getBounds() {
@@ -93,7 +89,7 @@ public class Canvas {
     }
 
     public boolean isLandscape() {
-        return screenWidth >= screenHeight;
+        return screenSize.width() >= screenSize.height();
     }
 
     public boolean isPortait() {
@@ -110,7 +106,7 @@ public class Canvas {
     }
 
     public float toCanvasX(int screenX) {
-        return (screenX - offsetX) / getZoomLevel();
+        return (screenX - screenOffset.x()) / getZoomLevel();
     }
 
     public float toCanvasX(Point2D point) {
@@ -118,7 +114,7 @@ public class Canvas {
     }
 
     public float toCanvasY(int screenY) {
-        return (screenY - offsetY) / getZoomLevel();
+        return (screenY - screenOffset.y()) / getZoomLevel();
     }
 
     public float toCanvasY(Point2D point) {
@@ -126,7 +122,7 @@ public class Canvas {
     }
 
     public float toScreenX(float canvasX) {
-        return canvasX * getZoomLevel() + offsetX;
+        return canvasX * getZoomLevel() + screenOffset.x();
     }
 
     public float toScreenX(Point2D point) {
@@ -134,7 +130,7 @@ public class Canvas {
     }
 
     public float toScreenY(float canvasY) {
-        return canvasY * getZoomLevel() + offsetY;
+        return canvasY * getZoomLevel() + screenOffset.y();
     }
 
     public float toScreenY(Point2D point) {

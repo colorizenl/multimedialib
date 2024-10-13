@@ -36,7 +36,7 @@ class PerformanceMonitorTest {
             Stage
                 Container [$$root, 1]
                     Container [18]
-                        Rect
+                        Rect [(0, 0, 300, 100)]
                         Container [3]
                             SegmentedLine
                             SegmentedLine

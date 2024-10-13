@@ -26,6 +26,7 @@ import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
+import nl.colorize.multimedialib.stage.Transform;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -67,7 +68,7 @@ class StageTest {
             }
 
             @Override
-            public void visitContainer(Container container) {
+            public void visitContainer(Container container, Transform globalTransform) {
             }
 
             @Override
@@ -75,40 +76,40 @@ class StageTest {
             }
 
             @Override
-            public void drawSprite(Sprite sprite) {
+            public void drawSprite(Sprite sprite, Transform globalTransform) {
                 visited.add("sprite");
             }
 
             @Override
-            public void drawLine(Primitive graphic, Line line) {
+            public void drawLine(Primitive graphic, Line line, Transform globalTransform) {
                 visited.add("line");
             }
 
             @Override
-            public void drawSegmentedLine(Primitive graphic, SegmentedLine line) {
+            public void drawSegmentedLine(Primitive graphic, SegmentedLine line, Transform tr) {
                 visited.add("segmentedline");
             }
 
             @Override
-            public void drawRect(Primitive graphic, Rect rect) {
+            public void drawRect(Primitive graphic, Rect rect, Transform globalTransform) {
                 visited.add("rect");
             }
 
             @Override
-            public void drawCircle(Primitive graphic, Circle circle) {
+            public void drawCircle(Primitive graphic, Circle circle, Transform globalTransform) {
                 visited.add("circle");
             }
 
             @Override
-            public void drawPolygon(Primitive graphic, Polygon polygon) {
+            public void drawPolygon(Primitive graphic, Polygon polygon, Transform globalTransform) {
                 visited.add("polygon");
             }
 
             @Override
-            public void drawText(Text text) {
+            public void drawText(Text text, Transform globalTransform) {
                 visited.add("text");
             }
-        }, Timer.infinite());
+        });
 
         assertEquals(ImmutableList.of("sprite", "rect", "sprite", "text"), visited);
     }
@@ -148,7 +149,7 @@ class StageTest {
                 Container [$$root, 1]
                     Container [3]
                         Sprite [$$default]
-                        Rect
+                        Rect [(10, 10, 200, 200)]
                         Text [test]
             """;
 

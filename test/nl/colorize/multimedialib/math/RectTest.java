@@ -89,4 +89,22 @@ public class RectTest {
     void fromPoints() {
         assertEquals("(10, 20, 20, 30)", Rect.fromPoints(10, 20, 30, 50).toString());
     }
+
+    @Test
+    void aroundOrigin() {
+        assertEquals("(-20, -15, 40, 30)", Rect.around(40, 30).toString());
+    }
+
+    @Test
+    void expand() {
+        Rect original = new Rect(10, 20, 30, 40);
+        Rect larger = original.expand(20);
+        Rect smaller = original.expand(-20);
+
+        assertEquals("(0, 10, 50, 60)", larger.toString());
+        assertEquals(original.getCenter(), larger.getCenter());
+
+        assertEquals("(20, 30, 10, 20)", smaller.toString());
+        assertEquals(original.getCenter(), smaller.getCenter());
+    }
 }

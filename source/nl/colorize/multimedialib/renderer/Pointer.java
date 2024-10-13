@@ -11,6 +11,8 @@ import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.scene.Timer;
+import nl.colorize.multimedialib.scene.Updatable;
 
 /**
  * Represents a pointer device, which can be a mouse, a trackpad, or touch
@@ -20,14 +22,17 @@ import nl.colorize.multimedialib.math.Rect;
  * simultaneously. In such situations the render will provide access to
  * multiple {@code Pointer} instances that can be tracked individually, using
  * {@link #getId()} to identify each pointer.
+ * <p>
+ * {@link #getTimePressed()}
  */
 @Getter
 @Setter
-public class Pointer {
+public class Pointer implements Updatable {
 
-    private String id;
+    private final String id;
     private Point2D position;
     private int state;
+    private final Timer pressedTimer;
 
     public static final int STATE_IDLE = 0;
     public static final int STATE_PRESSED = 1;
@@ -39,6 +44,7 @@ public class Pointer {
         this.id = id;
         this.position = Point2D.ORIGIN;
         this.state = STATE_IDLE;
+        this.pressedTimer = Timer.infinite();
     }
 
     /**
@@ -73,5 +79,25 @@ public class Pointer {
      */
     public boolean isReleased(Rect bounds) {
         return state == STATE_RELEASED && bounds.contains(position);
+    }
+
+    /**
+     * Returns the time this pointer has been pressed, in seconds. If this
+     * pointer is in the pressed state, this will return the time since the
+     * pressed state started. If this pointer is in the released state, this
+     * returns the time between the pointer originally being pressed and it
+     * being released. Returns zero if this pointer is in the idle state.
+     */
+    public float getTimePressed() {
+        return pressedTimer.getTime();
+    }
+
+    @Override
+    public void update(float deltaTime) {
+        if (state == STATE_PRESSED || state == STATE_RELEASED) {
+            pressedTimer.update(deltaTime);
+        } else {
+            pressedTimer.reset();
+        }
     }
 }

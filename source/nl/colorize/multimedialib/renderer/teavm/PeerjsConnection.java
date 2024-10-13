@@ -6,8 +6,8 @@
 
 package nl.colorize.multimedialib.renderer.teavm;
 
-import nl.colorize.multimedialib.math.Buffer;
 import nl.colorize.multimedialib.renderer.PeerConnection;
+import nl.colorize.util.MessageQueue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,14 +19,14 @@ import java.util.List;
 public class PeerjsConnection implements PeerConnection, MessageCallback {
 
     private PeerjsBridge bridge;
-    private Buffer<String> connectionQueue;
-    private Buffer<PeerMessage> receivedBuffer;
+    private MessageQueue<String> connectionQueue;
+    private MessageQueue<PeerMessage> receivedBuffer;
     private List<String> sendHistory;
 
     protected PeerjsConnection(PeerjsBridge bridge) {
         this.bridge = bridge;
-        this.connectionQueue = new Buffer<>();
-        this.receivedBuffer = new Buffer<>();
+        this.connectionQueue = new MessageQueue<>();
+        this.receivedBuffer = new MessageQueue<>();
         this.sendHistory = new ArrayList<>();
 
         bridge.open(this);
@@ -34,7 +34,7 @@ public class PeerjsConnection implements PeerConnection, MessageCallback {
 
     @Override
     public void connect(String peerId) {
-        connectionQueue.push(peerId);
+        connectionQueue.offer(peerId);
         processConnectionQueue();
     }
 
@@ -53,13 +53,13 @@ public class PeerjsConnection implements PeerConnection, MessageCallback {
     }
 
     @Override
-    public Buffer<PeerMessage> getReceivedMessages() {
+    public MessageQueue<PeerMessage> getReceivedMessages() {
         return receivedBuffer;
     }
 
     @Override
     public void onMessage(String type, String value) {
-        receivedBuffer.push(new PeerMessage(type, value));
+        receivedBuffer.offer(new PeerMessage(type, value));
 
         if (type.equals(PeerMessage.TYPE_INIT)) {
             processConnectionQueue();

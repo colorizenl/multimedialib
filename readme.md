@@ -35,13 +35,13 @@ to the dependencies section in `pom.xml`:
     <dependency>
         <groupId>nl.colorize</groupId>
         <artifactId>multimedialib</artifactId>
-        <version>2024.5</version>
+        <version>2024.6</version>
     </dependency>  
     
 The library can also be used in Gradle projects:
 
     dependencies {
-        implementation "nl.colorize:multimedialib:2024.5"
+        implementation "nl.colorize:multimedialib:2024.6"
     }
     
 Supported platforms
@@ -60,7 +60,6 @@ The following renderer implementations are available:
 | [JavaFX](https://openjfx.io) renderer                     | 2D       | Windows, Mac                   |
 | [libGDX](https://libgdx.badlogicgames.com) renderer       | 2D + 3D  | Windows, Mac, Android          |
 | HTML5 canvas renderer                                     | 2D       | Browser, iOS, Android, Windows |
-| WebGL renderer (*experimental*)                           | 2D + 3D  | Browser, iOS, Android, Windows |
 | [PixiJS](https://www.pixijs.com) renderer                 | 2D       | Browser, iOS, Android, Windows |
 | [three.js](https://threejs.org) renderer (*experimental*) | 2D + 3D  | Browser, iOS, Android, Windows |
 | Headless renderer                                         | Headless | Testing/simulation             |
@@ -105,8 +104,8 @@ Each sub-scene acts as a "system" that operates on data, the stage, or a combina
 Regular [POJOs](https://en.wikipedia.org/wiki/Plain_old_Java_object) act as components, while
 an "entity" is simply an ID plus a number of components.
 
-Starting the demo applications
-------------------------------
+Starting the demo application
+-----------------------------
 
 MultimediaLib includes simple demo applications that showcase some of its features, and can be 
 used as an example when using the framework to create applications. The demo applications can
@@ -135,15 +134,16 @@ to a combination of HTML and JavaScript so that they can be distributed via the 
 using [TeaVM](http://teavm.org). Transpilation is started using the `TeaVMTranspilerTool` that is 
 included as part of the library, and supports the following arguments:
 
-| Name          | Required | Description                                                  |
-|---------------|----------|--------------------------------------------------------------|
-| `--project`   | yes      | Project name for the application.                            |
-| `--main`      | yes      | Main class that acts as application entry point.             |
-| `--resources` | yes      | Directory containing the application's resource files.       |
-| `--out`       | yes      | Output directory for the generated files.                    |
-| `--buildid`   | no       | Build ID used for caching resource files, default is random. | 
-| `--minify`    | no       | Minifies the generated JavaScript, off by default.           |
-| `--meta`      | no       | Inserts `<meta>` tags into the HTML, passed as `name:value`. |
+| Name          | Required | Description                                                                |
+|---------------|----------|----------------------------------------------------------------------------|
+| `--project`   | yes      | Project name for the application.                                          |
+| `--main`      | yes      | Main class that acts as application entry point.                           |
+| `--resources` | yes      | Directory containing the application's resource files.                     |
+| `--out`       | yes      | Output directory for the generated files.                                  |
+| `--buildid`   | no       | Build ID used for caching resource files, default is random.               | 
+| `--minify`    | no       | Minifies the generated JavaScript, off by default.                         |
+| `--meta`      | no       | Inserts `<meta>` tags into the HTML, passed as `name:value`.               |
+| `--demo`      | no       | Overrides the application with the demo application, for testing purposes. |
 
 Loading image contents in JavaScript is not allowed unless when running on a remote host. This is
 not a problem for "true" web applications, but can be problematic if the JavaScript version of the

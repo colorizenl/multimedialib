@@ -11,6 +11,7 @@ import javafx.application.Application;
 import lombok.Getter;
 import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
+import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Renderer;
@@ -18,11 +19,13 @@ import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.multimedialib.renderer.java2d.StandardNetwork;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.util.LogHelper;
+import nl.colorize.util.Platform;
 import nl.colorize.util.swing.SwingUtils;
 
 import javax.swing.SwingUtilities;
-import java.util.logging.Logger;
+import java.io.File;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Renderer based on <a href="https://openjfx.io">OpenJFX</a>, which was
@@ -36,6 +39,7 @@ public class JFXRenderer implements Renderer {
     private GraphicsMode graphicsMode;
     private DisplayMode displayMode;
     private WindowOptions windowOptions;
+    private List<File> screenshotQueue;
 
     private JFXGraphics graphics;
     private JFXInput input;
@@ -47,12 +51,11 @@ public class JFXRenderer implements Renderer {
 
     private static JFXRenderer instance;
 
-    private static final Logger LOGGER = LogHelper.getLogger(JFXRenderer.class);
-
     private JFXRenderer(DisplayMode displayMode, WindowOptions windowOptions) {
         this.graphicsMode = GraphicsMode.MODE_2D;
         this.displayMode = displayMode;
         this.windowOptions = windowOptions;
+        this.screenshotQueue = new CopyOnWriteArrayList<>();
     }
 
     @Override
@@ -88,6 +91,12 @@ public class JFXRenderer implements Renderer {
     @Override
     public GraphicsMode getGraphicsMode() {
         return GraphicsMode.MODE_2D;
+    }
+
+    @Override
+    public void takeScreenshot(FilePointer dest) {
+        File desktop = Platform.getUserDesktopDir();
+        screenshotQueue.add(new File(desktop, dest.path()));
     }
 
     @Override

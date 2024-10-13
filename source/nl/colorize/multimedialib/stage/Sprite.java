@@ -10,6 +10,7 @@ import com.google.common.base.Preconditions;
 import lombok.Getter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.scene.Timer;
 
 import java.util.HashMap;
@@ -28,9 +29,10 @@ import java.util.Set;
  */
 public class Sprite implements Graphic2D {
 
-    @Getter private final DisplayListLocation location;
-    private Map<String, SpriteState> stateGraphics;
+    @Getter protected Graphic2D parent;
+    @Getter private Transform transform;
 
+    private Map<String, SpriteState> stateGraphics;
     private SpriteState currentState;
     private float currentStateTime;
     private Image currentGraphics;
@@ -44,9 +46,9 @@ public class Sprite implements Graphic2D {
      * before graphics have been added will result in an exception.
      */
     public Sprite() {
-        this.location = new DisplayListLocation(this);
-        this.stateGraphics = new HashMap<>();
+        this.transform = new Transform();
 
+        stateGraphics = new HashMap<>();
         currentState = new SpriteState(NULL_STATE, null);
         currentStateTime = 0f;
         lastTick = -1f;
@@ -203,7 +205,7 @@ public class Sprite implements Graphic2D {
 
     @Override
     public Rect getStageBounds() {
-        Transform globalTransform = getGlobalTransform();
+        Transform globalTransform = calculateGlobalTransform();
         Point2D position = globalTransform.getPosition();
         float width = Math.max(getCurrentWidth() * (globalTransform.getScaleX() / 100f), 1f);
         float height = Math.max(getCurrentHeight() * (globalTransform.getScaleY() / 100f), 1f);

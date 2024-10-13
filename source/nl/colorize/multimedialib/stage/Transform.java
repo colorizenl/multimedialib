@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Angle;
 import nl.colorize.multimedialib.math.Point2D;
+import nl.colorize.util.stats.Aggregate;
 
 /**
  * Defines the list of transformation properties that should be applied
@@ -29,25 +30,25 @@ import nl.colorize.multimedialib.math.Point2D;
  * | Mask color        | Replaces non-transparent pixels with color | Sprite             |
  * </pre>
  * <p>
- * {@link Transform} instances do not enforce or define against what base
- * their properties should be interpreted. A <em>local</em> transform's
- * properties are interpreted relative to the transform's parent. A
- * <em>global</em> transform's properties are interpreted relative to the
- * stage.
+ * The properties in a {@link Transform} instance are relative to its location
+ * in the scene graph. In other words, it describes a graphic's <em>local</em>
+ * transform. The renderer then combines this with the transform of the
+ * graphic's parents to calculate the <em>global</em> transform relative to
+ * the stage.
  */
 @Getter
 @Setter
-public class Transform {
+public final class Transform {
 
-    protected boolean visible;
-    protected Point2D position;
-    protected Angle rotation;
-    protected float scaleX;
-    protected float scaleY;
-    protected boolean flipHorizontal;
-    protected boolean flipVertical;
-    protected float alpha;
-    protected ColorRGB maskColor;
+    private boolean visible;
+    private Point2D position;
+    private Angle rotation;
+    private float scaleX;
+    private float scaleY;
+    private boolean flipHorizontal;
+    private boolean flipVertical;
+    private float alpha;
+    private ColorRGB maskColor;
 
     public Transform() {
         this.visible = true;
@@ -140,5 +141,23 @@ public class Transform {
         setFlipVertical(other.flipVertical);
         setAlpha(other.alpha);
         setMaskColor(other.maskColor);
+    }
+
+    /**
+     * Returns a new {@link Transform} instance that is the result of combining
+     * this transform with the specified other transform.
+     */
+    public Transform combine(Transform other) {
+        Transform combined = new Transform();
+        combined.setVisible(visible && other.visible);
+        combined.setPosition(position.move(other.position));
+        combined.setRotation(rotation.degrees() + other.rotation.degrees());
+        combined.setScaleX(Aggregate.multiplyPercentage(scaleX, other.scaleX));
+        combined.setScaleY(Aggregate.multiplyPercentage(scaleY, other.scaleY));
+        combined.setFlipHorizontal(flipHorizontal || other.flipHorizontal);
+        combined.setFlipVertical(flipVertical || other.flipVertical);
+        combined.setAlpha(Aggregate.multiplyPercentage(alpha, other.alpha));
+        combined.setMaskColor(maskColor != null ? maskColor : other.maskColor);
+        return combined;
     }
 }

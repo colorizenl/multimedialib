@@ -46,21 +46,21 @@ public interface StageVisitor {
      * process children that were added or removed since the last frame
      * update.
      */
-    public void visitContainer(Container container);
+    public void visitContainer(Container container, Transform globalTransform);
 
     public void drawBackground(ColorRGB color);
 
-    public void drawSprite(Sprite sprite);
+    public void drawSprite(Sprite sprite, Transform globalTransform);
 
-    public void drawLine(Primitive graphic, Line line);
+    public void drawLine(Primitive graphic, Line line, Transform globalTransform);
 
-    public void drawSegmentedLine(Primitive graphic, SegmentedLine line);
+    public void drawSegmentedLine(Primitive graphic, SegmentedLine line, Transform globalTransform);
 
-    public void drawRect(Primitive graphic, Rect rect);
+    public void drawRect(Primitive graphic, Rect rect, Transform globalTransform);
 
-    public void drawCircle(Primitive graphic, Circle circle);
+    public void drawCircle(Primitive graphic, Circle circle, Transform globalTransform);
 
-    public void drawPolygon(Primitive graphic, Polygon polygon);
+    public void drawPolygon(Primitive graphic, Polygon polygon, Transform globalTransform);
 
-    public void drawText(Text text);
+    public void drawText(Text text, Transform globalTransform);
 }

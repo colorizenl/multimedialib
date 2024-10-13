@@ -463,19 +463,19 @@ public class SceneContextTest {
         MockStageVisitor visitor = new MockStageVisitor();
 
         context.update(1f);
-        context.getStage().visit(visitor, context.getSceneTime());
+        context.getStage().visit(visitor);
         assertEquals(List.of("background", "sprite"), visitor.getRendered());
         assertEquals(1f, sprite.getCurrentStateTimer().getTime(), EPSILON);
 
         sprite.getTransform().setVisible(false);
         context.update(2f);
-        context.getStage().visit(visitor, context.getSceneTime());
+        context.getStage().visit(visitor);
         assertEquals(List.of("background"), visitor.getRendered());
         assertEquals(1f, sprite.getCurrentStateTimer().getTime(), EPSILON);
 
         sprite.getTransform().setVisible(true);
         context.update(3f);
-        context.getStage().visit(visitor, context.getSceneTime());
+        context.getStage().visit(visitor);
         assertEquals(List.of("background", "sprite"), visitor.getRendered());
         assertEquals(6f, sprite.getCurrentStateTimer().getTime(), EPSILON);
     }

@@ -8,12 +8,12 @@ package nl.colorize.multimedialib.renderer.teavm;
 
 import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
+import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.pixi.PixiGraphics;
 import nl.colorize.multimedialib.renderer.three.ThreeGraphics;
-import nl.colorize.multimedialib.renderer.webgl.WebGL;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import org.teavm.jso.browser.Window;
@@ -44,7 +44,7 @@ public class TeaRenderer implements Renderer {
 
     @Override
     public void start(Scene initialScene, ErrorHandler errorHandler) {
-        TeaMediaLoader mediaLoader = new TeaMediaLoader(graphics);
+        TeaMediaLoader mediaLoader = new TeaMediaLoader();
         TeaNetwork network = new TeaNetwork();
 
         inputDevice.bindEventHandlers();
@@ -53,8 +53,8 @@ public class TeaRenderer implements Renderer {
         context = new SceneContext(this, mediaLoader, inputDevice, network);
         context.changeScene(initialScene);
 
-        Browser.prepareAnimationLoop();
-        Browser.registerErrorHandler(error -> handleError(errorHandler, error));
+        Browser.getBrowserBridge().prepareAnimationLoop();
+        Browser.getBrowserBridge().registerErrorHandler(error -> handleError(errorHandler, error));
         Window.requestAnimationFrame(this::onAnimationFrame);
     }
 
@@ -95,7 +95,7 @@ public class TeaRenderer implements Renderer {
 
     private void renderFrame() {
         context.getFrameStats().markStart(FrameStats.PHASE_FRAME_RENDER);
-        context.getStage().visit(graphics, context.getSceneTime());
+        context.getStage().visit(graphics);
         context.getFrameStats().markEnd(FrameStats.PHASE_FRAME_RENDER);
     }
 
@@ -120,27 +120,22 @@ public class TeaRenderer implements Renderer {
     }
 
     @Override
+    public void takeScreenshot(FilePointer dest) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public String toString() {
-        if (graphics instanceof HtmlCanvasGraphics) {
-            return "HTML5 Canvas renderer";
-        } else if (graphics instanceof WebGL) {
-            return "WebGL renderer";
-        } else if (graphics instanceof PixiGraphics) {
-            return "Pixi.js renderer";
-        } else if (graphics instanceof ThreeGraphics) {
-            return "Three.js renderer";
-        } else {
-            return "TeaVM renderer";
-        }
+        return switch (graphics) {
+            case HtmlCanvasGraphics canvas-> "HTML5 Canvas renderer";
+            case PixiGraphics pixi -> "Pixi.js renderer";
+            case ThreeGraphics three -> "Three.js renderer";
+            default -> "TeaVM renderer";
+        };
     }
 
     public static TeaRenderer withCanvas(DisplayMode displayMode) {
         TeaGraphics graphics = new HtmlCanvasGraphics(displayMode.canvas());
-        return new TeaRenderer(displayMode, graphics);
-    }
-
-    public static TeaRenderer withWebGL(GraphicsMode graphicsMode, DisplayMode displayMode) {
-        TeaGraphics graphics = new WebGL(graphicsMode, displayMode.canvas());
         return new TeaRenderer(displayMode, graphics);
     }
 

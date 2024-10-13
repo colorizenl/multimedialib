@@ -6,9 +6,11 @@
 
 package nl.colorize.multimedialib.renderer.java2d;
 
+import nl.colorize.multimedialib.math.Size;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
+import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.Network;
@@ -37,9 +39,14 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.image.BufferStrategy;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static java.awt.image.BufferedImage.TYPE_INT_ARGB;
 
 /**
  * Implementation of a renderer that uses APIs from the Java standard library.
@@ -82,7 +89,7 @@ public class Java2DRenderer implements Renderer {
 
     @Override
     public void start(Scene initialScene, ErrorHandler errorHandler) {
-        window = initializeWindow(windowOptions);
+        window = initializeWindow();
         input = initializeInput();
         mediaLoader = new StandardMediaLoader();
         graphicsContext = new Java2DGraphicsContext(canvas, StandardMediaLoader.fontCache);
@@ -96,7 +103,7 @@ public class Java2DRenderer implements Renderer {
         renderingThread.start();
     }
 
-    private JFrame initializeWindow(WindowOptions windowOptions) {
+    private JFrame initializeWindow() {
         window = new JFrame();
         window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         window.setResizable(true);
@@ -106,7 +113,7 @@ public class Java2DRenderer implements Renderer {
         window.addComponentListener(createResizeListener());
         window.setTitle(windowOptions.getTitle());
         window.setIconImage(loadIcon(windowOptions));
-        window.getContentPane().setPreferredSize(new Dimension(canvas.getWidth(), canvas.getHeight()));
+        window.getContentPane().setPreferredSize(getWindowSize());
         if (windowOptions.isFullscreen()) {
             SwingUtils.goFullScreen(window);
         }
@@ -120,6 +127,11 @@ public class Java2DRenderer implements Renderer {
         }
 
         return window;
+    }
+
+    private Dimension getWindowSize() {
+        Size windowSize = windowOptions.getWindowSize().orElse(canvas.getSize());
+        return new Dimension(windowSize.width(), windowSize.height());
     }
 
     private AWTInput initializeInput() {
@@ -206,7 +218,7 @@ public class Java2DRenderer implements Renderer {
 
             Graphics2D g2 = Utils2D.createGraphics(bufferGraphics, ANTI_ALIASING, BILINEAR_SCALING);
             graphicsContext.bind(g2);
-            context.getStage().visit(graphicsContext, context.getSceneTime());
+            context.getStage().visit(graphicsContext);
             blitGraphicsContext(windowBuffer);
             graphicsContext.dispose();
 
@@ -256,6 +268,25 @@ public class Java2DRenderer implements Renderer {
     @Override
     public void terminate() {
         System.exit(0);
+    }
+
+    @Override
+    public void takeScreenshot(FilePointer dest) {
+        Java2DGraphicsContext screenshotContext = new Java2DGraphicsContext(canvas,
+            StandardMediaLoader.fontCache);
+        BufferedImage image = new BufferedImage(window.getWidth(), window.getHeight(), TYPE_INT_ARGB);
+        Graphics2D g2 = Utils2D.createGraphics(image, false, false);
+        screenshotContext.bind(g2);
+        context.getStage().visit(screenshotContext);
+        screenshotContext.dispose();
+
+        try {
+            File desktop = Platform.getUserDesktopDir();
+            File file = new File(desktop, dest.path());
+            Utils2D.savePNG(image, file);
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Failed to save screenshot", e);
+        }
     }
 
     @Override

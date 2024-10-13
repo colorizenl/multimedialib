@@ -30,7 +30,9 @@ import java.util.stream.Stream;
 @Setter
 public class Text implements Graphic2D {
 
-    private final DisplayListLocation location;
+    protected Graphic2D parent;
+    private Transform transform;
+
     private List<String> lines;
     private FontFace font;
     private Align align;
@@ -48,13 +50,14 @@ public class Text implements Graphic2D {
     private static final float ESTIMATED_LINE_HEIGHT_FACTOR = 1.7f;
 
     public Text(String text, FontFace font, Align align, int lineWidth) {
-        this.location = new DisplayListLocation(this);
+        this.transform = new Transform();
+
         this.lines = Collections.emptyList();
         this.font = font;
         this.align = align;
         this.lineWidth = lineWidth;
         //TODO the font shouldn't be null, but we used this in some of the tests.
-        this.lineHeight = font == null ? 10f : font.style().size() * ESTIMATED_LINE_HEIGHT_FACTOR;
+        this.lineHeight = font == null ? 10f : font.size() * ESTIMATED_LINE_HEIGHT_FACTOR;
 
         setText(text);
     }
@@ -124,7 +127,7 @@ public class Text implements Graphic2D {
 
     @Override
     public Rect getStageBounds() {
-        Transform globalTransform = getGlobalTransform();
+        Transform globalTransform = calculateGlobalTransform();
         Point2D position = globalTransform.getPosition();
 
         int longestLine = lines.stream()
@@ -133,12 +136,12 @@ public class Text implements Graphic2D {
             .orElse(1);
 
         float approximateWidth = longestLine * estimateCharWidth();
-        float approximateHeight = font.style().size() * lines.size();
+        float approximateHeight = font.size() * lines.size();
         return Rect.around(position, approximateWidth, approximateHeight);
     }
 
     private float estimateCharWidth() {
-        return font.style().size() * ESTIMATED_CHAR_WIDTH_FACTOR;
+        return font.size() * ESTIMATED_CHAR_WIDTH_FACTOR;
     }
 
     @Override

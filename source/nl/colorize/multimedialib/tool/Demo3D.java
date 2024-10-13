@@ -62,7 +62,7 @@ public class Demo3D implements Scene, ErrorHandler {
     public void start(SceneContext context) {
         this.context = context;
         MediaLoader mediaLoader = context.getMediaLoader();
-        font = mediaLoader.loadDefaultFont(WHITE);
+        font = mediaLoader.loadDefaultFont(12, WHITE);
         logo = mediaLoader.loadImage(LOGO_FILE);
 
         World3D stage = context.getStage().getWorld();

@@ -9,9 +9,8 @@ package nl.colorize.multimedialib.math;
 import com.google.common.base.Preconditions;
 
 /**
- * Rectangular region with integer coordinates, typically used to describe
- * a pixel region within an image. Unlike {@link Rect}, this class does
- * <em>not</em> allow negative coordinates.
+ * Rectangular region with integer coordinates. Does not allow negative
+ * coordinates. Instances are immutable.
  */
 public record Region(int x, int y, int width, int height) {
 

@@ -12,6 +12,7 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Pointer;
+import nl.colorize.util.LogHelper;
 import nl.colorize.util.Subscribable;
 import org.teavm.jso.JSObject;
 import org.teavm.jso.JSProperty;
@@ -26,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * Captures browser events for various input methods, and makes them accessible
@@ -35,6 +37,7 @@ import java.util.Set;
  */
 public class TeaInputDevice implements InputDevice {
 
+    private BrowserBridge bridge;
     private Canvas canvas;
     private TeaGraphics graphics;
 
@@ -110,7 +113,11 @@ public class TeaInputDevice implements InputDevice {
             // the same keycode for both "+" and "=".
             .build();
 
+    private static final String CONTAINER = "#multimediaLibContainer";
+    private static final Logger LOGGER = LogHelper.getLogger(TeaInputDevice.class);
+
     public TeaInputDevice(Canvas canvas, TeaGraphics graphics) {
+        this.bridge = Browser.getBrowserBridge();
         this.canvas = canvas;
         this.graphics = graphics;
 
@@ -121,7 +128,7 @@ public class TeaInputDevice implements InputDevice {
 
     public void bindEventHandlers() {
         Window window = Window.current();
-        HTMLElement container = window.getDocument().querySelector("#multimediaLibContainer");
+        HTMLElement container = window.getDocument().querySelector(CONTAINER);
 
         container.addEventListener("mousedown", this::onMouseEvent);
         container.addEventListener("mouseup", this::onMouseEvent);
@@ -131,7 +138,6 @@ public class TeaInputDevice implements InputDevice {
         container.addEventListener("custom:touchmove", this::onCustomTouchEvent, true);
         container.addEventListener("custom:touchend", this::onCustomTouchEvent, true);
         container.addEventListener("custom:touchcancel", this::onCustomTouchEvent, true);
-
         window.addEventListener("keydown", this::onKeyDown);
         window.addEventListener("keyup", this::onKeyUp);
     }
@@ -166,16 +172,12 @@ public class TeaInputDevice implements InputDevice {
     private void onKeyDown(Event event) {
         KeyboardEvent keyboardEvent = (KeyboardEvent) event;
         keysDown.add(keyboardEvent.getKeyCode());
-
-        event.preventDefault();
         event.stopPropagation();
     }
 
     private void onKeyUp(Event event) {
         KeyboardEvent keyboardEvent = (KeyboardEvent) event;
         keysUp.add(keyboardEvent.getKeyCode());
-
-        event.preventDefault();
         event.stopPropagation();
     }
 
@@ -236,7 +238,7 @@ public class TeaInputDevice implements InputDevice {
 
     @Override
     public boolean isTouchAvailable() {
-        return Browser.isTouchSupported();
+        return bridge.isTouchSupported();
     }
 
     @Override
@@ -260,7 +262,7 @@ public class TeaInputDevice implements InputDevice {
     public Subscribable<String> requestTextInput(String label, String initialValue) {
         Subscribable<String> subscribable = new Subscribable<>();
 
-        Browser.requestTextInput(label, initialValue, (name, value) -> {
+        bridge.requestTextInput(label, initialValue, (name, value) -> {
             subscribable.next(value);
         });
 
@@ -269,7 +271,13 @@ public class TeaInputDevice implements InputDevice {
 
     @Override
     public void fillClipboard(String text) {
-        Browser.writeClipboard(text);
+        ErrorCallback callback = errorMessage -> {
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                LOGGER.warning("Failed to write text to clipboard: " + text);
+            }
+        };
+
+        bridge.writeClipboard(text, callback);
     }
 
     @Override

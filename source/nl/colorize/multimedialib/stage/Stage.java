@@ -20,6 +20,7 @@ import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.util.LogHelper;
 
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -38,6 +39,7 @@ import java.util.logging.Logger;
 public class Stage {
 
     private Canvas canvas;
+    private Timer animationTimer;
     private FrameStats frameStats;
 
     private Container root;
@@ -50,6 +52,7 @@ public class Stage {
 
     public Stage(GraphicsMode graphicsMode, Canvas canvas, FrameStats frameStats) {
         this.canvas = canvas;
+        this.animationTimer = Timer.infinite();
         this.frameStats = frameStats;
 
         this.root = new Container(ROOT_CONTAINER_NAME);
@@ -84,10 +87,10 @@ public class Stage {
      * should be drawn. This method is called by the renderer following each
      * frame update.
      */
-    public void visit(StageVisitor visitor, Timer sceneTime) {
+    public void visit(StageVisitor visitor) {
         visitor.prepareStage(this);
         visitor.drawBackground(backgroundColor);
-        visitGraphic(root, visitor, sceneTime);
+        visitGraphic(root, root.getTransform(), visitor);
     }
 
     /**
@@ -96,8 +99,8 @@ public class Stage {
      * performance, this method will only recurse if the specified graphic is
      * currently visible.
      */
-    private void visitGraphic(Graphic2D graphic, StageVisitor visitor, Timer sceneTime) {
-        if (!shouldDraw(graphic, visitor)) {
+    private void visitGraphic(Graphic2D graphic, Transform globalTransform, StageVisitor visitor) {
+        if (!shouldDraw(graphic, globalTransform, visitor)) {
             return;
         }
 
@@ -106,14 +109,14 @@ public class Stage {
         // visible. The visible children are still updated once
         // we reach them while rendering.
         if (!(graphic instanceof Container)) {
-            graphic.updateGraphics(sceneTime);
+            graphic.updateGraphics(animationTimer);
         }
 
         switch (graphic) {
-            case Container container -> visitContainer(container, visitor, sceneTime);
-            case Sprite sprite -> visitor.drawSprite(sprite);
-            case Primitive primitive -> visitPrimitive(primitive, visitor);
-            case Text text -> visitor.drawText(text);
+            case Container container -> visitContainer(container, globalTransform, visitor);
+            case Sprite sprite -> visitor.drawSprite(sprite, globalTransform);
+            case Primitive primitive -> visitPrimitive(primitive, globalTransform, visitor);
+            case Text text -> visitor.drawText(text, globalTransform);
             default -> LOGGER.warning("Unknown graphics type: " + graphic.getClass());
         }
 
@@ -133,12 +136,12 @@ public class Stage {
      * for the container, and just perform the visibility check for the
      * container's children.
      */
-    private boolean shouldDraw(Graphic2D graphic, StageVisitor visitor) {
+    private boolean shouldDraw(Graphic2D graphic, Transform globalTransform, StageVisitor visitor) {
         if (visitor.shouldVisitAllGraphics() || graphic instanceof Container) {
             return true;
         }
 
-        if (!graphic.getTransform().isVisible() || !graphic.getGlobalTransform().isVisible()) {
+        if (!graphic.getTransform().isVisible() || !globalTransform.isVisible()) {
             return false;
         }
 
@@ -152,24 +155,29 @@ public class Stage {
         return graphic.getStageBounds().intersects(safeCanvasBounds);
     }
 
-    private void visitContainer(Container container, StageVisitor visitor, Timer sceneTime) {
-        visitor.visitContainer(container);
+    private void visitContainer(Container container, Transform globalTransform, StageVisitor visitor) {
+        visitor.visitContainer(container, globalTransform);
 
-        for (Graphic2D child : container.getChildren()) {
-            visitGraphic(child, visitor, sceneTime);
+        List<Graphic2D> children = (List<Graphic2D>) container.getChildren();
+
+        // Intentionally uses a classic for loop, to prevent potential
+        // issues with concurrent modification.
+        for (int i = 0; i < children.size(); i++) {
+            Transform childLocalTransform = children.get(i).getTransform();
+            Transform childGlobalTransform = globalTransform.combine(childLocalTransform);
+            visitGraphic(children.get(i), childGlobalTransform, visitor);
         }
     }
 
-    private void visitPrimitive(Primitive graphic, StageVisitor visitor) {
-        Transform globalTransform = graphic.getGlobalTransform();
+    private void visitPrimitive(Primitive graphic, Transform globalTransform, StageVisitor visitor) {
         Shape displayedShape = graphic.getShape().reposition(globalTransform.getPosition());
 
         switch (displayedShape) {
-            case Line line -> visitor.drawLine(graphic, line);
-            case SegmentedLine sLine -> visitor.drawSegmentedLine(graphic, sLine);
-            case Rect rect -> visitor.drawRect(graphic, rect);
-            case Circle circle -> visitor.drawCircle(graphic, circle);
-            case Polygon polygon -> visitor.drawPolygon(graphic, polygon);
+            case Line line -> visitor.drawLine(graphic, line, globalTransform);
+            case SegmentedLine sLine -> visitor.drawSegmentedLine(graphic, sLine, globalTransform);
+            case Rect rect -> visitor.drawRect(graphic, rect, globalTransform);
+            case Circle circle -> visitor.drawCircle(graphic, circle, globalTransform);
+            case Polygon polygon -> visitor.drawPolygon(graphic, polygon, globalTransform);
             default -> LOGGER.warning("Unknown primitive: " + displayedShape.getClass());
         }
     }

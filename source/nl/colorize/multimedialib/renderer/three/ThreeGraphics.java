@@ -19,6 +19,7 @@ import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
+import nl.colorize.multimedialib.stage.Transform;
 
 /**
  * Renders 2D and 3D graphics using the <a href="https://threejs.org">three.js</a>
@@ -60,7 +61,7 @@ public class ThreeGraphics implements TeaGraphics {
     }
 
     @Override
-    public void visitContainer(Container container) {
+    public void visitContainer(Container container, Transform globalTransform) {
         //TODO
     }
 
@@ -70,37 +71,37 @@ public class ThreeGraphics implements TeaGraphics {
     }
 
     @Override
-    public void drawSprite(Sprite sprite) {
+    public void drawSprite(Sprite sprite, Transform globalTransform) {
         //TODO
     }
 
     @Override
-    public void drawLine(Primitive graphic, Line line) {
+    public void drawLine(Primitive graphic, Line line, Transform globalTransform) {
         //TODO
     }
 
     @Override
-    public void drawSegmentedLine(Primitive graphic, SegmentedLine line) {
+    public void drawSegmentedLine(Primitive graphic, SegmentedLine line, Transform globalTransform) {
         //TODO
     }
 
     @Override
-    public void drawRect(Primitive graphic, Rect rect) {
+    public void drawRect(Primitive graphic, Rect rect, Transform globalTransform) {
         //TODO
     }
 
     @Override
-    public void drawCircle(Primitive graphic, Circle circle) {
+    public void drawCircle(Primitive graphic, Circle circle, Transform globalTransform) {
         //TODO
     }
 
     @Override
-    public void drawPolygon(Primitive graphic, Polygon polygon) {
+    public void drawPolygon(Primitive graphic, Polygon polygon, Transform globalTransform) {
         //TODO
     }
 
     @Override
-    public void drawText(Text text) {
+    public void drawText(Text text, Transform globalTransform) {
         //TODO
     }
 

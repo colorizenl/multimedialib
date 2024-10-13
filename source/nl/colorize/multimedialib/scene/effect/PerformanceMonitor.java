@@ -63,8 +63,8 @@ public class PerformanceMonitor implements Scene {
         frameDataContainer = new Container();
         container.addChild(frameDataContainer);
 
-        FontFace font = context.getMediaLoader().loadDefaultFont(WHITE);
-        framerate = new Text("", font.derive(30, true), Align.RIGHT);
+        FontFace font = context.getMediaLoader().loadDefaultFont(12, WHITE);
+        framerate = new Text("", font.derive(30), Align.RIGHT);
         framerate.getTransform().setPosition(290, 30);
         container.addChild(framerate);
 

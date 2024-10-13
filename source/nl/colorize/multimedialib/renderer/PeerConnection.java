@@ -6,8 +6,8 @@
 
 package nl.colorize.multimedialib.renderer;
 
-import nl.colorize.multimedialib.math.Buffer;
 import nl.colorize.multimedialib.renderer.teavm.PeerMessage;
+import nl.colorize.util.MessageQueue;
 
 /**
  * Access to a currently active peer-to-peer connection, which can be obtained
@@ -33,5 +33,5 @@ public interface PeerConnection {
     /**
      * Returns all received messages from all connected peers.
      */
-    public Buffer<PeerMessage> getReceivedMessages();
+    public MessageQueue<PeerMessage> getReceivedMessages();
 }

@@ -8,6 +8,7 @@ package nl.colorize.multimedialib.stage;
 
 import lombok.Getter;
 import lombok.Setter;
+import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Shape;
 import nl.colorize.multimedialib.scene.Timer;
@@ -25,13 +26,16 @@ import nl.colorize.multimedialib.scene.Timer;
 @Setter
 public class Primitive implements Graphic2D {
 
-    private final DisplayListLocation location;
+    protected Graphic2D parent;
+    private Transform transform;
+
     private Shape shape;
     private ColorRGB color;
     private float stroke;
 
     public Primitive(Shape shape, ColorRGB color) {
-        this.location = new DisplayListLocation(this);
+        this.transform = new Transform();
+
         this.shape = shape;
         this.color = color;
         this.stroke = 1f;
@@ -44,7 +48,7 @@ public class Primitive implements Graphic2D {
 
     @Override
     public Rect getStageBounds() {
-        Transform globalTransform = getGlobalTransform();
+        Transform globalTransform = calculateGlobalTransform();
         return shape.reposition(globalTransform.getPosition()).getBoundingBox();
     }
 
@@ -54,6 +58,10 @@ public class Primitive implements Graphic2D {
 
     @Override
     public String toString() {
-        return shape.getClass().getSimpleName();
+        if (shape instanceof Rect || shape instanceof Circle) {
+            return shape.getClass().getSimpleName() + " [" + shape + "]";
+        } else {
+            return shape.getClass().getSimpleName();
+        }
     }
 }

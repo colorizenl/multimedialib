@@ -74,7 +74,7 @@ public class JFXGraphics implements StageVisitor {
     }
 
     @Override
-    public void visitContainer(Container container) {
+    public void visitContainer(Container container, Transform globalTransform) {
     }
 
     @Override
@@ -84,11 +84,10 @@ public class JFXGraphics implements StageVisitor {
     }
 
     @Override
-    public void drawSprite(Sprite sprite) {
+    public void drawSprite(Sprite sprite, Transform transform) {
         JFXImage image = (JFXImage) sprite.getCurrentGraphics();
         Image fxImage = image.getImage();
         Region region = image.getRegion();
-        Transform transform = sprite.getGlobalTransform();
         float zoom = displayMode.canvas().getZoomLevel();
 
         if (transform.getMaskColor() != null) {
@@ -107,10 +106,8 @@ public class JFXGraphics implements StageVisitor {
     }
 
     @Override
-    public void drawLine(Primitive graphic, Line line) {
-        Transform transform = graphic.getGlobalTransform();
-
-        gc.setStroke(toColor(graphic.getColor(), transform.getAlpha()));
+    public void drawLine(Primitive graphic, Line line, Transform globalTransform) {
+        gc.setStroke(toColor(graphic.getColor(), globalTransform.getAlpha()));
         gc.beginPath();
         gc.moveTo(toScreenX(line.start().x()), toScreenY(line.start().y()));
         gc.lineTo(toScreenX(line.end().x()), toScreenY(line.end().y()));
@@ -119,11 +116,10 @@ public class JFXGraphics implements StageVisitor {
     }
 
     @Override
-    public void drawSegmentedLine(Primitive graphic, SegmentedLine line) {
+    public void drawSegmentedLine(Primitive graphic, SegmentedLine line, Transform globalTransform) {
         List<Point2D> points = line.points();
-        Transform transform = graphic.getGlobalTransform();
 
-        gc.setStroke(toColor(graphic.getColor(), transform.getAlpha()));
+        gc.setStroke(toColor(graphic.getColor(), globalTransform.getAlpha()));
         gc.beginPath();
         gc.moveTo(toScreenX(points.getFirst().x()), toScreenY(points.getFirst().y()));
         for (int i = 1; i < points.size(); i++) {
@@ -134,32 +130,29 @@ public class JFXGraphics implements StageVisitor {
     }
 
     @Override
-    public void drawRect(Primitive graphic, Rect rect) {
-        Transform transform = graphic.getGlobalTransform();
+    public void drawRect(Primitive graphic, Rect rect, Transform globalTransform) {
         float screenX = toScreenX(rect.x());
         float screenY = toScreenY(rect.y());
         float screenWidth = toScreenX(rect.getEndX()) - screenX;
         float screenHeight = toScreenY(rect.getEndY()) - screenY;
 
-        gc.setFill(toColor(graphic.getColor(), transform.getAlpha()));
+        gc.setFill(toColor(graphic.getColor(), globalTransform.getAlpha()));
         gc.fillRect(screenX, screenY, screenWidth, screenHeight);
     }
 
     @Override
-    public void drawCircle(Primitive graphic, Circle circle) {
-        Transform transform = graphic.getGlobalTransform();
+    public void drawCircle(Primitive graphic, Circle circle, Transform globalTransform) {
         float screenX0 = toScreenX(circle.center().x() - circle.radius());
         float screenY0 = toScreenY(circle.center().y() - circle.radius());
         float screenX1 = toScreenX(circle.center().x() + circle.radius());
         float screenY1 = toScreenY(circle.center().y() + circle.radius());
 
-        gc.setFill(toColor(graphic.getColor(), transform.getAlpha()));
+        gc.setFill(toColor(graphic.getColor(), globalTransform.getAlpha()));
         gc.fillOval(screenX0, screenY0, screenX1 - screenX0, screenY1 - screenY0);
     }
 
     @Override
-    public void drawPolygon(Primitive graphic, Polygon polygon) {
-        Transform transform = graphic.getGlobalTransform();
+    public void drawPolygon(Primitive graphic, Polygon polygon, Transform globalTransform) {
         double[] screenX = new double[polygon.getNumPoints()];
         double[] screenY = new double[polygon.getNumPoints()];
 
@@ -168,24 +161,23 @@ public class JFXGraphics implements StageVisitor {
             screenX[i] = toScreenY(polygon.getPointY(i));
         }
 
-        gc.setFill(toColor(graphic.getColor(), transform.getAlpha()));
+        gc.setFill(toColor(graphic.getColor(), globalTransform.getAlpha()));
         gc.fillPolygon(screenX, screenY, polygon.getNumPoints());
     }
 
     @Override
-    public void drawText(Text text) {
+    public void drawText(Text text, Transform globalTransform) {
         FontFace scaled = text.getFont().scale(displayMode.canvas());
         Font font = media.getFont(scaled);
-        Transform transform = text.getGlobalTransform();
 
         gc.setFont(font);
         gc.setTextAlign(toTextAlignment(text.getAlign()));
-        gc.setFill(toColor(scaled.style().color()));
-        gc.setGlobalAlpha(transform.getAlpha() / 100.0);
+        gc.setFill(toColor(scaled.color()));
+        gc.setGlobalAlpha(globalTransform.getAlpha() / 100.0);
 
         text.forLines((i, line) -> {
-            float screenX = toScreenX(transform.getX());
-            float screenY = toScreenY(transform.getY() + i * text.getLineHeight());
+            float screenX = toScreenX(globalTransform.getX());
+            float screenY = toScreenY(globalTransform.getY() + i * text.getLineHeight());
             gc.fillText(line, screenX, screenY);
         });
 

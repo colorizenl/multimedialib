@@ -6,38 +6,33 @@
 
 package nl.colorize.multimedialib.stage;
 
+import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 
 /**
- * Describes a TrueType or FreeType font that can be used by the renderer to
- * draw text. The font consists of the font family and the font style.
+ * Describes a TrueType or FreeType font that can be used by the renderer
+ * to draw text. The font consists of the font family and the font style.
  * <p>
- * MultimediaLib does not rely on system fonts, any fonts used in the
- * application must be loaded explicitly using
- * {@link MediaLoader#loadFont(FilePointer, String, FontStyle)}, which will
- * loads the font from a resource file packaged with the application.
- * Applications should therefore not attempt to create instances of this class
- * directly, instances are obtained from the {@link MediaLoader} when the font
- * is first loaded.
+ * MultimediaLib applications should not make assumptions on which system
+ * fonts are available on the current platform. All fonts used by the
+ * application should be included in the application's resource files.
+ * Fonts can then be loaded from these files using {@link MediaLoader}.
  */
-public record FontFace(FilePointer origin, String family, FontStyle style) {
+public record FontFace(FilePointer origin, String family, int size, ColorRGB color) {
 
-    public FontFace derive(FontStyle style) {
-        return new FontFace(origin, family, style);
+    public FontFace {
+        Preconditions.checkArgument(!family.isEmpty(), "Missing font family");
+        Preconditions.checkArgument(size >= 1, "Invalid font size");
     }
 
     public FontFace derive(int size) {
-        return derive(new FontStyle(size, style.bold(), style.color()));
-    }
-
-    public FontFace derive(int size, boolean bold) {
-        return derive(new FontStyle(size, bold, style.color()));
+        return new FontFace(origin, family, size, color);
     }
 
     public FontFace derive(ColorRGB color) {
-        return derive(new FontStyle(style.size(), style.bold(), color));
+        return new FontFace(origin, family, size, color);
     }
 
     /**
@@ -46,13 +41,12 @@ public record FontFace(FilePointer origin, String family, FontStyle style) {
      * indicated in the font style should also be scaled accordingly.
      */
     public FontFace scale(Canvas canvas) {
-        int actualDisplaySize = Math.round(canvas.getZoomLevel() * style.size());
-        FontStyle derivedStyle = new FontStyle(actualDisplaySize, style.bold(), style.color());
-        return derive(derivedStyle);
+        int actualDisplaySize = Math.round(canvas.getZoomLevel() * size);
+        return derive(actualDisplaySize);
     }
 
     @Override
     public String toString() {
-        return family + " @ " + style;
+        return family;
     }
 }

@@ -7,9 +7,8 @@
 package nl.colorize.multimedialib.math;
 
 /**
- * Immutable representation of an angle in degrees. Angles are normalized to
- * the range between 0 and 360, so an angle of 20 degrees is considered
- * equivalent to an angle of 380 degrees.
+ * Immutable angle in degrees, in the range between 0° and 360°. Angles are
+ * normalized upon creation, so {@code new Angle(20).equals(new Angle(380)}.
  */
 public record Angle(float degrees) {
 
@@ -57,6 +56,6 @@ public record Angle(float degrees) {
 
     @Override
     public String toString() {
-        return Math.round(degrees) + "\u00B0";
+        return Math.round(degrees) + "°";
     }
 }

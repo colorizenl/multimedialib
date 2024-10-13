@@ -8,19 +8,19 @@ package nl.colorize.multimedialib.renderer.java2d;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
-import nl.colorize.multimedialib.math.Buffer;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.headless.HeadlessAudio;
 import nl.colorize.multimedialib.stage.Audio;
+import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontFace;
-import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.LoadStatus;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.util.LogHelper;
+import nl.colorize.util.MessageQueue;
 import nl.colorize.util.Platform;
 import nl.colorize.util.PropertyUtils;
 import nl.colorize.util.ResourceFile;
@@ -49,6 +49,8 @@ import java.util.logging.Logger;
  */
 public class StandardMediaLoader implements MediaLoader {
 
+    private MessageQueue<LoadStatus> loadStatus;
+
     // The font cache is global because loaded AWT fonts need to
     // be registered with the graphics environment.
     public static Map<String, Font> fontFamilies = new HashMap<>();
@@ -56,6 +58,10 @@ public class StandardMediaLoader implements MediaLoader {
 
     private static final String APPLICATION_DATA_FILE_NAME = "data.properties";
     private static final Logger LOGGER = LogHelper.getLogger(StandardMediaLoader.class);
+
+    public StandardMediaLoader() {
+        this.loadStatus = new MessageQueue<>();
+    }
 
     /**
      * Returns a {@link ResourceFile} for the resource file at the specified
@@ -108,7 +114,7 @@ public class StandardMediaLoader implements MediaLoader {
     }
 
     @Override
-    public FontFace loadFont(FilePointer file, String family, FontStyle style) {
+    public FontFace loadFont(FilePointer file, String family, int size, ColorRGB color) {
         ResourceFile source = locateFile(file);
 
         try (InputStream stream = source.openStream()) {
@@ -119,9 +125,7 @@ public class StandardMediaLoader implements MediaLoader {
                 GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(font);
             }
 
-            // Immediately derive a version of the font with the correct
-            // style, since we have no idea what size the loaded font has.
-            return new FontFace(file, family, style).derive(style);
+            return new FontFace(file, family, size, color);
         } catch (IOException | FontFormatException e) {
             throw new MediaException("Cannot load font from " + file.path(), e);
         }
@@ -180,8 +184,8 @@ public class StandardMediaLoader implements MediaLoader {
     }
 
     @Override
-    public Buffer<LoadStatus> getLoadStatus() {
-        return new Buffer<>();
+    public MessageQueue<LoadStatus> getLoadStatus() {
+        return loadStatus;
     }
 
     private static Font prepareFont(FontFace key) {
@@ -190,7 +194,6 @@ public class StandardMediaLoader implements MediaLoader {
             LOGGER.warning("Unknown font family: " + key.family());
             baseFont = new Font("sans-serif", Font.PLAIN, 10);
         }
-        int variant = key.style().bold() ? Font.BOLD : Font.PLAIN;
-        return baseFont.deriveFont(variant, key.style().size());
+        return baseFont.deriveFont(Font.PLAIN, key.size());
     }
 }

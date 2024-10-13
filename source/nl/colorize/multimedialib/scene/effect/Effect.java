@@ -19,6 +19,7 @@ import nl.colorize.multimedialib.stage.Graphic2D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Text;
+import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.TextUtils;
 import nl.colorize.util.animation.Interpolation;
@@ -225,7 +226,7 @@ public final class Effect implements Scene {
 
         for (Pointer pointer : context.getInput().getPointers()) {
             for (ClickHandler clickHandler : clickHandlers) {
-                if (pointer.isReleased(clickHandler.bounds.get()) && isVisible()) {
+                if (pointer.isReleased(clickHandler.bounds.get()) && checkVisible()) {
                     clickHandler.action.run();
                     context.getInput().clearPointerState();
                 }
@@ -233,13 +234,14 @@ public final class Effect implements Scene {
         }
     }
 
-    private boolean isVisible() {
+    private boolean checkVisible() {
         if (linkedGraphics.isEmpty()) {
             return true;
         }
 
         return linkedGraphics.stream()
-            .anyMatch(graphic -> graphic.getGlobalTransform().isVisible());
+            .map(Graphic2D::calculateGlobalTransform)
+            .anyMatch(Transform::isVisible);
     }
 
     private boolean checkCompleted() {
@@ -258,7 +260,7 @@ public final class Effect implements Scene {
         }
 
         for (Graphic2D graphic : linkedGraphics) {
-            graphic.getLocation().detach();
+            graphic.detach();
         }
     }
 

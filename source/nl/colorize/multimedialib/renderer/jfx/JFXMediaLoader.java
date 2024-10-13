@@ -15,8 +15,8 @@ import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
 import nl.colorize.multimedialib.stage.Audio;
+import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontFace;
-import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.stats.Cache;
 
@@ -32,7 +32,7 @@ import java.util.Map;
  * Everything <em>not</em> related to graphics is delegated to the Java2D
  * renderer.
  */
-public class JFXMediaLoader extends  StandardMediaLoader {
+public class JFXMediaLoader extends StandardMediaLoader {
 
     private Map<String, Font> loadedFontFamilies;
     private Cache<FontFace, Font> fontCache;
@@ -69,8 +69,8 @@ public class JFXMediaLoader extends  StandardMediaLoader {
     }
 
     @Override
-    public FontFace loadFont(FilePointer file, String family, FontStyle style) {
-        FontFace font = new FontFace(file, family, style);
+    public FontFace loadFont(FilePointer file, String family, int size, ColorRGB color) {
+        FontFace font = new FontFace(file, family, size, color);
         // Make sure the font is cached.
         getFont(font);
         return font;
@@ -89,8 +89,7 @@ public class JFXMediaLoader extends  StandardMediaLoader {
             }
         }
 
-        FontWeight weight = key.style().bold() ? FontWeight.BOLD : FontWeight.NORMAL;
-        return Font.font(family.getFamily(), weight, key.style().size());
+        return Font.font(family.getFamily(), FontWeight.NORMAL, key.size());
     }
 
     protected Font getFont(FontFace key) {

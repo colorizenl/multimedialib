@@ -9,8 +9,8 @@ package nl.colorize.multimedialib.math;
 import nl.colorize.util.animation.Interpolation;
 
 /**
- * Describes a point with X and Y coordinates within a two-dimensional space.
- * Point coordinates have float precision, and point instances are immutable.
+ * Immutable point within a two-dimensional space, with its X and Y coordinates
+ * defined with float precision. Negative coordinates are permitted.
  */
 public record Point2D(float x, float y) {
 

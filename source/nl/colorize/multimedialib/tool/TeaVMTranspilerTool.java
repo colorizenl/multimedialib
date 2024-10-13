@@ -69,6 +69,9 @@ public class TeaVMTranspilerTool {
     @Arg(usage = "Inserts <meta> tags into the HTML, passed as name=value.", required = false)
     protected String meta;
 
+    @Arg(usage = "Overrides the application with the demo application, for testing purposes.")
+    protected boolean demo;
+
     private static final ResourceFile INDEX_FILE = new ResourceFile("browser/index.html");
     private static final ResourceFile RESOURCES_LIST = new ResourceFile("browser/browser-resources.txt");
     private static final ResourceFile JS_LIST = new ResourceFile("browser/javascript-libraries.txt");
@@ -129,6 +132,10 @@ public class TeaVMTranspilerTool {
     }
 
     private void checkMainClass() {
+        if (demo) {
+            mainClassName = TeaDemoLauncher.class.getName();
+        }
+
         try {
             Class<?> mainClass = Class.forName(mainClassName);
             mainClass.getDeclaredMethod("main", String[].class);

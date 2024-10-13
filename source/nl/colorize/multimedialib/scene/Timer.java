@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.scene;
 
 import com.google.common.base.Preconditions;
+import lombok.Getter;
 import nl.colorize.util.TextUtils;
 
 /**
@@ -17,6 +18,7 @@ import nl.colorize.util.TextUtils;
  * The timer is based on float precision, meaning the timer can run for
  * about 2.5-3 hours before float precision errors start to occur.
  */
+@Getter
 public class Timer implements Updatable {
 
     private float position;
@@ -47,10 +49,6 @@ public class Timer implements Updatable {
 
     public float getTime() {
         return position;
-    }
-
-    public float getDuration() {
-        return duration;
     }
 
     public float getTimeRemaining() {

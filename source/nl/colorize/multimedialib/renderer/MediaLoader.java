@@ -7,15 +7,14 @@
 package nl.colorize.multimedialib.renderer;
 
 import com.google.common.base.Splitter;
-import nl.colorize.multimedialib.math.Buffer;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontFace;
-import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.LoadStatus;
 import nl.colorize.multimedialib.stage.PolygonModel;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
+import nl.colorize.util.MessageQueue;
 import nl.colorize.util.PropertyUtils;
 import nl.colorize.util.TranslationBundle;
 
@@ -61,22 +60,21 @@ public interface MediaLoader {
     public Audio loadAudio(FilePointer file);
 
     /**
-     * Loads a TrueType or FreeType font and converts it to a format that
-     * can be used by the renderer. The loaded font will be attached to the
-     * font family name specified in the font style.
+     * Loads a TrueType or FreeType font so the renderer can use that font
+     * for text rendering. This will return a font for the specified style,
+     * alternative styles can be derived from the returned font.
      *
      * @throws MediaException if the format is not supported by the renderer.
      */
-    public FontFace loadFont(FilePointer file, String family, FontStyle style);
+    public FontFace loadFont(FilePointer file, String family, int size, ColorRGB color);
 
     /**
      * Loads the default font, the open source font Open Sans. This is included
      * in MultimediaLib and therefore guaranteed to be always available.
      */
-    default FontFace loadDefaultFont(ColorRGB color) {
+    default FontFace loadDefaultFont(int size, ColorRGB color) {
         FilePointer file = new FilePointer("OpenSans-Regular.ttf");
-        FontStyle style = new FontStyle(12, false, color);
-        return loadFont(file, "Open Sans", style);
+        return loadFont(file, "Open Sans", size, color);
     }
 
     /**
@@ -161,5 +159,5 @@ public interface MediaLoader {
      * Returns a buffer containing the load status of all media files that
      * have been loaded by this {@link MediaLoader}.
      */
-    public Buffer<LoadStatus> getLoadStatus();
+    public MessageQueue<LoadStatus> getLoadStatus();
 }

@@ -121,7 +121,7 @@ public class Demo2D implements Scene, ErrorHandler {
         marios = new ArrayList<>();
         addMarios();
 
-        font = mediaLoader.loadDefaultFont(WHITE);
+        font = mediaLoader.loadDefaultFont(12, WHITE);
         audioClip = mediaLoader.loadAudio(AUDIO_FILE);
 
         initHUD();

@@ -11,9 +11,11 @@ import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.RendererLauncher;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.renderer.teavm.Browser;
-import nl.colorize.multimedialib.renderer.teavm.BrowserDOM;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.util.LogHelper;
+
+import java.util.logging.Logger;
 
 import static nl.colorize.multimedialib.tool.Demo2D.DEFAULT_CANVAS_HEIGHT;
 import static nl.colorize.multimedialib.tool.Demo2D.DEFAULT_CANVAS_WIDTH;
@@ -26,25 +28,33 @@ import static nl.colorize.multimedialib.tool.Demo2D.DEFAULT_CANVAS_WIDTH;
 public class TeaDemoLauncher {
 
     private static final int BROWSER_FRAMERATE = 60;
+    private static final Logger LOGGER = LogHelper.getLogger(TeaDemoLauncher.class);
 
     public static void main(String[] args) {
-        Browser.log("MultimediaLib - TeaVM Demo");
-        Browser.log("Screen size: " + Browser.getScreenWidth() + "x" + Browser.getScreenHeight());
-        Browser.log("Page size: " + Math.round(Browser.getPageWidth()) + "x" +
-            Math.round(Browser.getPageHeight()));
+        LOGGER.info("MultimediaLib - TeaVM Demo");
+
+        String rendererName = Browser.getBrowserBridge().getQueryParameter("renderer", "canvas");
+        LOGGER.info("Renderer: " + rendererName);
 
         Canvas canvas = new Canvas(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT, ScaleStrategy.balanced());
         DisplayMode displayMode = new DisplayMode(canvas, BROWSER_FRAMERATE);
+        Scene demo = initDemo();
 
-        String rendererName = BrowserDOM.getQueryString().getOptionalParameter("renderer", "canvas");
-
-        RendererLauncher.configure(displayMode)
-            .forBrowser2D(rendererName)
-            .start(initDemo(), TeaDemoLauncher::logError);
+        if (demo instanceof Demo3D) {
+            RendererLauncher.configure(displayMode)
+                .forBrowser3D(rendererName)
+                .start(demo, TeaDemoLauncher::logError);
+        } else {
+            RendererLauncher.configure(displayMode)
+                .forBrowser2D(rendererName)
+                .start(demo, TeaDemoLauncher::logError);
+        }
     }
 
     private static Scene initDemo() {
-        return switch (Browser.getMeta("demo", "2d")) {
+        String demo = Browser.getBrowserBridge().getMeta("demo", "2d");
+
+        return switch (demo) {
             case "2d" -> new Demo2D();
             case "3d" -> new Demo3D();
             default -> throw new UnsupportedOperationException("Unknown demo");
@@ -52,8 +62,8 @@ public class TeaDemoLauncher {
     }
 
     private static void logError(SceneContext context, Exception cause) {
-        Browser.log("----");
-        Browser.log(cause.getMessage());
-        Browser.log("----");
+        LOGGER.info("----");
+        LOGGER.info(cause.getMessage());
+        LOGGER.info("----");
     }
 }

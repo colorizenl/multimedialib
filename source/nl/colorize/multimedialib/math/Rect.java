@@ -9,10 +9,10 @@ package nl.colorize.multimedialib.math;
 import com.google.common.base.Preconditions;
 
 /**
- * Two-dimensional rectangle with coordinates defined with float precision.
- * Rectangles are specified using their top-left coordinate, width, and
- * height. Methods are provided for obtaining the rectangle's X1 and Y1
- * coordinates and its center.
+ * Immutable two-dimensional rectangle with float precision. Rectangles are
+ * specified using their top-left coordinate, width, and height. The
+ * rectangle's <em>location</em> permits negative coordinates, but its width
+ * and height cannot be negative.
  */
 public record Rect(float x, float y, float width, float height) implements Shape {
 
@@ -68,6 +68,17 @@ public record Rect(float x, float y, float width, float height) implements Shape
         return new Rect(x + offset.x(), y + offset.y(), width, height);
     }
 
+    /**
+     * Expands this rectangle by the specified amount, and returns the
+     * resulting new rectangle. The rectangle is expanded around its center,
+     * i.e. {@code r.getCenter().equals(r.expand(...).getCenter())}.
+     * Using a negative value for {@code amount} is possible and will result
+     * in a rectangle that is smaller than the original.
+     */
+    public Rect expand(float amount) {
+        return around(getCenter(), width + amount, height + amount);
+    }
+
     public Polygon toPolygon() {
         return new Polygon(
             x, y,
@@ -105,5 +116,14 @@ public record Rect(float x, float y, float width, float height) implements Shape
      */
     public static Rect around(Point2D center, float width, float height) {
         return new Rect(center.x() - width / 2f, center.y() - height / 2f, width, height);
+    }
+
+    /**
+     * Returns a rectangle that has the specified width and height, with its
+     * X and Y coordinates positioned so that the origin {@code (0, 0)} ends
+     * up as the center of the rectangle.
+     */
+    public static Rect around(float width, float height) {
+        return new Rect(-width / 2f, -height / 2f, width, height);
     }
 }

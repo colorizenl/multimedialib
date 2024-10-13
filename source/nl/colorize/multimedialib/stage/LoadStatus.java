@@ -6,28 +6,43 @@
 
 package nl.colorize.multimedialib.stage;
 
+import lombok.Getter;
+import lombok.Setter;
 import nl.colorize.multimedialib.renderer.FilePointer;
+import nl.colorize.util.Stopwatch;
 import nl.colorize.util.Subscribable;
-
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BooleanSupplier;
+import nl.colorize.util.TextUtils;
 
 /**
- * Tracks progress for media files that are loaded by the renderer. If the
- * renderer supports loading media files asynchronously, this can be used to
- * display a loading screen. If the renderer only supports loading media
- * files synchronously, media files will immediately be marked as loaded upon
- * creation.
+ * Tracks progress for media files that are loaded by the renderer. Can be
+ * used by applications to display a loading screen while the renderer is
+ * loading media files asynchronously.
+ * <p>
+ * A secondary use of this information is to provide performance statistics,
+ * since the information can be used to determine the loading time for every
+ * individual media asset, as well as the total loading time.
  */
-public record LoadStatus(FilePointer file, BooleanSupplier tracker) {
+@Getter
+@Setter
+public class LoadStatus {
 
-    public boolean isLoaded() {
-        return tracker.getAsBoolean();
+    private final FilePointer file;
+    private boolean loaded;
+    private float time;
+
+    private LoadStatus(FilePointer file) {
+        this.file = file;
+        this.loaded = false;
+        this.time = 0f;
     }
 
     @Override
     public String toString() {
-        return file.toString();
+        if (loaded) {
+            return file + "[" + TextUtils.numberFormat(time, 1) + "s]";
+        } else {
+            return file + "[loading]";
+        }
     }
 
     /**
@@ -35,8 +50,12 @@ public record LoadStatus(FilePointer file, BooleanSupplier tracker) {
      * operation represented by the {@link Subscribable}.
      */
     public static LoadStatus track(FilePointer file, Subscribable<?> operation) {
-        AtomicBoolean status = new AtomicBoolean(false);
-        operation.subscribe(event -> status.set(true));
-        return new LoadStatus(file, status::get);
+        LoadStatus loadStatus = new LoadStatus(file);
+        Stopwatch timer = new Stopwatch();
+        operation.subscribe(event -> {
+            loadStatus.setLoaded(true);
+            loadStatus.setTime(timer.tock() / 1000f);
+        });
+        return loadStatus;
     }
 }

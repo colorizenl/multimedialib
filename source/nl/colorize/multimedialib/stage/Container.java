@@ -6,11 +6,15 @@
 
 package nl.colorize.multimedialib.stage;
 
+import com.google.common.base.Preconditions;
 import lombok.Getter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.Timer;
+import nl.colorize.util.MessageQueue;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -31,22 +35,54 @@ import java.util.function.Consumer;
  * for information purposes. Trying to look up containers by name during each
  * frame will be too slow for most applications.
  */
+@Getter
 public class Container implements Graphic2D {
 
-    @Getter private DisplayListLocation location;
+    protected Graphic2D parent;
+    private List<Graphic2D> children;
+    private MessageQueue<Graphic2D> addedChildren;
+    private MessageQueue<Graphic2D> removedChildren;
+
     private String name;
+    private Transform transform;
 
     public Container(String name) {
-        this.location = new DisplayListLocation(this);
+        this.children = new ArrayList<>();
+        this.addedChildren = new MessageQueue<>();
+        this.removedChildren = new MessageQueue<>();
+
         this.name = name;
+        this.transform = new Transform();
     }
 
     public Container() {
         this(null);
     }
 
+    /**
+     * Adds the specified graphic to this container. When the graphic is
+     * rendered, it's transform properties will be interpreted relative to
+     * its container.
+     *
+     * @throws IllegalStateException if the child is already part of the
+     *         scene graph, but with a different parent.
+     * @throws IllegalArgumentException when trying to attach the container
+     *         to itself.
+     */
     public void addChild(Graphic2D child) {
-        child.getLocation().attach(this);
+        Preconditions.checkArgument(!equals(child), "Cannot attach parent to itself");
+        Preconditions.checkState(child.getParent() == null, "Already part of scene graph");
+
+        switch (child) {
+            case Container childContainer -> childContainer.parent = this;
+            case Sprite sprite -> sprite.parent = this;
+            case Primitive primitive -> primitive.parent = this;
+            case Text text -> text.parent = this;
+            default -> throw new UnsupportedOperationException("Unknown graphic: " + child);
+        }
+
+        children.add(child);
+        addedChildren.offer(child);
     }
 
     /**
@@ -78,35 +114,45 @@ public class Container implements Graphic2D {
     }
 
     public void removeChild(Graphic2D child) {
-        child.getLocation().detach();
+        if (!children.remove(child)) {
+            return;
+        }
+
+        switch (child) {
+            case Container childContainer -> childContainer.parent = null;
+            case Sprite sprite -> sprite.parent = null;
+            case Primitive primitive -> primitive.parent = null;
+            case Text text -> text.parent = null;
+            default -> throw new UnsupportedOperationException("Unknown graphic: " + child);
+        }
+
+        removedChildren.offer(child);
+        addedChildren.remove(child);
     }
 
     public void clearChildren() {
-        location.getRemovedChildren().push(location.getChildren());
-        location.getChildren().clear();
-        location.getAddedChildren().clear();
+        for (Graphic2D child : children) {
+            removedChildren.offer(child);
+        }
+        children.clear();
+        addedChildren.flush();
     }
 
     public Iterable<Graphic2D> getChildren() {
-        return location.getChildren();
+        return children;
     }
 
     /**
      * Invokes the specified callback function for all matching graphics
      * within this container.
-     *
-     * @deprecated This method requires the container to iterate over all
-     *             of its children, which has a performance impact if the
-     *             container is large and this is done every frame. Prefer
-     *             direct references to the relevant graphics over using
-     *             this method.
      */
     @SuppressWarnings("unchecked")
-    @Deprecated
     public <T extends Graphic2D> void forEach(Class<T> type, Consumer<T> callback) {
-        for (Graphic2D child : location.getChildren()) {
-            if (child.getClass() == type) {
-                callback.accept((T) child);
+        // Intentionally uses a classic for loop to be robust
+        // against concurrent modification.
+        for (int i = 0; i < children.size(); i++) {
+            if (children.get(i).getClass() == type) {
+                callback.accept((T) children.get(i));
             }
         }
     }
@@ -117,18 +163,18 @@ public class Container implements Graphic2D {
      */
     @Override
     public Rect getStageBounds() {
-        if (location.getChildren().isEmpty()) {
+        if (children.isEmpty()) {
             return new Rect(0f, 0f, 0f, 0f);
         }
 
-        Rect firstChildBounds = location.getChildren().getFirst().getStageBounds();
+        Rect firstChildBounds = children.getFirst().getStageBounds();
         float x0 = firstChildBounds.x();
         float y0 = firstChildBounds.y();
         float x1 = firstChildBounds.getEndX();
         float y1 = firstChildBounds.getEndY();
 
-        for (int i = 1; i < location.getChildren().size(); i++) {
-            Rect childBounds = location.getChildren().get(i).getStageBounds();
+        for (int i = 1; i < children.size(); i++) {
+            Rect childBounds = children.get(i).getStageBounds();
             x0 = Math.min(x0, childBounds.x());
             y0 = Math.min(y0, childBounds.y());
             x1 = Math.max(x1, childBounds.getEndX());
@@ -140,17 +186,19 @@ public class Container implements Graphic2D {
 
     @Override
     public void updateGraphics(Timer sceneTime) {
-        for (Graphic2D child : location.getChildren()) {
-            child.updateGraphics(sceneTime);
+        // Intentionally uses a classic for loop to be robust
+        // against concurrent modification.
+        for (int i = 0; i < children.size(); i++) {
+            children.get(i).updateGraphics(sceneTime);
         }
     }
 
     @Override
     public String toString() {
-        if (name == null) {
-            return "Container [" + location.getChildren().size() + "]";
+        if (name == null || name.isEmpty()) {
+            return "Container [" + children.size() + "]";
         } else {
-            return "Container [" + name + ", " + location.getChildren().size() + "]";
+            return "Container [" + name + ", " + children.size() + "]";
         }
     }
 }

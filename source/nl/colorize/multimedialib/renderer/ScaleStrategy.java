@@ -6,6 +6,8 @@
 
 package nl.colorize.multimedialib.renderer;
 
+import nl.colorize.multimedialib.math.Size;
+
 /**
  * Determines how the {@link Canvas} should be scaled and zoomed when viewed
  * on devices with different screen sizes, resolutions, and aspect ratios.
@@ -17,14 +19,22 @@ package nl.colorize.multimedialib.renderer;
 @FunctionalInterface
 public interface ScaleStrategy {
 
-    public float getZoomLevel(Canvas canvas);
+    default float getZoomLevel(Canvas canvas) {
+        Size preferredSize = canvas.getPreferredSize();
+        Size screenSize = canvas.getScreenSize();
+        float horizontalZoom = (float) screenSize.width() / (float) preferredSize.width();
+        float verticalZoom = (float) screenSize.height() / (float) preferredSize.height();
+        return getZoomLevel(horizontalZoom, verticalZoom);
+    }
+
+    public float getZoomLevel(float horizontalZoom, float verticalZoom);
 
     /**
      * Does not perform any scaling, and makes the canvas match the native
      * screen resolution and aspect ratio.
      */
     public static ScaleStrategy flexible() {
-        return canvas -> 1f;
+        return (horizontalZoom, verticalZoom) -> 1f;
     }
 
     /**
@@ -34,11 +44,7 @@ public interface ScaleStrategy {
      * the actual aspect ratio is different from the preferred aspect ratio.
      */
     public static ScaleStrategy scale() {
-        return canvas -> {
-            float horizontal = (float) canvas.getScreenWidth() / (float) canvas.getPreferredWidth();
-            float vertical = (float) canvas.getScreenHeight() / (float) canvas.getPreferredHeight();
-            return Math.max(horizontal, vertical);
-        };
+        return (horizontalZoom, verticalZoom) -> Math.max(horizontalZoom, verticalZoom);
     }
 
     /**
@@ -49,11 +55,7 @@ public interface ScaleStrategy {
      * aspect ratio.
      */
     public static ScaleStrategy fit() {
-        return canvas -> {
-            float horizontal = (float) canvas.getScreenWidth() / (float) canvas.getPreferredWidth();
-            float vertical = (float) canvas.getScreenHeight() / (float) canvas.getPreferredHeight();
-            return Math.min(horizontal, vertical);
-        };
+        return (horizontalZoom, verticalZoom) -> Math.min(horizontalZoom, verticalZoom);
     }
 
     /**
@@ -61,10 +63,6 @@ public interface ScaleStrategy {
      * {@link #scale()}.
      */
     public static ScaleStrategy balanced() {
-        return canvas -> {
-            float horizontal = (float) canvas.getScreenWidth() / (float) canvas.getPreferredWidth();
-            float vertical = (float) canvas.getScreenHeight() / (float) canvas.getPreferredHeight();
-            return (horizontal + vertical) / 2f;
-        };
+        return (horizontalZoom, verticalZoom) -> (horizontalZoom + verticalZoom) / 2f;
     }
 }

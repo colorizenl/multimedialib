@@ -9,11 +9,11 @@ package nl.colorize.multimedialib.scene.effect;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
 import nl.colorize.multimedialib.math.Line;
-import nl.colorize.multimedialib.math.Buffer;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.util.MessageQueue;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,14 +30,14 @@ public class SwipeTracker implements Scene {
 
     private float tolerance;
     private Map<String, Point2D> incompleteSwipes;
-    @Getter private Buffer<Line> swipes;
+    @Getter private MessageQueue<Line> swipes;
 
     public SwipeTracker(float tolerance) {
         Preconditions.checkArgument(tolerance >= 10f, "Invalid tolerance: " + tolerance);
 
         this.tolerance = tolerance;
         this.incompleteSwipes = new HashMap<>();
-        this.swipes = new Buffer<>();
+        this.swipes = new MessageQueue<>();
     }
 
     @Override
@@ -64,7 +64,7 @@ public class SwipeTracker implements Scene {
 
             if (start.distanceTo(position) >= tolerance) {
                 Line completedSwipe = new Line(start, position);
-                swipes.push(completedSwipe);
+                swipes.offer(completedSwipe);
             }
 
             incompleteSwipes.remove(pointer.getId());

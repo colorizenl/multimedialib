@@ -9,9 +9,9 @@ package nl.colorize.multimedialib.math;
 import static nl.colorize.multimedialib.math.Shape.EPSILON;
 
 /**
- * Describes a point with X, Y, and Z coordinates within a three-dimensional
- * space. Point coordinates have float precision, and point instances are
- * immutable.
+ * Immutable point within a three-dimensional space, with its X, Y, and Z
+ * coordinates defined with float precision. Negative coordinates are
+ * permitted.
  */
 public record Point3D(float x, float y, float z) {
 

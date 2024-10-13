@@ -66,4 +66,14 @@ public interface Renderer {
     public GraphicsMode getGraphicsMode();
 
     public DisplayMode getDisplayMode();
+
+    /**
+     * Takes a screenshot of the renderer's current graphics, then saves the
+     * screenshot to a PNG image. The location of {@code dest} is interpreted
+     * relative to the platform's default location for screenshots.
+     *
+     * @throws UnsupportedOperationException if this renderer does not support
+     *         taking screenshots at runtime.
+     */
+    public void takeScreenshot(FilePointer dest);
 }

@@ -11,13 +11,18 @@ import javafx.application.Application;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.util.LogHelper;
+import nl.colorize.util.swing.Utils2D;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -33,10 +38,14 @@ public class JFXAnimationLoop extends Application {
     private JFXGraphics graphics;
     private JFXInput input;
 
+    private Stage stage;
+
     private static final Logger LOGGER = LogHelper.getLogger(JFXAnimationLoop.class);
 
     @Override
     public void start(Stage stage) throws Exception {
+        this.stage = stage;
+
         renderer = JFXRenderer.accessInstance();
         context = renderer.getContext();
         graphics = renderer.getGraphics();
@@ -81,15 +90,7 @@ public class JFXAnimationLoop extends Application {
         AnimationTimer animationLoop = new AnimationTimer() {
             @Override
             public void handle(long time) {
-                try {
-                    if (context.syncFrame() > 0) {
-                        context.getFrameStats().markStart(FrameStats.PHASE_FRAME_RENDER);
-                        context.getStage().visit(graphics, context.getSceneTime());
-                        context.getFrameStats().markEnd(FrameStats.PHASE_FRAME_RENDER);
-                    }
-                } catch (Exception e) {
-                    LOGGER.log(Level.SEVERE, "Exception in JavaFX animation loop", e);
-                    renderer.getErrorHandler().onError(context, e);
+                if (!handleFrameUpdate()) {
                     stop();
                 }
             }
@@ -97,15 +98,53 @@ public class JFXAnimationLoop extends Application {
         animationLoop.start();
     }
 
+    private boolean handleFrameUpdate() {
+        try {
+            if (context.syncFrame() > 0) {
+                context.getFrameStats().markStart(FrameStats.PHASE_FRAME_RENDER);
+                context.getStage().visit(graphics);
+                context.getFrameStats().markEnd(FrameStats.PHASE_FRAME_RENDER);
+            }
+
+            while (!renderer.getScreenshotQueue().isEmpty()) {
+                takeScreenshot(renderer.getScreenshotQueue().removeFirst());
+            }
+
+            return true;
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Exception in JavaFX animation loop", e);
+            renderer.getErrorHandler().onError(context, e);
+            return false;
+        }
+    }
+
     private void resizeWidth(Canvas fxCanvas, Number width) {
-        int screenHeight = context.getCanvas().getScreenHeight();
+        int screenHeight = context.getCanvas().getScreenSize().height();
         context.getCanvas().resizeScreen(width.intValue(), screenHeight);
         fxCanvas.setWidth(width.intValue());
     }
 
     private void resizeHeight(Canvas fxCanvas, Number height) {
-        int screenWidth = context.getCanvas().getScreenWidth();
+        int screenWidth = context.getCanvas().getScreenSize().width();
         context.getCanvas().resizeScreen(screenWidth, height.intValue());
         fxCanvas.setHeight(height.intValue());
+    }
+
+    private void takeScreenshot(File file) {
+        WritableImage buffer = stage.getScene().snapshot(null);
+        BufferedImage screenshot = new BufferedImage((int) Math.round(buffer.getWidth()),
+            (int) Math.round(buffer.getHeight()), BufferedImage.TYPE_INT_ARGB);
+
+        for (int x = 0; x < buffer.getWidth(); x++) {
+            for (int y = 0; y < buffer.getHeight(); y++) {
+                screenshot.setRGB(x, y, buffer.getPixelReader().getArgb(x, y));
+            }
+        }
+
+        try {
+            Utils2D.savePNG(screenshot, file);
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Failed to save screenshot", e);
+        }
     }
 }

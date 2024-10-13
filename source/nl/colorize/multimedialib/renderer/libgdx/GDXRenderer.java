@@ -11,14 +11,19 @@ import com.badlogic.gdx.Files;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.glutils.HdpiMode;
 import com.badlogic.gdx.graphics.glutils.HdpiUtils;
 import com.badlogic.gdx.utils.GdxNativesLoader;
 import com.badlogic.gdx.utils.SharedLibraryLoader;
+import nl.colorize.multimedialib.math.Size;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
+import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.Network;
@@ -48,6 +53,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.Deflater;
 
 /**
  * Renderer built on top of the libGDX framework. In turn, libGDX supports multiple
@@ -184,7 +190,10 @@ public class GDXRenderer implements Renderer, ApplicationListener {
         return dylib.getAbsolutePath();
     }
 
-    //TODO should be removed when libGDX fixes this in a future version.
+    //TODO The way the gdx-lwjgl3-glfw-awt-macos loads native libraries
+    //     causes problems in the Mac App Store. This workaround is no
+    //     longer needed once https://github.com/libgdx/libgdx/pull/7361
+    //     is released.
     @Deprecated
     private void initGLFW() throws Exception {
         Field errorCallback = Lwjgl3Application.class.getDeclaredField("errorCallback");
@@ -225,22 +234,20 @@ public class GDXRenderer implements Renderer, ApplicationListener {
         config.setTitle(window.getTitle());
         config.setWindowIcon(Files.FileType.Internal, window.getIconFile().path());
         config.setDecorated(true);
-        configureDisplayMode(config);
-        return config;
-    }
-
-    private void configureDisplayMode(Lwjgl3ApplicationConfiguration config) {
         if (window.isFullscreen()) {
             configureFullScreen(config);
         } else {
             configureWindow(config);
         }
+        return config;
     }
 
     private void configureFullScreen(Lwjgl3ApplicationConfiguration config) {
         if (Platform.isMac()) {
-            // There is an issue in LWJGL that causes the application
-            // to crash using LWJGL's own fullscreen display mode.
+            //TODO Native fullscreen mode crashes LibGDX on M1,
+            //     see https://github.com/libgdx/libgdx/issues/6896
+            //     Also note this extension will be retired altogether
+            //     in https://github.com/libgdx/libgdx/pull/7361
             Dimension screen = SwingUtils.getScreenSize();
             config.setWindowedMode(screen.width, screen.height);
             config.setMaximized(true);
@@ -250,15 +257,14 @@ public class GDXRenderer implements Renderer, ApplicationListener {
     }
 
     private void configureWindow(Lwjgl3ApplicationConfiguration config) {
-        int width = canvas.getWidth();
-        int height = canvas.getHeight();
+        Size windowSize = window.getWindowSize().orElse(canvas.getSize());
 
         if (Platform.isWindows()) {
             float uiScale = SwingUtils.getDesktopScaleFactor();
-            config.setWindowedMode(Math.round(width * uiScale), Math.round(height * uiScale));
-        } else {
-            config.setWindowedMode(width, height);
+            windowSize = windowSize.multiply(uiScale);
         }
+
+        config.setWindowedMode(windowSize.width(), windowSize.height());
     }
 
     @Override
@@ -278,6 +284,13 @@ public class GDXRenderer implements Renderer, ApplicationListener {
     public void dispose() {
         graphicsContext.dispose();
         mediaLoader.dispose();
+        if (window.getAppMenu() != null) {
+            window.getAppMenu().onQuit();
+        }
+
+        // Hard quit because libGDX otherwise takes several
+        // seconds to close the application.
+        System.exit(0);
     }
 
     @Override
@@ -297,10 +310,10 @@ public class GDXRenderer implements Renderer, ApplicationListener {
 
     @Override
     public void render() {
+        context.syncFrame();
+
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
-
-        context.syncFrame();
         renderStage(context.getStage());
         graphicsContext.switchMode(false, false);
     }
@@ -312,7 +325,7 @@ public class GDXRenderer implements Renderer, ApplicationListener {
             graphicsContext.render3D(stage.getWorld());
         }
 
-        stage.visit(graphicsContext, context.getSceneTime());
+        stage.visit(graphicsContext);
 
         context.getFrameStats().markEnd(FrameStats.PHASE_FRAME_RENDER);
     }
@@ -330,6 +343,16 @@ public class GDXRenderer implements Renderer, ApplicationListener {
     @Override
     public void terminate() {
         System.exit(0);
+    }
+
+    @Override
+    public void takeScreenshot(FilePointer dest) {
+        File desktop = Platform.getUserDesktopDir();
+        FileHandle file = Gdx.files.absolute(new File(desktop, dest.path()).getAbsolutePath());
+        Pixmap screenshot = Pixmap.createFromFrameBuffer(0, 0,
+            Gdx.graphics.getBackBufferWidth(), Gdx.graphics.getBackBufferHeight());
+        PixmapIO.writePNG(file, screenshot, Deflater.DEFAULT_COMPRESSION, true);
+        screenshot.dispose();
     }
 
     @Override

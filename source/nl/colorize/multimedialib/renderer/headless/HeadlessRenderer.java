@@ -13,6 +13,7 @@ import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
+import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
@@ -24,13 +25,13 @@ import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.multimedialib.renderer.java2d.StandardNetwork;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontFace;
-import nl.colorize.multimedialib.stage.FontStyle;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.Subscribable;
 
 import java.util.List;
+
+import static nl.colorize.multimedialib.stage.ColorRGB.BLACK;
 
 /**
  * Headless renderer implementation intended for testing or simulating on
@@ -65,8 +66,7 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     public static final int DEFAULT_HEIGHT = 600;
     public static final int DEFAULT_FRAMERATE = 30;
 
-    public static final FontStyle DEFAULT_FONT_STYLE = new FontStyle(10, false, ColorRGB.BLACK);
-    public static final FontFace DEFAULT_FONT = new FontFace(null, "sans-serif", DEFAULT_FONT_STYLE);
+    public static final FontFace DEFAULT_FONT = new FontFace(null, "sans-serif", 10, BLACK);
 
     public HeadlessRenderer(DisplayMode displayMode, boolean graphicsEnvironmentEnabled) {
         this.graphicsMode = GraphicsMode.HEADLESS;
@@ -100,6 +100,11 @@ public class HeadlessRenderer implements Renderer, InputDevice {
 
     @Override
     public void terminate() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void takeScreenshot(FilePointer dest) {
         throw new UnsupportedOperationException();
     }
 

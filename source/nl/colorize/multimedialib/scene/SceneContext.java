@@ -11,14 +11,18 @@ import com.google.common.base.Preconditions;
 import lombok.Getter;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.DisplayMode;
+import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.InputDevice;
+import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
+import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.util.LogHelper;
+import nl.colorize.util.Platform;
 import nl.colorize.util.Stopwatch;
 
 import java.util.ArrayList;
@@ -97,6 +101,10 @@ public final class SceneContext implements Updatable {
         this.lastCanvasHeight = canvas.getHeight();
 
         stage = new Stage(graphicsMode, canvas, frameStats);
+
+        if (Platform.isWindows() || Platform.isMac()) {
+            attachGlobal((context, deltaTime) -> checkScreenshotHandler());
+        }
     }
 
     /**
@@ -169,7 +177,7 @@ public final class SceneContext implements Updatable {
      */
     @Override
     public void update(float deltaTime) {
-        getInput().update(deltaTime);
+        updateInput(deltaTime);
 
         if (!requestedSceneQueue.isEmpty()) {
             activateRequestedScene();
@@ -182,9 +190,17 @@ public final class SceneContext implements Updatable {
         lastCanvasHeight = getCanvas().getHeight();
     }
 
+    private void updateInput(float deltaTime) {
+        input.update(deltaTime);
+
+        for (Pointer pointer : input.getPointers()) {
+            pointer.update(deltaTime);
+        }
+    }
+
     private void updateCurrentScene(SceneState current, float deltaTime) {
         checkCanvasResize(current);
-        current.sceneTimer.update(deltaTime);
+        stage.getAnimationTimer().update(deltaTime);
         current.scene.update(this, deltaTime);
 
         // Iterate the list of systems backwards to handle
@@ -236,6 +252,7 @@ public final class SceneContext implements Updatable {
         if (activeScene != null) {
             activeScene.walk(scene -> scene.end(this));
             stage.clear();
+            stage.getAnimationTimer().reset();
         }
 
         SceneState requestedScene = requestedSceneQueue.peek();
@@ -318,17 +335,21 @@ public final class SceneContext implements Updatable {
     }
 
     /**
-     * Returns a timer that returns the elapsed time in the currently active
-     * scene. in seconds. The scene time is updated at the start of every
-     * frame update.
+     * Returns true if the specified scene is currently active. Note this
+     * will also return true if the specified scene has been attached as
+     * a sub-scene.
      */
-    public Timer getSceneTime() {
+    public boolean isActiveScene(Scene scene) {
         if (activeScene == null) {
-            LOGGER.warning("Scene timer is not yet available");
-            return Timer.none();
+            return false;
         }
 
-        return activeScene.sceneTimer;
+        if (activeScene.scene.equals(scene)) {
+            return true;
+        }
+
+        return activeScene.subScenes.stream()
+            .anyMatch(subScene -> subScene.equals(scene));
     }
 
     /**
@@ -379,6 +400,23 @@ public final class SceneContext implements Updatable {
     }
 
     /**
+     * Global handler that saves screenshots to the platform default location
+     * whenever the F12 is pressed. This handler is only available on desktop
+     * platforms.
+     */
+    private void checkScreenshotHandler() {
+        if (input.isKeyReleased(KeyCode.F12)) {
+            try {
+                FilePointer file = new FilePointer("screenshot-" + System.currentTimeMillis() + ".png");
+                renderer.takeScreenshot(file);
+                LOGGER.info("Saved screenshot to " + file);
+            } catch (UnsupportedOperationException e) {
+                LOGGER.warning("Screenshot not supported");
+            }
+        }
+    }
+
+    /**
      * One of the scenes that is managed by this {@link SceneContext},
      * consisting of both the scene itself plus all of its attached
      * sub-scenes.
@@ -387,12 +425,10 @@ public final class SceneContext implements Updatable {
 
         private Scene scene;
         private List<Scene> subScenes;
-        private Timer sceneTimer;
 
         public SceneState(Scene scene) {
             this.scene = scene;
             this.subScenes = new ArrayList<>();
-            this.sceneTimer = Timer.infinite();
         }
 
         public void attachSubScene(Scene subScene) {

@@ -7,8 +7,8 @@
 package nl.colorize.multimedialib.math;
 
 /**
- * Very simple data structure for representing 2D coordinates with integer
- * precision.
+ * Simple data structure for representing (X, Y) coordinates with integer
+ * precision. Negative coordinates are permitted.
  */
 public record Coordinate(int x, int y) {
 

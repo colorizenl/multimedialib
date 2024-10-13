@@ -103,7 +103,7 @@ public class ParticleWipe implements Scene {
 
     @Override
     public void end(SceneContext context) {
-        container.getLocation().detach();
+        container.detach();
     }
 
     /**

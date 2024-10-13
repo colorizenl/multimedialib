@@ -87,7 +87,7 @@ public class Java2DGraphicsContext implements StageVisitor {
     }
 
     @Override
-    public void visitContainer(Container container) {
+    public void visitContainer(Container container, Transform globalTransform) {
     }
 
     @Override
@@ -100,7 +100,7 @@ public class Java2DGraphicsContext implements StageVisitor {
     }
 
     @Override
-    public void drawLine(Primitive graphic, Line line) {
+    public void drawLine(Primitive graphic, Line line, Transform globalTransform) {
         float x0 = canvas.toScreenX(line.start().x());
         float y0 = canvas.toScreenY(line.start().y());
         float x1 = canvas.toScreenX(line.end().x());
@@ -115,7 +115,7 @@ public class Java2DGraphicsContext implements StageVisitor {
     }
 
     @Override
-    public void drawSegmentedLine(Primitive graphic, SegmentedLine line) {
+    public void drawSegmentedLine(Primitive graphic, SegmentedLine line, Transform globalTransform) {
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(graphic.getTransform().getAlpha());
         g2.setStroke(new BasicStroke(graphic.getStroke()));
@@ -134,15 +134,14 @@ public class Java2DGraphicsContext implements StageVisitor {
     }
 
     @Override
-    public void drawRect(Primitive graphic, Rect rect) {
-        Transform transform = graphic.getGlobalTransform();
+    public void drawRect(Primitive graphic, Rect rect, Transform globalTransform) {
         float screenX = canvas.toScreenX(rect.x());
         float screenY = canvas.toScreenY(rect.y());
         float screenWidth = canvas.toScreenX(rect.getEndX()) - screenX;
         float screenHeight = canvas.toScreenY(rect.getEndY()) - screenY;
 
         Composite originalComposite = g2.getComposite();
-        applyAlphaComposite(transform.getAlpha());
+        applyAlphaComposite(globalTransform.getAlpha());
         g2.setColor(colorCache.get(graphic.getColor()));
         g2.fillRect(Math.round(screenX), Math.round(screenY), Math.round(screenWidth),
             Math.round(screenHeight));
@@ -150,20 +149,19 @@ public class Java2DGraphicsContext implements StageVisitor {
     }
 
     @Override
-    public void drawCircle(Primitive graphic, Circle circle) {
+    public void drawCircle(Primitive graphic, Circle circle, Transform globalTransform) {
         CircleImage key = new CircleImage(circle.radius(), colorCache.get(graphic.getColor()));
         BufferedImage image = circleCache.get(key);
 
         Transform transform = new Transform();
         transform.setPosition(circle.center());
-        transform.setAlpha(graphic.getGlobalTransform().getAlpha());
+        transform.setAlpha(globalTransform.getAlpha());
 
         drawImage(image, transform);
     }
 
     @Override
-    public void drawPolygon(Primitive graphic, Polygon polygon) {
-        Transform transform = graphic.getGlobalTransform();
+    public void drawPolygon(Primitive graphic, Polygon polygon, Transform globalTransform) {
         int[] px = new int[polygon.getNumPoints()];
         int[] py = new int[polygon.getNumPoints()];
 
@@ -173,16 +171,16 @@ public class Java2DGraphicsContext implements StageVisitor {
         }
 
         Composite originalComposite = g2.getComposite();
-        applyAlphaComposite(transform.getAlpha());
+        applyAlphaComposite(globalTransform.getAlpha());
         g2.setColor(colorCache.get(graphic.getColor()));
         g2.fillPolygon(px, py, polygon.getNumPoints());
         g2.setComposite(originalComposite);
     }
 
     @Override
-    public void drawSprite(Sprite sprite) {
+    public void drawSprite(Sprite sprite, Transform globalTransform) {
         AWTImage image = (AWTImage) sprite.getCurrentGraphics();
-        drawImage(image.getImage(), sprite.getGlobalTransform());
+        drawImage(image.getImage(), globalTransform);
     }
 
     private void drawImage(BufferedImage image, Transform transform) {
@@ -201,17 +199,17 @@ public class Java2DGraphicsContext implements StageVisitor {
     }
 
     @Override
-    public void drawText(Text text) {
+    public void drawText(Text text, Transform globalTransform) {
         Font font = fontCache.get(text.getFont().scale(canvas));
-        ColorRGB color = text.getFont().style().color();
-        Transform transform = text.getGlobalTransform();
+        ColorRGB color = text.getFont().color();
 
         Composite originalComposite = g2.getComposite();
-        applyAlphaComposite(transform.getAlpha());
+        applyAlphaComposite(globalTransform.getAlpha());
 
         g2.setColor(colorCache.get(color));
         g2.setFont(font);
-        drawLines(text.getLines(), transform.getPosition(), text.getAlign(), text.getLineHeight());
+        drawLines(text.getLines(), globalTransform.getPosition(),
+            text.getAlign(), text.getLineHeight());
         g2.setComposite(originalComposite);
     }
 

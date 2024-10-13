@@ -23,7 +23,6 @@ import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.UBJsonReader;
 import net.mgsx.gltf.loaders.gltf.GLTFLoader;
 import net.mgsx.gltf.scene3d.scene.SceneAsset;
-import nl.colorize.multimedialib.math.Buffer;
 import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GeometryBuilder;
 import nl.colorize.multimedialib.renderer.MediaException;
@@ -31,11 +30,11 @@ import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.ColorRGB;
-import nl.colorize.multimedialib.stage.FontStyle;
-import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.FontFace;
+import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.LoadStatus;
 import nl.colorize.multimedialib.stage.PolygonModel;
+import nl.colorize.util.MessageQueue;
 import nl.colorize.util.stats.Cache;
 
 import java.util.ArrayList;
@@ -52,6 +51,7 @@ import java.util.Properties;
 public class GDXMediaLoader implements MediaLoader, Disposable {
 
     private List<Disposable> loaded;
+    private MessageQueue<LoadStatus> loadStatus;
     private Cache<FontFace, BitmapFont> fontCache;
     private StandardMediaLoader appDataDelegate;
 
@@ -62,6 +62,7 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
 
     public GDXMediaLoader() {
         this.loaded = new ArrayList<>();
+        this.loadStatus = new MessageQueue<>();
         this.fontCache = Cache.from(this::generateBitmapFont, FONT_CACHE_SIZE);
         this.appDataDelegate = new StandardMediaLoader();
     }
@@ -82,8 +83,8 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
     }
 
     @Override
-    public FontFace loadFont(FilePointer file, String family, FontStyle style) {
-        FontFace font = new FontFace(file, family, style);
+    public FontFace loadFont(FilePointer file, String family, int size, ColorRGB color) {
+        FontFace font = new FontFace(file, family, size, color);
         getBitmapFont(font);
         return font;
     }
@@ -94,8 +95,8 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
 
     private BitmapFont generateBitmapFont(FontFace font) {
         var config = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        config.size = font.style().size() * BITMAP_FONT_SCALE;
-        config.color = toColor(font.style().color());
+        config.size = font.size() * BITMAP_FONT_SCALE;
+        config.color = toColor(font.color());
         config.minFilter = TEXTURE_FILTER;
         config.magFilter = TEXTURE_FILTER;
 
@@ -173,8 +174,8 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
     }
 
     @Override
-    public Buffer<LoadStatus> getLoadStatus() {
-        return new Buffer<>();
+    public MessageQueue<LoadStatus> getLoadStatus() {
+        return loadStatus;
     }
 
     protected static Color toColor(ColorRGB color) {
