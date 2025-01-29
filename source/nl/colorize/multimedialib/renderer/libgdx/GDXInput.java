@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -14,9 +14,9 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Pointer;
-import nl.colorize.multimedialib.renderer.RendererLauncher;
+import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.util.Platform;
-import nl.colorize.util.Subscribable;
+import nl.colorize.util.Subject;
 import nl.colorize.util.swing.Popups;
 import nl.colorize.util.swing.SwingUtils;
 
@@ -31,6 +31,7 @@ import java.util.Set;
 
 public class GDXInput implements InputDevice {
 
+    private RenderConfig config;
     private Canvas canvas;
     private Pointer pointer;
     private Set<KeyCode> keysDown;
@@ -102,8 +103,9 @@ public class GDXInput implements InputDevice {
         .put(KeyCode.EQUALS, Input.Keys.EQUALS)
         .build();
 
-    protected GDXInput(Canvas canvas) {
-        this.canvas = canvas;
+    protected GDXInput(RenderConfig config) {
+        this.config = config;
+        this.canvas = config.getCanvas();
         this.pointer = new Pointer("mouse");
         this.keysUp = new HashSet<>();
         this.keysDown = new HashSet<>();
@@ -159,8 +161,7 @@ public class GDXInput implements InputDevice {
     @Override
     public boolean isTouchAvailable() {
         Platform platform = Platform.getPlatform();
-        String emulation = System.getProperty(RendererLauncher.EMULATION_SYSTEM_PROPERTY);
-        return platform == Platform.IOS || platform == Platform.ANDROID || emulation != null;
+        return config.isSimulationMode() || platform == Platform.IOS || platform == Platform.ANDROID;
     }
 
     @Override
@@ -179,7 +180,7 @@ public class GDXInput implements InputDevice {
     }
 
     @Override
-    public Subscribable<String> requestTextInput(String labelText, String initialValue) {
+    public Subject<String> requestTextInput(String labelText, String initialValue) {
         JLabel label = new JLabel(labelText);
         JTextField field = new JTextField(initialValue);
 
@@ -190,11 +191,11 @@ public class GDXInput implements InputDevice {
 
         Popups.message(null, "", panel);
 
-        Subscribable<String> subscribable = new Subscribable<>();
+        Subject<String> subject = new Subject<>();
         if (field.getText() != null && !field.getText().isEmpty()) {
-            subscribable.next(field.getText());
+            subject.next(field.getText());
         }
-        return subscribable;
+        return subject;
     }
 
     @Override

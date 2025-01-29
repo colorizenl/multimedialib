@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -47,8 +47,8 @@ public record Angle(float degrees) {
     }
 
     /**
-     * Returns an {@link Angle} that is the exact opposite of this angle. For
-     * example, the opposite angle of 90 degrees is 270 degrees.
+     * Returns an {@link Angle} that is the exact opposite of this angle.
+     * For example, the opposite angle of 90 degrees is 270 degrees.
      */
     public Angle opposite() {
         return new Angle(degrees + 180f);
@@ -57,5 +57,14 @@ public record Angle(float degrees) {
     @Override
     public String toString() {
         return Math.round(degrees) + "°";
+    }
+
+    /**
+     * Factory method to create an {@link Angle} instance from an angle
+     * specified in radians, as opposed to the constructor which requires
+     * an angle specified in degrees.
+     */
+    public static Angle fromRadians(float radians) {
+        return new Angle((float) Math.toDegrees(radians));
     }
 }

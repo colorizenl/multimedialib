@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -14,8 +14,8 @@ import java.util.logging.Logger;
 
 /**
  * Used when the renderer encounters an error. While the error handler has
- * access to the {@link SceneContext}, it itself is connected to the life cycle
- * of the application, and not bound to the current scene.
+ * access to the {@link SceneContext}, it itself is connected to the life
+ * cycle of the application, and not bound to the current scene.
  */
 @FunctionalInterface
 public interface ErrorHandler {

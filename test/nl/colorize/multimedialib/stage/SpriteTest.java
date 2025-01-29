@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -57,8 +57,8 @@ public class SpriteTest {
         sprite.addGraphics("a", new Animation(List.of(first, second, third), 1f, false));
         sprite.addGraphics("b", fourth);
 
-        sprite.updateGraphics(Timer.at(1f));
-        sprite.updateGraphics(Timer.at(10f));
+        sprite.animate(Timer.at(1f));
+        sprite.animate(Timer.at(10f));
 
         assertEquals(third, sprite.getCurrentGraphics());
 
@@ -71,7 +71,7 @@ public class SpriteTest {
     @Test
     public void testCannotAnimateSpriteWithoutStates() {
         Sprite sprite = new Sprite();
-        assertThrows(IllegalStateException.class, () -> sprite.updateGraphics(Timer.at(1f)));
+        assertThrows(IllegalStateException.class, () -> sprite.animate(Timer.at(1f)));
     }
 
     @Test

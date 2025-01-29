@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -11,6 +11,7 @@ import nl.colorize.multimedialib.math.Coordinate;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
+import nl.colorize.util.ResourceFile;
 
 import java.util.List;
 
@@ -31,8 +32,8 @@ public class SpriteAtlasLoader {
         this.mediaLoader = mediaLoader;
     }
 
-    protected SpriteAtlas load(FilePointer file) {
-        if (!file.getFileName().endsWith(".atlas")) {
+    protected SpriteAtlas load(ResourceFile file) {
+        if (!file.getName().endsWith(".atlas")) {
             throw new MediaException("Provided file is not a sprite atlas: " + file);
         }
 
@@ -87,8 +88,8 @@ public class SpriteAtlasLoader {
         state.reset();
     }
 
-    private Image loadImage(FilePointer origin, String name) {
-        FilePointer imageFile = origin.sibling(name);
+    private Image loadImage(ResourceFile origin, String name) {
+        ResourceFile imageFile = origin.sibling(name);
         return mediaLoader.loadImage(imageFile);
     }
 
@@ -105,7 +106,7 @@ public class SpriteAtlasLoader {
      */
     private static class ParserState {
 
-        private FilePointer file;
+        private ResourceFile file;
         private SpriteAtlas atlas;
         private Image currentImage;
         private String name;

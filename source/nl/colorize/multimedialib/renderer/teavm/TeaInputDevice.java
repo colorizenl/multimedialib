@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -13,13 +13,14 @@ import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.util.LogHelper;
-import nl.colorize.util.Subscribable;
-import org.teavm.jso.JSObject;
-import org.teavm.jso.JSProperty;
+import nl.colorize.util.Subject;
 import org.teavm.jso.browser.Window;
+import org.teavm.jso.core.JSArrayReader;
 import org.teavm.jso.dom.events.Event;
 import org.teavm.jso.dom.events.KeyboardEvent;
 import org.teavm.jso.dom.events.MouseEvent;
+import org.teavm.jso.dom.events.Touch;
+import org.teavm.jso.dom.events.TouchEvent;
 import org.teavm.jso.dom.html.HTMLElement;
 
 import java.util.HashMap;
@@ -134,10 +135,10 @@ public class TeaInputDevice implements InputDevice {
         container.addEventListener("mouseup", this::onMouseEvent);
         container.addEventListener("mousemove", this::onMouseEvent);
         container.addEventListener("mouseout",this::onMouseEvent);
-        container.addEventListener("custom:touchstart", this::onCustomTouchEvent, true);
-        container.addEventListener("custom:touchmove", this::onCustomTouchEvent, true);
-        container.addEventListener("custom:touchend", this::onCustomTouchEvent, true);
-        container.addEventListener("custom:touchcancel", this::onCustomTouchEvent, true);
+        container.addEventListener("touchstart", this::onTouchEvent, true);
+        container.addEventListener("touchmove", this::onTouchEvent, true);
+        container.addEventListener("touchend", this::onTouchEvent, true);
+        container.addEventListener("touchcancel", this::onTouchEvent, true);
         window.addEventListener("keydown", this::onKeyDown);
         window.addEventListener("keyup", this::onKeyUp);
     }
@@ -181,12 +182,23 @@ public class TeaInputDevice implements InputDevice {
         event.stopPropagation();
     }
 
-    private void onCustomTouchEvent(Event event) {
-        CustomTouchEvent customTouchEvent = (CustomTouchEvent) event;
-        String identifier = String.valueOf(customTouchEvent.getDetail().getIdentifier());
+    private void onTouchEvent(Event event) {
+        TouchEvent touchEvent = (TouchEvent) event;
+        JSArrayReader<Touch> changedTouches = touchEvent.getChangedTouches();
+
+        for (int i = 0; i < changedTouches.getLength(); i++) {
+            onTouchEvent(event.getType(), changedTouches.get(i));
+        }
+
+        touchEvent.preventDefault();
+        touchEvent.stopPropagation();
+    }
+
+    private void onTouchEvent(String eventType, Touch touch) {
+        String identifier = String.valueOf(touch.getIdentifier());
         Pointer touchPointer = pointers.get(identifier);
 
-        if (event.getType().equals("custom:touchcancel")) {
+        if (eventType.equals("touchcancel")) {
             pointers.remove(identifier);
             return;
         }
@@ -196,18 +208,15 @@ public class TeaInputDevice implements InputDevice {
             pointers.put(identifier, touchPointer);
         }
 
-        int pageX = customTouchEvent.getDetail().getPageX();
-        int pageY = customTouchEvent.getDetail().getPageY();
+        float pageX = (float) touch.getClientX();
+        float pageY = (float) touch.getClientY();
         touchPointer.setPosition(getPointerCanvasPosition(pageX, pageY));
 
-        switch (event.getType()) {
-            case "custom:touchstart" -> touchPointer.setState(Pointer.STATE_PRESSED);
-            case "custom:touchend" -> touchPointer.setState(Pointer.STATE_RELEASED);
+        switch (eventType) {
+            case "touchstart" -> touchPointer.setState(Pointer.STATE_PRESSED);
+            case "touchend" -> touchPointer.setState(Pointer.STATE_RELEASED);
             default -> {}
         }
-
-        customTouchEvent.preventDefault();
-        customTouchEvent.stopPropagation();
     }
 
     public void reset() {
@@ -221,7 +230,7 @@ public class TeaInputDevice implements InputDevice {
         return List.copyOf(pointers.values());
     }
 
-    private Point2D getPointerCanvasPosition(int pageX, int pageY) {
+    private Point2D getPointerCanvasPosition(float pageX, float pageY) {
         int screenX = Math.round(pageX * graphics.getDevicePixelRatio());
         int screenY = Math.round(pageY * graphics.getDevicePixelRatio());
 
@@ -259,14 +268,14 @@ public class TeaInputDevice implements InputDevice {
     }
 
     @Override
-    public Subscribable<String> requestTextInput(String label, String initialValue) {
-        Subscribable<String> subscribable = new Subscribable<>();
+    public Subject<String> requestTextInput(String label, String initialValue) {
+        Subject<String> subject = new Subject<>();
 
         bridge.requestTextInput(label, initialValue, (name, value) -> {
-            subscribable.next(value);
+            subject.next(value);
         });
 
-        return subscribable;
+        return subject;
     }
 
     @Override
@@ -282,35 +291,5 @@ public class TeaInputDevice implements InputDevice {
 
     @Override
     public void update(float deltaTime) {
-    }
-
-    /**
-     * Interface for custom events that are used to simulate touch events.
-     * This is necessary because TeaVM does not provide bindings for "native"
-     * touch events yet. Since these events are simulated, the API is a bit
-     * different from the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Touch_events">
-     * browser touch event API</a>. The custom events are created and
-     * dispatched from the MultimediaLib JavaScript code.
-     */
-    private static interface CustomTouchEvent extends Event {
-
-        @JSProperty
-        public CustomTouchEventDetails getDetail();
-    }
-
-    /**
-     * Used in combination with {@link CustomTouchEvent}. Custom JavaScript
-     * events only allow custom properties through the {@code detail} property.
-     */
-    private static interface CustomTouchEventDetails extends JSObject {
-
-        @JSProperty
-        public int getIdentifier();
-
-        @JSProperty
-        public int getPageX();
-
-        @JSProperty
-        public int getPageY();
     }
 }

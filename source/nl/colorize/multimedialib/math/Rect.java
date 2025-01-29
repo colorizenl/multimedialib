@@ -1,12 +1,14 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.math;
 
 import com.google.common.base.Preconditions;
+
+import java.util.List;
 
 /**
  * Immutable two-dimensional rectangle with float precision. Rectangles are
@@ -37,25 +39,61 @@ public record Rect(float x, float y, float width, float height) implements Shape
         return y + height / 2f;
     }
 
+    @Override
     public Point2D getCenter() {
         return new Point2D(getCenterX(), getCenterY());
     }
 
+    /**
+     * Returns true if the specified point is located within this rectangle.
+     */
     @Override
     public boolean contains(Point2D p) {
         return contains(p.x(), p.y());
     }
 
+    /**
+     * Returns true if the specified point is located within this rectangle.
+     */
     public boolean contains(float px, float py) {
         return px >= x && px <= x + width && py >= y && py <= y + height;
     }
 
-    public boolean contains(Rect r) {
-        return r.x >= x && r.x + r.width <= x + width && r.y >= y && r.y + r.height <= y + height;
+    /**
+     * Returns true if the specified other rectangle is entirely or partially
+     * located within this rectangle.
+     */
+    public boolean contains(Rect other) {
+        return other.x >= x &&
+            other.x + other.width <= x + width &&
+            other.y >= y &&
+            other.y + other.height <= y + height;
     }
 
-    public boolean intersects(Rect r) {
-        return !(r.x + r.width < x || r.x > x + width || r.y + r.height < y || r.y > y + height);
+    /**
+     * Returns true if the specified other retangle intersects with this
+     * rectangle.
+     */
+    public boolean intersects(Rect other) {
+        boolean outside = other.x + other.width < x ||
+            other.x > x + width ||
+            other.y + other.height < y ||
+            other.y > y + height;
+
+        return !outside;
+    }
+
+    /**
+     * Returns a new rectangle that encompasses both this rectangle and the
+     * specified other rectangle.
+     */
+    public Rect combine(Rect other) {
+        return fromPoints(
+            Math.min(x, other.x),
+            Math.min(y, other.y),
+            Math.max(getEndX(), other.getEndX()),
+            Math.max(getEndY(), other.getEndY())
+        );
     }
 
     @Override
@@ -80,12 +118,12 @@ public record Rect(float x, float y, float width, float height) implements Shape
     }
 
     public Polygon toPolygon() {
-        return new Polygon(
-            x, y,
-            x + width, y,
-            x + width, y + height,
-            x, y + height
-        );
+        return new Polygon(List.of(
+            new Point2D(x, y),
+            new Point2D(x + width, y),
+            new Point2D(x + width, y + height),
+            new Point2D(x, y + height)
+        ));
     }
 
     @Override
@@ -95,8 +133,8 @@ public record Rect(float x, float y, float width, float height) implements Shape
     }
 
     /**
-     * Created a rectangle from 4 points (x0, y0, x1, y1) instead of requiring
-     * its width and height.
+     * Factory method that creates a rectangle based on the points (x0, y0)
+     * and (x1, y1).
      */
     public static Rect fromPoints(float x0, float y0, float x1, float y1) {
         return new Rect(x0, y0, x1 - x0, y1 - y0);

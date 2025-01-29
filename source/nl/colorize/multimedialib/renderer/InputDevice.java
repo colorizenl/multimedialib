@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -9,7 +9,7 @@ package nl.colorize.multimedialib.renderer;
 import com.google.common.collect.Streams;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.Updatable;
-import nl.colorize.util.Subscribable;
+import nl.colorize.util.Subject;
 
 /**
  * Used to poll the status of the platform's input devices. This includes
@@ -50,12 +50,13 @@ public interface InputDevice extends Updatable {
     }
 
     /**
-     * Clears all pointer state for all currently active pointers.
+     * Clears all pointer state for all currently active pointers. Using this
+     * method is the equivalent of using {@link Pointer#clearState()} on all
+     * pointers.
      *
-     * @deprecated Do not rely on this method as it means application logic
-     *             will be influenced by the order in which different
-     *             (sub)scenes run. Instead, try to restructure logic to
-     *             avoid multiple (sub)scenes fighting for the same pointers.
+     * @deprecated Prefer using {@link Pointer#clearState()} on individual
+     *             pointers over trying to globally manage <em>all</em>
+     *             pointers using this method.
      */
     @Deprecated
     public void clearPointerState();
@@ -80,7 +81,7 @@ public interface InputDevice extends Updatable {
      * Shows a dialog window with a text input field. The dialog window is not
      * part of the scene, it uses the platform's native user interface.
      */
-    public Subscribable<String> requestTextInput(String label, String initialValue);
+    public Subject<String> requestTextInput(String label, String initialValue);
 
     /**
      * Copies the specified text to the system clipboard.

@@ -1,29 +1,37 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.teavm;
 
 import lombok.Getter;
+import nl.colorize.multimedialib.math.Box;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Point2D;
+import nl.colorize.multimedialib.math.Point3D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.math.SegmentedLine;
+import nl.colorize.multimedialib.math.Shape3D;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
+import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.FontFace;
+import nl.colorize.multimedialib.stage.Group;
+import nl.colorize.multimedialib.stage.Light;
+import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
+import nl.colorize.multimedialib.stage.Transform3D;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.canvas.CanvasImageSource;
 import org.teavm.jso.canvas.CanvasRenderingContext2D;
@@ -42,13 +50,10 @@ public class HtmlCanvasGraphics implements TeaGraphics {
     @Getter private HTMLCanvasElement htmlCanvas;
     private CanvasRenderingContext2D context;
 
-    public HtmlCanvasGraphics(Canvas sceneCanvas) {
-        this.sceneCanvas = sceneCanvas;
-    }
-
     @Override
-    public void init(TeaMediaLoader mediaLoader) {
-        this.mediaLoader = mediaLoader;
+    public void init(SceneContext sceneContext) {
+        this.sceneCanvas = sceneContext.getCanvas();
+        this.mediaLoader = (TeaMediaLoader) sceneContext.getMediaLoader();
 
         HTMLDocument document = Window.current().getDocument();
         HTMLElement container = document.getElementById("multimediaLibContainer");
@@ -97,7 +102,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
     }
 
     @Override
-    public boolean shouldVisitAllGraphics() {
+    public boolean shouldVisitAllNodes() {
         return false;
     }
 
@@ -231,6 +236,36 @@ public class HtmlCanvasGraphics implements TeaGraphics {
 
     private String getFontString(FontFace font) {
         return font.size() + "px " + font.family();
+    }
+
+    @Override
+    public void visitGroup(Group group, Transform3D globalTransform) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void drawMesh(Mesh mesh, Transform3D globalTransform) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void drawLight(Light light, Transform3D globalTransform) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Mesh createMesh(Shape3D shape, ColorRGB color) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Point2D project(Point3D position) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean castPickRay(Point2D canvasPosition, Box area) {
+        throw new UnsupportedOperationException();
     }
 
     private float toScreenX(float x) {

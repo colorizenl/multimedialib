@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -11,8 +11,6 @@ import nl.colorize.multimedialib.mock.MockScene;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
-import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.multimedialib.scene.effect.Effect;
 import nl.colorize.multimedialib.stage.Animation;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.util.animation.Timeline;
@@ -29,14 +27,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EffectTest {
 
-    private SceneContext context;
+    private HeadlessRenderer context;
 
     private static final float EPSILON = 0.001f;
 
     @BeforeEach
     public void before() {
-        HeadlessRenderer renderer = new HeadlessRenderer();
-        context = renderer.getContext();
+        context = new HeadlessRenderer(false);
         context.changeScene(new MockScene());
     }
 

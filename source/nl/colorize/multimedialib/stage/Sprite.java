@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -10,7 +10,6 @@ import com.google.common.base.Preconditions;
 import lombok.Getter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.scene.Timer;
 
 import java.util.HashMap;
@@ -27,10 +26,10 @@ import java.util.Set;
  * identified by its name. The currently active graphics are updated
  * automatically for as long as the sprite is on the stage.
  */
-public class Sprite implements Graphic2D {
+public class Sprite implements StageNode2D {
 
-    @Getter protected Graphic2D parent;
     @Getter private Transform transform;
+    @Getter private Transform globalTransform;
 
     private Map<String, SpriteState> stateGraphics;
     private SpriteState currentState;
@@ -47,6 +46,7 @@ public class Sprite implements Graphic2D {
      */
     public Sprite() {
         this.transform = new Transform();
+        this.globalTransform = new Transform();
 
         stateGraphics = new HashMap<>();
         currentState = new SpriteState(NULL_STATE, null);
@@ -185,7 +185,7 @@ public class Sprite implements Graphic2D {
     }
 
     @Override
-    public void updateGraphics(Timer sceneTime) {
+    public void animate(Timer sceneTime) {
         Preconditions.checkState(currentGraphics != null, "Sprite is without graphics");
 
         float tick = sceneTime.getTime();
@@ -205,7 +205,6 @@ public class Sprite implements Graphic2D {
 
     @Override
     public Rect getStageBounds() {
-        Transform globalTransform = calculateGlobalTransform();
         Point2D position = globalTransform.getPosition();
         float width = Math.max(getCurrentWidth() * (globalTransform.getScaleX() / 100f), 1f);
         float height = Math.max(getCurrentHeight() * (globalTransform.getScaleY() / 100f), 1f);

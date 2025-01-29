@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -24,10 +24,10 @@ import nl.colorize.multimedialib.scene.Timer;
  */
 @Getter
 @Setter
-public class Primitive implements Graphic2D {
+public class Primitive implements StageNode2D {
 
-    protected Graphic2D parent;
     private Transform transform;
+    private Transform globalTransform;
 
     private Shape shape;
     private ColorRGB color;
@@ -35,6 +35,7 @@ public class Primitive implements Graphic2D {
 
     public Primitive(Shape shape, ColorRGB color) {
         this.transform = new Transform();
+        this.globalTransform = new Transform();
 
         this.shape = shape;
         this.color = color;
@@ -48,12 +49,11 @@ public class Primitive implements Graphic2D {
 
     @Override
     public Rect getStageBounds() {
-        Transform globalTransform = calculateGlobalTransform();
         return shape.reposition(globalTransform.getPosition()).getBoundingBox();
     }
 
     @Override
-    public void updateGraphics(Timer sceneTime) {
+    public void animate(Timer sceneTime) {
     }
 
     @Override

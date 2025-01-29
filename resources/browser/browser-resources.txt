@@ -29,3 +29,7 @@ browser/assets/OpenSans-Regular.ttf
 demo/demo.png
 demo/demo-sound.mp3
 demo/colorize-logo.gltf
+demo/colorize-emblem.png
+demo/crate.vox.obj
+demo/crate.vox.mtl
+demo/crate.vox.png

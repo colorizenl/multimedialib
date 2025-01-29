@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -14,8 +14,8 @@ import nl.colorize.multimedialib.math.Size;
 import nl.colorize.util.TextUtils;
 
 /**
- * Defines how the application graphics should be displayed. This consists of
- * both the canvas size and the targeted framerate.
+ * The application "canvas" defines how the renderer should display graphics
+ * for the current screen size and resolution.
  * <p>
  * In most applications, the canvas resolution is independent of the screen
  * resolution of the device. This allows applications to have a reasonably

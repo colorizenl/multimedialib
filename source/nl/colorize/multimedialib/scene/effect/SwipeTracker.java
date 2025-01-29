@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -13,8 +13,9 @@ import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.util.MessageQueue;
+import nl.colorize.util.SubscribableCollection;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,14 +31,14 @@ public class SwipeTracker implements Scene {
 
     private float tolerance;
     private Map<String, Point2D> incompleteSwipes;
-    @Getter private MessageQueue<Line> swipes;
+    @Getter private SubscribableCollection<Line> swipes;
 
     public SwipeTracker(float tolerance) {
         Preconditions.checkArgument(tolerance >= 10f, "Invalid tolerance: " + tolerance);
 
         this.tolerance = tolerance;
         this.incompleteSwipes = new HashMap<>();
-        this.swipes = new MessageQueue<>();
+        this.swipes = SubscribableCollection.wrap(new ArrayList<>());
     }
 
     @Override
@@ -64,7 +65,7 @@ public class SwipeTracker implements Scene {
 
             if (start.distanceTo(position) >= tolerance) {
                 Line completedSwipe = new Line(start, position);
-                swipes.offer(completedSwipe);
+                swipes.add(completedSwipe);
             }
 
             incompleteSwipes.remove(pointer.getId());

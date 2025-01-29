@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -30,6 +30,11 @@ public record Line(Point2D start, Point2D end) implements Shape {
         float y1 = Math.max(start.y(), end.y());
 
         return Rect.fromPoints(x0, y0, x1, y1);
+    }
+
+    @Override
+    public Point2D getCenter() {
+        return getBoundingBox().getCenter();
     }
 
     @Override

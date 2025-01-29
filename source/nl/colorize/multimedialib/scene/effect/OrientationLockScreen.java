@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -9,7 +9,7 @@ package nl.colorize.multimedialib.scene.effect;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.multimedialib.stage.Graphic2D;
+import nl.colorize.multimedialib.stage.StageNode2D;
 
 /**
  * Displays an image and/or message to inform the user to change their device
@@ -25,9 +25,9 @@ import nl.colorize.multimedialib.stage.Graphic2D;
  */
 public class OrientationLockScreen implements Scene {
 
-    private Graphic2D graphics;
+    private StageNode2D graphics;
 
-    public OrientationLockScreen(Graphic2D graphics) {
+    public OrientationLockScreen(StageNode2D graphics) {
         this.graphics = graphics;
     }
 

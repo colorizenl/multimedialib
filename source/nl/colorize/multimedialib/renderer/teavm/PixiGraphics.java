@@ -1,36 +1,43 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.renderer.pixi;
+package nl.colorize.multimedialib.renderer.teavm;
 
 import com.google.common.base.Preconditions;
+import nl.colorize.multimedialib.math.Box;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Point2D;
+import nl.colorize.multimedialib.math.Point3D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.math.SegmentedLine;
+import nl.colorize.multimedialib.math.Shape3D;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.RendererException;
-import nl.colorize.multimedialib.renderer.teavm.Browser;
-import nl.colorize.multimedialib.renderer.teavm.TeaGraphics;
-import nl.colorize.multimedialib.renderer.teavm.TeaImage;
-import nl.colorize.multimedialib.renderer.teavm.TeaMediaLoader;
+import nl.colorize.multimedialib.renderer.teavm.PixiBridge.PixiDisplayObject;
+import nl.colorize.multimedialib.renderer.teavm.PixiBridge.PixiRectangle;
+import nl.colorize.multimedialib.renderer.teavm.PixiBridge.PixiTexture;
+import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.FontFace;
-import nl.colorize.multimedialib.stage.Graphic2D;
+import nl.colorize.multimedialib.stage.Group;
+import nl.colorize.multimedialib.stage.Light;
+import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
+import nl.colorize.multimedialib.stage.StageNode2D;
+import nl.colorize.multimedialib.stage.StageSubscriber;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
-import nl.colorize.util.LogHelper;
+import nl.colorize.multimedialib.stage.Transform3D;
 import nl.colorize.util.TextUtils;
 import nl.colorize.util.stats.Cache;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
@@ -39,38 +46,39 @@ import org.teavm.jso.dom.html.HTMLImageElement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Logger;
 
 /**
- * Renders graphics using the <a href="https://pixijs.com">PixiJS</a> JavaScript
- * library. Depending on the platform and browser, PixiJS will either use WebGL
- * or fall back to the HTML canvas API.
+ * Uses the <a href="https://pixijs.com">PixiJS</a> JavaScript library to
+ * render 2D graphics. PixiJS will use either a WebGL-based renderer or a
+ * canvas-based renderer, depending on the browser and platform.
  */
-public class PixiGraphics implements TeaGraphics {
+public class PixiGraphics implements TeaGraphics, StageSubscriber {
 
     private Canvas canvas;
     private TeaMediaLoader mediaLoader;
     private PixiBridge pixi;
-    private Map<Graphic2D, Pixi.DisplayObject> displayObjects;
-    private Cache<TeaImage, Pixi.Texture> textureCache;
+    private Map<StageNode2D, PixiDisplayObject> displayObjects;
+    private Cache<TeaImage, PixiTexture> textureCache;
 
     private static final int TEXTURE_CACHE_SIZE = 2048;
-    private static final Logger LOGGER = LogHelper.getLogger(PixiGraphics.class);
 
-    public PixiGraphics(Canvas canvas) {
-        this.canvas = canvas;
-        this.pixi = Browser.getPixiBridge();
+    public PixiGraphics() {
         this.displayObjects = new HashMap<>();
         this.textureCache = Cache.from(this::prepareTexture, TEXTURE_CACHE_SIZE);
     }
 
     @Override
-    public void init(TeaMediaLoader mediaLoader) {
-        this.mediaLoader = mediaLoader;
+    public void init(SceneContext context) {
+        this.canvas = context.getCanvas();
+        this.mediaLoader = (TeaMediaLoader) context.getMediaLoader();
+        this.pixi = Browser.getPixiBridge();
         pixi.init();
+
+        Container rootContainer = context.getStage().getRoot();
+        displayObjects.put(rootContainer, pixi.getRootContainer());
     }
 
-    private Pixi.Rectangle getScreen() {
+    private PixiRectangle getScreen() {
         return pixi.getPixiApp().getScreen();
     }
 
@@ -90,46 +98,43 @@ public class PixiGraphics implements TeaGraphics {
     }
 
     @Override
+    public void onNodeAdded(Container parent, StageNode2D node) {
+        PixiDisplayObject parentDisplayObject = displayObjects.get(parent);
+        PixiDisplayObject displayObject = createDisplayObject(node);
+        parentDisplayObject.addChild(displayObject);
+        displayObjects.put(node, displayObject);
+    }
+
+    @Override
+    public void onNodeRemoved(Container parent, StageNode2D node) {
+        PixiDisplayObject parentDisplayObject = displayObjects.get(parent);
+        PixiDisplayObject displayObject = getDisplayObject(node);
+        parentDisplayObject.removeChild(displayObject);
+        displayObjects.remove(node);
+    }
+
+    @Override
     public void prepareStage(Stage stage) {
-        Container rootContainer = stage.getRoot();
-        displayObjects.putIfAbsent(rootContainer, pixi.getRootContainer());
     }
 
     @Override
     public void visitContainer(Container container, Transform globalTransform) {
-        Pixi.DisplayObject parent = displayObjects.get(container);
-        parent.setVisible(container.getTransform().isVisible());
-
-        for (Graphic2D added : container.getAddedChildren().flush()) {
-            onGraphicAdded(parent, added);
-        }
-
-        for (Graphic2D removed : container.getRemovedChildren().flush()) {
-            onGraphicRemoved(parent, removed);
-        }
-    }
-
-    private void onGraphicAdded(Pixi.DisplayObject parent, Graphic2D added) {
-        if (!displayObjects.containsKey(added)) {
-            Pixi.DisplayObject displayObject = createDisplayObject(added);
-            parent.addChild(displayObject);
-            displayObjects.put(added, displayObject);
-        }
-    }
-
-    private void onGraphicRemoved(Pixi.DisplayObject parent, Graphic2D removed) {
-        if (displayObjects.containsKey(removed)) {
-            parent.removeChild(getDisplayObject(removed));
-            displayObjects.remove(removed);
-        }
+        PixiDisplayObject displayObject = displayObjects.get(container);
+        displayObject.setVisible(container.getTransform().isVisible());
     }
 
     @Override
-    public boolean shouldVisitAllGraphics() {
+    public boolean shouldVisitAllNodes() {
         return true;
     }
 
-    private Pixi.DisplayObject createDisplayObject(Graphic2D graphic) {
+    private PixiDisplayObject createDisplayObject(StageNode2D graphic) {
+        PixiDisplayObject existing = displayObjects.get(graphic);
+
+        if (existing != null) {
+            return existing;
+        }
+
         return switch (graphic) {
             case Container container -> pixi.createContainer();
             case Sprite sprite -> createSpriteDisplayObject(sprite);
@@ -139,20 +144,20 @@ public class PixiGraphics implements TeaGraphics {
         };
     }
 
-    private Pixi.DisplayObject createSpriteDisplayObject(Sprite sprite) {
+    private PixiDisplayObject createSpriteDisplayObject(Sprite sprite) {
         TeaImage image = getImage(sprite);
-        Pixi.DisplayObject spriteContainer = pixi.createContainer();
+        PixiDisplayObject spriteContainer = pixi.createContainer();
 
         image.getImagePromise().subscribe(imageElement -> {
-            Pixi.Texture texture = textureCache.get(image);
-            Pixi.DisplayObject spriteDisplayObject = pixi.createSprite(texture);
+            PixiTexture texture = textureCache.get(image);
+            PixiDisplayObject spriteDisplayObject = pixi.createSprite(texture);
             spriteContainer.addChild(spriteDisplayObject);
         });
 
         return spriteContainer;
     }
 
-    private Pixi.DisplayObject createTextDisplayObject(Text text) {
+    private PixiDisplayObject createTextDisplayObject(Text text) {
         FontFace scaledFont = text.getFont().scale(canvas);
         return pixi.createText(scaledFont.family(), scaledFont.size(), false,
             text.getAlign().toString(), text.getLineHeight(), scaledFont.color().getRGB());
@@ -162,7 +167,7 @@ public class PixiGraphics implements TeaGraphics {
         return (TeaImage) sprite.getCurrentGraphics();
     }
 
-    private Pixi.Texture prepareTexture(TeaImage image) {
+    private PixiTexture prepareTexture(TeaImage image) {
         Preconditions.checkState(image.isLoaded(), "Image is still loading");
 
         HTMLImageElement imgElement = image.getImageElement().get();
@@ -177,8 +182,8 @@ public class PixiGraphics implements TeaGraphics {
         pixi.changeBackgroundColor(color.getRGB());
     }
 
-    private Pixi.DisplayObject getDisplayObject(Graphic2D graphic) {
-        Pixi.DisplayObject displayObject = displayObjects.get(graphic);
+    private PixiDisplayObject getDisplayObject(StageNode2D graphic) {
+        PixiDisplayObject displayObject = displayObjects.get(graphic);
         if (displayObject == null) {
             throw new RendererException("Creating unexpected display object for " + graphic);
         }
@@ -188,19 +193,19 @@ public class PixiGraphics implements TeaGraphics {
 
     @Override
     public void drawSprite(Sprite sprite, Transform globalTransform) {
-        Pixi.DisplayObject displayObject = getDisplayObject(sprite);
-        Pixi.DisplayObject[] containerContents = displayObject.getChildren();
+        PixiDisplayObject displayObject = getDisplayObject(sprite);
+        PixiDisplayObject[] containerContents = displayObject.getChildren();
 
         if (containerContents.length == 0) {
             // Sprite texture is still loading, try again next frame.
             return;
         }
 
-        Pixi.DisplayObject spriteDisplayObject = containerContents[0];
+        PixiDisplayObject spriteDisplayObject = containerContents[0];
         updateSprite(sprite, globalTransform, spriteDisplayObject);
     }
 
-    private void updateSprite(Sprite sprite, Transform transform, Pixi.DisplayObject displayObject) {
+    private void updateSprite(Sprite sprite, Transform transform, PixiDisplayObject displayObject) {
         TeaImage image = getImage(sprite);
         float zoom = canvas.getZoomLevel();
 
@@ -218,18 +223,18 @@ public class PixiGraphics implements TeaGraphics {
         updateMask(displayObject, image, transform.getMaskColor());
     }
 
-    private void updateTexture(Pixi.DisplayObject sprite, TeaImage image) {
-        Pixi.Texture texture = sprite.getTexture();
+    private void updateTexture(PixiDisplayObject sprite, TeaImage image) {
+        PixiTexture texture = sprite.getTexture();
 
         if (!image.getId().toString().equals(texture.getTextureImageId())) {
-            Pixi.Texture newTexture = textureCache.get(image);
+            PixiTexture newTexture = textureCache.get(image);
             sprite.setTexture(newTexture);
         }
     }
 
-    private void updateTextureRegion(Pixi.DisplayObject sprite, Region region) {
-        Pixi.Texture texture = sprite.getTexture();
-        Pixi.Rectangle frame = texture.getFrame();
+    private void updateTextureRegion(PixiDisplayObject sprite, Region region) {
+        PixiTexture texture = sprite.getTexture();
+        PixiRectangle frame = texture.getFrame();
 
         frame.setX(region.x());
         frame.setY(region.y());
@@ -238,13 +243,13 @@ public class PixiGraphics implements TeaGraphics {
         texture.updateUvs();
     }
 
-    private void updateMask(Pixi.DisplayObject sprite, TeaImage image, ColorRGB mask) {
+    private void updateMask(PixiDisplayObject sprite, TeaImage image, ColorRGB mask) {
         if (!sprite.isTintEnabled() && mask != null) {
             HTMLCanvasElement maskImage = mediaLoader.applyMask(image, mask);
             Region region = image.getRegion();
             UUID maskImageId = UUID.randomUUID();
 
-            Pixi.Texture maskTexture = pixi.createTexture(maskImageId.toString(), maskImage,
+            PixiTexture maskTexture = pixi.createTexture(maskImageId.toString(), maskImage,
                 region.x(), region.y(), region.width(), region.height());
 
             sprite.setTintEnabled(true);
@@ -258,7 +263,7 @@ public class PixiGraphics implements TeaGraphics {
 
     @Override
     public void drawLine(Primitive graphic, Line line, Transform globalTransform) {
-        Pixi.DisplayObject displayObject = getDisplayObject(graphic);
+        PixiDisplayObject displayObject = getDisplayObject(graphic);
 
         displayObject.clear();
         displayObject.lineStyle(Math.round(graphic.getStroke()), graphic.getColor().getRGB());
@@ -269,7 +274,7 @@ public class PixiGraphics implements TeaGraphics {
 
     @Override
     public void drawSegmentedLine(Primitive graphic, SegmentedLine line, Transform globalTransform) {
-        Pixi.DisplayObject displayObject = getDisplayObject(graphic);
+        PixiDisplayObject displayObject = getDisplayObject(graphic);
 
         displayObject.clear();
         displayObject.lineStyle(Math.round(graphic.getStroke()), graphic.getColor().getRGB());
@@ -282,7 +287,7 @@ public class PixiGraphics implements TeaGraphics {
 
     @Override
     public void drawRect(Primitive graphic, Rect rect, Transform globalTransform) {
-        Pixi.DisplayObject displayObject = getDisplayObject(graphic);
+        PixiDisplayObject displayObject = getDisplayObject(graphic);
 
         displayObject.clear();
         displayObject.beginFill(graphic.getColor().getRGB(), 1f);
@@ -298,7 +303,7 @@ public class PixiGraphics implements TeaGraphics {
 
     @Override
     public void drawCircle(Primitive graphic, Circle circle, Transform globalTransform) {
-        Pixi.DisplayObject displayObject = getDisplayObject(graphic);
+        PixiDisplayObject displayObject = getDisplayObject(graphic);
 
         displayObject.clear();
         displayObject.beginFill(graphic.getColor().getRGB(), 1f);
@@ -313,7 +318,7 @@ public class PixiGraphics implements TeaGraphics {
 
     @Override
     public void drawPolygon(Primitive graphic, Polygon polygon, Transform globalTransform) {
-        Pixi.DisplayObject displayObject = getDisplayObject(graphic);
+        PixiDisplayObject displayObject = getDisplayObject(graphic);
 
         float[] points = new float[polygon.getNumPoints() * 2];
         for (int i = 0; i < polygon.getNumPoints(); i++) {
@@ -331,13 +336,43 @@ public class PixiGraphics implements TeaGraphics {
 
     @Override
     public void drawText(Text text, Transform globalTransform) {
-        Pixi.DisplayObject displayObject = getDisplayObject(text);
+        PixiDisplayObject displayObject = getDisplayObject(text);
         float offset = -0.65f * text.getLineHeight();
 
         displayObject.setText(TextUtils.LINE_JOINER.join(text.getLines()));
         displayObject.setX(toScreenX(globalTransform.getPosition()));
         displayObject.setY(toScreenY(globalTransform.getPosition().y() + offset));
         displayObject.setAlpha(globalTransform.getAlpha() / 100f);
+    }
+
+    @Override
+    public void visitGroup(Group group, Transform3D globalTransform) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void drawMesh(Mesh mesh, Transform3D globalTransform) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void drawLight(Light light, Transform3D globalTransform) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Mesh createMesh(Shape3D shape, ColorRGB color) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Point2D project(Point3D position) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean castPickRay(Point2D canvasPosition, Box area) {
+        throw new UnsupportedOperationException();
     }
 
     private float toScreenX(float x) {

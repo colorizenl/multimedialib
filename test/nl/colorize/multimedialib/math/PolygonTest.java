@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -22,10 +22,10 @@ public class PolygonTest {
     @Test
     public void testPolygonPoints() {
         float[] points = {1, 2, 3, 4, 5, 6, 7, 8};
-        Polygon polygon = new Polygon(points);
+        Polygon polygon = Polygon.fromPoints(points);
 
         assertEquals(4, polygon.getNumPoints());
-        assertEquals(8, polygon.points().length);
+        assertEquals(8, polygon.toPoints().length);
         assertEquals(1, polygon.getPointX(0), EPSILON);
         assertEquals(2, polygon.getPointY(0), EPSILON);
         assertEquals(5, polygon.getPointX(2), EPSILON);
@@ -37,15 +37,15 @@ public class PolygonTest {
     @Test
     public void testMove() {
         float[] points = {100, 100, 200, 150, 100, 200};
-        Polygon polygon = new Polygon(points);
+        Polygon polygon = Polygon.fromPoints(points);
         Polygon moved = polygon.reposition(new Point2D(100, 50));
-        assertEquals("[200.0, 150.0, 300.0, 200.0, 200.0, 250.0]", Arrays.toString(moved.points()));
+        assertEquals("[200.0, 150.0, 300.0, 200.0, 200.0, 250.0]", Arrays.toString(moved.toPoints()));
     }
 
     @Test
     public void testContainsPoint() {
         float[] points = {100, 100, 200, 100, 200, 200, 100, 200};
-        Polygon polygon = new Polygon(points);
+        Polygon polygon = Polygon.fromPoints(points);
         
         assertTrue(polygon.contains(new Point2D(150, 150)));
         assertFalse(polygon.contains(new Point2D(250, 150)));
@@ -95,36 +95,36 @@ public class PolygonTest {
 
     @Test
     void getBounds() {
-        Polygon polygon = new Polygon(10, 10, 20, 10, 20, 20);
+        Polygon polygon = Polygon.fromPoints(10, 10, 20, 10, 20, 20);
 
         assertEquals("(10, 10, 10, 10)", polygon.getBoundingBox().toString());
     }
 
     @Test
     void getCenter() {
-        Polygon polygon = new Polygon(10, 10, 20, 10, 20, 20);
+        Polygon polygon = Polygon.fromPoints(10, 10, 20, 10, 20, 20);
 
         assertEquals("(15, 15)", polygon.getCenter().toString());
     }
 
     @Test
     void subdivide() {
-        Polygon polygon = new Polygon(160, 140, 240, 140, 270, 200, 240, 260, 160, 260, 130, 200);
+        Polygon polygon = Polygon.fromPoints(160, 140, 240, 140, 270, 200, 240, 260, 160, 260, 130, 200);
         List<Polygon> result = polygon.subdivide();
 
         assertEquals(6, result.size());
         assertEquals("[160.0, 140.0, 240.0, 140.0, 200.0, 200.0]",
-            Arrays.toString(result.get(0).points()));
+            Arrays.toString(result.get(0).toPoints()));
         assertEquals("[240.0, 140.0, 270.0, 200.0, 200.0, 200.0]",
-            Arrays.toString(result.get(1).points()));
+            Arrays.toString(result.get(1).toPoints()));
         assertEquals("[270.0, 200.0, 240.0, 260.0, 200.0, 200.0]",
-            Arrays.toString(result.get(2).points()));
+            Arrays.toString(result.get(2).toPoints()));
         assertEquals("[240.0, 260.0, 160.0, 260.0, 200.0, 200.0]",
-            Arrays.toString(result.get(3).points()));
+            Arrays.toString(result.get(3).toPoints()));
         assertEquals("[160.0, 260.0, 130.0, 200.0, 200.0, 200.0]",
-            Arrays.toString(result.get(4).points()));
+            Arrays.toString(result.get(4).toPoints()));
         assertEquals("[130.0, 200.0, 160.0, 140.0, 200.0, 200.0]",
-            Arrays.toString(result.get(5).points()));
+            Arrays.toString(result.get(5).toPoints()));
     }
 
     @Test
@@ -133,18 +133,18 @@ public class PolygonTest {
         List<Polygon> result = polygon.subdivide();
 
         assertEquals(4, result.size());
-        assertEquals("[10.0, 20.0, 40.0, 20.0, 25.0, 40.0]", Arrays.toString(result.get(0).points()));
-        assertEquals("[40.0, 20.0, 40.0, 60.0, 25.0, 40.0]", Arrays.toString(result.get(1).points()));
-        assertEquals("[40.0, 60.0, 10.0, 60.0, 25.0, 40.0]", Arrays.toString(result.get(2).points()));
-        assertEquals("[10.0, 60.0, 10.0, 20.0, 25.0, 40.0]", Arrays.toString(result.get(3).points()));
+        assertEquals("[10.0, 20.0, 40.0, 20.0, 25.0, 40.0]", Arrays.toString(result.get(0).toPoints()));
+        assertEquals("[40.0, 20.0, 40.0, 60.0, 25.0, 40.0]", Arrays.toString(result.get(1).toPoints()));
+        assertEquals("[40.0, 60.0, 10.0, 60.0, 25.0, 40.0]", Arrays.toString(result.get(2).toPoints()));
+        assertEquals("[10.0, 60.0, 10.0, 20.0, 25.0, 40.0]", Arrays.toString(result.get(3).toPoints()));
     }
 
     @Test
     void subdivideTriangle() {
-        Polygon polygon = new Polygon(10, 10, 20, 10, 20, 20);
+        Polygon polygon = Polygon.fromPoints(10, 10, 20, 10, 20, 20);
         List<Polygon> result = polygon.subdivide();
 
         assertEquals(1, result.size());
-        assertEquals("[10.0, 10.0, 20.0, 10.0, 20.0, 20.0]", Arrays.toString(result.get(0).points()));
+        assertEquals("[10.0, 10.0, 20.0, 10.0, 20.0, 20.0]", Arrays.toString(result.get(0).toPoints()));
     }
 }

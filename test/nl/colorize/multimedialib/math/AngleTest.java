@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -57,5 +57,12 @@ class AngleTest {
         assertEquals(0f, new Angle(180f).opposite().degrees(), EPSILON);
         assertEquals(270f, new Angle(90f).opposite().degrees(), EPSILON);
         assertEquals(90f, new Angle(270f).opposite().degrees(), EPSILON);
+    }
+
+    @Test
+    void fromRadians() {
+        assertEquals("0°", Angle.fromRadians(0f).toString());
+        assertEquals("90°", Angle.fromRadians((float) Math.PI / 2f).toString());
+        assertEquals("180°", Angle.fromRadians((float) Math.PI).toString());
     }
 }

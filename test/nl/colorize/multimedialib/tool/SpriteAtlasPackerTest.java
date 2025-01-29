@@ -1,12 +1,11 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.tool;
 
-import com.google.common.base.Charsets;
 import nl.colorize.util.swing.Utils2D;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -16,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -63,7 +63,7 @@ public class SpriteAtlasPackerTest {
               index: -1
             """;
 
-        assertEquals(expected, Files.readString(atlasFile.toPath(), Charsets.UTF_8));
+        assertEquals(expected, Files.readString(atlasFile.toPath(), UTF_8));
         assertTrue(atlasImageFile.exists());
         assertEquals(512, Utils2D.loadImage(atlasImageFile).getHeight());
     }
@@ -101,7 +101,7 @@ public class SpriteAtlasPackerTest {
             """;
 
         assertEquals(expected,
-            Files.readString(new File(outputDir, "test.atlas").toPath(), Charsets.UTF_8));
+            Files.readString(new File(outputDir, "test.atlas").toPath(), UTF_8));
     }
 
     @Test
@@ -138,7 +138,7 @@ public class SpriteAtlasPackerTest {
             """;
 
         assertEquals(expected,
-            Files.readString(new File(outputDir, "test.atlas").toPath(), Charsets.UTF_8));
+            Files.readString(new File(outputDir, "test.atlas").toPath(), UTF_8));
     }
 
     @Test

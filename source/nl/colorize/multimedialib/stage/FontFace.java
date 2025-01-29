@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,8 +8,8 @@ package nl.colorize.multimedialib.stage;
 
 import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.MediaLoader;
+import nl.colorize.util.ResourceFile;
 
 /**
  * Describes a TrueType or FreeType font that can be used by the renderer
@@ -20,7 +20,7 @@ import nl.colorize.multimedialib.renderer.MediaLoader;
  * application should be included in the application's resource files.
  * Fonts can then be loaded from these files using {@link MediaLoader}.
  */
-public record FontFace(FilePointer origin, String family, int size, ColorRGB color) {
+public record FontFace(ResourceFile origin, String family, int size, ColorRGB color) {
 
     public FontFace {
         Preconditions.checkArgument(!family.isEmpty(), "Missing font family");

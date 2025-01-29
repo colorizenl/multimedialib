@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -106,5 +106,14 @@ public class RectTest {
 
         assertEquals("(20, 30, 10, 20)", smaller.toString());
         assertEquals(original.getCenter(), smaller.getCenter());
+    }
+
+    @Test
+    void combine() {
+        Rect original = new Rect(10, 20, 30, 40);
+        Rect other = new Rect(30, 40, 50, 60);
+        Rect combined = original.combine(other);
+
+        assertEquals("(10, 20, 70, 80)", combined.toString());
     }
 }

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -89,6 +89,7 @@ public class RandomGenerator {
 
     /**
      * Picks and returns a random element from the specified list.
+     *
      * @throws IllegalArgumentException if the provided list is empty.
      */
     public static <T> T pick(List<T> elements) {
@@ -113,6 +114,7 @@ public class RandomGenerator {
 
     /**
      * Picks and returns a random element from the specified iterator.
+     *
      * @throws IllegalArgumentException if the provided iterator is empty.
      */
     public static <T> T pick(Iterable<T> elements) {
@@ -121,6 +123,7 @@ public class RandomGenerator {
 
     /**
      * Picks and returns a random element from the specified stream.
+     *
      * @throws IllegalArgumentException if the provided stream is empty.
      */
     public static <T> T pick(Stream<T> elements) {

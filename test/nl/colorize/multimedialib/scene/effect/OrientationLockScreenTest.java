@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,7 +8,6 @@ package nl.colorize.multimedialib.scene.effect;
 
 import nl.colorize.multimedialib.mock.MockImage;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
-import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.Sprite;
 import org.junit.jupiter.api.Test;
 
@@ -18,8 +17,7 @@ class OrientationLockScreenTest {
 
     @Test
     void doNotShowInLandscapeMode() {
-        HeadlessRenderer renderer = new HeadlessRenderer();
-        SceneContext context = renderer.getContext();
+        HeadlessRenderer context = new HeadlessRenderer(false);
 
         Sprite sprite = new MockImage("orientation lock").toSprite();
         OrientationLockScreen orientationLockScreen = new OrientationLockScreen(sprite);
@@ -27,7 +25,7 @@ class OrientationLockScreenTest {
 
         String expected = """
             Stage
-                Container [$$root, 0]
+                $$root [0]
             """;
 
         assertEquals(expected, context.getStage().toString());
@@ -35,8 +33,7 @@ class OrientationLockScreenTest {
 
     @Test
     void showWhenPortraitMode() {
-        HeadlessRenderer renderer = new HeadlessRenderer();
-        SceneContext context = renderer.getContext();
+        HeadlessRenderer context = new HeadlessRenderer(false);
         context.getCanvas().resizeScreen(200, 600);
 
         Sprite sprite = new MockImage("orientation lock").toSprite();
@@ -47,7 +44,7 @@ class OrientationLockScreenTest {
 
         String expected = """
             Stage
-                Container [$$root, 1]
+                $$root [1]
                     Sprite [$$default]
             """;
 
@@ -56,8 +53,7 @@ class OrientationLockScreenTest {
 
     @Test
     void showThenHideWhenSwitching() {
-        HeadlessRenderer renderer = new HeadlessRenderer();
-        SceneContext context = renderer.getContext();
+        HeadlessRenderer context = new HeadlessRenderer(false);
 
         Sprite sprite = new MockImage("orientation lock").toSprite();
         context.getStage().getRoot().addChild(sprite);
@@ -71,7 +67,7 @@ class OrientationLockScreenTest {
 
         String expected = """
             Stage
-                Container [$$root, 1]
+                $$root [1]
                     Sprite [$$default]
             """;
 

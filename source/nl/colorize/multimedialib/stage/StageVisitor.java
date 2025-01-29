@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -13,14 +13,10 @@ import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.SegmentedLine;
 
 /**
- * Visitor interface that visits all graphics currently on the stage, visiting
- * them in the order in which they should be drawn.
- * <p>
- * For the various {@code drawX} methods that operate on {@link Primitive}s,
- * the provided shape is already normalized to the position and size how it
- * should be drawn on stage. In other words, the shape is defined using the
- * coordinate system of the stage, not the coordinate system of the graphic
- * or of its parent.
+ * Visitor interface that can be used to traverse all nodes currently on the
+ * stage. Nodes are visited in the order in which they should be drawn, with
+ * parent nodes visited before their children. The renderer uses this interface
+ * to draw the graphics on stage after each frame update.
  */
 public interface StageVisitor {
 
@@ -35,17 +31,12 @@ public interface StageVisitor {
      * Indicates whether this visitor should visit <em>all</em> graphics, or
      * only graphics that are currently visible.
      */
-    public boolean shouldVisitAllGraphics();
+    public boolean shouldVisitAllNodes();
 
-    /**
-     * Visits a container. This method does not actually need to <em>draw</em>
-     * the container's graphics, since the corresponding {@code drawX} methods
-     * will be called for all the container's children. This method will be
-     * called <em>before</em> the container's children are visited. It can be
-     * used to handle logic related to the container itself, for example to
-     * process children that were added or removed since the last frame
-     * update.
-     */
+    //----------------------------------------
+    // 2D graphics
+    //----------------------------------------
+
     public void visitContainer(Container container, Transform globalTransform);
 
     public void drawBackground(ColorRGB color);
@@ -63,4 +54,30 @@ public interface StageVisitor {
     public void drawPolygon(Primitive graphic, Polygon polygon, Transform globalTransform);
 
     public void drawText(Text text, Transform globalTransform);
+
+    /**
+     * Called after all 2D nodes on the stage have been visited. This is an
+     * optional method, the default implementation is empty.
+     */
+    default void finalize2D(Stage stage) {
+    }
+
+    //----------------------------------------
+    // 3D graphics
+    //----------------------------------------
+
+    public void visitGroup(Group group, Transform3D globalTransform);
+
+    public void drawMesh(Mesh mesh, Transform3D globalTransform);
+
+    public void drawLight(Light light, Transform3D globalTransform);
+
+    /**
+     * Called after all 3D nodes on the stage have been visited, but before the
+     * 2D nodes are visited. This allows renders that support both 2D and 3D
+     * graphics to switch from rendering 3D graphics to rendering 2D graphics.
+     * This is an optional method, the default implementation is empty.
+     */
+    default void finalize3D(Stage stage) {
+    }
 }

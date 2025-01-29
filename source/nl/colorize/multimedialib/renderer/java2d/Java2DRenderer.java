@@ -1,23 +1,29 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.java2d;
 
+import lombok.Getter;
+import nl.colorize.multimedialib.math.Box;
+import nl.colorize.multimedialib.math.Point2D;
+import nl.colorize.multimedialib.math.Point3D;
+import nl.colorize.multimedialib.math.Shape3D;
 import nl.colorize.multimedialib.math.Size;
-import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.DisplayMode;
-import nl.colorize.multimedialib.renderer.ErrorHandler;
-import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.Network;
+import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.scene.SceneManager;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Mesh;
+import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.ResourceFile;
@@ -26,11 +32,11 @@ import nl.colorize.util.swing.MacIntegration;
 import nl.colorize.util.swing.SwingUtils;
 import nl.colorize.util.swing.Utils2D;
 
+import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -56,30 +62,26 @@ import static java.awt.image.BufferedImage.TYPE_INT_ARGB;
  * The renderer will use two different threads: the rendering thread is used to
  * update the graphics, while the Swing thread is used to listen for user input.
  */
-public class Java2DRenderer implements Renderer {
+public class Java2DRenderer implements Renderer, SceneContext {
 
-    private DisplayMode displayMode;
-    private Canvas canvas;
-    private WindowOptions windowOptions;
+    @Getter private RenderConfig config;
+    @Getter private AWTInput input;
+    @Getter private StandardMediaLoader mediaLoader;
+    @Getter private Network network;
+    @Getter private SceneManager sceneManager;
+    @Getter private Stage stage;
 
     private JFrame window;
     private Java2DGraphicsContext graphicsContext;
-    private AWTInput input;
-    private StandardMediaLoader mediaLoader;
     private AtomicBoolean canvasDirty;
     private AtomicBoolean terminated;
-    private SceneContext context;
 
     private static final boolean ANTI_ALIASING = true;
     private static final boolean BILINEAR_SCALING = true;
     private static final Logger LOGGER = LogHelper.getLogger(Java2DRenderer.class);
 
-    public Java2DRenderer(DisplayMode displayMode, WindowOptions windowOptions) {
+    public Java2DRenderer() {
         SwingUtils.initializeSwing();
-
-        this.displayMode = displayMode;
-        this.canvas = displayMode.canvas();
-        this.windowOptions = windowOptions;
 
         // Makes sure the canvas and graphics context are initialized during
         // the first frame after the rendering thread starts.
@@ -88,22 +90,23 @@ public class Java2DRenderer implements Renderer {
     }
 
     @Override
-    public void start(Scene initialScene, ErrorHandler errorHandler) {
-        window = initializeWindow();
+    public void start(RenderConfig config, Scene initialScene) {
+        this.config = config;
+        window = initializeWindow(config.getWindowOptions());
         input = initializeInput();
         mediaLoader = new StandardMediaLoader();
-        graphicsContext = new Java2DGraphicsContext(canvas, StandardMediaLoader.fontCache);
-        Network network = new StandardNetwork();
+        graphicsContext = new Java2DGraphicsContext(config.getCanvas(), StandardMediaLoader.fontCache);
+        network = new StandardNetwork();
+        sceneManager = new SceneManager();
+        stage = new Stage(config.getGraphicsMode(), config.getCanvas());
 
-        context = new SceneContext(this, mediaLoader, input, network);
-        context.changeScene(initialScene);
+        changeScene(initialScene);
 
-        Runnable animationLoop = () -> runAnimationLoop(errorHandler);
-        Thread renderingThread = new Thread(animationLoop, "MultimediaLib-Java2D-Renderer");
+        Thread renderingThread = new Thread(this::runAnimationLoop, "MultimediaLib-Java2D-Renderer");
         renderingThread.start();
     }
 
-    private JFrame initializeWindow() {
+    private JFrame initializeWindow(WindowOptions windowOptions) {
         window = new JFrame();
         window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         window.setResizable(true);
@@ -112,7 +115,7 @@ public class Java2DRenderer implements Renderer {
         window.addWindowListener(createWindowCloseListener());
         window.addComponentListener(createResizeListener());
         window.setTitle(windowOptions.getTitle());
-        window.setIconImage(loadIcon(windowOptions));
+        window.setIconImage(loadIcon(windowOptions).getImage());
         window.getContentPane().setPreferredSize(getWindowSize());
         if (windowOptions.isFullscreen()) {
             SwingUtils.goFullScreen(window);
@@ -130,12 +133,13 @@ public class Java2DRenderer implements Renderer {
     }
 
     private Dimension getWindowSize() {
-        Size windowSize = windowOptions.getWindowSize().orElse(canvas.getSize());
+        Size windowSize = config.getWindowOptions().getWindowSize()
+            .orElse(config.getCanvas().getSize());
         return new Dimension(windowSize.width(), windowSize.height());
     }
 
     private AWTInput initializeInput() {
-        AWTInput input = new AWTInput(canvas);
+        AWTInput input = new AWTInput(config);
         window.addKeyListener(input);
         window.addMouseListener(input);
         window.addMouseMotionListener(input);
@@ -158,16 +162,16 @@ public class Java2DRenderer implements Renderer {
                 LOGGER.info("Closing window");
                 terminated.set(true);
 
-                if (!windowOptions.isEmbedded()) {
+                if (!config.getWindowOptions().isEmbedded()) {
                     System.exit(0);
                 }
             }
         };
     }
 
-    private Image loadIcon(WindowOptions windowOptions) {
+    private ImageIcon loadIcon(WindowOptions windowOptions) {
         ResourceFile iconFile = new ResourceFile(windowOptions.getIconFile().path());
-        return SwingUtils.loadIcon(iconFile).getImage();
+        return SwingUtils.loadIcon(iconFile);
     }
 
     /**
@@ -181,30 +185,31 @@ public class Java2DRenderer implements Renderer {
      * renderer does not use vsync and needs to manually manage the
      * framerate.
      */
-    private void runAnimationLoop(ErrorHandler errorHandler) {
+    private void runAnimationLoop() {
         Stopwatch timer = new Stopwatch();
+        long targetFrameTime = Math.round(1000f / config.getFramerate());
 
         try {
             while (!terminated.get()) {
-                long oversleep = Math.max(timer.tick() - displayMode.getFrameTimeMS(), 0L);
+                long oversleep = Math.max(timer.tick() - targetFrameTime, 0L);
 
                 if (canvasDirty.get()) {
                     canvasDirty.set(false);
                     prepareCanvas();
                 }
 
-                if (context.syncFrame() > 0) {
+                if (sceneManager.requestFrameUpdate(this) > 0) {
                     renderFrame();
                 }
 
                 long frameTime = timer.tock();
-                long sleepTime = displayMode.getFrameTimeMS() - frameTime - oversleep;
+                long sleepTime = targetFrameTime - frameTime - oversleep;
                 Thread.yield();
                 Thread.sleep(Math.clamp(sleepTime, 1L, 100L));
             }
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error during animation loop", e);
-            errorHandler.onError(context, e);
+            config.getErrorHandler().onError(this, e);
             terminate();
         }
     }
@@ -212,17 +217,16 @@ public class Java2DRenderer implements Renderer {
     private void renderFrame() {
         BufferStrategy windowBuffer = window.getBufferStrategy();
         Graphics bufferGraphics = accessWindowGraphics(windowBuffer);
+        FrameStats frameStats = sceneManager.getFrameStats();
 
         if (bufferGraphics != null) {
-            context.getFrameStats().markStart(FrameStats.PHASE_FRAME_RENDER);
-
+            frameStats.markStart(FrameStats.PHASE_FRAME_RENDER);
             Graphics2D g2 = Utils2D.createGraphics(bufferGraphics, ANTI_ALIASING, BILINEAR_SCALING);
             graphicsContext.bind(g2);
-            context.getStage().visit(graphicsContext);
+            getStage().visit(graphicsContext);
             blitGraphicsContext(windowBuffer);
             graphicsContext.dispose();
-
-            context.getFrameStats().markEnd(FrameStats.PHASE_FRAME_RENDER);
+            frameStats.markEnd(FrameStats.PHASE_FRAME_RENDER);
         }
     }
 
@@ -240,8 +244,8 @@ public class Java2DRenderer implements Renderer {
         int windowWidth = window.getWidth() - windowInsets.left - windowInsets.right;
         int windowHeight = window.getHeight() - windowInsets.top - windowInsets.bottom;
 
-        canvas.resizeScreen(windowWidth, windowHeight);
-        canvas.offsetScreen(windowInsets.left, windowInsets.top);
+        config.getCanvas().resizeScreen(windowWidth, windowHeight);
+        config.getCanvas().offsetScreen(windowInsets.left, windowInsets.top);
     }
 
     private void blitGraphicsContext(BufferStrategy windowBuffer) {
@@ -256,13 +260,23 @@ public class Java2DRenderer implements Renderer {
     }
 
     @Override
-    public GraphicsMode getGraphicsMode() {
-        return GraphicsMode.MODE_2D;
+    public Mesh createMesh(Shape3D shape, ColorRGB color) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public DisplayMode getDisplayMode() {
-        return displayMode;
+    public Point2D project(Point3D position) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean castPickRay(Point2D canvasPosition, Box area) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isSupported(GraphicsMode graphicsMode) {
+        return graphicsMode == GraphicsMode.MODE_2D;
     }
 
     @Override
@@ -271,26 +285,24 @@ public class Java2DRenderer implements Renderer {
     }
 
     @Override
-    public void takeScreenshot(FilePointer dest) {
-        Java2DGraphicsContext screenshotContext = new Java2DGraphicsContext(canvas,
-            StandardMediaLoader.fontCache);
+    public void takeScreenshot(File screenshotFile) {
+        Java2DGraphicsContext screenshotContext = new Java2DGraphicsContext(
+            config.getCanvas(), StandardMediaLoader.fontCache);
         BufferedImage image = new BufferedImage(window.getWidth(), window.getHeight(), TYPE_INT_ARGB);
         Graphics2D g2 = Utils2D.createGraphics(image, false, false);
         screenshotContext.bind(g2);
-        context.getStage().visit(screenshotContext);
+        getStage().visit(screenshotContext);
         screenshotContext.dispose();
 
         try {
-            File desktop = Platform.getUserDesktopDir();
-            File file = new File(desktop, dest.path());
-            Utils2D.savePNG(image, file);
+            Utils2D.savePNG(image, screenshotFile);
         } catch (IOException e) {
             LOGGER.log(Level.WARNING, "Failed to save screenshot", e);
         }
     }
 
     @Override
-    public String toString() {
+    public String getRendererName() {
         return "Java2D renderer";
     }
 }

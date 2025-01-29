@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <title>MultimediaLib | Three.js for 3D graphics</title>
+    <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no"/>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.171.0/build/three.module.min.js",
+                "three/addons/": "https://unpkg.com/three@0.171.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <script type="module">
+        import * as THREE from "three";
+        import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js";
+
+        document.addEventListener("DOMContentLoaded", event => {
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 300);
+            const animatedObjects = [];
+
+            const renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshBasicMaterial({
+                color: "#FF0000"
+            });
+            const cube = new THREE.Mesh(geometry, material);
+            cube.position.x = 3;
+            scene.add(cube);
+            animatedObjects.push(cube);
+
+            const textureLoader = new THREE.TextureLoader();
+            textureLoader.load("../colorize.png", texture => {
+                const textureMaterial = new THREE.MeshBasicMaterial({
+                    color: "#0000FF",
+                    map: texture
+                });
+                const textureCube = new THREE.Mesh(geometry, textureMaterial);
+                textureCube.position.x = -3;
+                scene.add(textureCube);
+                animatedObjects.push(textureCube);
+            });
+
+            const image = new Image();
+            image.onload = () => {
+                const dynamicTexture = new THREE.Texture(image);
+                dynamicTexture.needsUpdate = true;
+
+                const dynamicTextureMaterial = new THREE.MeshBasicMaterial({
+                    color: "#FFFFFF",
+                    map: dynamicTexture
+                });
+                const dynamicTextureCube = new THREE.Mesh(geometry, dynamicTextureMaterial);
+                dynamicTextureCube.position.x = -6;
+                scene.add(dynamicTextureCube);
+                animatedObjects.push(dynamicTextureCube);
+            };
+            image.src = "../colorize.png";
+
+            camera.position.z = 5;
+
+            const lineMaterial = new THREE.LineBasicMaterial({color: 0x0000ff});
+            const points = [];
+            points.push( new THREE.Vector3( - 10, 0, 0 ) );
+            points.push( new THREE.Vector3( 0, 10, 0 ) );
+            points.push( new THREE.Vector3( 10, 0, 0 ) );
+            const lineGeometry = new THREE.BufferGeometry().setFromPoints( points );
+            const line = new THREE.Line( lineGeometry, lineMaterial );
+            scene.add( line );
+            camera.position.set( 0, 0, 10 );
+            camera.lookAt( 0, 0, 0 );
+
+            const gltfLoader = new GLTFLoader();
+            gltfLoader.load("../../resources/demo/colorize-logo.gltf", gltf => {
+                console.log(gltf);
+                gltf.scene.position.set(0, 2, 0);
+                scene.add(gltf.scene);
+            });
+
+            function animate() {
+                for (let animatedObject of animatedObjects) {
+                    animatedObject.rotation.x += 0.01;
+                    animatedObject.rotation.y += 0.01;
+                }
+                renderer.render(scene, camera);
+            }
+
+            renderer.setAnimationLoop(animate);
+
+            document.addEventListener("mouseup", e => {
+                const cursor = new THREE.Vector3(( e.pageX / window.innerWidth ) * 2 - 1,
+                    - ( e.pageY / window.innerHeight ) * 2 + 1,
+                    0.5);
+                const position = new THREE.Vector3();
+                cursor.unproject( camera );
+                cursor.sub(camera.position).normalize();
+                const distance = - camera.position.z / cursor.z;
+                position.copy( camera.position ).add( cursor.multiplyScalar( distance ));
+                console.log("Cursor: " + cursor.x + ", " + cursor.y + ", " + cursor.z);
+                console.log("Position: " + position.x + ", " + position.y + ", " + position.z);
+            });
+        });
+    </script>
+</body>
+</html>

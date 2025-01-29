@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -9,7 +9,7 @@
  * is used for "general" browser APIs that do not depend on a specific renderer
  * but are always available.
  */
-class BrowserBridge {
+export class BrowserBridge {
 
     isMobileDevice() {
         return /iphone|ipad|android/i.test(window.navigator.userAgent);

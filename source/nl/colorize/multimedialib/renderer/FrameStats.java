@@ -1,13 +1,11 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
-import lombok.Getter;
-import nl.colorize.multimedialib.stage.Graphic2D;
 import nl.colorize.util.Stopwatch;
 import nl.colorize.util.stats.Aggregate;
 
@@ -30,19 +28,15 @@ import java.util.Map;
  */
 public class FrameStats {
 
-    private DisplayMode displayMode;
     private Map<String, PhaseStats> stats;
-    @Getter private int graphicsCount;
 
     public static final String PHASE_FRAME_TIME = "$$frameTime";
     public static final String PHASE_FRAME_UPDATE = "$$frameUpdate";
     public static final String PHASE_FRAME_RENDER = "$$frameRender";
     public static final int BUFFER_CAPACITY = 60;
 
-    public FrameStats(DisplayMode displayMode) {
-        this.displayMode = displayMode;
+    public FrameStats() {
         this.stats = new LinkedHashMap<>();
-        this.graphicsCount = 0;
     }
 
     private PhaseStats prepare(String phase) {
@@ -67,10 +61,6 @@ public class FrameStats {
         while (phaseStats.values.size() > BUFFER_CAPACITY) {
             phaseStats.values.removeFirst();
         }
-    }
-
-    public int getTargetFramerate() {
-        return displayMode.framerate();
     }
 
     public float getAverageFramerate() {
@@ -131,14 +121,6 @@ public class FrameStats {
      */
     public int getBufferSize() {
         return prepare(PHASE_FRAME_TIME).values().size();
-    }
-
-    public void countGraphics(Graphic2D graphic) {
-        graphicsCount++;
-    }
-
-    public void resetGraphicsCount() {
-        graphicsCount = 0;
     }
 
     /**

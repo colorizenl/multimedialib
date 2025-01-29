@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -20,12 +20,11 @@ import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
-import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
+import com.badlogic.gdx.graphics.g3d.environment.PointLight;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Streams;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Point3D;
@@ -33,28 +32,38 @@ import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.SegmentedLine;
 import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.FontFace;
+import nl.colorize.multimedialib.stage.Group;
+import nl.colorize.multimedialib.stage.Light;
+import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
+import nl.colorize.multimedialib.stage.StageNode3D;
+import nl.colorize.multimedialib.stage.StageSubscriber;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
-import nl.colorize.multimedialib.stage.World3D;
+import nl.colorize.multimedialib.stage.Transform3D;
 import nl.colorize.util.stats.Cache;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888;
 import static com.badlogic.gdx.utils.Align.center;
 import static com.badlogic.gdx.utils.Align.left;
 import static com.badlogic.gdx.utils.Align.right;
 
-public class GDXGraphics implements StageVisitor {
+public class GDXGraphics implements StageVisitor, StageSubscriber {
 
+    private GraphicsMode graphicsMode;
     private Canvas canvas;
     private GDXMediaLoader mediaLoader;
 
@@ -62,49 +71,84 @@ public class GDXGraphics implements StageVisitor {
     private ShapeRenderer shapeBatch;
     private Cache<MaskTexture, TextureRegion> maskCache;
 
-    private PerspectiveCamera camera;
-    private DirectionalLight light;
+    protected PerspectiveCamera camera;
     private Environment environment;
+    private Map<Light, PointLight> lights;
     private ModelBatch modelBatch;
+    private List<ModelInstance> displayList;
 
     private static final int FIELD_OF_VIEW = 75;
-    private static final float NEAR_PLANE = 1f;
-    private static final float FAR_PLANE = 300f;
+    private static final float NEAR_PLANE = 1;
+    private static final float FAR_PLANE = 300;
     private static final int CIRCLE_SEGMENTS = 32;
     private static final int MASK_CACHE_SIZE = 1024;
 
-    protected GDXGraphics(Canvas canvas, GDXMediaLoader mediaLoader) {
+    protected GDXGraphics(GraphicsMode graphicsMode, Canvas canvas, GDXMediaLoader mediaLoader) {
+        this.graphicsMode = graphicsMode;
         this.canvas = canvas;
         this.mediaLoader = mediaLoader;
         this.maskCache = Cache.from(this::createMask, MASK_CACHE_SIZE);
 
-        prepareWorld();
-        restartBatch();
-    }
-
-    private void prepareWorld() {
         camera = new PerspectiveCamera(FIELD_OF_VIEW, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera.near = NEAR_PLANE;
         camera.far = FAR_PLANE;
         camera.update();
 
-        light = new DirectionalLight();
         environment = new Environment();
-        environment.add(light);
+        lights = new HashMap<>();
+
+        restartBatch();
     }
 
     protected void restartBatch() {
         spriteBatch = new SpriteBatch();
         shapeBatch = new ShapeRenderer();
         modelBatch = new ModelBatch();
+        if (displayList != null) {
+            displayList.clear();
+        }
     }
 
     @Override
     public void prepareStage(Stage stage) {
+        if (displayList == null) {
+            displayList = new ArrayList<>();
+            stage.subscribe(this);
+        }
+
+        if (graphicsMode == GraphicsMode.MODE_3D) {
+            camera.position.set(toVector(stage.getCameraPosition()));
+            camera.up.set(0f, 1f, 0f);
+            camera.lookAt(toVector(stage.getCameraFocus()));
+            camera.update();
+
+            Color ambient = GDXMediaLoader.toColor(stage.getAmbientLightColor());
+            environment.set(new ColorAttribute(ColorAttribute.AmbientLight, ambient));
+
+            displayList.clear();
+        }
     }
 
     @Override
-    public boolean shouldVisitAllGraphics() {
+    public void onNodeAdded(Group parent, StageNode3D node) {
+        if (node instanceof Light light) {
+            PointLight gdxLight = new PointLight();
+            environment.add(gdxLight);
+            lights.put(light, gdxLight);
+        }
+    }
+
+    @Override
+    public void onNodeRemoved(Group parent, StageNode3D node) {
+        if (node instanceof Light light) {
+            PointLight gdxLight = lights.get(light);
+            environment.remove(gdxLight);
+            lights.remove(light);
+        }
+    }
+
+    @Override
+    public boolean shouldVisitAllNodes() {
         return false;
     }
 
@@ -117,6 +161,7 @@ public class GDXGraphics implements StageVisitor {
         switchMode(false, true);
         shapeBatch.setColor(convertColor(backgroundColor));
         shapeBatch.rect(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        switchMode(false, false);
     }
 
     /**
@@ -206,10 +251,10 @@ public class GDXGraphics implements StageVisitor {
     @Override
     public void drawPolygon(Primitive graphic, Polygon polygon, Transform globalTransform) {
         if (polygon.getNumPoints() == 3) {
-            drawTriangle(polygon.points(), graphic.getColor(), globalTransform.getAlpha());
+            drawTriangle(polygon.toPoints(), graphic.getColor(), globalTransform.getAlpha());
         } else {
             for (Polygon triangle : polygon.subdivide()) {
-                drawTriangle(triangle.points(), graphic.getColor(), globalTransform.getAlpha());
+                drawTriangle(triangle.toPoints(), graphic.getColor(), globalTransform.getAlpha());
             }
         }
     }
@@ -297,6 +342,59 @@ public class GDXGraphics implements StageVisitor {
         };
     }
 
+    @Override
+    public void finalize2D(Stage stage) {
+        switchMode(false, false);
+    }
+
+    @Override
+    public void visitGroup(Group group, Transform3D globalTransform) {
+    }
+
+    @Override
+    public void drawMesh(Mesh mesh, Transform3D globalTransform) {
+        if (globalTransform.isVisible()) {
+            GDXModel gdxModel = (GDXModel) mesh;
+            syncTransform(gdxModel.getModelInstance(), globalTransform);
+            displayList.add(gdxModel.getModelInstance());
+        }
+    }
+
+    private void syncTransform(ModelInstance modelInstance, Transform3D globalTransform) {
+        Vector3 positionVector = convertVector(globalTransform.getPosition());
+        modelInstance.transform.setToTranslation(positionVector);
+
+        modelInstance.transform.rotate(1f, 0f, 0f, globalTransform.getRotationX().degrees());
+        modelInstance.transform.rotate(0f, 1f, 0f, globalTransform.getRotationY().degrees());
+        modelInstance.transform.rotate(0f, 0f, 1f, globalTransform.getRotationZ().degrees());
+
+        modelInstance.transform.scale(
+            globalTransform.getScaleX() / 100f,
+            globalTransform.getScaleY() / 100f,
+            globalTransform.getScaleZ() / 100f
+        );
+    }
+
+    @Override
+    public void drawLight(Light light, Transform3D globalTransform) {
+        // Unlike models, libGDX does actually keep track
+        // of all lights in its environment. So we only
+        // need to update the light's state.
+        PointLight gdxLight = lights.get(light);
+        gdxLight.setColor(convertColor(light.getColor()));
+        gdxLight.setPosition(convertVector(globalTransform.getPosition()));
+        gdxLight.setIntensity(globalTransform.isVisible() ? light.getIntensity() : 0f);
+    }
+
+    @Override
+    public void finalize3D(Stage stage) {
+        if (graphicsMode == GraphicsMode.MODE_3D) {
+            modelBatch.begin(camera);
+            modelBatch.render(displayList, environment);
+            modelBatch.end();
+        }
+    }
+
     private float toScreenX(float x) {
         return canvas.toScreenX(x);
     }
@@ -313,13 +411,17 @@ public class GDXGraphics implements StageVisitor {
         return convertColor(color, 100f);
     }
 
+    private Vector3 convertVector(Point3D point) {
+        return new Vector3(point.x(), point.y(), point.z());
+    }
+
     /**
      * Switches graphics modes. libGDX is heavily reliant on performing drawing
      * operations in batch mode. As a consequence, there is a performance
      * penalty when drawing sprites and shapes interchangeably, as this will
      * trigger several mode switches during each frame.
      */
-    protected void switchMode(boolean sprites, boolean shapes) {
+    private void switchMode(boolean sprites, boolean shapes) {
         Preconditions.checkArgument(!(sprites && shapes), "Invalid drawing mode");
 
         if (sprites) {
@@ -357,32 +459,6 @@ public class GDXGraphics implements StageVisitor {
         if (shapeBatch.isDrawing()) {
             shapeBatch.end();
         }
-    }
-
-    public void render3D(World3D layer) {
-        camera.position.set(toVector(layer.getCameraPosition()));
-        camera.up.set(0f, 1f, 0f);
-        camera.lookAt(toVector(layer.getCameraTarget()));
-        camera.update();
-
-        Color ambient = GDXMediaLoader.toColor(layer.getAmbientLight());
-        environment.set(new ColorAttribute(ColorAttribute.AmbientLight, ambient));
-
-        Color lightColor = GDXMediaLoader.toColor(layer.getLightColor());
-        Vector3 lightPosition = toVector(layer.getLightPosition());
-        light.set(lightColor, lightPosition);
-
-        List<ModelInstance> displayList = updateDisplayList(layer);
-        modelBatch.begin(camera);
-        modelBatch.render(displayList, environment);
-        modelBatch.end();
-    }
-
-    private List<ModelInstance> updateDisplayList(World3D world) {
-        return Streams.stream(world.getChildren())
-            .map(model -> (GDXModel) model)
-            .map(gdxModel -> gdxModel.getInstance())
-            .toList();
     }
 
     private Vector3 toVector(Point3D point) {

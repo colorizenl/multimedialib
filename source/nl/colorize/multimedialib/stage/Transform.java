@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -14,8 +14,9 @@ import nl.colorize.util.stats.Aggregate;
 
 /**
  * Defines the list of transformation properties that should be applied
- * to graphics when displaying them. The table below shows all available
- * properties, along with the graphics types that support them:
+ * to graphics when displaying them.
+ * <p>
+ * The following transform properties are available:
  * <p>
  * <pre>
  * | Property          | Defined as                                 | Supported by       |

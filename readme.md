@@ -35,13 +35,13 @@ to the dependencies section in `pom.xml`:
     <dependency>
         <groupId>nl.colorize</groupId>
         <artifactId>multimedialib</artifactId>
-        <version>2024.6</version>
+        <version>2025.1</version>
     </dependency>  
     
 The library can also be used in Gradle projects:
 
     dependencies {
-        implementation "nl.colorize:multimedialib:2024.6"
+        implementation "nl.colorize:multimedialib:2025.1"
     }
     
 Supported platforms
@@ -54,15 +54,15 @@ initializes the application with the correct renderer.
 
 The following renderer implementations are available:
 
-| Renderer                                                  | Graphics | Platforms                      |
-|-----------------------------------------------------------|----------|--------------------------------|
-| Java2D renderer                                           | 2D       | Windows, Mac                   |
-| [JavaFX](https://openjfx.io) renderer                     | 2D       | Windows, Mac                   |
-| [libGDX](https://libgdx.badlogicgames.com) renderer       | 2D + 3D  | Windows, Mac, Android          |
-| HTML5 canvas renderer                                     | 2D       | Browser, iOS, Android, Windows |
-| [PixiJS](https://www.pixijs.com) renderer                 | 2D       | Browser, iOS, Android, Windows |
-| [three.js](https://threejs.org) renderer (*experimental*) | 2D + 3D  | Browser, iOS, Android, Windows |
-| Headless renderer                                         | Headless | Testing/simulation             |
+| Renderer                                            | Graphics | Platforms                      |
+|-----------------------------------------------------|----------|--------------------------------|
+| Java2D renderer                                     | 2D       | Windows, Mac                   |
+| [JavaFX](https://openjfx.io) renderer               | 2D       | Windows, Mac                   |
+| [libGDX](https://libgdx.badlogicgames.com) renderer | 2D + 3D  | Windows, Mac, Android          |
+| HTML5 canvas renderer                               | 2D       | Browser, iOS, Android, Windows |
+| [PixiJS](https://www.pixijs.com) renderer           | 2D       | Browser, iOS, Android, Windows |
+| [three.js](https://threejs.org) renderer            | 2D + 3D  | Browser, iOS, Android, Windows |
+| Headless renderer                                   | Headless | Testing/simulation             |
 
 That is clearly a ridiculous number of renderers, but that's unfortunately what is necessary to
 get multimedia application implemented in Java to run on such a wide variery of platforms and
@@ -91,18 +91,26 @@ terminology and in terms of how applications are structured.
 
 ![MultimediaLib architecture](_development/architecture.svg)
 
-Applications are split into *scenes*. Only one scene can be active at the same time, but complex
-scenes can consist of multiple sub-scenes, each responsible for a certain part of the scene. 
+Applications are split into *scenes*. Simple applications may consist of a single scene, but
+larger applications can be split into multiple scenes, each representing a discrete phase of
+the application.
 
-The scene has access to the *stage*, which contains the graphics for the currently active scene.
-The stage is structured as a [scene graph](https://en.wikipedia.org/wiki/Scene_graph). Depending
-on the renderer and platform, the stage can contain 2D and/or 3D graphics.
+Only one scene can be active at the same time, but it is possible to attach sub-scenes to the
+currently active scene. These sub-scenes can contain their own logic, but cannot outlive their 
+parent scene. When the active scene is changed, both the scene itself and its sub-scenes will 
+be terminated and the stage will be cleared in preparation for the next scene.
 
-Scene logic is intentionally separate from the contents of the stage. This allows each scene to
-function as an [Entity Component System](https://en.wikipedia.org/wiki/Entity_component_system). 
-Each sub-scene acts as a "system" that operates on data, the stage, or a combination thereof.
-Regular [POJOs](https://en.wikipedia.org/wiki/Plain_old_Java_object) act as components, while
-an "entity" is simply an ID plus a number of components.
+The currently active scene (and its sub-scenes) receive access to the *scene context*, which
+is provided by the renderer via callback methods.
+
+The currently active scene receives access to the *scene context*, which is provided to the
+scene via callback methods. This allows the scene to access the underlying renderer and the stage.
+
+The *stage* contains the graphics and audio for the currently active scene. The stage can contain
+both 2D and 3D graphics in a [scene graph](https://en.wikipedia.org/wiki/Scene_graph), where
+transforming a parent node propagates to its children. While the scene has full control over the
+stage, this control cannot outlive the scene itself: at the end of the scene the contents of the 
+stage are cleared so the next scene can take over.
 
 Starting the demo application
 -----------------------------
@@ -121,7 +129,7 @@ parameters:
 
 | Name                | Required | Description                                   |
 |---------------------|----------|-----------------------------------------------|
-| `--renderer`        | yes      | Either 'java2d', 'javafx', or gdx'.           |
+| `--renderer`        | yes      | One of 'java2d', 'javafx', 'gdx'.             |
 | `--graphics`        | yes      | Either '2d' or '3d'.                          |
 | `--framerate`       | no       | Demo framerate, default is 60 fps.            |
 | `--canvas`          | no       | Uses a fixed canvas size to display graphics. |
@@ -220,7 +228,7 @@ The following Gradle build tasks are available:
 License
 -------
 
-Copyright 2009-2024 Colorize
+Copyright 2009-2025 Colorize
 
 > Licensed under the Apache License, Version 2.0 (the "License");
 > you may not use this file except in compliance with the License.

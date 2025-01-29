@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -15,7 +15,7 @@ import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.multimedialib.scene.Updatable;
 import nl.colorize.multimedialib.stage.Animation;
-import nl.colorize.multimedialib.stage.Graphic2D;
+import nl.colorize.multimedialib.stage.StageNode2D;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Text;
@@ -54,7 +54,7 @@ public final class Effect implements Scene {
     private List<Updatable> frameHandlers;
     private List<ClickHandler> clickHandlers;
     private List<Runnable> completionHandlers;
-    private List<Graphic2D> linkedGraphics;
+    private List<StageNode2D> linkedGraphics;
     private List<BooleanSupplier> completionConditions;
     private boolean completed;
 
@@ -122,7 +122,7 @@ public final class Effect implements Scene {
         return this;
     }
 
-    public Effect addClickHandler(Graphic2D graphic, Runnable handler) {
+    public Effect addClickHandler(StageNode2D graphic, Runnable handler) {
         return addClickHandler(() -> graphic.getStageBounds(), handler);
     }
 
@@ -189,8 +189,8 @@ public final class Effect implements Scene {
      * Links existing graphics to this effect. This means the graphics will be
      * removed from stage when the effect has completed.
      */
-    public Effect linkGraphics(Graphic2D... graphics) {
-        for (Graphic2D graphic : graphics) {
+    public Effect linkGraphics(StageNode2D... graphics) {
+        for (StageNode2D graphic : graphics) {
             linkedGraphics.add(graphic);
         }
 
@@ -201,10 +201,10 @@ public final class Effect implements Scene {
      * Links existing graphics to this effect. This means the graphics will be
      * removed from stage when the effect has completed.
      *
-     * @deprecated Use {@link #linkGraphics(Graphic2D...)} instead.
+     * @deprecated Use {@link #linkGraphics(StageNode2D...)} instead.
      */
     @Deprecated
-    public Effect removeAfterwards(Graphic2D... graphics) {
+    public Effect removeAfterwards(StageNode2D... graphics) {
         return linkGraphics(graphics);
     }
 
@@ -240,8 +240,7 @@ public final class Effect implements Scene {
         }
 
         return linkedGraphics.stream()
-            .map(Graphic2D::calculateGlobalTransform)
-            .anyMatch(Transform::isVisible);
+            .anyMatch(graphic -> graphic.getTransform().isVisible());
     }
 
     private boolean checkCompleted() {
@@ -259,8 +258,8 @@ public final class Effect implements Scene {
             completionHandler.run();
         }
 
-        for (Graphic2D graphic : linkedGraphics) {
-            graphic.detach();
+        for (StageNode2D graphic : linkedGraphics) {
+            context.getStage().detach(graphic);
         }
     }
 
@@ -270,12 +269,12 @@ public final class Effect implements Scene {
     }
 
     @Deprecated
-    public void withLinkedGraphics(Consumer<Graphic2D> callback) {
+    public void withLinkedGraphics(Consumer<StageNode2D> callback) {
         linkedGraphics.forEach(callback);
     }
 
     @Deprecated
-    public <T extends Graphic2D> void withLinkedGraphics(Class<T> type, Consumer<T> callback) {
+    public <T extends StageNode2D> void withLinkedGraphics(Class<T> type, Consumer<T> callback) {
         linkedGraphics.stream()
             .filter(graphic -> graphic.getClass().equals(type))
             .forEach(graphic -> callback.accept((T) graphic));
@@ -340,21 +339,21 @@ public final class Effect implements Scene {
         return effect;
     }
 
-    public static Effect forClickHandler(Graphic2D graphic, Runnable handler) {
+    public static Effect forClickHandler(StageNode2D graphic, Runnable handler) {
         Effect effect = new Effect();
         effect.linkGraphics(graphic);
         effect.addClickHandler(graphic, handler);
         return effect;
     }
 
-    public static Effect forX(Graphic2D graphic, Timeline timeline) {
+    public static Effect forX(StageNode2D graphic, Timeline timeline) {
         Effect effect = new Effect();
         effect.addTimelineHandler(timeline, value -> graphic.getTransform().setX(value));
         effect.linkGraphics(graphic);
         return effect;
     }
 
-    public static Effect forY(Graphic2D graphic, Timeline timeline) {
+    public static Effect forY(StageNode2D graphic, Timeline timeline) {
         Effect effect = new Effect();
         effect.addTimelineHandler(timeline, value -> graphic.getTransform().setY(value));
         effect.linkGraphics(graphic);

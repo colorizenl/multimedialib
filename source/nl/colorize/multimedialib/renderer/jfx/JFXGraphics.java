@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -22,17 +22,21 @@ import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.math.SegmentedLine;
-import nl.colorize.multimedialib.renderer.DisplayMode;
+import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.FontFace;
+import nl.colorize.multimedialib.stage.Group;
+import nl.colorize.multimedialib.stage.Light;
+import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
+import nl.colorize.multimedialib.stage.Transform3D;
 import nl.colorize.util.stats.Cache;
 
 import java.util.List;
@@ -42,15 +46,15 @@ import java.util.List;
  */
 public class JFXGraphics implements StageVisitor {
 
-    private DisplayMode displayMode;
+    private RenderConfig config;
     private JFXMediaLoader media;
     private Cache<MaskImageCacheKey, WritableImage> maskImageCache;
 
     private Canvas fxCanvas;
     private GraphicsContext gc;
 
-    public JFXGraphics(DisplayMode displayMode, JFXMediaLoader media) {
-        this.displayMode = displayMode;
+    public JFXGraphics(RenderConfig config, JFXMediaLoader media) {
+        this.config = config;
         this.media = media;
         this.maskImageCache = Cache.from(this::createMaskImage);
     }
@@ -69,7 +73,7 @@ public class JFXGraphics implements StageVisitor {
     }
 
     @Override
-    public boolean shouldVisitAllGraphics() {
+    public boolean shouldVisitAllNodes() {
         return false;
     }
 
@@ -88,7 +92,7 @@ public class JFXGraphics implements StageVisitor {
         JFXImage image = (JFXImage) sprite.getCurrentGraphics();
         Image fxImage = image.getImage();
         Region region = image.getRegion();
-        float zoom = displayMode.canvas().getZoomLevel();
+        float zoom = config.getCanvas().getZoomLevel();
 
         if (transform.getMaskColor() != null) {
             MaskImageCacheKey key = new MaskImageCacheKey(fxImage, transform.getMaskColor());
@@ -167,7 +171,7 @@ public class JFXGraphics implements StageVisitor {
 
     @Override
     public void drawText(Text text, Transform globalTransform) {
-        FontFace scaled = text.getFont().scale(displayMode.canvas());
+        FontFace scaled = text.getFont().scale(config.getCanvas());
         Font font = media.getFont(scaled);
 
         gc.setFont(font);
@@ -182,6 +186,21 @@ public class JFXGraphics implements StageVisitor {
         });
 
         gc.setGlobalAlpha(1.0);
+    }
+
+    @Override
+    public void visitGroup(Group group, Transform3D globalTransform) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void drawMesh(Mesh mesh, Transform3D globalTransform) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void drawLight(Light light, Transform3D globalTransform) {
+        throw new UnsupportedOperationException();
     }
 
     private WritableImage createMaskImage(MaskImageCacheKey key) {
@@ -206,11 +225,11 @@ public class JFXGraphics implements StageVisitor {
     }
 
     private float toScreenX(float canvasX) {
-        return displayMode.canvas().toScreenX(canvasX);
+        return config.getCanvas().toScreenX(canvasX);
     }
 
     private float toScreenY(float canvasY) {
-        return displayMode.canvas().toScreenY(canvasY);
+        return config.getCanvas().toScreenY(canvasY);
     }
 
     private Color toColor(ColorRGB rgb) {

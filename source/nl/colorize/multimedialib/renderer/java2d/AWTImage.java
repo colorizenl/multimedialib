@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -9,9 +9,9 @@ package nl.colorize.multimedialib.renderer.java2d;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
 import nl.colorize.multimedialib.math.Region;
-import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Image;
+import nl.colorize.util.ResourceFile;
 
 import java.awt.image.BufferedImage;
 
@@ -24,9 +24,9 @@ public class AWTImage implements Image {
 
     private BufferedImage image;
     private Region region;
-    private FilePointer origin;
+    private ResourceFile origin;
 
-    public AWTImage(BufferedImage image, FilePointer origin) {
+    public AWTImage(BufferedImage image, ResourceFile origin) {
         Preconditions.checkArgument(image != null, "Image is null");
 
         this.image = image;

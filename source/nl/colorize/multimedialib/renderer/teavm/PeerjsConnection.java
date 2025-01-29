@@ -1,16 +1,18 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.teavm;
 
 import nl.colorize.multimedialib.renderer.PeerConnection;
-import nl.colorize.util.MessageQueue;
+import nl.colorize.util.SubscribableCollection;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Stream;
 
 /**
  * Implements the {@link PeerConnection} interface in Java, which is then
@@ -19,14 +21,14 @@ import java.util.List;
 public class PeerjsConnection implements PeerConnection, MessageCallback {
 
     private PeerjsBridge bridge;
-    private MessageQueue<String> connectionQueue;
-    private MessageQueue<PeerMessage> receivedBuffer;
+    private SubscribableCollection<String> connectionQueue;
+    private SubscribableCollection<PeerMessage> receivedBuffer;
     private List<String> sendHistory;
 
     protected PeerjsConnection(PeerjsBridge bridge) {
         this.bridge = bridge;
-        this.connectionQueue = new MessageQueue<>();
-        this.receivedBuffer = new MessageQueue<>();
+        this.connectionQueue = SubscribableCollection.wrap(new CopyOnWriteArrayList<>());
+        this.receivedBuffer = SubscribableCollection.wrap(new CopyOnWriteArrayList<>());
         this.sendHistory = new ArrayList<>();
 
         bridge.open(this);
@@ -34,15 +36,13 @@ public class PeerjsConnection implements PeerConnection, MessageCallback {
 
     @Override
     public void connect(String peerId) {
-        connectionQueue.offer(peerId);
+        connectionQueue.add(peerId);
         processConnectionQueue();
     }
 
     private void processConnectionQueue() {
         if (bridge.isInitialized()) {
-            for (String peerId : connectionQueue.flush()) {
-                bridge.connect(peerId, this);
-            }
+            connectionQueue.flush().forEach(peerId -> bridge.connect(peerId, this));
         }
     }
 
@@ -53,13 +53,14 @@ public class PeerjsConnection implements PeerConnection, MessageCallback {
     }
 
     @Override
-    public MessageQueue<PeerMessage> getReceivedMessages() {
-        return receivedBuffer;
+    public Iterable<PeerMessage> flushReceivedMessages() {
+        Stream<PeerMessage> messages = receivedBuffer.flush();
+        return messages::iterator;
     }
 
     @Override
     public void onMessage(String type, String value) {
-        receivedBuffer.offer(new PeerMessage(type, value));
+        receivedBuffer.add(new PeerMessage(type, value));
 
         if (type.equals(PeerMessage.TYPE_INIT)) {
             processConnectionQueue();

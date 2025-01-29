@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -11,7 +11,6 @@ import javafx.scene.media.Media;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import nl.colorize.multimedialib.math.Region;
-import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
 import nl.colorize.multimedialib.stage.Audio;
@@ -43,7 +42,7 @@ public class JFXMediaLoader extends StandardMediaLoader {
     }
 
     @Override
-    public JFXImage loadImage(FilePointer file) {
+    public JFXImage loadImage(ResourceFile file) {
         ResourceFile source = locateFile(file);
 
         try (InputStream stream = source.openStream()) {
@@ -56,7 +55,7 @@ public class JFXMediaLoader extends StandardMediaLoader {
     }
 
     @Override
-    public Audio loadAudio(FilePointer file) {
+    public Audio loadAudio(ResourceFile file) {
         ClassLoader classLoader = JFXMediaLoader.class.getClassLoader();
         URL resourceURL = classLoader.getResource(file.path());
 
@@ -69,7 +68,7 @@ public class JFXMediaLoader extends StandardMediaLoader {
     }
 
     @Override
-    public FontFace loadFont(FilePointer file, String family, int size, ColorRGB color) {
+    public FontFace loadFont(ResourceFile file, String family, int size, ColorRGB color) {
         FontFace font = new FontFace(file, family, size, color);
         // Make sure the font is cached.
         getFont(font);

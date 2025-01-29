@@ -1,13 +1,12 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.tool;
 
 import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
 import com.google.common.net.HttpHeaders;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
@@ -17,7 +16,6 @@ import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
-import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.MediaLoader;
@@ -45,6 +43,7 @@ import nl.colorize.multimedialib.stage.SpriteAtlas;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.util.LogHelper;
+import nl.colorize.util.ResourceFile;
 import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
 import nl.colorize.util.http.Headers;
@@ -89,22 +88,23 @@ public class Demo2D implements Scene, ErrorHandler {
     public static final int DEFAULT_CANVAS_WIDTH = 800;
     public static final int DEFAULT_CANVAS_HEIGHT = 600;
 
-    private static final FilePointer MARIO_SPRITES_FILE = new FilePointer("demo/demo.png");
-    private static final FilePointer AUDIO_FILE = new FilePointer("demo/demo-sound.mp3");
-    private static final FilePointer COLORIZE_LOGO = new FilePointer("colorize-logo.png");
+    protected static final int BUTTON_WIDTH = 100;
+    protected static final int BUTTON_HEIGHT = 25;
+    protected static final ColorRGB RED_BUTTON = new ColorRGB(228, 93, 97);
+    protected static final ColorRGB GREEN_BUTTON = ColorRGB.parseHex("#72A725");
+    protected static final ColorRGB PINK_BUTTON = ColorRGB.parseHex("#B75797");
+    protected static final ColorRGB BLUE_BUTTON = ColorRGB.parseHex("#43A1C7");
+    protected static final ColorRGB ORANGE_BUTTON = ColorRGB.parseHex("#F1723D");
+    protected static final ResourceFile MARIO_SPRITES_FILE = new ResourceFile("demo/demo.png");
 
-    private static final List<String> DIRECTIONS = List.of("north", "east", "south", "west");
-    private static final int BUTTON_WIDTH = 100;
-    private static final int BUTTON_HEIGHT = 25;
-    private static final ColorRGB RED_BUTTON = new ColorRGB(228, 93, 97);
-    private static final ColorRGB GREEN_BUTTON = ColorRGB.parseHex("#72A725");
-    private static final ColorRGB PINK_BUTTON = ColorRGB.parseHex("#B75797");
-    private static final ColorRGB BLUE_BUTTON = ColorRGB.parseHex("#43A1C7");
+    private static final ResourceFile AUDIO_FILE = new ResourceFile("demo/demo-sound.mp3");
+    private static final ResourceFile COLORIZE_LOGO = new ResourceFile("colorize-logo.png");
     private static final ColorRGB BACKGROUND_COLOR = ColorRGB.parseHex("#343434");
     private static final ColorRGB ALT_BACKGROUND_COLOR = ColorRGB.parseHex("#EBEBEB");
     private static final ColorRGB COLORIZE_COLOR = ColorRGB.parseHex("#e45d61");
     private static final String EXAMPLE_URL = "https://dashboard.clrz.nl/rest/echo";
     private static final List<ColorRGB> SWIPE_COLORS = List.of(RED, GREEN, BLUE, YELLOW);
+    private static final List<String> DIRECTIONS = List.of("north", "east", "south", "west");
     private static final Logger LOGGER = LogHelper.getLogger(Demo2D.class);
 
     @Override
@@ -169,16 +169,21 @@ public class Demo2D implements Scene, ErrorHandler {
 
     private void createButton(SceneContext context, String label, ColorRGB color, int y, Runnable click) {
         Primitive bounds = new Primitive(new Rect(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT), color);
-        hudLayer.addChild(bounds);
+        bounds.getTransform().setPosition(-BUTTON_WIDTH / 2f - 2, 2);
 
         Text text = new Text(label, font, Align.CENTER);
-        hudLayer.addChild(text);
+        text.getTransform().setY(19);
+
+        Container button = new Container();
+        button.addChild(bounds);
+        button.addChild(text);
+        hudLayer.addChild(button);
 
         // Need to keep the button in position for when the canvas
         // is resized.
         context.attach(deltaTime -> {
-            bounds.getTransform().setPosition(context.getCanvas().getWidth() - BUTTON_WIDTH - 2, y + 2);
-            text.getTransform().setPosition(context.getCanvas().getWidth() - BUTTON_WIDTH / 2f, y + 19);
+            int buttonX = context.getCanvas().getWidth() - BUTTON_WIDTH / 2;
+            button.getTransform().setPosition(buttonX, y);
         });
 
         Effect.forClickHandler(bounds, click).attach(context);
@@ -209,7 +214,7 @@ public class Demo2D implements Scene, ErrorHandler {
         context.attach(swipeTracker);
 
         context.attach(deltaTime -> {
-            List<Line> swipes = ImmutableList.copyOf(swipeTracker.getSwipes().flush());
+            List<Line> swipes = swipeTracker.getSwipes().flush().toList();
 
             for (int i = 0; i < swipes.size(); i++) {
                 drawSwipeMarker(swipes.get(i), SWIPE_COLORS.get(i % SWIPE_COLORS.size()));
@@ -296,7 +301,7 @@ public class Demo2D implements Scene, ErrorHandler {
         PeerConnection peerConnection = context.getNetwork().openPeerConnection();
 
         context.attach(() -> {
-            for (PeerMessage message : peerConnection.getReceivedMessages().flush()) {
+            for (PeerMessage message : peerConnection.flushReceivedMessages()) {
                 LOGGER.info("Received message: " + message.type() + " / " + message.value());
                 if (message.type().equals(PeerMessage.TYPE_INIT)) {
                     context.getInput().fillClipboard(message.value());
@@ -414,10 +419,15 @@ public class Demo2D implements Scene, ErrorHandler {
         Sprite marioSprite = new Sprite();
 
         for (String direction : DIRECTIONS) {
-            List<Image> frames = marioSpriteSheet.get(List.of(direction + "_0",
-                direction + "_1", direction + "_2", direction + "_3", direction + "_4"));
-            Animation anim = new Animation(frames, 0.1f, true);
-            marioSprite.addGraphics(direction, anim);
+            List<Image> frames = marioSpriteSheet.get(List.of(
+                direction + "_0",
+                direction + "_1",
+                direction + "_2",
+                direction + "_3",
+                direction + "_4"
+            ));
+
+            marioSprite.addGraphics(direction, new Animation(frames, 0.1f, true));
         }
 
         return marioSprite;

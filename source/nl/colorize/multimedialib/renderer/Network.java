@@ -1,12 +1,12 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
-import nl.colorize.util.Subscribable;
+import nl.colorize.util.Subject;
 import nl.colorize.util.http.Headers;
 import nl.colorize.util.http.PostData;
 import nl.colorize.util.http.URLResponse;
@@ -14,7 +14,7 @@ import nl.colorize.util.http.URLResponse;
 /**
  * Interface for the platform-specific mechanism for network access. HTTP
  * requests are sent asynchronously to avoid blocking the application. These
- * asynchronous operations will return a {@link Subscribable} that
+ * asynchronous operations will return a {@link Subject} that
  * applications can use to await the result. Callback methods will be invoked
  * from a thread that is compatible with the current renderer.
  */
@@ -22,17 +22,17 @@ public interface Network {
 
     /**
      * Sends a HTTP GET request to the specified URL. The request will be
-     * performed asyncrhonously, the returned {@link Subscribable} can be
+     * performed asyncrhonously, the returned {@link Subject} can be
      * used to subscribe to the response.
      */
-    public Subscribable<URLResponse> get(String url, Headers headers);
+    public Subject<URLResponse> get(String url, Headers headers);
 
     /**
      * Sends a HTTP POST request to the specified URL. The request will be
-     * performed asyncrhonously, the returned {@link Subscribable} can be
+     * performed asyncrhonously, the returned {@link Subject} can be
      * used to subscribe to the response.
      */
-    public Subscribable<URLResponse> post(String url, Headers headers, PostData body);
+    public Subject<URLResponse> post(String url, Headers headers, PostData body);
 
     /**
      * Opens a peer-to-peer connection. The protocol used for the connection

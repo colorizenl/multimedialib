@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -15,11 +15,16 @@ import com.google.common.base.Preconditions;
 public record Circle(Point2D center, float radius) implements Shape {
 
     public Circle {
-        Preconditions.checkArgument(radius > 0f, "Invalid radius: " + radius);
+        Preconditions.checkArgument(radius >= 0f, "Invalid radius: " + radius);
     }
 
     public Circle(float x, float y, float radius) {
         this(new Point2D(x, y), radius);
+    }
+
+    @Override
+    public Point2D getCenter() {
+        return center;
     }
 
     @Override

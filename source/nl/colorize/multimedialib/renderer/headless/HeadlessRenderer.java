@@ -1,60 +1,65 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.headless;
 
-import com.google.common.annotations.VisibleForTesting;
 import lombok.Getter;
 import lombok.Setter;
+import nl.colorize.multimedialib.math.Box;
 import nl.colorize.multimedialib.math.Point2D;
+import nl.colorize.multimedialib.math.Point3D;
+import nl.colorize.multimedialib.math.Shape3D;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.DisplayMode;
-import nl.colorize.multimedialib.renderer.ErrorHandler;
-import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
+import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Pointer;
+import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
-import nl.colorize.multimedialib.renderer.WindowOptions;
+import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
 import nl.colorize.multimedialib.renderer.java2d.StandardNetwork;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.scene.SceneManager;
+import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontFace;
+import nl.colorize.multimedialib.stage.Mesh;
+import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.StageVisitor;
-import nl.colorize.util.Subscribable;
+import nl.colorize.util.Development;
+import nl.colorize.util.Subject;
 
+import java.io.File;
 import java.util.List;
 
 import static nl.colorize.multimedialib.stage.ColorRGB.BLACK;
 
 /**
- * Headless renderer implementation intended for testing or simulating on
- * platforms without a graphics environment. The renderer does not actually
- * run an animation loop, frame updates need to be performed manually by
- * calling {@link #doFrame()}. Graphics and input can be simulated using the
- * methods provided by this class.
+ * Headless renderer implementation which can be used for testing and
+ * simulation purposes, and (unlike all other renderers) can be used on
+ * platforms without a graphics environment.
  * <p>
- * Although the headless renderer does not display graphics, it is capable
- * of loading images. See {@link HeadlessMediaLoader} for more information.
+ * The headless renderer can be started without an active animation loop.
+ * In this scenatio, all frame updates need to be performed manually.
  */
-@VisibleForTesting
+@Development
 @Getter
 @Setter
-public class HeadlessRenderer implements Renderer, InputDevice {
+public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
 
-    private GraphicsMode graphicsMode;
-    private WindowOptions windowOptions;
-    private DisplayMode displayMode;
+    private boolean graphicsEnvironmentEnabled;
+    private RenderConfig config;
     private StageVisitor graphics;
-    private HeadlessMediaLoader mediaLoader;
+    private MediaLoader mediaLoader;
     private Network network;
-    private SceneContext context;
+    private SceneManager sceneManager;
+    private Stage stage;
 
     private boolean touchAvailable;
     private boolean keyboardAvailable;
@@ -62,40 +67,41 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     private boolean pointerPressed;
     private boolean pointerReleased;
 
-    public static final int DEFAULT_WIDTH = 800;
-    public static final int DEFAULT_HEIGHT = 600;
-    public static final int DEFAULT_FRAMERATE = 30;
-
     public static final FontFace DEFAULT_FONT = new FontFace(null, "sans-serif", 10, BLACK);
 
-    public HeadlessRenderer(DisplayMode displayMode, boolean graphicsEnvironmentEnabled) {
-        this.graphicsMode = GraphicsMode.HEADLESS;
-        this.windowOptions = new WindowOptions("<headless>");
-        this.displayMode = displayMode;
-        this.graphics = null;
-        this.mediaLoader = new HeadlessMediaLoader(graphicsEnvironmentEnabled);
-        this.network = new StandardNetwork();
-        this.context = new SceneContext(this, mediaLoader, this, network);
+    public HeadlessRenderer(boolean graphicsEnvironmentEnabled) {
+        this.graphicsEnvironmentEnabled = graphicsEnvironmentEnabled;
 
         this.touchAvailable = false;
         this.keyboardAvailable = false;
         this.pointer = new Point2D(0f, 0f);
         this.pointerPressed = false;
         this.pointerReleased = false;
-    }
 
-    public HeadlessRenderer(Canvas canvas, int framerate) {
-        this(new DisplayMode(canvas, framerate), true);
-    }
-    
-    public HeadlessRenderer() {
-        this(new Canvas(DEFAULT_WIDTH, DEFAULT_HEIGHT, ScaleStrategy.flexible()), DEFAULT_FRAMERATE);
+        // The headless renderer doesn't need to be started explicitly,
+        // and can be used immediately after creation.
+        Canvas defaultCanvas = new Canvas(800, 600, ScaleStrategy.flexible());
+        RenderConfig defaultConfig = RenderConfig.headless(GraphicsMode.HEADLESS, defaultCanvas);
+        defaultConfig.setFramerate(10);
+        Scene nullScene = (context, deltaTime) -> {};
+        start(defaultConfig, nullScene);
     }
 
     @Override
-    public void start(Scene initialScene, ErrorHandler errorHandler) {
-        context.changeScene(initialScene);
-        doFrame();
+    public void start(RenderConfig config, Scene initialScene) {
+        this.config = config;
+        this.graphics = null;
+        this.mediaLoader = new StandardMediaLoader();
+        this.network = new StandardNetwork();
+        this.sceneManager = new SimulatedSceneManager();
+        this.stage = new Stage(config.getGraphicsMode(), config.getCanvas());
+
+        sceneManager.changeScene(initialScene);
+        doFrame(0f);
+    }
+
+    public void start(Scene initialScene) {
+        start(config, initialScene);
     }
 
     @Override
@@ -104,8 +110,38 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     }
 
     @Override
-    public void takeScreenshot(FilePointer dest) {
+    public Point2D project(Point3D position) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean castPickRay(Point2D canvasPosition, Box area) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Mesh createMesh(Shape3D shape, ColorRGB color) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void takeScreenshot(File screenshotFile) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getRendererName() {
+        return "Headless renderer";
+    }
+
+    @Override
+    public boolean isSupported(GraphicsMode graphicsMode) {
+        return true;
+    }
+
+    @Deprecated
+    public SceneContext getContext() {
+        return this;
     }
 
     //-------------------------------------------------------------------------
@@ -113,16 +149,28 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     //-------------------------------------------------------------------------
 
     public void doFrame() {
-        context.update(1f / displayMode.framerate());
+        update(1f);
+    }
+
+    public void doFrame(float deltaTime) {
+        update(deltaTime);
     }
 
     @Override
     public void update(float deltaTime) {
+        if (sceneManager instanceof SimulatedSceneManager simulated) {
+            simulated.simulateFrameUpdate(this, deltaTime);
+        }
     }
 
     //-------------------------------------------------------------------------
     // Simulate input
     //-------------------------------------------------------------------------
+
+    @Override
+    public InputDevice getInput() {
+        return this;
+    }
 
     @Override
     public Iterable<Pointer> getPointers() {
@@ -157,16 +205,22 @@ public class HeadlessRenderer implements Renderer, InputDevice {
     }
 
     @Override
-    public Subscribable<String> requestTextInput(String label, String initialValue) {
-        return new Subscribable<>();
+    public Subject<String> requestTextInput(String label, String initialValue) {
+        return new Subject<>();
     }
 
     @Override
     public void fillClipboard(String text) {
     }
 
-    @Override
-    public String toString() {
-        return "<headless>";
+    /**
+     * Extended scene manager that can simulate frame updates independent of
+     * how much time has actually elapsed.
+     */
+    private static class SimulatedSceneManager extends SceneManager {
+
+        public void simulateFrameUpdate(SceneContext context, float deltaTime) {
+            performFrameUpdate(context, deltaTime);
+        }
     }
 }

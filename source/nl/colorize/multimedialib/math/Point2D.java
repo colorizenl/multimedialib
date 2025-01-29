@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -45,9 +45,9 @@ public record Point2D(float x, float y) {
      * and the specified other point.
      */
     public Point2D findCenter(Point2D other) {
-        float averageX = (x + other.x) / 2f;
-        float averageY = (y + other.y) / 2f;
-        return new Point2D(averageX, averageY);
+        float centerX = (x + other.x) / 2f;
+        float centerY = (y + other.y) / 2f;
+        return new Point2D(centerX, centerY);
     }
     
     /**
@@ -84,7 +84,7 @@ public record Point2D(float x, float y) {
      * specified offset.
      */
     public Point2D move(Point2D other) {
-        return move(other.x(), other.y());
+        return move(other.x, other.y);
     }
 
     /**

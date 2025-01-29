@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -9,37 +9,51 @@ package nl.colorize.multimedialib.math;
 import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
- * A two-dimensional convex polygon with float precision coordinates. The
- * polygon is described by an array of points, e.g. [x0, y0, x1, y1, ...].
+ * A two-dimensional convex polygon with float precision coordinates.
  */
-public record Polygon(float... points) implements Shape {
+public record Polygon(List<Point2D> points) implements Shape {
 
-    public Polygon {
-        Preconditions.checkArgument(points.length >= 6,
-            "Convex polygon must have at least 3 points, got " + points.length);
+    public Polygon(List<Point2D> points) {
+        Preconditions.checkArgument(points.size() >= 3,
+            "Convex polygon must have at least 3 points, got " + points.size());
 
-        Preconditions.checkArgument(points.length % 2 != 1,
-            "Points array must have equal number of X and Y coordinates: " + points.length);
+        this.points = List.copyOf(points);
     }
 
+    /**
+     * Returns an array that contains the X and Y coordinates for all points
+     * within this polygon, in the format {@code [x0, y0, x1, y1, ...]}.
+     */
+    public float[] toPoints() {
+        float[] result = new float[points.size() * 2];
+        for (int i = 0; i < points.size(); i++) {
+            result[i * 2] = points.get(i).x();
+            result[i * 2 + 1] = points.get(i).y();
+        }
+        return result;
+    }
+
+    @Deprecated
     public int getNumPoints() {
-        return points.length / 2;
-    }
-    
-    public float getPointX(int n) {
-        return points[2 * n];
-    }
-    
-    public float getPointY(int n) {
-        return points[2 * n + 1];
+        return points.size();
     }
 
+    @Deprecated
+    public float getPointX(int n) {
+        return points.get(n).x();
+    }
+
+    @Deprecated
+    public float getPointY(int n) {
+        return points.get(n).y();
+    }
+
+    @Deprecated
     public Point2D getPoint(int n) {
-        return new Point2D(getPointX(n), getPointY(n));
+        return points.get(n);
     }
 
     @Override
@@ -55,12 +69,12 @@ public record Polygon(float... points) implements Shape {
         boolean oddNodes = false;
         float x1 = 0f;
         float y1 = 0f;
-        float x2 = points[points.length - 2];
-        float y2 = points[points.length - 1];
+        float x2 = points.getLast().x();
+        float y2 = points.getLast().y();
 
-        for (int i = 0; i < points.length; x2 = x1, y2 = y1, i += 2) {
-            x1 = points[i];
-            y1 = points[i + 1];
+        for (int i = 0; i < points.size(); x2 = x1, y2 = y1, i++) {
+            x1 = points.get(i).x();
+            y1 = points.get(i).y();
 
             if ((y1 < py && y2 >= py) || y1 >= py && y2 < py) {
                 if ((py - y1) / (y2 - y1) * (x2 - x1) < (px - x1)) {
@@ -73,14 +87,17 @@ public record Polygon(float... points) implements Shape {
     }
     
     private boolean isPointOnLineSegment(float px, float py) {
-        for (int i = 0; i < points.length - 2; i += 2) {
-            if (isPointOnLineSegment(points[i], points[i + 1], points[i + 2], points[i + 3], px, py)) {
+        for (int i = 0; i < points.size() - 1; i++) {
+            Point2D current = points.get(i);
+            Point2D next = points.get(i + 1);
+
+            if (isPointOnLineSegment(current.x(), current.y(), next.x(), next.y(), px, py)) {
                 return true;
             }
         }
 
-        return isPointOnLineSegment(points[points.length - 2], points[points.length - 1],
-            points[0], points[1], px, py);
+        return isPointOnLineSegment(points.getLast().x(), points.getLast().y(),
+            points.getFirst().x(), points.getFirst().y(), px, py);
     }
     
     private boolean isPointOnLineSegment(float x0, float y0, float x1, float y1, float px, float py) {
@@ -105,7 +122,8 @@ public record Polygon(float... points) implements Shape {
      * Implementation based on <a href="http://slick.cokeandcode.com">Slick</a>.
      */
     public boolean intersects(Polygon p) {
-        float[] pPoints = p.points();
+        float[] points = toPoints();
+        float[] pPoints = p.toPoints();
         double unknownA;
         double unknownB;
         
@@ -146,21 +164,22 @@ public record Polygon(float... points) implements Shape {
      */
     @Override
     public Rect getBoundingBox() {
-        float minX = points[0];
-        float minY = points[1];
-        float maxX = points[0];
-        float maxY = points[1];
+        float minX = points.getFirst().x();
+        float minY = points.getFirst().y();
+        float maxX = minX;
+        float maxY = minY;
 
-        for (int i = 2; i < points.length; i += 2) {
-            minX = Math.min(minX, points[i]);
-            minY = Math.min(minY, points[i + 1]);
-            maxX = Math.max(maxX, points[i]);
-            maxY = Math.max(maxY, points[i + 1]);
+        for (int i = 1; i < points.size(); i++) {
+            minX = Math.min(minX, points.get(i).x());
+            minY = Math.min(minY, points.get(i).y());
+            maxX = Math.max(maxX, points.get(i).x());
+            maxY = Math.max(maxY, points.get(i).y());
         }
 
         return new Rect(minX, minY, maxX - minX, maxY - minY);
     }
 
+    @Override
     public Point2D getCenter() {
         return getBoundingBox().getCenter();
     }
@@ -170,25 +189,26 @@ public record Polygon(float... points) implements Shape {
      * polygon to be convex.
      */
     public List<Polygon> subdivide() {
-        if (points.length == 6) {
-            return Collections.singletonList(this);
+        if (points.size() == 3) {
+            return List.of(this);
         }
 
         List<Point2D> vertices = subdivideVertices();
         List<Polygon> triangles = new ArrayList<>();
 
         for (int i = 0; i < vertices.size(); i += 3) {
-            triangles.add(new Polygon(
-                vertices.get(i).x(), vertices.get(i).y(),
-                vertices.get(i + 1).x(), vertices.get(i + 1).y(),
-                vertices.get(i + 2).x(), vertices.get(i + 2).y()
-            ));
+            triangles.add(new Polygon(List.of(
+                vertices.get(i),
+                vertices.get(i + 1),
+                vertices.get(i + 2)
+            )));
         }
 
         return triangles;
     }
 
     private List<Point2D> subdivideVertices() {
+        float[] points = toPoints();
         List<Point2D> vertices = new ArrayList<>();
         Point2D center = getCenter();
 
@@ -211,12 +231,9 @@ public record Polygon(float... points) implements Shape {
 
     @Override
     public Polygon reposition(Point2D offset) {
-        float[] newPoints = new float[points.length];
-
-        for (int i = 0; i < points.length; i += 2) {
-            newPoints[i] = points[i] + offset.x();
-            newPoints[i + 1] = points[i + 1] + offset.y();
-        }
+        List<Point2D> newPoints = points.stream()
+            .map(point -> point.move(offset))
+            .toList();
 
         return new Polygon(newPoints);
     }
@@ -227,6 +244,18 @@ public record Polygon(float... points) implements Shape {
     }
 
     /**
+     * Factory method that creates a polygon from an array of points, in the
+     * format {@code [x0, y0, x1, y1, ...]}.
+     */
+    public static Polygon fromPoints(float... points) {
+        List<Point2D> result = new ArrayList<>();
+        for (int i = 0; i < points.length; i += 2) {
+            result.add(new Point2D(points[i], points[i + 1]));
+        }
+        return new Polygon(result);
+    }
+
+    /**
      * Convenience method to create a polygon in the shape of a circle with the
      * specified properties.
      */
@@ -234,12 +263,10 @@ public record Polygon(float... points) implements Shape {
         Preconditions.checkArgument(numPoints >= 4, "Too few points: " + numPoints);
         Preconditions.checkArgument(radius > EPSILON, "Invalid radius: " + radius);
 
-        float[] points = new float[numPoints * 2];
-
+        List<Point2D> points = new ArrayList<>();
         for (int i = 0; i < numPoints; i++) {
             Vector vector = new Vector(i * (360f / numPoints), radius);
-            points[i * 2] = origin.x() + vector.getX();
-            points[i * 2 + 1] = origin.y() + vector.getY();
+            points.add(new Point2D(origin.x() + vector.getX(), origin.y() + vector.getY()));
         }
 
         return new Polygon(points);
@@ -267,11 +294,11 @@ public record Polygon(float... points) implements Shape {
         Vector center = new Vector((angle % 360), length);
         Vector right = new Vector((angle % 360) + arc / 2f, length);
 
-        return new Polygon(
-            origin.x(), origin.y(),
-            origin.x() + left.getX(), origin.y() + left.getY(),
-            origin.x() + center.getX(), origin.y() + center.getY(),
-            origin.x() + right.getX(), origin.y() + right.getY()
-        );
+        return new Polygon(List.of(
+            origin,
+            new Point2D(origin.x() + left.getX(), origin.y() + left.getY()),
+            new Point2D(origin.x() + center.getX(), origin.y() + center.getY()),
+            new Point2D(origin.x() + right.getX(), origin.y() + right.getY())
+        ));
     }
 }

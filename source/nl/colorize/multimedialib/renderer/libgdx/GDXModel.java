@@ -1,99 +1,85 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.libgdx;
 
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g3d.Material;
+import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
-import com.badlogic.gdx.graphics.g3d.model.Animation;
-import com.badlogic.gdx.graphics.g3d.utils.AnimationController;
-import com.google.common.base.Preconditions;
-import nl.colorize.multimedialib.stage.ModelAnimation;
-import nl.colorize.multimedialib.stage.PolygonModel;
+import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
+import lombok.Getter;
+import nl.colorize.multimedialib.scene.Timer;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Image;
+import nl.colorize.multimedialib.stage.Mesh;
+import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Transform3D;
 
-import java.util.HashMap;
-import java.util.Map;
+import static lombok.AccessLevel.PROTECTED;
+import static nl.colorize.multimedialib.stage.ColorRGB.WHITE;
 
-public class GDXModel implements PolygonModel {
+public class GDXModel implements Mesh {
 
-    private ModelInstance instance;
-    private Transform3D transform;
-    private Map<String, Animation> animations;
-    private AnimationController animationController;
+    @Getter(PROTECTED) private ModelInstance modelInstance;
+    @Getter private Transform3D transform;
+    @Getter private Transform3D globalTransform;
+    @Getter private Sprite dynamicTexture;
 
-    protected GDXModel(ModelInstance instance) {
-        this.instance = instance;
+    protected GDXModel(ModelInstance modelInstance) {
+        this.modelInstance = modelInstance;
         this.transform = new Transform3D();
-        this.animations = new HashMap<>();
+        this.globalTransform = new Transform3D();
 
-        for (Animation anim : instance.model.animations) {
-            animations.put(anim.id, anim);
+        for (Material material : modelInstance.materials) {
+            material.set(new BlendingAttribute(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA));
         }
     }
 
-    protected ModelInstance getInstance() {
-        return instance;
+    protected GDXModel(Model model) {
+        this(new ModelInstance(model));
     }
 
     @Override
-    public void update(float deltaTime) {
-        instance.transform.setToTranslation(
-            transform.getPosition().x(),
-            transform.getPosition().y(),
-            transform.getPosition().z()
-        );
-
-        instance.transform.rotate(1f, 0f, 0f, transform.getRotationX());
-        instance.transform.rotate(0f, 1f, 0f, transform.getRotationY());
-        instance.transform.rotate(0f, 0f, 1f, transform.getRotationZ());
-
-        instance.transform.scale(transform.getScaleX(), transform.getScaleY(), transform.getScaleZ());
-
-        if (animationController != null) {
-            animationController.update(deltaTime);
-
-            if (isAnimationCompleted()) {
-                animationController = null;
-            }
+    public void animate(Timer animationTimer) {
+        if (dynamicTexture != null) {
+            dynamicTexture.animate(animationTimer);
+            applyTexture(dynamicTexture.getCurrentGraphics());
         }
     }
 
     @Override
-    public ModelAnimation getAnimation(String name) {
-        Animation animation = animations.get(name);
-        Preconditions.checkArgument(animation != null, "No such animation: " + name);
-        return new ModelAnimation(name, animation.duration, false);
+    public void applyColor(ColorRGB color) {
+        ColorAttribute colorAttr = ColorAttribute.createDiffuse(GDXMediaLoader.toColor(color));
+        for (Material material : modelInstance.materials) {
+            material.set(colorAttr);
+        }
     }
 
     @Override
-    public void playAnimation(ModelAnimation animation) {
-        int loopCount = animation.loop() ? Integer.MAX_VALUE : 1;
-        animationController = new AnimationController(instance);
-        animationController.animate(animation.name(), loopCount, 1f, null, 0f);
-    }
-
-    private boolean isAnimationCompleted() {
-        return animationController == null ||
-            animationController.current == null ||
-            animationController.current.loopCount == 0;
-    }
-
-    @Override
-    public Transform3D getTransform() {
-        return transform;
+    public void applyTexture(Image texture) {
+        GDXImage gdxImage = (GDXImage) texture;
+        ColorAttribute colorAttr = ColorAttribute.createDiffuse(GDXMediaLoader.toColor(WHITE));
+        TextureAttribute textureAttr = TextureAttribute.createDiffuse(gdxImage.getTextureRegion());
+        for (Material material : modelInstance.materials) {
+            material.set(colorAttr);
+            material.set(textureAttr);
+        }
     }
 
     @Override
-    public PolygonModel copy() {
-        ModelInstance instanceCopy = new ModelInstance(instance.model);
-        return new GDXModel(instanceCopy);
+    public void applyDynamicTexture(Sprite sprite) {
+        dynamicTexture = sprite;
+        applyTexture(dynamicTexture.getCurrentGraphics());
     }
 
     @Override
-    public String toString() {
-        return "GDXModel";
+    public Mesh copy() {
+        return new GDXModel(new ModelInstance(modelInstance.model));
     }
 }

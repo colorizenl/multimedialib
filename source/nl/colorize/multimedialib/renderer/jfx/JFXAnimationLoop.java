@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -16,7 +16,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
 import nl.colorize.multimedialib.renderer.FrameStats;
-import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.scene.SceneManager;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.swing.Utils2D;
 
@@ -34,7 +34,6 @@ import java.util.logging.Logger;
 public class JFXAnimationLoop extends Application {
 
     private JFXRenderer renderer;
-    private SceneContext context;
     private JFXGraphics graphics;
     private JFXInput input;
 
@@ -47,7 +46,6 @@ public class JFXAnimationLoop extends Application {
         this.stage = stage;
 
         renderer = JFXRenderer.accessInstance();
-        context = renderer.getContext();
         graphics = renderer.getGraphics();
         input = renderer.getInput();
 
@@ -56,8 +54,8 @@ public class JFXAnimationLoop extends Application {
     }
 
     private void populateUI(Stage stage) {
-        int width = context.getCanvas().getWidth();
-        int height = context.getCanvas().getHeight();
+        int width = renderer.getCanvas().getWidth();
+        int height = renderer.getCanvas().getHeight();
         Canvas fxCanvas = new Canvas(width, height);
 
         Group root = new Group();
@@ -68,8 +66,8 @@ public class JFXAnimationLoop extends Application {
         attachEventHandlers(fxScene, fxCanvas);
 
         stage.setScene(fxScene);
-        stage.setTitle(renderer.getWindowOptions().getTitle());
-        stage.setMaximized(renderer.getWindowOptions().isFullscreen());
+        stage.setTitle(renderer.getConfig().getWindowOptions().getTitle());
+        stage.setMaximized(renderer.getConfig().getWindowOptions().isFullscreen());
         stage.requestFocus();
         stage.show();
     }
@@ -99,11 +97,13 @@ public class JFXAnimationLoop extends Application {
     }
 
     private boolean handleFrameUpdate() {
+        SceneManager sceneManager = renderer.getSceneManager();
+
         try {
-            if (context.syncFrame() > 0) {
-                context.getFrameStats().markStart(FrameStats.PHASE_FRAME_RENDER);
-                context.getStage().visit(graphics);
-                context.getFrameStats().markEnd(FrameStats.PHASE_FRAME_RENDER);
+            if (sceneManager.requestFrameUpdate(renderer) > 0) {
+                sceneManager.getFrameStats().markStart(FrameStats.PHASE_FRAME_RENDER);
+                renderer.getStage().visit(graphics);
+                sceneManager.getFrameStats().markEnd(FrameStats.PHASE_FRAME_RENDER);
             }
 
             while (!renderer.getScreenshotQueue().isEmpty()) {
@@ -113,20 +113,20 @@ public class JFXAnimationLoop extends Application {
             return true;
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Exception in JavaFX animation loop", e);
-            renderer.getErrorHandler().onError(context, e);
+            renderer.getConfig().getErrorHandler().onError(renderer, e);
             return false;
         }
     }
 
     private void resizeWidth(Canvas fxCanvas, Number width) {
-        int screenHeight = context.getCanvas().getScreenSize().height();
-        context.getCanvas().resizeScreen(width.intValue(), screenHeight);
+        int screenHeight = renderer.getCanvas().getScreenSize().height();
+        renderer.getCanvas().resizeScreen(width.intValue(), screenHeight);
         fxCanvas.setWidth(width.intValue());
     }
 
     private void resizeHeight(Canvas fxCanvas, Number height) {
-        int screenWidth = context.getCanvas().getScreenSize().width();
-        context.getCanvas().resizeScreen(screenWidth, height.intValue());
+        int screenWidth = renderer.getCanvas().getScreenSize().width();
+        renderer.getCanvas().resizeScreen(screenWidth, height.intValue());
         fxCanvas.setHeight(height.intValue());
     }
 

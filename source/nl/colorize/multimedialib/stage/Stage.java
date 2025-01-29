@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -10,54 +10,97 @@ import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
+import nl.colorize.multimedialib.math.Point3D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.SegmentedLine;
 import nl.colorize.multimedialib.math.Shape;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.util.LogHelper;
 
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
- * The stage contains all graphics that are part of the current scene.
- * Depending on the renderer and current platform, the stage can contain
- * 2D and/or 3D graphics. The stage is structured as a
+ * The stage contains the graphics and audio for the currently active scene.
+ * The stage can contain both 2D and 3D graphics. It is structured as a
  * <a href="https://en.wikipedia.org/wiki/Scene_graph">scene graph</a>,
- * and can be traversed using a {@link StageVisitor}. This is used by the
- * renderer at the end of each frame update, so the stage can be rendered.
+ * where transforming a parent node propagates to its children.
  * <p>
  * While the scene has full control over the stage, this control cannot
  * outlive the scene itself: at the end of the scene the contents of the
  * stage are cleared so the next scene can take over.
  */
 @Getter
-public class Stage {
+@Setter
+public final class Stage implements StageSubscriber {
 
-    private Canvas canvas;
-    private Timer animationTimer;
-    private FrameStats frameStats;
+    private final GraphicsMode graphicsMode;
+    private final Canvas canvas;
+    private final Timer animationTimer;
 
-    private Container root;
-    private World3D world;
-    @Setter private ColorRGB backgroundColor;
+    private final Container root;
+    private ColorRGB backgroundColor;
+    private Map<StageNode2D, Container> parentMap2D;
 
-    private static final String ROOT_CONTAINER_NAME = "$$root";
+    private final Group root3D;
+    private Point3D cameraPosition;
+    private Point3D cameraFocus;
+    private ColorRGB ambientLightColor;
+    private Map<StageNode3D, Group> parentMap3D;
+
+    public static final ColorRGB DEFAULT_AMBIENT_LIGHT_COLOR = new ColorRGB(220, 220, 220);
+
+    private static final String ROOT_CONTAINER_2D = "$$root";
+    private static final String ROOT_CONTAINER_3D = "$$root3D";
     private static final float SAFE_ZONE = 128f;
     private static final Logger LOGGER = LogHelper.getLogger(Stage.class);
 
-    public Stage(GraphicsMode graphicsMode, Canvas canvas, FrameStats frameStats) {
+    /**
+     * Creates a new stage that will be drawn to the specified canvas, using
+     * the specified graphics mode.
+     */
+    public Stage(GraphicsMode graphicsMode, Canvas canvas) {
+        this.graphicsMode = graphicsMode;
         this.canvas = canvas;
         this.animationTimer = Timer.infinite();
-        this.frameStats = frameStats;
 
-        this.root = new Container(ROOT_CONTAINER_NAME);
-        this.world = graphicsMode == GraphicsMode.MODE_3D ? new World3D() : null;
+        this.root = new Container(ROOT_CONTAINER_2D);
         this.backgroundColor = ColorRGB.BLACK;
+        this.parentMap2D = new HashMap<>();
+
+        this.root3D = new Group(ROOT_CONTAINER_3D);
+        this.cameraPosition = new Point3D(0, 20, 10);
+        this.cameraFocus = Point3D.ORIGIN;
+        this.ambientLightColor = DEFAULT_AMBIENT_LIGHT_COLOR;
+        this.parentMap3D = new HashMap<>();
+
+        subscribe(this);
+    }
+
+    @Override
+    public void onNodeAdded(Container parent, StageNode2D node) {
+        parentMap2D.put(node, parent);
+    }
+
+    @Override
+    public void onNodeRemoved(Container parent, StageNode2D node) {
+        parentMap2D.remove(node);
+    }
+
+    @Override
+    public void onNodeAdded(Group parent, StageNode3D node) {
+        parentMap3D.put(node, parent);
+    }
+
+    @Override
+    public void onNodeRemoved(Group parent, StageNode3D node) {
+        parentMap3D.remove(node);
     }
 
     /**
@@ -83,44 +126,93 @@ public class Stage {
     }
 
     /**
-     * Visits all graphics currently on the stage, in the order in which they
-     * should be drawn. This method is called by the renderer following each
-     * frame update.
+     * Creates a new group with the specified name, then adds it to the root
+     * container for 3D graphics to make it part of the stage.
+     */
+    public Group addGroup(String name) {
+        Group group = new Group(name);
+        root3D.addChild(group);
+        return group;
+    }
+
+    /**
+     * Detaches the specified node from the scene graph. If the node is not
+     * currently part of the stage, calling this method does nothing.
+     * <p>
+     * Prefer using {@link Container#removeChild(StageNode2D)} over this
+     * method, as it has better performance. This method exists for
+     * convenience, as it does not require references to both parent and
+     * child, and can be used in situations that are not performance-critical.
+     */
+    public void detach(StageNode2D node) {
+        Container parent = parentMap2D.get(node);
+        if (parent != null) {
+            parent.removeChild(node);
+            parentMap2D.remove(node);
+        }
+    }
+
+    /**
+     * Detaches the specified node from the scene graph. If the node is not
+     * currently part of the stage, calling this method does nothing.
+     * <p>
+     * Prefer using {@link Group#removeChild(StageNode3D)} over this
+     * method, as it has better performance. This method exists for
+     * convenience, as it does not require references to both parent and
+     * child, and can be used in situations that are not performance-critical.
+     */
+    public void detach(StageNode3D node) {
+        Group parent = parentMap3D.get(node);
+        if (parent != null) {
+            parent.removeChild(node);
+            parentMap3D.remove(node);
+        }
+    }
+
+    /**
+     * Removes all 2D and 3D graphics from the stage. This is always called at
+     * the end of a scene, but can also be used manually mid-scene.
+     */
+    public void clear() {
+        root.getChildren().clear();
+        parentMap2D.clear();
+
+        root3D.getChildren().clear();
+        parentMap3D.clear();
+    }
+
+    /**
+     * Visits all nodes that are currently part of the stage. Nodes will be
+     * visited in the order in which they should be drawn. Parent nodes will
+     * be visited before their children.
      */
     public void visit(StageVisitor visitor) {
         visitor.prepareStage(this);
         visitor.drawBackground(backgroundColor);
-        visitGraphic(root, root.getTransform(), visitor);
+        if (graphicsMode == GraphicsMode.MODE_3D) {
+            visitNode3D(root3D, root3D.getTransform(), visitor);
+            visitor.finalize3D(this);
+        }
+        visitNode2D(root, root.getTransform(), visitor);
+        visitor.finalize2D(this);
     }
 
-    /**
-     * Visits all graphics on the stage, recursively. This method first draws
-     * the graphic itself, then visits the graphic's children. To improve
-     * performance, this method will only recurse if the specified graphic is
-     * currently visible.
-     */
-    private void visitGraphic(Graphic2D graphic, Transform globalTransform, StageVisitor visitor) {
-        if (!shouldDraw(graphic, globalTransform, visitor)) {
+    private void visitNode2D(StageNode2D node, Transform globalTransform, StageVisitor visitor) {
+        node.getGlobalTransform().set(globalTransform);
+
+        if (!shouldDraw(node, globalTransform, visitor)) {
             return;
         }
 
-        // We don't want to unnecessarily update the container's
-        // children if some of those children are not currently
-        // visible. The visible children are still updated once
-        // we reach them while rendering.
-        if (!(graphic instanceof Container)) {
-            graphic.updateGraphics(animationTimer);
-        }
+        node.animate(animationTimer);
 
-        switch (graphic) {
+        switch (node) {
             case Container container -> visitContainer(container, globalTransform, visitor);
             case Sprite sprite -> visitor.drawSprite(sprite, globalTransform);
             case Primitive primitive -> visitPrimitive(primitive, globalTransform, visitor);
             case Text text -> visitor.drawText(text, globalTransform);
-            default -> LOGGER.warning("Unknown graphics type: " + graphic.getClass());
+            default -> LOGGER.warning("Unknown 2D graphics type: " + node.getClass());
         }
-
-        frameStats.countGraphics(graphic);
     }
 
     /**
@@ -136,12 +228,12 @@ public class Stage {
      * for the container, and just perform the visibility check for the
      * container's children.
      */
-    private boolean shouldDraw(Graphic2D graphic, Transform globalTransform, StageVisitor visitor) {
-        if (visitor.shouldVisitAllGraphics() || graphic instanceof Container) {
+    private boolean shouldDraw(StageNode2D node, Transform globalTransform, StageVisitor visitor) {
+        if (visitor.shouldVisitAllNodes() || node instanceof Container) {
             return true;
         }
 
-        if (!graphic.getTransform().isVisible() || !globalTransform.isVisible()) {
+        if (!node.getTransform().isVisible() || !globalTransform.isVisible()) {
             return false;
         }
 
@@ -152,20 +244,16 @@ public class Stage {
             canvas.getBounds().height() + 2f * SAFE_ZONE
         );
 
-        return graphic.getStageBounds().intersects(safeCanvasBounds);
+        return node.getStageBounds().intersects(safeCanvasBounds);
     }
 
     private void visitContainer(Container container, Transform globalTransform, StageVisitor visitor) {
         visitor.visitContainer(container, globalTransform);
 
-        List<Graphic2D> children = (List<Graphic2D>) container.getChildren();
-
-        // Intentionally uses a classic for loop, to prevent potential
-        // issues with concurrent modification.
-        for (int i = 0; i < children.size(); i++) {
-            Transform childLocalTransform = children.get(i).getTransform();
+        for (StageNode2D child : container) {
+            Transform childLocalTransform = child.getTransform();
             Transform childGlobalTransform = globalTransform.combine(childLocalTransform);
-            visitGraphic(children.get(i), childGlobalTransform, visitor);
+            visitNode2D(child, childGlobalTransform, visitor);
         }
     }
 
@@ -182,14 +270,143 @@ public class Stage {
         }
     }
 
+    private void visitNode3D(StageNode3D node, Transform3D globalTransform, StageVisitor visitor) {
+        node.getGlobalTransform().set(globalTransform);
+
+        if (!globalTransform.isVisible() && !visitor.shouldVisitAllNodes()) {
+            return;
+        }
+
+        node.animate(animationTimer);
+
+        switch (node) {
+            case Group group -> visitGroup(group, globalTransform, visitor);
+            case Mesh mesh -> visitor.drawMesh(mesh, globalTransform);
+            case Light light -> visitor.drawLight(light, globalTransform);
+            default -> LOGGER.warning("Unknown 3D graphics type: " + node.getClass());
+        }
+    }
+
+    private void visitGroup(Group group, Transform3D globalTransform, StageVisitor visitor) {
+        visitor.visitGroup(group, globalTransform);
+
+        for (StageNode3D child : group) {
+            Transform3D childLocalTransform = child.getTransform();
+            Transform3D childGlobalTransform = globalTransform.combine(childLocalTransform);
+            visitNode3D(child, childGlobalTransform, visitor);
+        }
+    }
+
     /**
-     * Removes all 2D and 3D graphics from the stage. This is always called at
-     * the end of a scene, but can also be used manually mid-scene.
+     * Subscribes to this stage, receiving events every time nodes are added
+     * or removed.
      */
-    public void clear() {
-        root.clearChildren();
-        if (world != null) {
-            world.clear();
+    public void subscribe(StageSubscriber subscriber) {
+        subscribe(root, subscriber);
+        subscribe(root3D, subscriber);
+    }
+
+    private void subscribe(Container parent, StageSubscriber subscriber) {
+        parent.getChildren().getAddedElements().subscribe(child -> {
+            subscriber.onNodeAdded(parent, child);
+            if (child instanceof Container childContainer) {
+                subscribe(childContainer, subscriber);
+            }
+        });
+
+        parent.getChildren().getRemovedElements().subscribe(child -> {
+            subscriber.onNodeRemoved(parent, child);
+        });
+    }
+
+    private void subscribe(Group parent, StageSubscriber subscriber) {
+        parent.getChildren().getAddedElements().subscribe(child -> {
+            subscriber.onNodeAdded(parent, child);
+            if (child instanceof Group childGroup) {
+                subscribe(childGroup, subscriber);
+            }
+        });
+
+        parent.getChildren().getRemovedElements().subscribe(child -> {
+            subscriber.onNodeRemoved(parent, child);
+        });
+    }
+
+    /**
+     * Returns the path towards the specified node. The first element in the
+     * list is the root node, the last element is the node itself. If the
+     * node is not currently part of the stage, this returns a list containing
+     * only the node itself.
+     */
+    public List<StageNode2D> findNodePath(StageNode2D node) {
+        List<StageNode2D> nodePath = new LinkedList<>();
+        StageNode2D currentNode = node;
+        while (currentNode != null) {
+            nodePath.addFirst(currentNode);
+            currentNode = parentMap2D.get(currentNode);
+        }
+        return nodePath;
+    }
+
+    /**
+     * Returns the path towards the specified node. The first element in the
+     * list is the root node, the last element is the node itself. If the
+     * node is not currently part of the stage, this returns a list containing
+     * only the node itself.
+     */
+    public List<StageNode3D> findNodePath(StageNode3D node) {
+        List<StageNode3D> nodePath = new LinkedList<>();
+        StageNode3D currentNode = node;
+        while (currentNode != null) {
+            nodePath.addFirst(currentNode);
+            currentNode = parentMap3D.get(currentNode);
+        }
+        return nodePath;
+    }
+
+    /**
+     * Recalculates the global transform for the specified node. The global
+     * transform is normally updated at the end of each frame update when the
+     * node is drawn. This method can be used to force-recalculate the global
+     * transform for a single node.
+     * <p>
+     * Since the global transform is relative to the node's parent, this will
+     * also recalculate the global transform for its parents, recursively.
+     * This method therefore has a performance impact, and should only be used
+     * on/for a limited number of nodes per frame update.
+     */
+    public void recalculateGlobalTransform(StageNode2D node) {
+        List<StageNode2D> nodePath = findNodePath(node);
+        nodePath.getFirst().getGlobalTransform().set(nodePath.getFirst().getTransform());
+
+        for (int i = 1; i < nodePath.size(); i++) {
+            Transform parentGlobalTransform = nodePath.get(i - 1).getGlobalTransform();
+            Transform localTransform = nodePath.get(i).getTransform();
+            Transform globalTransform = parentGlobalTransform.combine(localTransform);
+            nodePath.get(i).getGlobalTransform().set(globalTransform);
+        }
+    }
+
+    /**
+     * Recalculates the global transform for the specified node. The global
+     * transform is normally updated at the end of each frame update when the
+     * node is drawn. This method can be used to force-recalculate the global
+     * transform for a single node.
+     * <p>
+     * Since the global transform is relative to the node's parent, this will
+     * also recalculate the global transform for its parents, recursively.
+     * This method therefore has a performance impact, and should only be used
+     * on/for a limited number of nodes per frame update.
+     */
+    public void recalculateGlobalTransform(StageNode3D node) {
+        List<StageNode3D> nodePath = findNodePath(node);
+        nodePath.getFirst().getGlobalTransform().set(nodePath.getFirst().getTransform());
+
+        for (int i = 1; i < nodePath.size(); i++) {
+            Transform3D parentGlobalTransform = nodePath.get(i - 1).getGlobalTransform();
+            Transform3D localTransform = nodePath.get(i).getTransform();
+            Transform3D globalTransform = parentGlobalTransform.combine(localTransform);
+            nodePath.get(i).getGlobalTransform().set(globalTransform);
         }
     }
 
@@ -202,30 +419,33 @@ public class Stage {
         StringBuilder buffer = new StringBuilder();
         buffer.append("Stage\n");
         append(buffer, root, 1);
-        if (world != null) {
-            buffer.append("World\n");
-            for (PolygonModel model : world.getChildren()) {
-                append(buffer, model);
-            }
+        if (graphicsMode == GraphicsMode.MODE_3D) {
+            append(buffer, root3D, 1);
         }
         return buffer.toString();
     }
 
-    private void append(StringBuilder buffer, Graphic2D graphic, int depth) {
+    private void append(StringBuilder buffer, StageNode2D node, int depth) {
         buffer.append("    ".repeat(depth));
-        buffer.append(graphic.toString());
+        buffer.append(node.toString());
         buffer.append("\n");
 
-        if (graphic instanceof Container container) {
-            for (Graphic2D child : container.getChildren()) {
+        if (node instanceof Container container) {
+            for (StageNode2D child : container) {
                 append(buffer, child, depth + 1);
             }
         }
     }
 
-    private void append(StringBuilder buffer, PolygonModel model) {
-        buffer.append("    ");
-        buffer.append(model.toString());
+    private void append(StringBuilder buffer, StageNode3D node, int depth) {
+        buffer.append("    ".repeat(depth));
+        buffer.append(node.toString());
         buffer.append("\n");
+
+        if (node instanceof Group group) {
+            for (StageNode3D child : group) {
+                append(buffer, child, depth + 1);
+            }
+        }
     }
 }

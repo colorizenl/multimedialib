@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -9,17 +9,21 @@ package nl.colorize.multimedialib.renderer.jfx;
 import com.google.common.base.Preconditions;
 import javafx.application.Application;
 import lombok.Getter;
-import nl.colorize.multimedialib.renderer.DisplayMode;
-import nl.colorize.multimedialib.renderer.ErrorHandler;
-import nl.colorize.multimedialib.renderer.FilePointer;
+import nl.colorize.multimedialib.math.Box;
+import nl.colorize.multimedialib.math.Point2D;
+import nl.colorize.multimedialib.math.Point3D;
+import nl.colorize.multimedialib.math.Shape3D;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.Network;
+import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.renderer.Renderer;
-import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.multimedialib.renderer.java2d.StandardNetwork;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.util.Platform;
+import nl.colorize.multimedialib.scene.SceneManager;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Mesh;
+import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.util.swing.SwingUtils;
 
 import javax.swing.SwingUtilities;
@@ -34,47 +38,39 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Java2D renderer, since both are based on the Java standard library.
  */
 @Getter
-public class JFXRenderer implements Renderer {
+public class JFXRenderer implements Renderer, SceneContext {
 
-    private GraphicsMode graphicsMode;
-    private DisplayMode displayMode;
-    private WindowOptions windowOptions;
-    private List<File> screenshotQueue;
-
+    private RenderConfig config;
     private JFXGraphics graphics;
     private JFXInput input;
     private JFXMediaLoader mediaLoader;
     private Network network;
-
-    private SceneContext context;
-    private ErrorHandler errorHandler;
+    private SceneManager sceneManager;
+    private Stage stage;
+    private List<File> screenshotQueue;
 
     private static JFXRenderer instance;
 
-    private JFXRenderer(DisplayMode displayMode, WindowOptions windowOptions) {
-        this.graphicsMode = GraphicsMode.MODE_2D;
-        this.displayMode = displayMode;
-        this.windowOptions = windowOptions;
+    private JFXRenderer() {
         this.screenshotQueue = new CopyOnWriteArrayList<>();
     }
 
     @Override
-    public void start(Scene initialScene, ErrorHandler errorHandler) {
+    public void start(RenderConfig config, Scene initialScene) {
         // The JavaFX relies on Swing for certain operations. There is
         // no point in avoiding the usage of Swing entirely, since it
         // is still part of the Java runtime.
         SwingUtilities.invokeLater(SwingUtils::initializeSwing);
 
+        this.config = config;
         mediaLoader = new JFXMediaLoader();
         network = new StandardNetwork();
-        input = new JFXInput(displayMode.canvas());
-        graphics = new JFXGraphics(displayMode, mediaLoader);
+        input = new JFXInput(config.getCanvas());
+        graphics = new JFXGraphics(config, mediaLoader);
+        sceneManager = new SceneManager();
+        stage = new Stage(config.getGraphicsMode(), config.getCanvas());
 
-        context = new SceneContext(this, mediaLoader, input, network);
-        context.changeScene(initialScene);
-
-        this.errorHandler = errorHandler;
-
+        changeScene(initialScene);
         Application.launch(JFXAnimationLoop.class);
     }
 
@@ -84,24 +80,33 @@ public class JFXRenderer implements Renderer {
     }
 
     @Override
-    public DisplayMode getDisplayMode() {
-        return displayMode;
+    public Mesh createMesh(Shape3D shape, ColorRGB color) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public GraphicsMode getGraphicsMode() {
-        return GraphicsMode.MODE_2D;
+    public Point2D project(Point3D position) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void takeScreenshot(FilePointer dest) {
-        File desktop = Platform.getUserDesktopDir();
-        screenshotQueue.add(new File(desktop, dest.path()));
+    public boolean castPickRay(Point2D canvasPosition, Box area) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public String toString() {
+    public void takeScreenshot(File screenshotFile) {
+        screenshotQueue.add(screenshotFile);
+    }
+
+    @Override
+    public String getRendererName() {
         return "JavaFX renderer";
+    }
+
+    @Override
+    public boolean isSupported(GraphicsMode graphicsMode) {
+        return graphicsMode == GraphicsMode.MODE_2D;
     }
 
     /**
@@ -111,9 +116,9 @@ public class JFXRenderer implements Renderer {
      * @throws IllegalStateException if this method is called at a moment
      *         when another {@link JFXRenderer} instance is already active.
      */
-    public static synchronized JFXRenderer launch(DisplayMode displayMode, WindowOptions windowOptions) {
+    public static synchronized JFXRenderer launch() {
         Preconditions.checkState(instance == null, "Another JFXRenderer instance is already active");
-        instance = new JFXRenderer(displayMode, windowOptions);
+        instance = new JFXRenderer();
         return instance;
     }
 
@@ -127,7 +132,7 @@ public class JFXRenderer implements Renderer {
      */
     protected static synchronized JFXRenderer accessInstance() {
         Preconditions.checkState(instance != null, "JFXRenderer has not yet been initialized");
-        Preconditions.checkState(instance.context != null, "Scene context not yet initialized");
+        Preconditions.checkState(instance.config != null, "JFXRenderer not yet initialized");
         return instance;
     }
 }

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -17,14 +17,14 @@ class ParticleWipeTest {
 
     @Test
     void renderParticles() {
-        HeadlessRenderer renderer = new HeadlessRenderer();
-        renderer.start(new ParticleWipe(new MockImage(), ColorRGB.RED, 10f, false), null);
+        HeadlessRenderer renderer = new HeadlessRenderer(false);
+        renderer.start(new ParticleWipe(new MockImage(), ColorRGB.RED, 10f, false));
         renderer.doFrame();
         renderer.doFrame();
 
         String expected = """
             Stage
-                Container [$$root, 1]
+                $$root [1]
                     Container [154]
                         Sprite [$$default]
                         Sprite [$$default]

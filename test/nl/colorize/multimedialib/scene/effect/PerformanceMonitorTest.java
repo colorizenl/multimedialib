@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -17,11 +17,11 @@ class PerformanceMonitorTest {
     @Test
     void depictPerformanceStats() {
         PerformanceMonitor performanceMonitor = new PerformanceMonitor(true);
-        HeadlessRenderer renderer = new HeadlessRenderer();
-        renderer.start(performanceMonitor, null);
+        HeadlessRenderer renderer = new HeadlessRenderer(false);
+        renderer.start(performanceMonitor);
 
         for (int i = 0; i < 20; i++) {
-            FrameStats frameStats = renderer.getContext().getFrameStats();
+            FrameStats frameStats = renderer.getSceneManager().getFrameStats();
             frameStats.markStart(FrameStats.PHASE_FRAME_TIME);
             frameStats.markEnd(FrameStats.PHASE_FRAME_TIME);
             frameStats.markStart(FrameStats.PHASE_FRAME_UPDATE);
@@ -34,7 +34,7 @@ class PerformanceMonitorTest {
 
         String expected = """
             Stage
-                Container [$$root, 1]
+                $$root [1]
                     Container [18]
                         Rect [(0, 0, 300, 100)]
                         Container [3]
@@ -59,6 +59,6 @@ class PerformanceMonitorTest {
                         Line
             """;
 
-        assertEquals(expected, renderer.getContext().getStage().toString());
+        assertEquals(expected, renderer.getStage().toString());
     }
 }

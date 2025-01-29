@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -12,10 +12,11 @@ import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.LoadStatus;
-import nl.colorize.multimedialib.stage.PolygonModel;
+import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
-import nl.colorize.util.MessageQueue;
 import nl.colorize.util.PropertyUtils;
+import nl.colorize.util.ResourceFile;
+import nl.colorize.util.SubscribableCollection;
 import nl.colorize.util.TranslationBundle;
 
 import java.util.List;
@@ -36,7 +37,7 @@ public interface MediaLoader {
      *
      * @throws MediaException if the format is not supported by the renderer.
      */
-    public Image loadImage(FilePointer file);
+    public Image loadImage(ResourceFile file);
 
     /**
      * Loads a sprite atlas based on the libGDX {@code .atlas} file format.
@@ -46,7 +47,7 @@ public interface MediaLoader {
      * @throws MediaException if one of the images used in the sprite atlas
      *         uses a format that is not supported by the renderer,
      */
-    default SpriteAtlas loadAtlas(FilePointer file) {
+    default SpriteAtlas loadAtlas(ResourceFile file) {
         SpriteAtlasLoader atlasLoader = new SpriteAtlasLoader(this);
         return atlasLoader.load(file);
     }
@@ -57,7 +58,7 @@ public interface MediaLoader {
      *
      * @throws MediaException if the format is not supported by the renderer.
      */
-    public Audio loadAudio(FilePointer file);
+    public Audio loadAudio(ResourceFile file);
 
     /**
      * Loads a TrueType or FreeType font so the renderer can use that font
@@ -66,43 +67,34 @@ public interface MediaLoader {
      *
      * @throws MediaException if the format is not supported by the renderer.
      */
-    public FontFace loadFont(FilePointer file, String family, int size, ColorRGB color);
+    public FontFace loadFont(ResourceFile file, String family, int size, ColorRGB color);
 
     /**
      * Loads the default font, the open source font Open Sans. This is included
      * in MultimediaLib and therefore guaranteed to be always available.
      */
     default FontFace loadDefaultFont(int size, ColorRGB color) {
-        FilePointer file = new FilePointer("OpenSans-Regular.ttf");
+        ResourceFile file = new ResourceFile("OpenSans-Regular.ttf");
         return loadFont(file, "Open Sans", size, color);
     }
 
     /**
-     * Loads a polygon model from the specified file. Only the GLTF format is
-     * guaranteed to be supported, other file formats are only supported by
-     * specific renderers.
+     * Loads a polygon model from the specified file. Only the OBJ and GLTF
+     * format are guaranteed to be supported, though certain renderers may
+     * support additional file formats.
      *
-     * @throws MediaException if the format is not supported by the renderer.
-     * @throws UnsupportedOperationException if the renderer does not support
-     *         loading 3D models.
+     * @throws MediaException if the format is not supported by this renderer.
+     * @throws UnsupportedOperationException if this renderer does not support
+     *         3D graphics.
      */
-    public PolygonModel loadModel(FilePointer file);
-
-    /**
-     * Provides access to a {@link GeometryBuilder} instance that can be used
-     * to create simple 3D geometry in a programmatic way.
-     *
-     * @throws UnsupportedOperationException if the renderer does not support
-     *         creating 3D geometry.
-     */
-    public GeometryBuilder getGeometryBuilder();
+    public Mesh loadModel(ResourceFile file);
 
     /**
      * Loads a text-based resource file using UTF-8 encoding.
      *
      * @throws MediaException if the file does not exist.
      */
-    public String loadText(FilePointer file);
+    public String loadText(ResourceFile file);
 
     /**
      * Loads a text-based resource file using UTF-8 encoding, and returns
@@ -110,16 +102,16 @@ public interface MediaLoader {
      *
      * @throws MediaException if the file does not exist.
      */
-    default List<String> loadTextLines(FilePointer file) {
+    default List<String> loadTextLines(ResourceFile file) {
         return Splitter.on("\n").splitToList(loadText(file));
     }
 
     /**
      * Convenience method that loads and then parses the contents of a
      * {@code .properties} file. By default, reading the file contents
-     * is delegated to {@link #loadText(FilePointer)}.
+     * is delegated to {@link #loadText(ResourceFile)}.
      */
-    default Properties loadProperties(FilePointer file) {
+    default Properties loadProperties(ResourceFile file) {
         String contents = loadText(file);
         return PropertyUtils.loadProperties(contents);
     }
@@ -128,9 +120,9 @@ public interface MediaLoader {
      * Convenience method that loads and then parses the contents of a
      * {@code .properties} file and returns a {@link TranslationBundle}.
      * By default, reading the file contents is delegated to
-     * {@link #loadText(FilePointer)}.
+     * {@link #loadText(ResourceFile)}.
      */
-    default TranslationBundle loadTranslationBundle(FilePointer file) {
+    default TranslationBundle loadTranslationBundle(ResourceFile file) {
         Properties properties = loadProperties(file);
         return TranslationBundle.from(properties);
     }
@@ -138,7 +130,7 @@ public interface MediaLoader {
     /**
      * Returns whether the specified resource file is available.
      */
-    public boolean containsResourceFile(FilePointer file);
+    public boolean containsResourceFile(ResourceFile file);
 
     /**
      * Loads the application data for the application with the specified name.
@@ -159,5 +151,5 @@ public interface MediaLoader {
      * Returns a buffer containing the load status of all media files that
      * have been loaded by this {@link MediaLoader}.
      */
-    public MessageQueue<LoadStatus> getLoadStatus();
+    public SubscribableCollection<LoadStatus> getLoadStatus();
 }

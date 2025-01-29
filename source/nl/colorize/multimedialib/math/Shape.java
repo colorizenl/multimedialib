@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -15,19 +15,21 @@ public interface Shape {
     public static final float EPSILON = Point2D.EPSILON;
 
     /**
-     * Returns whether this shape contains the specified point.
-     */
-    public boolean contains(Point2D p);
-
-    /**
      * Returns the smallest possible rectangular bounding box that can fit
      * this shape.
      */
     public Rect getBoundingBox();
 
+    public Point2D getCenter();
+
+    /**
+     * Returns whether this shape contains the specified point.
+     */
+    public boolean contains(Point2D p);
+
     /**
      * Returns a new {@link Shape} instance that is repositioned by the
-     * specified X and Y offset.
+     * specified offset.
      */
     public Shape reposition(Point2D offset);
 

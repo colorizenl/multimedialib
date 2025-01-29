@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -14,12 +14,16 @@ import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.SegmentedLine;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
+import nl.colorize.multimedialib.stage.Group;
+import nl.colorize.multimedialib.stage.Light;
+import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
+import nl.colorize.multimedialib.stage.Transform3D;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +43,7 @@ public class MockStageVisitor implements StageVisitor {
     }
 
     @Override
-    public boolean shouldVisitAllGraphics() {
+    public boolean shouldVisitAllNodes() {
         return false;
     }
 
@@ -85,5 +89,18 @@ public class MockStageVisitor implements StageVisitor {
     @Override
     public void drawText(Text text, Transform globalTransform) {
         rendered.add("text");
+    }
+    @Override
+    public void visitGroup(Group group, Transform3D globalTransform) {
+    }
+
+    @Override
+    public void drawMesh(Mesh mesh, Transform3D globalTransform) {
+        rendered.add("mesh");
+    }
+
+    @Override
+    public void drawLight(Light light, Transform3D globalTransform) {
+        rendered.add("light");
     }
 }

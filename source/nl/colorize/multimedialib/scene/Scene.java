@@ -1,18 +1,25 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.scene;
 
 /**
- * MultimediaLib applications are split into a number of scenes, each
- * representing a discrete phase of the application. Only one scene can be
- * active at the same time, but sub-scenes can be attached to split large or
- * complex scenes into different parts. The currently active scene, and its
- * attached sub-scenes, will receive frame updates for as long as the parent
- * scene is active.
+ * Applications are split into *scenes*. Simple applications may consist of a
+ * single scene, but larger applications can be split into multiple scenes,
+ * each representing a discrete phase of the application.
+ * <p>
+ * Only one scene can be active at the same time, but it is possible to attach
+ * sub-scenes to the currently active scene. These sub-scenes can contain
+ * their own logic, but cannot outlive their parent scene. When the active
+ * scene is changed, both the scene itself and its sub-scenes will be
+ * terminated and the stage will be cleared in preparation for the next scene.
+ * <p>
+ * The currently active scene (and its sub-scenes) receive access to the
+ * {@link SceneContext}, which is provided by the renderer via callback
+ * methods.
  */
 @FunctionalInterface
 public interface Scene {
@@ -25,15 +32,6 @@ public interface Scene {
      * This method is optional, the default implementation does nothing.
      */
     default void start(SceneContext context) {
-    }
-
-    /**
-     * Called when the canvas size has changed, for example because the window
-     * has been resized or because the device orientation has changed. Note
-     * {@code canvasWidth} and {@code canvasHeight} are based on the current
-     * canvas size, which might be different from the "native" screen size.
-     */
-    default void resize(SceneContext context, int canvasWidth, int canvasHeight) {
     }
 
     /**

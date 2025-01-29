@@ -1,29 +1,27 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.java2d;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
-import nl.colorize.multimedialib.renderer.FilePointer;
-import nl.colorize.multimedialib.renderer.GeometryBuilder;
+import lombok.Getter;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
-import nl.colorize.multimedialib.renderer.headless.HeadlessAudio;
+import nl.colorize.multimedialib.renderer.headless.NullAudio;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.LoadStatus;
-import nl.colorize.multimedialib.stage.PolygonModel;
+import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.util.LogHelper;
-import nl.colorize.util.MessageQueue;
 import nl.colorize.util.Platform;
 import nl.colorize.util.PropertyUtils;
 import nl.colorize.util.ResourceFile;
+import nl.colorize.util.SubscribableCollection;
 import nl.colorize.util.stats.Cache;
 import nl.colorize.util.swing.Utils2D;
 
@@ -38,8 +36,11 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Uses APIs from the Java standard library to load media files: Java2D and ImageIO
@@ -47,9 +48,10 @@ import java.util.logging.Logger;
  * These APIs are available on server and desktop platforms, but not on headless
  * server environments and not on Android.
  */
+@Getter
 public class StandardMediaLoader implements MediaLoader {
 
-    private MessageQueue<LoadStatus> loadStatus;
+    private SubscribableCollection<LoadStatus> loadStatus;
 
     // The font cache is global because loaded AWT fonts need to
     // be registered with the graphics environment.
@@ -60,7 +62,7 @@ public class StandardMediaLoader implements MediaLoader {
     private static final Logger LOGGER = LogHelper.getLogger(StandardMediaLoader.class);
 
     public StandardMediaLoader() {
-        this.loadStatus = new MessageQueue<>();
+        this.loadStatus = SubscribableCollection.wrap(new CopyOnWriteArrayList<>());
     }
 
     /**
@@ -69,12 +71,12 @@ public class StandardMediaLoader implements MediaLoader {
      * subclasses can override this method to load files from alternative
      * locations.
      */
-    protected ResourceFile locateFile(FilePointer location) {
+    protected ResourceFile locateFile(ResourceFile location) {
         return new ResourceFile(location.path());
     }
 
     @Override
-    public Image loadImage(FilePointer file) {
+    public Image loadImage(ResourceFile file) {
         try {
             ResourceFile source = locateFile(file);
             BufferedImage original = Utils2D.loadImage(source.openStream());
@@ -94,7 +96,7 @@ public class StandardMediaLoader implements MediaLoader {
      * is not possible on the current platform, the original image will be
      * used.
      */
-    private Image prepareImage(FilePointer file, BufferedImage original) {
+    private Image prepareImage(ResourceFile file, BufferedImage original) {
         try {
             BufferedImage compatible = Utils2D.makeImageCompatible(original);
             return new AWTImage(compatible, file);
@@ -104,17 +106,17 @@ public class StandardMediaLoader implements MediaLoader {
     }
 
     @Override
-    public Audio loadAudio(FilePointer file) {
+    public Audio loadAudio(ResourceFile file) {
         if (Platform.isMac()) {
             return new JavaSoundPlayer(locateFile(file));
         } else {
             LOGGER.warning("Java Sound not supported on platform " + Platform.getPlatformName());
-            return new HeadlessAudio();
+            return new NullAudio();
         }
     }
 
     @Override
-    public FontFace loadFont(FilePointer file, String family, int size, ColorRGB color) {
+    public FontFace loadFont(ResourceFile file, String family, int size, ColorRGB color) {
         ResourceFile source = locateFile(file);
 
         try (InputStream stream = source.openStream()) {
@@ -132,22 +134,17 @@ public class StandardMediaLoader implements MediaLoader {
     }
 
     @Override
-    public String loadText(FilePointer file) {
-        return locateFile(file).read(Charsets.UTF_8);
+    public String loadText(ResourceFile file) {
+        return locateFile(file).read(UTF_8);
     }
 
     @Override
-    public PolygonModel loadModel(FilePointer file) {
+    public Mesh loadModel(ResourceFile file) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public GeometryBuilder getGeometryBuilder() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean containsResourceFile(FilePointer file) {
+    public boolean containsResourceFile(ResourceFile file) {
         return locateFile(file).exists();
     }
 
@@ -162,7 +159,7 @@ public class StandardMediaLoader implements MediaLoader {
 
         if (dataFile.exists()) {
             try {
-                return PropertyUtils.loadProperties(dataFile, Charsets.UTF_8);
+                return PropertyUtils.loadProperties(dataFile, UTF_8);
             } catch (IOException e) {
                 LOGGER.log(Level.WARNING, "Unable to load application data", e);
             }
@@ -177,15 +174,10 @@ public class StandardMediaLoader implements MediaLoader {
     public void saveApplicationData(String appName, Properties data) {
         try {
             File dataFile = getApplicationDataFile(appName);
-            PropertyUtils.saveProperties(data, dataFile, Charsets.UTF_8);
+            PropertyUtils.saveProperties(data, dataFile, UTF_8);
         } catch (IOException e) {
             LOGGER.log(Level.WARNING, "Unable to save application data", e);
         }
-    }
-
-    @Override
-    public MessageQueue<LoadStatus> getLoadStatus() {
-        return loadStatus;
     }
 
     private static Font prepareFont(FontFace key) {

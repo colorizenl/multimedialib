@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -57,12 +57,12 @@ public record ColorRGB(int r, int g, int b) {
     }
 
     /**
-     * Returns this color in hexidecimal notation. For example, the color red
-     * (255, 0, 0) will return "#FF0000".
+     * Returns the hexadecimal color string for this color, for example
+     * "#FF0000" for red.
      */
     public String toHex() {
         StringBuilder hex = new StringBuilder(7);
-        hex.append('#');
+        hex.append("#");
         hex.append(toHex(r));
         hex.append(toHex(g));
         hex.append(toHex(b));
@@ -72,6 +72,19 @@ public record ColorRGB(int r, int g, int b) {
     private String toHex(int component) {
         String str = Integer.toHexString(component);
         return str.length() > 1 ? str : "0" + str;
+    }
+
+    /**
+     * Returns a new color that adds the specified delta to this color's RGB
+     * components. The resulting RGB values will be clamped to the range
+     * (0, 255), so using this method cannot lead to invalid colors.
+     */
+    public ColorRGB alter(int deltaR, int deltaG, int deltaB) {
+        return new ColorRGB(
+            Math.clamp(r + deltaR, 0, 255),
+            Math.clamp(g + deltaG, 0, 255),
+            Math.clamp(b + deltaB, 0, 255)
+        );
     }
 
     /**
@@ -106,8 +119,8 @@ public record ColorRGB(int r, int g, int b) {
     }
 
     /**
-     * Parses a color from hexadecimal notation. For example, parsing the string
-     * "#FF0000" will return red (255, 0, 0).
+     * Parses a color from a hexadecimal color string, for example "#FF0000"
+     * for red.
      *
      * @throws IllegalArgumentException if {@code hex} is not a valid color.
      */

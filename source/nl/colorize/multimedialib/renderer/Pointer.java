@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -90,6 +90,17 @@ public class Pointer implements Updatable {
      */
     public float getTimePressed() {
         return pressedTimer.getTime();
+    }
+
+    /**
+     * Resets the state of this pointer, so that it is no longer marked as
+     * being pressed or released. This can be used to make certain logic
+     * "consume" the pointer, without subsequent logic during the same frame
+     * update also trying to consume the same pointer.
+     */
+    public void clearState() {
+        state = STATE_IDLE;
+        pressedTimer.reset();
     }
 
     @Override

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,13 +8,13 @@ package nl.colorize.multimedialib.scene.effect;
 
 import lombok.Getter;
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.Sprite;
+import nl.colorize.util.ResourceFile;
 import nl.colorize.util.animation.Timeline;
 
 import java.util.ArrayList;
@@ -36,8 +36,8 @@ public class ParticleWipe implements Scene {
     private ColorRGB fillColor;
     private List<Particle> particles;
 
-    public static final FilePointer DIAMOND = new FilePointer("effects/particle-diamond.png");
-    public static final FilePointer CIRCLE = new FilePointer("effects/particle-circle.png");
+    public static final ResourceFile DIAMOND = new ResourceFile("effects/particle-diamond.png");
+    public static final ResourceFile CIRCLE = new ResourceFile("effects/particle-circle.png");
 
     private static final int PARTICLE_SIZE = 64;
     private static final int PADDING = PARTICLE_SIZE / 2;
@@ -103,7 +103,7 @@ public class ParticleWipe implements Scene {
 
     @Override
     public void end(SceneContext context) {
-        container.detach();
+        context.getStage().detach(container);
     }
 
     /**

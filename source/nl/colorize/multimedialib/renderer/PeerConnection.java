@@ -1,13 +1,12 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
 import nl.colorize.multimedialib.renderer.teavm.PeerMessage;
-import nl.colorize.util.MessageQueue;
 
 /**
  * Access to a currently active peer-to-peer connection, which can be obtained
@@ -31,7 +30,8 @@ public interface PeerConnection {
     public void sendMessage(String message);
 
     /**
-     * Returns all received messages from all connected peers.
+     * Returns all received messages from all connected peers that were
+     * received since the last time this method was called.
      */
-    public MessageQueue<PeerMessage> getReceivedMessages();
+    public Iterable<PeerMessage> flushReceivedMessages();
 }

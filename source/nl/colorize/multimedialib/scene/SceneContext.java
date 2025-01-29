@@ -1,284 +1,61 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.scene;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import lombok.Getter;
+import nl.colorize.multimedialib.math.Box;
+import nl.colorize.multimedialib.math.Point2D;
+import nl.colorize.multimedialib.math.Point3D;
+import nl.colorize.multimedialib.math.Shape3D;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.DisplayMode;
-import nl.colorize.multimedialib.renderer.FilePointer;
 import nl.colorize.multimedialib.renderer.FrameStats;
-import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.InputDevice;
-import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
-import nl.colorize.multimedialib.renderer.Pointer;
-import nl.colorize.multimedialib.renderer.Renderer;
+import nl.colorize.multimedialib.renderer.RenderConfig;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Image;
+import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Stage;
-import nl.colorize.util.LogHelper;
-import nl.colorize.util.Platform;
-import nl.colorize.util.Stopwatch;
 
+import java.io.File;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
-import java.util.function.Consumer;
-import java.util.logging.Logger;
 
 /**
- * Provides access to the contents of the currently active scene, including
- * the stage, the scene's graphics, and the underlying renderer. The renderer
- * passes the {@link SceneContext} to the currently active scene during each
- * frame update, which allows the scene to perform frame update logic. The
- * renderer then renders the frame based on the current contents of the stage.
+ * The currently active scene (and its sub-scenes) receive access to the
+ * <em>scene context</em>, which is provided by the renderer via callback
+ * methods. This allows the scene to access the underlying renderer and
+ * the stage.
  * <p>
- * The {@link SceneContext} also allows <em>sub-scenes</em> to be attached to
- * the current scene. These sub-scenes can contain their own logic, but cannot
- * outlive their parent scene. When the active scene is changed, both the scene
- * itself and its sub-scenes will be terminated and the stage will be cleared
- * in preparation for the next scene.
+ * The <em>stage</em> contains the graphics and audio for the currently
+ * active scene. The stage can contain both 2D and 3D graphics, depending
+ * on what is supported by the renderer. At the end of a scene, the stage
+ * is cleared so the next scene can take over.
  */
-public final class SceneContext implements Updatable {
+public interface SceneContext {
 
-    private Renderer renderer;
-    @Getter private GraphicsMode graphicsMode;
-    @Getter private DisplayMode displayMode;
-    @Getter private Canvas canvas;
-    @Getter private Stage stage;
-    @Getter private MediaLoader mediaLoader;
-    @Getter private InputDevice input;
-    @Getter private Network network;
+    public RenderConfig getConfig();
 
-    private Stopwatch timer;
-    private long elapsedTime;
-    @Getter private FrameStats frameStats;
-
-    private SceneState activeScene;
-    private Queue<SceneState> requestedSceneQueue;
-    private List<Scene> globalSubScenes;
-
-    private int lastCanvasWidth;
-    private int lastCanvasHeight;
-
-    private static final long FRAME_LEEWAY_MS = 5;
-    private static final float MIN_FRAME_TIME = 0.01f;
-    private static final float MAX_FRAME_TIME = 0.2f;
-    private static final int RESIZE_TOLERANCE = 20;
-    private static final Logger LOGGER = LogHelper.getLogger(SceneContext.class);
-
-    /**
-     * Creates a new {@code SceneContext} from the specified renderer. This
-     * constructor should not be called from application code. The renderer
-     * will create the {@code SceneContext} from the animation loop thread.
-     */
-    public SceneContext(Renderer renderer, MediaLoader media, InputDevice input, Network network) {
-        Preconditions.checkArgument(renderer != null, "Context not attached to renderer");
-
-        this.renderer = renderer;
-        this.graphicsMode = renderer.getGraphicsMode();
-        this.displayMode = renderer.getDisplayMode();
-        this.canvas = displayMode.canvas();
-        this.mediaLoader = media;
-        this.input = input;
-        this.network = network;
-
-        this.timer = new Stopwatch();
-        this.elapsedTime = 0L;
-        this.frameStats = new FrameStats(displayMode);
-
-        this.requestedSceneQueue = new LinkedList<>();
-        this.globalSubScenes = new ArrayList<>();
-
-        this.lastCanvasWidth = canvas.getWidth();
-        this.lastCanvasHeight = canvas.getHeight();
-
-        stage = new Stage(graphicsMode, canvas, frameStats);
-
-        if (Platform.isWindows() || Platform.isMac()) {
-            attachGlobal((context, deltaTime) -> checkScreenshotHandler());
-        }
+    default Canvas getCanvas() {
+        return getConfig().getCanvas();
     }
 
-    /**
-     * Replaces the {@link Stopwatch} that is used as a timer for the animation
-     * loop and frame updates.
-     */
-    @VisibleForTesting
-    protected void replaceTimer(Stopwatch timer) {
-        this.timer = timer;
-    }
+    public MediaLoader getMediaLoader();
 
-    /**
-     * Synchronizes between "native" frames and application frame updates.
-     * Should be called by the renderer during every "native" frame. Depending
-     * on the elapsed time and target framerate, this method will then manage
-     * application frame updates by calling {@link #update(float)}
-     * accordingly.
-     * <p>
-     * Although this class provides the renderer with the delta time since the
-     * last frame update, this may not always reflect the <em>actual</em>
-     * elapsed time. it is not realistic to expect applications to be able to
-     * function correctly for every possible {@code deltaTime} value, so this
-     * method will attempt to produce frame updates that try to find a balance
-     * between the targeted framerate and the actual elapsed time.
-     * <p>
-     * Note that rendering the frame is <em>not</em> managed by this method.
-     * The renderer should make sure that every "native" frame is rendered,
-     * even if that frame did not lead to an application frame update.
-     * <p>
-     * Calling this method will also register the corresponding performance
-     * statistics with the {@code FrameStats} instance provided in the
-     * constructor.
-     *
-     * @return The number of application frame updates that were performed
-     *         during the frame synchronization process. A value of zero
-     *         indicates no frame updates were performed, meaning that it is
-     *         not necessary for the renderer to render the frame.
-     */
-    public int syncFrame() {
-        long frameTime = timer.tick();
-        elapsedTime += frameTime;
+    public InputDevice getInput();
 
-        if (elapsedTime < getDisplayMode().getFrameTimeMS() - FRAME_LEEWAY_MS) {
-            return 0;
-        }
+    public Network getNetwork();
 
-        // Only count the frame when calling this method actually leads
-        // to a frame update. Otherwise, this would just count the
-        // precision of the underlying animation loop.
-        frameStats.markEnd(FrameStats.PHASE_FRAME_TIME);
-        frameStats.resetGraphicsCount();
+    public SceneManager getSceneManager();
 
-        float deltaTime = Math.clamp(elapsedTime / 1000f, MIN_FRAME_TIME, MAX_FRAME_TIME);
-        frameStats.markStart(FrameStats.PHASE_FRAME_UPDATE);
-        update(deltaTime);
-        frameStats.markEnd(FrameStats.PHASE_FRAME_UPDATE);
-        elapsedTime = 0L;
+    public Stage getStage();
 
-        return 1;
-    }
-
-    /**
-     * Performs an application frame update. The renderer should <em>not</em>
-     * call this method. Instead, it should call {@link #syncFrame()}, which
-     * will decouple "native" frame updates in the renderer from application
-     * frame updates. Attempting to render the application at the renderer's
-     * native refresh rate can introduce slowdown if application and/or
-     * graphics complexity makes it impossible to actually achieve the native
-     * framerate.
-     */
-    @Override
-    public void update(float deltaTime) {
-        updateInput(deltaTime);
-
-        if (!requestedSceneQueue.isEmpty()) {
-            activateRequestedScene();
-        }
-
-        updateCurrentScene(activeScene, deltaTime);
-        updateGlobalSubScenes(deltaTime);
-
-        lastCanvasWidth = getCanvas().getWidth();
-        lastCanvasHeight = getCanvas().getHeight();
-    }
-
-    private void updateInput(float deltaTime) {
-        input.update(deltaTime);
-
-        for (Pointer pointer : input.getPointers()) {
-            pointer.update(deltaTime);
-        }
-    }
-
-    private void updateCurrentScene(SceneState current, float deltaTime) {
-        checkCanvasResize(current);
-        stage.getAnimationTimer().update(deltaTime);
-        current.scene.update(this, deltaTime);
-
-        // Iterate the list of systems backwards to handle
-        // concurrent modification while the list is being
-        // iterated, without having to create a copy of the
-        // list every frame.
-        for (int i = current.subScenes.size() - 1; i >= 0; i--) {
-            Scene subScene = current.subScenes.get(i);
-
-            // We need to check twice if the sub-scene has
-            // been completed, both before and after its
-            // own update.
-            if (!checkCompleted(current, subScene)) {
-                subScene.update(this, deltaTime);
-                checkCompleted(current, subScene);
-            }
-        }
-    }
-
-    private void checkCanvasResize(SceneState current) {
-        int width = getCanvas().getWidth();
-        int height = getCanvas().getHeight();
-
-        if (Math.abs(width - lastCanvasWidth) >= RESIZE_TOLERANCE ||
-                Math.abs(height - lastCanvasHeight) >= RESIZE_TOLERANCE) {
-            current.scene.resize(this, width, height);
-        }
-    }
-
-    private boolean checkCompleted(SceneState parent, Scene subScene) {
-        if (subScene.isCompleted()) {
-            subScene.end(this);
-            parent.subScenes.remove(subScene);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * Activated the next requested scene. If multiple scenes were requested
-     * during the active scene's most recent frame, these scenes are activated
-     * in the order they were added to the queue. In practical terms this means
-     * earlier scenes will receive start events, but are then immediately
-     * replaced by the next requested scene, meaning they will never actually
-     * receive frame updates.
-     */
-    private void activateRequestedScene() {
-        if (activeScene != null) {
-            activeScene.walk(scene -> scene.end(this));
-            stage.clear();
-            stage.getAnimationTimer().reset();
-        }
-
-        SceneState requestedScene = requestedSceneQueue.peek();
-
-        if (requestedScene != null) {
-            activeScene = requestedScene;
-            activeScene.walk(scene -> scene.start(this));
-            requestedSceneQueue.poll();
-
-            if (!requestedSceneQueue.isEmpty()) {
-                activateRequestedScene();
-            }
-        }
-    }
-
-    private void updateGlobalSubScenes(float deltaTime) {
-        Iterator<Scene> iterator = globalSubScenes.iterator();
-
-        while (iterator.hasNext()) {
-            Scene globalScene = iterator.next();
-            globalScene.update(this, deltaTime);
-
-            if (globalScene.isCompleted()) {
-                iterator.remove();
-            }
-        }
+    default FrameStats getFrameStats() {
+        return getSceneManager().getFrameStats();
     }
 
     /**
@@ -286,22 +63,16 @@ public final class SceneContext implements Updatable {
      * been completed. If another scene had already been requested, calling
      * this method again will overrule that request.
      */
-    public void changeScene(Scene requestedScene) {
-        requestedSceneQueue.offer(new SceneState(requestedScene));
+    default void changeScene(Scene requestedScene) {
+        getSceneManager().changeScene(requestedScene);
     }
 
     /**
      * Attaches a sub-scene to the currently active scene. The sub-scene will
      * remain active until it is detached or the parent scene ends.
      */
-    public void attach(Scene subScene) {
-        if (requestedSceneQueue.isEmpty()) {
-            activeScene.attachSubScene(subScene);
-            subScene.start(this);
-        } else {
-            SceneState requestedScene = requestedSceneQueue.peek();
-            requestedScene.attachSubScene(subScene);
-        }
+    default void attach(Scene subScene) {
+        getSceneManager().attach(this, subScene);
     }
 
     /**
@@ -309,7 +80,7 @@ public final class SceneContext implements Updatable {
      * active scene. The sub-scene will remain active until it is detached or
      * the parent scene ends.
      */
-    public void attach(Updatable subScene) {
+    default void attach(Updatable subScene) {
         Scene wrappedSubScene = (context, deltaTime) -> subScene.update(deltaTime);
         attach(wrappedSubScene);
     }
@@ -319,7 +90,7 @@ public final class SceneContext implements Updatable {
      * currently active scene.  The sub-scene will remain active until
      * it is detached or the parent scene ends.
      */
-    public void attach(Runnable subScene) {
+    default void attach(Runnable subScene) {
         Scene wrappedSubScene = (context, deltaTime) -> subScene.run();
         attach(wrappedSubScene);
     }
@@ -329,39 +100,73 @@ public final class SceneContext implements Updatable {
      * will remain active for the rest of the application. Multiple global
      * scenes can be attached.
      */
-    public void attachGlobal(Scene globalSubScene) {
-        globalSubScenes.add(globalSubScene);
-        globalSubScene.start(this);
+    default void attachGlobal(Scene globalSubScene) {
+        getSceneManager().attachGlobal(this, globalSubScene);
     }
 
     /**
-     * Returns true if the specified scene is currently active. Note this
-     * will also return true if the specified scene has been attached as
-     * a sub-scene.
+     * Programmatically creates a 3D polygon mesh with a solid color, based
+     * on the specified shape.
+     *
+     * @throws UnsupportedOperationException if this renderer does not
+     *         support 3D graphics.
      */
-    public boolean isActiveScene(Scene scene) {
-        if (activeScene == null) {
-            return false;
-        }
+    public Mesh createMesh(Shape3D shape, ColorRGB color);
 
-        if (activeScene.scene.equals(scene)) {
-            return true;
-        }
-
-        return activeScene.subScenes.stream()
-            .anyMatch(subScene -> subScene.equals(scene));
+    /**
+     * Programmatically creates a 3D polygon mesh that initially does not
+     * have any color or texture information attached to it. The mesh can
+     * be modified after creation using {@link Mesh#applyColor(ColorRGB)}
+     * and {@link Mesh#applyTexture(Image)} respectively.
+     *
+     * @throws UnsupportedOperationException if this renderer does not
+     *         support 3D graphics.
+     */
+    default Mesh createMesh(Shape3D shape) {
+        return createMesh(shape, ColorRGB.WHITE);
     }
+
+    /**
+     * Returns the 3D world coordinates that correspond to the specified 2D
+     * canvas coordinates, based on the current camera position.
+     *
+     * @throws UnsupportedOperationException if this renderer does not
+     *         support 3D graphics.
+     */
+    public Point2D project(Point3D position);
+
+    /**
+     * Casts a pick ray from the specified 2D canvas position, and returns true
+     * if the pick ray intersects with the specified 3D world coordinates.
+     *
+     * @throws UnsupportedOperationException if this renderer does not
+     *         support 3D graphics.
+     */
+    public boolean castPickRay(Point2D canvasPosition, Box area);
+
+    /**
+     * Captures a screenshot of the renderer's current graphics and then
+     * exports the screenshot to a PNG file.
+     *
+     * @throws UnsupportedOperationException if this renderer does not support
+     *         taking screenshots at runtime.
+     */
+    public void takeScreenshot(File screenshotFile);
+
+    /**
+     * Terminates the renderer, which will end the animation loop and quit the
+     * application.
+     *
+     * @throws UnsupportedOperationException if the current platform does not
+     *         support terminating applications.
+     */
+    public void terminate();
 
     /**
      * Returns the display name for the underlying renderer. The display name
      * will not include the word "renderer".
      */
-    public String getRendererName() {
-        return renderer.toString()
-            .replace("Renderer", "")
-            .replace("renderer", "")
-            .trim();
-    }
+    public String getRendererName();
 
     /**
      * Returns debug and support information that can be displayed when running
@@ -369,8 +174,9 @@ public final class SceneContext implements Updatable {
      * to be displayed in a {@code Text}, which can be styled to match the
      * application appearance.
      */
-    public List<String> getDebugInformation() {
-        int targetFPS = frameStats.getTargetFramerate();
+    default List<String> getDebugInformation() {
+        FrameStats frameStats = getSceneManager().getFrameStats();
+        int targetFPS = getConfig().getFramerate();
 
         List<String> info = new ArrayList<>();
         info.add("Renderer:  " + getRendererName());
@@ -388,62 +194,5 @@ public final class SceneContext implements Updatable {
         }
 
         return info;
-    }
-
-    /**
-     * Terminates the application. This method will forward to the underlying
-     * {@link Renderer#terminate()}. It is exposed by this class to allow it
-     * to be used during frame updates.
-     */
-    public void terminate() {
-        renderer.terminate();
-    }
-
-    /**
-     * Global handler that saves screenshots to the platform default location
-     * whenever the F12 is pressed. This handler is only available on desktop
-     * platforms.
-     */
-    private void checkScreenshotHandler() {
-        if (input.isKeyReleased(KeyCode.F12)) {
-            try {
-                FilePointer file = new FilePointer("screenshot-" + System.currentTimeMillis() + ".png");
-                renderer.takeScreenshot(file);
-                LOGGER.info("Saved screenshot to " + file);
-            } catch (UnsupportedOperationException e) {
-                LOGGER.warning("Screenshot not supported");
-            }
-        }
-    }
-
-    /**
-     * One of the scenes that is managed by this {@link SceneContext},
-     * consisting of both the scene itself plus all of its attached
-     * sub-scenes.
-     */
-    private static class SceneState {
-
-        private Scene scene;
-        private List<Scene> subScenes;
-
-        public SceneState(Scene scene) {
-            this.scene = scene;
-            this.subScenes = new ArrayList<>();
-        }
-
-        public void attachSubScene(Scene subScene) {
-            // We iterate the sub-scenes backwards, but still want
-            // to preserve the expected order.
-            subScenes.addFirst(subScene);
-        }
-
-        public void walk(Consumer<Scene> callback) {
-            callback.accept(scene);
-            // We iterate the list backwards to avoid issues with
-            // concurrent modification.
-            for (int i = subScenes.size() - 1; i >= 0; i--) {
-                callback.accept(subScenes.get(i));
-            }
-        }
     }
 }

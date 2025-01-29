@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,9 +8,9 @@ package nl.colorize.multimedialib.stage;
 
 import lombok.Getter;
 import lombok.Setter;
-import nl.colorize.multimedialib.renderer.FilePointer;
+import nl.colorize.util.ResourceFile;
 import nl.colorize.util.Stopwatch;
-import nl.colorize.util.Subscribable;
+import nl.colorize.util.Subject;
 import nl.colorize.util.TextUtils;
 
 /**
@@ -26,11 +26,11 @@ import nl.colorize.util.TextUtils;
 @Setter
 public class LoadStatus {
 
-    private final FilePointer file;
+    private final ResourceFile file;
     private boolean loaded;
     private float time;
 
-    private LoadStatus(FilePointer file) {
+    private LoadStatus(ResourceFile file) {
         this.file = file;
         this.loaded = false;
         this.time = 0f;
@@ -47,9 +47,9 @@ public class LoadStatus {
 
     /**
      * Creates a {@link LoadStatus} that tracks the status of the asynchronous
-     * operation represented by the {@link Subscribable}.
+     * operation represented by the {@link Subject}.
      */
-    public static LoadStatus track(FilePointer file, Subscribable<?> operation) {
+    public static LoadStatus track(ResourceFile file, Subject<?> operation) {
         LoadStatus loadStatus = new LoadStatus(file);
         Stopwatch timer = new Stopwatch();
         operation.subscribe(event -> {

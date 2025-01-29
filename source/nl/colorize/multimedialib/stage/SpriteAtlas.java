@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -34,7 +34,7 @@ public class SpriteAtlas {
 
     public SpriteAtlas() {
         this.subImages = new HashMap<>();
-        this.subImageCache = Cache.from(this::loadSubImage, 1024);
+        this.subImageCache = Cache.from(this::loadSubImage);
     }
 
     private String normalizeSubImageName(String name) {
@@ -49,8 +49,6 @@ public class SpriteAtlas {
 
         Preconditions.checkArgument(!name.isEmpty(), "Invalid sub-image name: " + name);
         Preconditions.checkArgument(!subImages.containsKey(name), "Duplicate sub-image: " + name);
-        Preconditions.checkArgument(subImages.size() < subImageCache.getCapacity(),
-            "Maximum number of sub-images exceeded");
 
         SubImage subImage = new SubImage(name, atlas, region);
         subImages.put(name, subImage);

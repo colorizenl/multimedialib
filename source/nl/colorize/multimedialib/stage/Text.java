@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -28,10 +28,10 @@ import java.util.stream.Stream;
  */
 @Getter
 @Setter
-public class Text implements Graphic2D {
+public class Text implements StageNode2D {
 
-    protected Graphic2D parent;
     private Transform transform;
+    private Transform globalTransform;
 
     private List<String> lines;
     private FontFace font;
@@ -51,6 +51,7 @@ public class Text implements Graphic2D {
 
     public Text(String text, FontFace font, Align align, int lineWidth) {
         this.transform = new Transform();
+        this.globalTransform = new Transform();
 
         this.lines = Collections.emptyList();
         this.font = font;
@@ -127,7 +128,6 @@ public class Text implements Graphic2D {
 
     @Override
     public Rect getStageBounds() {
-        Transform globalTransform = calculateGlobalTransform();
         Point2D position = globalTransform.getPosition();
 
         int longestLine = lines.stream()
@@ -145,7 +145,7 @@ public class Text implements Graphic2D {
     }
 
     @Override
-    public void updateGraphics(Timer sceneTime) {
+    public void animate(Timer sceneTime) {
     }
 
     @Override

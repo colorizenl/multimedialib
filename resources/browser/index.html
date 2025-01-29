@@ -1,36 +1,42 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta charset="UTF-8" />
-		<title>{project}</title>
-		<meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no" />
-		<link rel="shortcut icon" type="image/x-icon" href="resources/favicon.png" />
-		<link rel="apple-touch-icon" href="resources/apple-favicon.png" />
-		<link rel="stylesheet" type="text/css" href="resources/multimedialib.css" />
+    <head>
+        <meta charset="UTF-8" />
+        <title>{project}</title>
+        <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no" />
+        <link rel="shortcut icon" type="image/x-icon" href="resources/favicon.png" />
+        <link rel="apple-touch-icon" href="resources/apple-favicon.png" />
+        <link rel="stylesheet" type="text/css" href="resources/multimedialib.css" />
 
-		<meta name="build-id" content="{build-id}" />
-		{meta}
+        <meta name="build-id" content="{build-id}" />
+        {meta}
 
-		{js-libraries}
+        {js-libraries}
 
-		<script src="multimedialib.js"></script>
-		<script src="browser-bridge.js"></script>
-		<script src="pixi-bridge.js"></script>
-		<script src="three-bridge.js"></script>
-		<script src="peerjs-bridge.js"></script>
+        <script src="multimedialib.js" type="module"></script>
+        <script src="browser-bridge.js" type="module"></script>
+        <script src="pixi-bridge.js" type="module"></script>
+        <script src="three-bridge.js" type="module"></script>
+        <script src="peerjs-bridge.js" type="module"></script>
 
-		<script src="{teavm-js-file}"></script>
-	</head>
-	
-	<body>
-		<img id="loading" src="resources/loading.gif" />
-		<div id="multimediaLibContainer"></div>
-		<div id="fontContainer"></div>
-		<div id="resourceContainer">
-			{resources}
-		</div>
-		<div id="inputContainer"></div>
+        <script src="{teavm-js-file}"></script>
+    </head>
 
-		{timestamp}
-	</body>
+    <body>
+        <img id="loading" src="resources/loading.gif" />
+        <div id="multimediaLibContainer"></div>
+        <div id="fontContainer"></div>
+        <div id="resourceContainer">
+            {resources}
+        </div>
+        <div id="inputContainer"></div>
+
+        {timestamp}
+
+        <script type="module">
+            import {bootstrap} from "./multimedialib.js";
+
+            window.addEventListener("load", event => bootstrap());
+        </script>
+    </body>
 </html>

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -14,7 +14,7 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Pointer;
-import nl.colorize.util.Subscribable;
+import nl.colorize.util.Subject;
 import nl.colorize.util.swing.Popups;
 import nl.colorize.util.swing.SwingUtils;
 
@@ -194,7 +194,7 @@ public class JFXInput implements InputDevice {
     }
 
     @Override
-    public Subscribable<String> requestTextInput(String labelText, String initialValue) {
+    public Subject<String> requestTextInput(String labelText, String initialValue) {
         JLabel label = new JLabel(labelText);
         JTextField field = new JTextField(initialValue);
 
@@ -205,11 +205,11 @@ public class JFXInput implements InputDevice {
 
         Popups.message(null, "", panel);
 
-        Subscribable<String> subscribable = new Subscribable<>();
+        Subject<String> subject = new Subject<>();
         if (field.getText() != null && !field.getText().isEmpty()) {
-            subscribable.next(field.getText());
+            subject.next(field.getText());
         }
-        return subscribable;
+        return subject;
     }
 
     @Override

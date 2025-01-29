@@ -1,7 +1,7 @@
 package nl.colorize.multimedialib.stage;
 
-import nl.colorize.multimedialib.renderer.FilePointer;
-import nl.colorize.util.Subscribable;
+import nl.colorize.util.ResourceFile;
+import nl.colorize.util.Subject;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -11,8 +11,8 @@ class LoadStatusTest {
 
     @Test
     void trackSubscribable() {
-        Subscribable<String> operation = new Subscribable<>();
-        LoadStatus loadStatus = LoadStatus.track(new FilePointer("a.png"), operation);
+        Subject<String> operation = new Subject<>();
+        LoadStatus loadStatus = LoadStatus.track(new ResourceFile("a.png"), operation);
 
         assertFalse(loadStatus.isLoaded());
         operation.next("a");

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -12,7 +12,7 @@ import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.util.LogHelper;
-import nl.colorize.util.Subscribable;
+import nl.colorize.util.Subject;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.canvas.CanvasRenderingContext2D;
 import org.teavm.jso.canvas.ImageData;
@@ -33,17 +33,17 @@ import java.util.logging.Logger;
 public class TeaImage implements Image {
 
     @Getter private UUID id;
-    @Getter private Subscribable<HTMLImageElement> imagePromise;
+    @Getter private Subject<HTMLImageElement> imagePromise;
     private Region region;
 
     private HTMLImageElement imageElement;
     private CanvasRenderingContext2D imageData;
 
-    private static final Region IMAGE_LOADING_REGION = new Region(0, 0, 1, 1);
+    public static final Region IMAGE_LOADING_REGION = new Region(0, 0, 1, 1);
     private static final int[] UNKNOWN_RGBA = {0, 0, 0, 0};
     private static final Logger LOGGER = LogHelper.getLogger(TeaImage.class);
 
-    protected TeaImage(Subscribable<HTMLImageElement> imagePromise, Region region) {
+    protected TeaImage(Subject<HTMLImageElement> imagePromise, Region region) {
         this.id = UUID.randomUUID();
         this.imagePromise = imagePromise;
         this.region = region;

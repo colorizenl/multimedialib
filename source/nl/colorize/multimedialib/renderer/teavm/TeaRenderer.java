@@ -1,22 +1,29 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer.teavm;
 
-import nl.colorize.multimedialib.renderer.DisplayMode;
-import nl.colorize.multimedialib.renderer.ErrorHandler;
-import nl.colorize.multimedialib.renderer.FilePointer;
+import lombok.Getter;
+import nl.colorize.multimedialib.math.Box;
+import nl.colorize.multimedialib.math.Point2D;
+import nl.colorize.multimedialib.math.Point3D;
+import nl.colorize.multimedialib.math.Shape3D;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
+import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.renderer.Renderer;
-import nl.colorize.multimedialib.renderer.pixi.PixiGraphics;
-import nl.colorize.multimedialib.renderer.three.ThreeGraphics;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.scene.SceneManager;
+import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Mesh;
+import nl.colorize.multimedialib.stage.Stage;
 import org.teavm.jso.browser.Window;
+
+import java.io.File;
 
 /**
  * Renderer based on <a href="http://teavm.org">TeaVM</a> that is transpiled to
@@ -24,37 +31,42 @@ import org.teavm.jso.browser.Window;
  * different frameworks, the requested renderer can be indicated during the
  * build or at runtime using a URL parameter.
  */
-public class TeaRenderer implements Renderer {
+@Getter
+public class TeaRenderer implements Renderer, SceneContext {
 
-    private DisplayMode displayMode;
+    private RenderConfig config;
     private TeaGraphics graphics;
-    private TeaInputDevice inputDevice;
-    private SceneContext context;
+    private TeaInputDevice input;
+    private TeaMediaLoader mediaLoader;
+    private TeaNetwork network;
+    private SceneManager sceneManager;
+    private Stage stage;
 
     /**
      * Initializes the TeaVM renderer using the specified graphics library.
      * Applications should use one of the factory methods rather than using
      * this constructor directly.
      */
-    private TeaRenderer(DisplayMode displayMode, TeaGraphics graphics) {
-        this.displayMode = displayMode;
+    public TeaRenderer(TeaGraphics graphics) {
         this.graphics = graphics;
-        this.inputDevice = new TeaInputDevice(displayMode.canvas(), graphics);
     }
 
     @Override
-    public void start(Scene initialScene, ErrorHandler errorHandler) {
-        TeaMediaLoader mediaLoader = new TeaMediaLoader();
-        TeaNetwork network = new TeaNetwork();
+    public void start(RenderConfig config, Scene initialScene) {
+        this.config = config;
+        network = new TeaNetwork();
+        sceneManager = new SceneManager();
+        stage = new Stage(config.getGraphicsMode(), config.getCanvas());
+        mediaLoader = new TeaMediaLoader(config.getGraphicsMode());
 
-        inputDevice.bindEventHandlers();
-        graphics.init(mediaLoader);
+        input = new TeaInputDevice(config.getCanvas(), graphics);
+        input.bindEventHandlers();
 
-        context = new SceneContext(this, mediaLoader, inputDevice, network);
-        context.changeScene(initialScene);
+        graphics.init(this);
+        sceneManager.changeScene(initialScene);
 
         Browser.getBrowserBridge().prepareAnimationLoop();
-        Browser.getBrowserBridge().registerErrorHandler(error -> handleError(errorHandler, error));
+        Browser.getBrowserBridge().registerErrorHandler(this::handleError);
         Window.requestAnimationFrame(this::onAnimationFrame);
     }
 
@@ -65,9 +77,11 @@ public class TeaRenderer implements Renderer {
      */
     private void onAnimationFrame(double timestamp) {
         if (prepareCanvas()) {
-            if (context.syncFrame() > 0) {
-                renderFrame();
-                inputDevice.reset();
+            if (sceneManager.requestFrameUpdate(this) > 0) {
+                sceneManager.getFrameStats().markStart(FrameStats.PHASE_FRAME_RENDER);
+                getStage().visit(graphics);
+                sceneManager.getFrameStats().markEnd(FrameStats.PHASE_FRAME_RENDER);
+                input.reset();
             }
         }
 
@@ -86,32 +100,16 @@ public class TeaRenderer implements Renderer {
         int height = graphics.getDisplayHeight();
 
         if (width > 0 || height > 0) {
-            displayMode.canvas().resizeScreen(width, height);
+            getCanvas().resizeScreen(width, height);
             return true;
         } else {
             return false;
         }
     }
 
-    private void renderFrame() {
-        context.getFrameStats().markStart(FrameStats.PHASE_FRAME_RENDER);
-        context.getStage().visit(graphics);
-        context.getFrameStats().markEnd(FrameStats.PHASE_FRAME_RENDER);
-    }
-
-    private void handleError(ErrorHandler errorHandler, String error) {
+    private void handleError(String error) {
         RuntimeException cause = new RuntimeException("JavaScript error\n\n" + error);
-        errorHandler.onError(context, cause);
-    }
-
-    @Override
-    public GraphicsMode getGraphicsMode() {
-        return graphics.getGraphicsMode();
-    }
-
-    @Override
-    public DisplayMode getDisplayMode() {
-        return displayMode;
+        config.getErrorHandler().onError(this, cause);
     }
 
     @Override
@@ -120,32 +118,37 @@ public class TeaRenderer implements Renderer {
     }
 
     @Override
-    public void takeScreenshot(FilePointer dest) {
+    public Mesh createMesh(Shape3D shape, ColorRGB color) {
+        return graphics.createMesh(shape, color);
+    }
+
+    @Override
+    public Point2D project(Point3D position) {
+        return graphics.project(position);
+    }
+
+    @Override
+    public boolean castPickRay(Point2D canvasPosition, Box area) {
+        return graphics.castPickRay(canvasPosition, area);
+    }
+
+    @Override
+    public void takeScreenshot(File screenshotFile) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public String toString() {
+    public String getRendererName() {
         return switch (graphics) {
-            case HtmlCanvasGraphics canvas-> "HTML5 Canvas renderer";
+            case HtmlCanvasGraphics canvas -> "HTML5 Canvas renderer";
             case PixiGraphics pixi -> "Pixi.js renderer";
             case ThreeGraphics three -> "Three.js renderer";
             default -> "TeaVM renderer";
         };
     }
 
-    public static TeaRenderer withCanvas(DisplayMode displayMode) {
-        TeaGraphics graphics = new HtmlCanvasGraphics(displayMode.canvas());
-        return new TeaRenderer(displayMode, graphics);
-    }
-
-    public static TeaRenderer withPixi(DisplayMode displayMode) {
-        TeaGraphics graphics = new PixiGraphics(displayMode.canvas());
-        return new TeaRenderer(displayMode, graphics);
-    }
-
-    public static TeaRenderer withThree(DisplayMode displayMode) {
-        TeaGraphics graphics = new ThreeGraphics(displayMode.canvas());
-        return new TeaRenderer(displayMode, graphics);
+    @Override
+    public boolean isSupported(GraphicsMode graphicsMode) {
+        return graphics.getGraphicsMode() == graphicsMode;
     }
 }

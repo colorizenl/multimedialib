@@ -1,13 +1,12 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.tool;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import nl.colorize.util.swing.Utils2D;
 import org.junit.jupiter.api.Test;
@@ -21,6 +20,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -35,7 +36,7 @@ public class TeaVMTranspilerToolTest {
         tool.mainClassName = MockApp.class.getName();
         tool.run();
 
-        String generatedCode = Files.toString(tool.getScriptFile(), Charsets.UTF_8);
+        String generatedCode = Files.toString(tool.getScriptFile(), UTF_8);
 
         String expected = """
             ncmt_TeaVMTranspilerToolTest$MockApp_main = $args => {
@@ -87,7 +88,7 @@ public class TeaVMTranspilerToolTest {
     @Test
     void rewriteHTML(@TempDir File resourcesDir, @TempDir File outputDir) throws IOException {
         Files.write("This is a test file\ncontaining multiple lines",
-            new File(resourcesDir, "test.txt"), Charsets.UTF_8);
+            new File(resourcesDir, "test.txt"), UTF_8);
 
         TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
         tool.projectName = "test";
@@ -96,7 +97,7 @@ public class TeaVMTranspilerToolTest {
         tool.mainClassName = MockApp.class.getName();
         tool.run();
 
-        String generatedHTML = Files.toString(new File(outputDir, "index.html"), Charsets.UTF_8);
+        String generatedHTML = Files.toString(new File(outputDir, "index.html"), UTF_8);
 
         String expected = "";
         expected += "<div id=\"test_txt\">This is a test file\n";
@@ -107,8 +108,8 @@ public class TeaVMTranspilerToolTest {
 
     @Test
     void generateResourceManifest(@TempDir File resourcesDir, @TempDir File outputDir) throws IOException {
-        Files.write("This is a test file", new File(resourcesDir, "test1.txt"), Charsets.UTF_8);
-        Files.write("This is a another test file", new File(resourcesDir, "test2.txt"), Charsets.UTF_8);
+        Files.write("This is a test file", new File(resourcesDir, "test1.txt"), UTF_8);
+        Files.write("This is a another test file", new File(resourcesDir, "test2.txt"), UTF_8);
 
         TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
         tool.projectName = "test";
@@ -117,15 +118,19 @@ public class TeaVMTranspilerToolTest {
         tool.mainClassName = MockApp.class.getName();
         tool.run();
 
-        String generatedHTML = Files.toString(new File(outputDir, "index.html"), Charsets.UTF_8);
+        String generatedHTML = Files.toString(new File(outputDir, "index.html"), UTF_8);
 
         String expected = """
             <div id="resource-file-manifest">OpenSans-Regular.ttf
             apple-favicon.png
+            colorize-emblem.png
             colorize-icon-256.png
             colorize-icon-32.png
             colorize-logo.gltf
             colorize-logo.png
+            crate.vox.mtl
+            crate.vox.obj
+            crate.vox.png
             demo-sound.mp3
             demo.png
             favicon.png
@@ -164,7 +169,7 @@ public class TeaVMTranspilerToolTest {
         tool.meta = "first=value,second=other value";
         tool.run();
 
-        String generatedHTML = Files.toString(new File(outputDir, "index.html"), Charsets.UTF_8);
+        String generatedHTML = Files.toString(new File(outputDir, "index.html"), UTF_8);
 
         assertTrue(generatedHTML.contains("<meta name=\"first\" content=\"value\" />"));
         assertTrue(generatedHTML.contains("<meta name=\"second\" content=\"other value\" />"));
@@ -180,9 +185,54 @@ public class TeaVMTranspilerToolTest {
         tool.buildId = "1234";
         tool.run();
 
-        String generatedHTML = Files.toString(new File(outputDir, "index.html"), Charsets.UTF_8);
+        String generatedHTML = Files.toString(new File(outputDir, "index.html"), UTF_8);
 
         assertTrue(generatedHTML.contains("<meta name=\"build-id\" content=\"1234\" />"));
+    }
+
+    @Test
+    void generateImportMap(@TempDir File resourcesDir, @TempDir File outputDir) throws IOException {
+        TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
+        tool.projectName = "test";
+        tool.resourceDir = resourcesDir;
+        tool.outputDir = outputDir;
+        tool.mainClassName = MockApp.class.getName();
+        tool.buildId = "1234";
+        tool.run();
+
+        String scriptTags = Files.toString(new File(outputDir, "index.html"), UTF_8)
+            .split("<meta name=\"build-id\" content=\"1234\" />")[1]
+            .split("<script src=\"script-")[0]
+            .trim();
+
+        String expected = """
+            <script src="libraries/pixi.min.js"></script>
+            <script src="libraries/peerjs.min.js"></script>
+            <script type="importmap">
+                {
+                    "imports": {
+                        "three": "./libraries/three.module.min.js",
+                        "three/loaders/GLTFLoader": "./libraries/three/loaders/GLTFLoader.js",
+                        "three/loaders/OBJLoader": "./libraries/three/loaders/OBJLoader.js",
+                        "three/loaders/MTLLoader": "./libraries/three/loaders/MTLLoader.js",
+                        "three/utils/BufferGeometryUtils": "./libraries/three/utils/BufferGeometryUtils.js"
+                    }
+                }
+            </script>
+            
+                    <script src="multimedialib.js" type="module"></script>
+                    <script src="browser-bridge.js" type="module"></script>
+                    <script src="pixi-bridge.js" type="module"></script>
+                    <script src="three-bridge.js" type="module"></script>
+                    <script src="peerjs-bridge.js" type="module"></script>
+            """;
+
+        assertEquals(expected.trim(), scriptTags.trim());
+        assertTrue(new File(outputDir, "libraries/pixi.min.js").exists());
+        assertTrue(new File(outputDir, "libraries/three.module.min.js").exists());
+        assertTrue(new File(outputDir, "libraries/three.core.min.js").exists());
+        assertTrue(new File(outputDir, "libraries/three/loaders/GLTFLoader.js").exists());
+        assertTrue(new File(outputDir, "libraries/three/utils/BufferGeometryUtils.js").exists());
     }
 
     /**

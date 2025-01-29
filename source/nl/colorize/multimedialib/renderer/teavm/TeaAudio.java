@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,7 +8,7 @@ package nl.colorize.multimedialib.renderer.teavm;
 
 import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.stage.Audio;
-import nl.colorize.util.Subscribable;
+import nl.colorize.util.Subject;
 import org.teavm.jso.dom.html.HTMLAudioElement;
 
 /**
@@ -25,7 +25,7 @@ public class TeaAudio implements Audio {
 
     private HTMLAudioElement audioElement;
 
-    protected TeaAudio(Subscribable<HTMLAudioElement> audioPromise) {
+    protected TeaAudio(Subject<HTMLAudioElement> audioPromise) {
         audioPromise.subscribe(event -> audioElement = event);
     }
 

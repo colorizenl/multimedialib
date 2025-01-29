@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -12,8 +12,8 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Pointer;
-import nl.colorize.multimedialib.renderer.RendererLauncher;
-import nl.colorize.util.Subscribable;
+import nl.colorize.multimedialib.renderer.RenderConfig;
+import nl.colorize.util.Subject;
 import nl.colorize.util.swing.Popups;
 import nl.colorize.util.swing.SwingUtils;
 
@@ -36,6 +36,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseMotionListener {
 
+    private RenderConfig config;
     private Canvas canvas;
     private List<InputEvent> eventsBuffer;
 
@@ -117,8 +118,9 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
         .put(KeyCode.EQUALS, KeyEvent.VK_EQUALS)
         .build();
 
-    public AWTInput(Canvas canvas) {
-        this.canvas = canvas;
+    public AWTInput(RenderConfig config) {
+        this.config = config;
+        this.canvas = config.getCanvas();
         this.eventsBuffer = new CopyOnWriteArrayList<>();
 
         keyStates = new int[MAX_KEY_CODES];
@@ -262,8 +264,7 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
 
     @Override
     public boolean isTouchAvailable() {
-        String emulation = System.getProperty(RendererLauncher.EMULATION_SYSTEM_PROPERTY);
-        return emulation != null;
+        return config.isSimulationMode();
     }
 
     @Override
@@ -290,7 +291,7 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
     }
 
     @Override
-    public Subscribable<String> requestTextInput(String labelText, String initialValue) {
+    public Subject<String> requestTextInput(String labelText, String initialValue) {
         JLabel label = new JLabel(labelText);
         JTextField field = new JTextField(initialValue);
 
@@ -301,11 +302,11 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
 
         Popups.message(null, "", panel);
 
-        Subscribable<String> subscribable = new Subscribable<>();
+        Subject<String> subject = new Subject<>();
         if (field.getText() != null && !field.getText().isEmpty()) {
-            subscribable.next(field.getText());
+            subject.next(field.getText());
         }
-        return subscribable;
+        return subject;
     }
 
     @Override

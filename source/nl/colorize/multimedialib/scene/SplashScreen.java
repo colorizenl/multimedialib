@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -52,7 +52,7 @@ public class SplashScreen implements Scene {
         this.nextScene = nextScene;
         this.loading = new ArrayList<>();
 
-        this.delay = new Timer(Platform.isWindows() || Platform.isMac() ? 0f : 0.4f);
+        this.delay = new Timer(Platform.isDesktopPlatform() ? 0f : 0.4f);
         this.barWidth = 300;
         this.barHeight = 10;
         this.screenBackgroundColor = ColorRGB.parseHex("#EBEBEB");;
@@ -74,9 +74,7 @@ public class SplashScreen implements Scene {
             mediaAssets.loadMedia(mediaLoader, network);
         }
 
-        for (LoadStatus loadStatus : mediaLoader.getLoadStatus().flush()) {
-            loading.add(loadStatus);
-        }
+        loading.addAll(mediaLoader.getLoadStatus().flush().toList());
     }
 
     protected void attachProgressBar(SceneContext context) {

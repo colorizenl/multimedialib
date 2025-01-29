@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2024 Colorize
+// Copyright 2009-2025 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -16,7 +16,7 @@ import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
-import nl.colorize.multimedialib.stage.Graphic2D;
+import nl.colorize.multimedialib.stage.StageNode2D;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Text;
@@ -86,7 +86,7 @@ public class PerformanceMonitor implements Scene {
 
     @Override
     public void update(SceneContext context, float deltaTime) {
-        FrameStats stats = context.getFrameStats();
+        FrameStats stats = context.getSceneManager().getFrameStats();
 
         if (isActive() && stats.getBufferSize() >= 10) {
             container.setPosition(20, context.getCanvas().getHeight() - 120);
@@ -105,7 +105,7 @@ public class PerformanceMonitor implements Scene {
         }
     }
 
-    private Graphic2D depictFrameStats(Iterable<Long> frameTimes, ColorRGB color) {
+    private StageNode2D depictFrameStats(Iterable<Long> frameTimes, ColorRGB color) {
         float x = 0;
         List<Point2D> points = new ArrayList<>();
 
