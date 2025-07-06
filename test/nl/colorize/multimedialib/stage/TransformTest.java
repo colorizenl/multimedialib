@@ -46,4 +46,34 @@ class TransformTest {
         assertEquals(270f, combined.getRotation().degrees(), EPSILON);
         assertEquals(75f, combined.getScaleX(), EPSILON);
     }
+
+    @Test
+    void inheritMaskColorFromParent() {
+        Transform parent = new Transform();
+        parent.setMaskColor(ColorRGB.RED);
+
+        Transform child = new Transform();
+        child.setMaskColor(null);
+
+        assertEquals(ColorRGB.RED, parent.combine(child).getMaskColor());
+    }
+
+    @Test
+    void childMaskColorOverridesParentMaskColor() {
+        Transform parent = new Transform();
+        parent.setMaskColor(ColorRGB.RED);
+
+        Transform otherParent = new Transform();
+        otherParent.setMaskColor(null);
+
+        Transform child = new Transform();
+        child.setMaskColor(ColorRGB.BLUE);
+
+        Transform grandchild = new Transform();
+        grandchild.setMaskColor(null);
+
+        assertEquals(ColorRGB.BLUE, parent.combine(child).getMaskColor());
+        assertEquals(ColorRGB.BLUE, otherParent.combine(child).getMaskColor());
+        assertEquals(ColorRGB.BLUE, otherParent.combine(child).combine(grandchild).getMaskColor());
+    }
 }

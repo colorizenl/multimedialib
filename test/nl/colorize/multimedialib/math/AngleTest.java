@@ -32,11 +32,39 @@ class AngleTest {
     }
 
     @Test
-    void difference() {
-        assertEquals(0f, new Angle(90f).difference(new Angle(90f)), EPSILON);
-        assertEquals(90f, new Angle(90f).difference(new Angle(180f)), EPSILON);
-        assertEquals(180f, new Angle(90f).difference(new Angle(270f)), EPSILON);
-        assertEquals(150f, new Angle(90f).difference(new Angle(300f)), EPSILON);
+    void absoluteDifference() {
+        assertEquals(0f, new Angle(90f).absoluteDifference(new Angle(90f)), EPSILON);
+        assertEquals(90f, new Angle(90f).absoluteDifference(new Angle(180f)), EPSILON);
+        assertEquals(180f, new Angle(90f).absoluteDifference(new Angle(270f)), EPSILON);
+        assertEquals(150f, new Angle(90f).absoluteDifference(new Angle(300f)), EPSILON);
+    }
+
+    @Test
+    void relativeDifference() {
+        Angle north = new Angle(0);
+        Angle east = new Angle(90);
+        Angle south = new Angle(180);
+        Angle west = new Angle(270);
+
+        assertEquals(0f, north.relativeDifference(north), EPSILON);
+        assertEquals(90f, north.relativeDifference(east), EPSILON);
+        assertEquals(180f, north.relativeDifference(south), EPSILON);
+        assertEquals(-90f, north.relativeDifference(west), EPSILON);
+
+        assertEquals(-90f, east.relativeDifference(north), EPSILON);
+        assertEquals(0f, east.relativeDifference(east), EPSILON);
+        assertEquals(90f, east.relativeDifference(south), EPSILON);
+        assertEquals(180f, east.relativeDifference(west), EPSILON);
+
+        assertEquals(180f, south.relativeDifference(north), EPSILON);
+        assertEquals(-90f, south.relativeDifference(east), EPSILON);
+        assertEquals(0f, south.relativeDifference(south), EPSILON);
+        assertEquals(90f, south.relativeDifference(west), EPSILON);
+
+        assertEquals(90f, west.relativeDifference(north), EPSILON);
+        assertEquals(180f, west.relativeDifference(east), EPSILON);
+        assertEquals(-90f, west.relativeDifference(south), EPSILON);
+        assertEquals(0f, west.relativeDifference(west), EPSILON);
     }
 
     @Test

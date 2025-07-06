@@ -119,7 +119,7 @@ public class SpriteAtlas {
      * images, as explained in the class documentation, so the combined sprite
      * atlas is transparent to the user.
      *
-     * @throws IllegalArgumentException If the two atlases do not include
+     * @throws IllegalArgumentException If the two atlases both include
      *         sub-images with the same name.
      */
     public SpriteAtlas merge(SpriteAtlas other) {
@@ -127,6 +127,25 @@ public class SpriteAtlas {
         subImages.values().forEach(merged::add);
         other.subImages.values().forEach(merged::add);
         return merged;
+    }
+
+    /**
+     * Static factory method that returns a sprite atlas containing all
+     * sub-images from all atlases. The sub-images are merged by calling
+     * {@link #merge(SpriteAtlas)} on each atlas.
+     *
+     * @throws IllegalArgumentException If no atlases are provided, or if
+     *         multiple atlases include sub-images with the same name.
+     */
+    public static SpriteAtlas merge(List<SpriteAtlas> atlases) {
+        Preconditions.checkArgument(!atlases.isEmpty(), "No sprite atlas provided");
+
+        SpriteAtlas result = atlases.getFirst();
+        for (int i = 1; i < atlases.size(); i++) {
+            result = result.merge(atlases.get(i));
+        }
+
+        return result;
     }
 
     /**

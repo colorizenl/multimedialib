@@ -13,8 +13,8 @@ import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.util.SubscribableCollection;
 
-import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 import static lombok.AccessLevel.PROTECTED;
@@ -41,7 +41,7 @@ public class Container implements StageNode2D, Iterable<StageNode2D> {
 
     public Container(String name) {
         this.name = name;
-        this.children = SubscribableCollection.wrap(new ArrayList<>());
+        this.children = SubscribableCollection.wrap(new CopyOnWriteArrayList<>());
         this.transform = new Transform();
         this.globalTransform = new Transform();
     }

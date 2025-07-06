@@ -85,8 +85,12 @@ export class BrowserBridge {
         form.appendChild(input);
         form.appendChild(button);
 
+        const formBackground = document.createElement("div");
+        formBackground.classList.add("formBackground");
+        formBackground.appendChild(form);
+
         const container = document.getElementById("inputContainer");
-        container.appendChild(form);
+        container.appendChild(formBackground);
 
         button.addEventListener("click", e => this.submitInputForm(e, form, input.value, callback));
         form.addEventListener("submit", e => this.submitInputForm(e, form, input.value, callback));
@@ -99,7 +103,7 @@ export class BrowserBridge {
         }
         if (value) {
             callback("inputForm", value);
-            form.remove();
+            form.parentElement.remove();
         }
         return false;
     }

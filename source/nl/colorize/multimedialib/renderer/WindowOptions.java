@@ -10,7 +10,6 @@ import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Size;
 import nl.colorize.util.ResourceFile;
-import nl.colorize.util.swing.ApplicationMenuListener;
 
 import java.util.Optional;
 
@@ -24,9 +23,6 @@ import java.util.Optional;
  * of the application {@link Canvas}. If the application window is set to
  * fullscreen, this takes precedence over both the explicit window size and
  * the canvas size.
- * <p>
- * When the window is set to "embedded mode", it is assumed the MultimediaLib
- * application is embedded within another desktop application.
  */
 @Getter
 @Setter
@@ -36,8 +32,6 @@ public class WindowOptions {
     private ResourceFile iconFile;
     private boolean fullscreen;
     private Size windowSize;
-    private ApplicationMenuListener appMenu;
-    private boolean embedded;
 
     private static final String DEFAULT_WINDOW_TITLE = "MultimediaLib";
     private static final ResourceFile DEFAULT_ICON = new ResourceFile("colorize-icon-32.png");
@@ -47,8 +41,6 @@ public class WindowOptions {
         this.iconFile = DEFAULT_ICON;
         this.fullscreen = false;
         this.windowSize = null;
-        this.appMenu = null;
-        this.embedded = false;
     }
 
     /**

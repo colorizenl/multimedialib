@@ -113,7 +113,7 @@ public class Java2DGraphicsContext implements StageVisitor {
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(graphic.getTransform().getAlpha());
         g2.setStroke(new BasicStroke(graphic.getStroke()));
-        g2.setColor(colorCache.get(graphic.getColor()));
+        g2.setColor(getPrimitiveColor(graphic, globalTransform));
         g2.drawLine(Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1));
         g2.setComposite(originalComposite);
     }
@@ -123,7 +123,7 @@ public class Java2DGraphicsContext implements StageVisitor {
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(graphic.getTransform().getAlpha());
         g2.setStroke(new BasicStroke(graphic.getStroke()));
-        g2.setColor(colorCache.get(graphic.getColor()));
+        g2.setColor(getPrimitiveColor(graphic, globalTransform));
 
         for (Line segment : line.getSegments()) {
             float x0 = canvas.toScreenX(segment.start().x());
@@ -146,7 +146,7 @@ public class Java2DGraphicsContext implements StageVisitor {
 
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(globalTransform.getAlpha());
-        g2.setColor(colorCache.get(graphic.getColor()));
+        g2.setColor(getPrimitiveColor(graphic, globalTransform));
         g2.fillRect(Math.round(screenX), Math.round(screenY), Math.round(screenWidth),
             Math.round(screenHeight));
         g2.setComposite(originalComposite);
@@ -154,7 +154,8 @@ public class Java2DGraphicsContext implements StageVisitor {
 
     @Override
     public void drawCircle(Primitive graphic, Circle circle, Transform globalTransform) {
-        CircleImage key = new CircleImage(circle.radius(), colorCache.get(graphic.getColor()));
+        Color color = getPrimitiveColor(graphic, globalTransform);
+        CircleImage key = new CircleImage(circle.radius(), color);
         BufferedImage image = circleCache.get(key);
 
         Transform transform = new Transform();
@@ -176,9 +177,17 @@ public class Java2DGraphicsContext implements StageVisitor {
 
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(globalTransform.getAlpha());
-        g2.setColor(colorCache.get(graphic.getColor()));
+        g2.setColor(getPrimitiveColor(graphic, globalTransform));
         g2.fillPolygon(px, py, polygon.getNumPoints());
         g2.setComposite(originalComposite);
+    }
+
+    private Color getPrimitiveColor(Primitive primitive, Transform globalTransform) {
+        ColorRGB color = globalTransform.getMaskColor();
+        if (color == null) {
+            color = primitive.getColor();
+        }
+        return colorCache.get(color);
     }
 
     @Override

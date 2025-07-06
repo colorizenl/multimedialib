@@ -135,4 +135,12 @@ public record Box(
             depth
         );
     }
+
+    /**
+     * Factory method that creates a box with its center point located at the
+     * origin (0, 0, 0).
+     */
+    public static Box aroundOrigin(float width, float height, float depth) {
+        return around(Point3D.ORIGIN, width, height, depth);
+    }
 }

@@ -211,7 +211,7 @@ public class TeaVMTranspilerToolTest {
             <script type="importmap">
                 {
                     "imports": {
-                        "three": "./libraries/three.module.min.js",
+                        "three": "./libraries/three.module.js",
                         "three/loaders/GLTFLoader": "./libraries/three/loaders/GLTFLoader.js",
                         "three/loaders/OBJLoader": "./libraries/three/loaders/OBJLoader.js",
                         "three/loaders/MTLLoader": "./libraries/three/loaders/MTLLoader.js",
@@ -229,8 +229,8 @@ public class TeaVMTranspilerToolTest {
 
         assertEquals(expected.trim(), scriptTags.trim());
         assertTrue(new File(outputDir, "libraries/pixi.min.js").exists());
-        assertTrue(new File(outputDir, "libraries/three.module.min.js").exists());
-        assertTrue(new File(outputDir, "libraries/three.core.min.js").exists());
+        assertTrue(new File(outputDir, "libraries/three.module.js").exists());
+        assertTrue(new File(outputDir, "libraries/three.core.js").exists());
         assertTrue(new File(outputDir, "libraries/three/loaders/GLTFLoader.js").exists());
         assertTrue(new File(outputDir, "libraries/three/utils/BufferGeometryUtils.js").exists());
     }

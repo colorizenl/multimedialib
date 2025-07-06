@@ -103,7 +103,12 @@ public interface MediaLoader {
      * @throws MediaException if the file does not exist.
      */
     default List<String> loadTextLines(ResourceFile file) {
-        return Splitter.on("\n").splitToList(loadText(file));
+        String contents = loadText(file);
+        List<String> lines = Splitter.on("\n").splitToList(contents);
+        if (!lines.isEmpty() && lines.getLast().isEmpty()) {
+            lines = lines.subList(0, lines.size() - 1);
+        }
+        return lines;
     }
 
     /**

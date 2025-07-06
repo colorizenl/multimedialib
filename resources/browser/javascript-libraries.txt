@@ -7,13 +7,13 @@
 # Use the notation name -> url to instead include the libraries
 # in the import map.
 
-https://unpkg.com/pixi.js@8.6.6/dist/pixi.min.js
+https://cdn.jsdelivr.net/npm/pixi.js@8.9.0/dist/pixi.min.js
 
-https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js
+https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js
 
-three -> https://unpkg.com/three@0.171.0/build/three.module.min.js
--> https://unpkg.com/three@0.171.0/build/three.core.min.js
-three/loaders/GLTFLoader -> https://unpkg.com/three@0.171.0/examples/jsm/loaders/GLTFLoader.js
-three/loaders/OBJLoader -> https://unpkg.com/three@0.171.0/examples/jsm/loaders/OBJLoader.js
-three/loaders/MTLLoader -> https://unpkg.com/three@0.171.0/examples/jsm/loaders/MTLLoader.js
-three/utils/BufferGeometryUtils -> https://unpkg.com/three@0.171.0/examples/jsm/utils/BufferGeometryUtils.js
+three -> https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js
+-> https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.core.js
+three/loaders/GLTFLoader -> https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/loaders/GLTFLoader.js
+three/loaders/OBJLoader -> https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/loaders/OBJLoader.js
+three/loaders/MTLLoader -> https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/loaders/MTLLoader.js
+three/utils/BufferGeometryUtils -> https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/utils/BufferGeometryUtils.js

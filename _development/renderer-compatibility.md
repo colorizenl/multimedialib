@@ -33,13 +33,16 @@ The compatibility table uses the following notation:
 | Flip horizontal/vertical | 🟢     | 🟢     | 🟢     | 🟢          | 🟢   | 🟡    |
 | Mask color               | 🟡     | 🟡     | 🟢     | 🟡          | 🟢   | 🟡    |
 | Retrieve pixel data      | 🟢     | 🟢     | 🟢     | 🟢          | 🟢   | 🟢    |
-| **2D Graphics**          |
+| **2D shapes**            |
 | Lines                    | 🟢     | 🟢     | 🟢     | 🟢          | 🟢   | 🟡    |
 | Segmented lines          | 🟢     | 🟢     | 🟢     | 🟢          | 🟢   | 🟡    |
 | Rectangles               | 🟢     | 🟢     | 🟢     | 🟢          | 🟢   | 🟡    |
 | Circles                  | 🟡 (2) | 🟢     | 🟢     | 🟢          | 🟢   | 🟡    |
 | Polygons                 | 🟢     | 🟢     | 🟢     | 🟢          | 🟢   | 🟡    |
 | Alpha                    | 🟢     | 🟢     | 🟢     | 🟢          | 🟢   | 🟡    |
+| Shape rotation           | 🟣     | 🟣     | 🟣     | 🟣          | 🟣   | 🟣    |
+| Shape scale              | 🟢     | 🟣     | 🟢     | 🟢          | 🟣   | 🟡    |
+| Shape mask color         | 🟢     | 🟣     | 🟢     | 🟢          | 🟣   | 🟡    |
 | **Text**                 |
 | TrueType fonts           | 🟢     | 🟢     | 🟢     | 🟢          | 🟢   | 🟡    |
 | Text alignment           | 🟢     | 🟢     | 🟢     | 🟢          | 🟢   | 🟡    |

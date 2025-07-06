@@ -10,6 +10,8 @@ import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.mock.MockImage;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -56,6 +58,22 @@ public class SpriteAtlasTest {
         atlasB.add("b", new MockImage(), new Region(0, 0, 100, 300));
 
         SpriteAtlas merged = atlasA.merge(atlasB);
+
+        assertEquals(100, merged.get("a1").getHeight());
+        assertEquals(200, merged.get("a2").getHeight());
+        assertEquals(300, merged.get("b").getHeight());
+    }
+
+    @Test
+    void mergeFactoryMethod() {
+        SpriteAtlas atlasA = new SpriteAtlas();
+        atlasA.add("a1", new MockImage(), new Region(0, 0, 100, 100));
+        atlasA.add("a2", new MockImage(), new Region(0, 0, 100, 200));
+
+        SpriteAtlas atlasB = new SpriteAtlas();
+        atlasB.add("b", new MockImage(), new Region(0, 0, 100, 300));
+
+        SpriteAtlas merged = SpriteAtlas.merge(List.of(atlasA, atlasB));
 
         assertEquals(100, merged.get("a1").getHeight());
         assertEquals(200, merged.get("a2").getHeight());

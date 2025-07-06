@@ -89,4 +89,12 @@ public class Point2DTest {
         assertEquals("(20, 40)", new Point2D(10, 20).multiply(2f).toString());
         assertEquals("(5, 10)", new Point2D(10, 20).multiply(0.5f).toString());
     }
+
+    @Test
+    void negate() {
+        Point2D point = new Point2D(10, 20);
+
+        assertEquals("(-10, -20)", point.negate().toString());
+        assertEquals("(10, 20)", point.negate().negate().toString());
+    }
 }

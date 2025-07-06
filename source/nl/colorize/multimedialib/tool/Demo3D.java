@@ -204,7 +204,7 @@ public class Demo3D implements Scene, ErrorHandler {
 
     private void createHUD() {
         Text hudText = new Text("", font);
-        hudText.getTransform().setPosition(20, 20);
+        hudText.getTransform().setPosition(20, 30);
         hudText.setLineHeight(20);
         Effect.forFrameHandler(() -> updateHUD(hudText)).attach(context);
 

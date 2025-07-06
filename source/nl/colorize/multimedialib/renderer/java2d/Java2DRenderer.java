@@ -28,7 +28,10 @@ import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.Stopwatch;
+import nl.colorize.util.swing.ApplicationMenuListener;
 import nl.colorize.util.swing.MacIntegration;
+import nl.colorize.util.swing.MultiLabel;
+import nl.colorize.util.swing.Popups;
 import nl.colorize.util.swing.SwingUtils;
 import nl.colorize.util.swing.Utils2D;
 
@@ -62,7 +65,7 @@ import static java.awt.image.BufferedImage.TYPE_INT_ARGB;
  * The renderer will use two different threads: the rendering thread is used to
  * update the graphics, while the Swing thread is used to listen for user input.
  */
-public class Java2DRenderer implements Renderer, SceneContext {
+public class Java2DRenderer implements Renderer, SceneContext, ApplicationMenuListener {
 
     @Getter private RenderConfig config;
     @Getter private AWTInput input;
@@ -124,11 +127,9 @@ public class Java2DRenderer implements Renderer, SceneContext {
         window.setLocationRelativeTo(null);
         window.setVisible(true);
         window.createBufferStrategy(2);
-
-        if (Platform.isMac() && windowOptions.getAppMenu() != null && !windowOptions.isEmbedded()) {
-            MacIntegration.setApplicationMenuListener(windowOptions.getAppMenu());
+        if (Platform.isMac()) {
+            MacIntegration.setApplicationMenuListener(this);
         }
-
         return window;
     }
 
@@ -161,10 +162,7 @@ public class Java2DRenderer implements Renderer, SceneContext {
             public void windowClosed(WindowEvent e) {
                 LOGGER.info("Closing window");
                 terminated.set(true);
-
-                if (!config.getWindowOptions().isEmbedded()) {
-                    System.exit(0);
-                }
+                System.exit(0);
             }
         };
     }
@@ -304,5 +302,15 @@ public class Java2DRenderer implements Renderer, SceneContext {
     @Override
     public String getRendererName() {
         return "Java2D renderer";
+    }
+
+    @Override
+    public void onQuit() {
+        terminate();
+    }
+
+    @Override
+    public void onAbout() {
+        Popups.message(null, "", new MultiLabel(config.getWindowOptions().getTitle(), 400));
     }
 }

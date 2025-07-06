@@ -18,6 +18,13 @@ public record Sphere(Point3D center, float radius) implements Shape3D {
         Preconditions.checkArgument(radius >= 0f, "Invalid radius: " + radius);
     }
 
+    /**
+     * Creates a sphere with its center point located at the origin (0, 0, 0).
+     */
+    public Sphere(float radius) {
+        this(Point3D.ORIGIN, radius);
+    }
+
     @Override
     public Box getBoundingBox() {
         return Box.around(center, radius * 2f, radius * 2f, radius * 2f);

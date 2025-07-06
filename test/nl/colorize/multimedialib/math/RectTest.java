@@ -92,7 +92,7 @@ public class RectTest {
 
     @Test
     void aroundOrigin() {
-        assertEquals("(-20, -15, 40, 30)", Rect.around(40, 30).toString());
+        assertEquals("(-20, -15, 40, 30)", Rect.aroundOrigin(40, 30).toString());
     }
 
     @Test

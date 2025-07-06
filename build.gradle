@@ -1,5 +1,5 @@
 plugins {
-    id "io.freefair.lombok" version "8.12"
+    id "io.freefair.lombok" version "8.14"
     id "com.github.ben-manes.versions" version "0.52.0"
 }
 
@@ -9,7 +9,7 @@ apply plugin: "maven-publish"
 apply plugin: "signing"
 
 group = "nl.colorize"
-version = "2025.1"
+version = "2025.2"
 compileJava.options.encoding = "UTF-8"
 
 ext.libgdxVersion = "1.13.0"
@@ -63,8 +63,12 @@ dependencies {
     implementation "com.github.mgsx-dev.gdx-gltf:gltf:2.2.1"
     implementation "com.tagtraum:casampledsp-complete:0.9.32"
 
-    testImplementation "org.junit.jupiter:junit-jupiter:5.11.4"
+    testImplementation "org.junit.jupiter:junit-jupiter:5.13.2"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+javadoc {
+    exclude "**/java2d/**", "**/libgdx/**", "**/jfx/**", "**/teavm/**", "**/headless/**"
 }
 
 test {
@@ -147,8 +151,8 @@ publishing {
         maven {
             url = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
             credentials {
-                username = mavenCentralUser
-                password = mavenCentralPassword
+                username = project.hasProperty("mavenCentralUser") ? mavenCentralUser : "dummy"
+                password = project.hasProperty("mavenCentralPassword") ? mavenCentralPassword : "dummy"
             }
         }
     }

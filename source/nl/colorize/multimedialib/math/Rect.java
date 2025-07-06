@@ -161,7 +161,7 @@ public record Rect(float x, float y, float width, float height) implements Shape
      * X and Y coordinates positioned so that the origin {@code (0, 0)} ends
      * up as the center of the rectangle.
      */
-    public static Rect around(float width, float height) {
+    public static Rect aroundOrigin(float width, float height) {
         return new Rect(-width / 2f, -height / 2f, width, height);
     }
 }

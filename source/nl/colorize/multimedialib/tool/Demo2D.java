@@ -69,8 +69,7 @@ import static nl.colorize.multimedialib.stage.ColorRGB.YELLOW;
  * supported.
  * <p>
  * The demo application can be started from the command line using the
- * {@link DemoLauncher}. It can also be embedded in applications by creating an
- * instance of this class from the application code.
+ * {@link DemoLauncher}. It can also be embedded in applications.
  */
 public class Demo2D implements Scene, ErrorHandler {
 
@@ -150,7 +149,7 @@ public class Demo2D implements Scene, ErrorHandler {
 
     private void initHUD() {
         hud = new Text("", font);
-        hud.getTransform().setPosition(20, 20);
+        hud.getTransform().setPosition(20, 30);
         hud.setLineHeight(20);
         hudLayer.addChild(hud);
 

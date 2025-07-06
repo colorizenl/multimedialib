@@ -26,16 +26,31 @@ public record Angle(float degrees) {
     }
 
     /**
-     * Returns the distance between this angle and the specified other angle,
-     * in degrees. The returned value will be in the range between 0 and 180
-     * degrees.
+     * Returns the difference between this angle and the specified other angle,
+     * in the range between 0 and 180 degrees.
      */
-    public float difference(Angle other) {
+    public float absoluteDifference(Angle other) {
         float phi = Math.abs(other.degrees - degrees) % 360f;
         if (phi > 180f) {
             phi = 360f - phi;
         }
         return phi;
+    }
+
+    /**
+     * Returns the difference between this angle and the specified other angle,
+     * in the range between -180 and 180 degrees.
+     */
+    public float relativeDifference(Angle other) {
+        float phi = other.degrees - degrees;
+
+        if (phi > 180f) {
+            return phi - 360f;
+        } else if (phi <= -180f) {
+            return phi + 360f;
+        } else {
+            return phi;
+        }
     }
 
     public Angle move(Angle other) {

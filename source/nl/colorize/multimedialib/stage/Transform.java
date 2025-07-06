@@ -21,14 +21,14 @@ import nl.colorize.util.stats.Aggregate;
  * <pre>
  * | Property          | Defined as                                 | Supported by       |
  * |-------------------|--------------------------------------------|--------------------|
- * | Visible           | true/false                                 | All graphics types |
- * | Position          | X/Y relative to the graphic's center       | All graphics types |
+ * | Visible           | true/false                                 | All graphics       |
+ * | Position          | X/Y relative to the graphic's center       | All graphics       |
  * | Rotation          | Degrees, clockwise                         | Sprite             |
  * | Scale             | Percentage, 100% indicates original size   | Sprite             |
  * | Flip horizontally | true/false                                 | Sprite             |
  * | Flip vertically   | true/false                                 | Sprite             |
- * | Alpha             | Percentage, 100% indicates opaque          | Sprite, Primitive  |
- * | Mask color        | Replaces non-transparent pixels with color | Sprite             |
+ * | Alpha             | Percentage, 100% indicates opaque          | All graphics       |
+ * | Mask color        | Replaces non-transparent pixels with color | Sprite, Primitive  |
  * </pre>
  * <p>
  * The properties in a {@link Transform} instance are relative to its location
@@ -158,7 +158,7 @@ public final class Transform {
         combined.setFlipHorizontal(flipHorizontal || other.flipHorizontal);
         combined.setFlipVertical(flipVertical || other.flipVertical);
         combined.setAlpha(Aggregate.multiplyPercentage(alpha, other.alpha));
-        combined.setMaskColor(maskColor != null ? maskColor : other.maskColor);
+        combined.setMaskColor(other.maskColor != null ? other.maskColor : maskColor);
         return combined;
     }
 }

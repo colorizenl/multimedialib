@@ -8,6 +8,8 @@ package nl.colorize.multimedialib.renderer.libgdx;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.renderer.Canvas;
@@ -15,6 +17,7 @@ import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.multimedialib.renderer.RenderConfig;
+import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.Subject;
 import nl.colorize.util.swing.Popups;
@@ -28,6 +31,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class GDXInput implements InputDevice {
 
@@ -102,6 +109,9 @@ public class GDXInput implements InputDevice {
         .put(KeyCode.MINUS, Input.Keys.MINUS)
         .put(KeyCode.EQUALS, Input.Keys.EQUALS)
         .build();
+
+    private static final CharMatcher APPLE_SCRIPT_QUOTES = CharMatcher.anyOf("\"'");
+    private static final Logger LOGGER = LogHelper.getLogger(GDXInput.class);
 
     protected GDXInput(RenderConfig config) {
         this.config = config;
@@ -181,8 +191,43 @@ public class GDXInput implements InputDevice {
 
     @Override
     public Subject<String> requestTextInput(String labelText, String initialValue) {
+        Subject<String> subject = new Subject<>();
+        if (Platform.isMac()) {
+            showAppleScriptTextInputDialog(labelText, initialValue, subject);
+        } else {
+            showSwingTextInputDialog(labelText, initialValue, subject);
+        }
+        return subject;
+    }
+
+    /**
+     * On Mac, shows a dialog window using Apple Script. This is necessary
+     * because it is currently not possible to combine libGDX and Swing
+     * when using LWJGL 3.
+     */
+    private void showAppleScriptTextInputDialog(String label, String value, Subject<String> subject) {
+        String script = String.format("display dialog \"%s\" default answer \"%s\"",
+            APPLE_SCRIPT_QUOTES.removeFrom(label), APPLE_SCRIPT_QUOTES.removeFrom(value));
+
+        try {
+            Process process = new ProcessBuilder("osascript", "-e", script)
+                .start();
+
+            if (process.waitFor() == 0) {
+                String output = new String(process.getInputStream().readAllBytes(), UTF_8);
+                if (output.contains("text returned:")) {
+                    String result = Splitter.on("text returned:").splitToList(output).getLast().trim();
+                    subject.next(result);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Requesting text input via Apple Script failed", e);
+        }
+    }
+
+    private void showSwingTextInputDialog(String labelText, String value, Subject<String> subject) {
         JLabel label = new JLabel(labelText);
-        JTextField field = new JTextField(initialValue);
+        JTextField field = new JTextField(value);
 
         JPanel panel = new JPanel(new BorderLayout(0, 5));
         panel.add(label, BorderLayout.NORTH);
@@ -191,11 +236,9 @@ public class GDXInput implements InputDevice {
 
         Popups.message(null, "", panel);
 
-        Subject<String> subject = new Subject<>();
         if (field.getText() != null && !field.getText().isEmpty()) {
             subject.next(field.getText());
         }
-        return subject;
     }
 
     @Override

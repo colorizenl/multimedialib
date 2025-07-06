@@ -95,6 +95,15 @@ public record Point2D(float x, float y) {
         return new Point2D(x * factor, y * factor);
     }
 
+    /**
+     * Returns a new point that has X and Y values that are the inverse of
+     * this point's X and Y values. Negating the result will result in the
+     * original point, i.e. {@code point.negate().negate().equals(point)}.
+     */
+    public Point2D negate() {
+        return new Point2D(-x, -y);
+    }
+
     @Override
     public String toString() {
         return String.format("(%d, %d)", Math.round(x), Math.round(y));

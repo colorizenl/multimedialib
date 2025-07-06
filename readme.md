@@ -35,13 +35,13 @@ to the dependencies section in `pom.xml`:
     <dependency>
         <groupId>nl.colorize</groupId>
         <artifactId>multimedialib</artifactId>
-        <version>2025.1</version>
+        <version>2025.2</version>
     </dependency>  
     
 The library can also be used in Gradle projects:
 
     dependencies {
-        implementation "nl.colorize:multimedialib:2025.1"
+        implementation "nl.colorize:multimedialib:2025.2"
     }
     
 Supported platforms
@@ -130,7 +130,7 @@ parameters:
 | Name                | Required | Description                                   |
 |---------------------|----------|-----------------------------------------------|
 | `--renderer`        | yes      | One of 'java2d', 'javafx', 'gdx'.             |
-| `--graphics`        | yes      | Either '2d' or '3d'.                          |
+| `--graphics`        | yes      | One of '2d', '3d', 'isometric'.               |
 | `--framerate`       | no       | Demo framerate, default is 60 fps.            |
 | `--canvas`          | no       | Uses a fixed canvas size to display graphics. |
 
@@ -205,6 +205,7 @@ More documentation
 ------------------
 
 - [JavaDoc](http://api.clrz.nl/multimedialib/)
+- [Renderer compatibility table](_development/renderer-compatibility.md)
 
 Build instructions
 ------------------

@@ -160,9 +160,17 @@ public class HtmlCanvasGraphics implements TeaGraphics {
         }
     }
 
+    private String getPrimitiveColorHex(Primitive primitive, Transform globalTransform) {
+        ColorRGB color = globalTransform.getMaskColor();
+        if (color == null) {
+            color = primitive.getColor();
+        }
+        return color.toHex();
+    }
+
     @Override
     public void drawLine(Primitive graphic, Line line, Transform globalTransform) {
-        context.setStrokeStyle(graphic.getColor().toHex());
+        context.setStrokeStyle(getPrimitiveColorHex(graphic, globalTransform));
         context.setLineWidth(graphic.getStroke());
         context.beginPath();
         context.moveTo(toScreenX(line.start()), toScreenY(line.start()));
@@ -172,7 +180,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
 
     @Override
     public void drawSegmentedLine(Primitive graphic, SegmentedLine line, Transform globalTransform) {
-        context.setStrokeStyle(graphic.getColor().toHex());
+        context.setStrokeStyle(getPrimitiveColorHex(graphic, globalTransform));
         context.setLineWidth(graphic.getStroke());
         context.beginPath();
         context.moveTo(toScreenX(line.getHead()), toScreenY(line.getHead()));
@@ -183,9 +191,9 @@ public class HtmlCanvasGraphics implements TeaGraphics {
     }
 
     @Override
-    public void drawRect(Primitive graphic, Rect rect, Transform globalTransformt) {
-        context.setGlobalAlpha(globalTransformt.getAlpha() / 100f);
-        context.setFillStyle(graphic.getColor().toHex());
+    public void drawRect(Primitive graphic, Rect rect, Transform globalTransform) {
+        context.setGlobalAlpha(globalTransform.getAlpha() / 100f);
+        context.setFillStyle(getPrimitiveColorHex(graphic, globalTransform));
         context.fillRect(
             toScreenX(rect.x()),
             toScreenY(rect.y()),
@@ -198,7 +206,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
     @Override
     public void drawCircle(Primitive graphic, Circle circle, Transform globalTransform) {
         context.setGlobalAlpha(globalTransform.getAlpha() / 100f);
-        context.setFillStyle(graphic.getColor().toHex());
+        context.setFillStyle(getPrimitiveColorHex(graphic, globalTransform));
         context.beginPath();
         context.arc(toScreenX(circle.center().x()), toScreenY(circle.center().y()),
             circle.radius() * sceneCanvas.getZoomLevel(), 0f, 2f * Math.PI);
@@ -209,7 +217,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
     @Override
     public void drawPolygon(Primitive graphic, Polygon polygon, Transform globalTransform) {
         context.setGlobalAlpha(globalTransform.getAlpha() / 100f);
-        context.setFillStyle(graphic.getColor().toHex());
+        context.setFillStyle(getPrimitiveColorHex(graphic, globalTransform));
         context.beginPath();
         context.moveTo(toScreenX(polygon.getPointX(0)), toScreenY(polygon.getPointY(0)));
         for (int i = 1; i < polygon.getNumPoints(); i++) {

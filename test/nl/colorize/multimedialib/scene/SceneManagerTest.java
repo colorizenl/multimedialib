@@ -11,8 +11,6 @@ import nl.colorize.multimedialib.mock.MockImage;
 import nl.colorize.multimedialib.mock.MockScene;
 import nl.colorize.multimedialib.mock.MockStageVisitor;
 import nl.colorize.multimedialib.mock.MockStopwatch;
-import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
 import nl.colorize.multimedialib.scene.effect.Effect;
 import nl.colorize.multimedialib.stage.Animation;
@@ -30,12 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SceneManagerTest {
 
-    private Canvas canvas;
     private SceneContext context;
 
     @BeforeEach
     public void before() {
-        canvas = new Canvas(800, 600, ScaleStrategy.scale());
         context = new HeadlessRenderer(false);
     }
 

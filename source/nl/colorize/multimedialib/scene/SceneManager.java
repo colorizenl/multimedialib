@@ -18,6 +18,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 /**
@@ -31,8 +32,8 @@ public class SceneManager {
     private long elapsedTime;
     @Getter private FrameStats frameStats;
 
-    private SceneState activeScene;
-    private Queue<SceneState> requestedSceneQueue;
+    private SceneTree activeScene;
+    private Queue<SceneTree> requestedSceneQueue;
     private List<Scene> globalSubScenes;
 
     private static final long FRAME_LEEWAY_MS = 5;
@@ -127,16 +128,10 @@ public class SceneManager {
         }
     }
 
-    private void updateCurrentScene(SceneContext context, SceneState current, float deltaTime) {
+    private void updateCurrentScene(SceneContext context, SceneTree current, float deltaTime) {
         current.scene.update(context, deltaTime);
 
-        // Iterate the list of systems backwards to handle
-        // concurrent modification while the list is being
-        // iterated, without having to create a copy of the
-        // list every frame.
-        for (int i = current.subScenes.size() - 1; i >= 0; i--) {
-            Scene subScene = current.subScenes.get(i);
-
+        for (Scene subScene : current.subScenes) {
             // We need to check twice if the sub-scene has
             // been completed, both before and after its
             // own update.
@@ -149,7 +144,7 @@ public class SceneManager {
         context.getStage().getAnimationTimer().update(deltaTime);
     }
 
-    private boolean checkCompleted(SceneContext context, SceneState parent, Scene subScene) {
+    private boolean checkCompleted(SceneContext context, SceneTree parent, Scene subScene) {
         if (subScene.isCompleted()) {
             subScene.end(context);
             parent.subScenes.remove(subScene);
@@ -174,7 +169,7 @@ public class SceneManager {
             context.getStage().getAnimationTimer().reset();
         }
 
-        SceneState requestedScene = requestedSceneQueue.peek();
+        SceneTree requestedScene = requestedSceneQueue.peek();
 
         if (requestedScene != null) {
             activeScene = requestedScene;
@@ -206,7 +201,7 @@ public class SceneManager {
      * this method again will overrule that request.
      */
     public void changeScene(Scene requestedScene) {
-        requestedSceneQueue.offer(new SceneState(requestedScene));
+        requestedSceneQueue.offer(new SceneTree(requestedScene));
     }
 
     /**
@@ -218,7 +213,7 @@ public class SceneManager {
             activeScene.attachSubScene(subScene);
             subScene.start(context);
         } else {
-            SceneState requestedScene = requestedSceneQueue.peek();
+            SceneTree requestedScene = requestedSceneQueue.peek();
             requestedScene.attachSubScene(subScene);
         }
     }
@@ -252,33 +247,26 @@ public class SceneManager {
     }
 
     /**
-     * One of the scenes that is managed by this {@link SceneContext},
-     * consisting of both the scene itself plus all of its attached
-     * sub-scenes.
+     * Combines a scene with all sub-scenes attached to it. The parent
+     * scene will be updated before its sub-scenes.
      */
-    private static class SceneState {
+    private static class SceneTree {
 
         private Scene scene;
         private List<Scene> subScenes;
 
-        public SceneState(Scene scene) {
+        public SceneTree(Scene scene) {
             this.scene = scene;
-            this.subScenes = new ArrayList<>();
+            this.subScenes = new CopyOnWriteArrayList<>();
         }
 
         public void attachSubScene(Scene subScene) {
-            // We iterate the sub-scenes backwards, but still want
-            // to preserve the expected order.
-            subScenes.addFirst(subScene);
+            subScenes.add(subScene);
         }
 
         public void walk(Consumer<Scene> callback) {
             callback.accept(scene);
-            // We iterate the list backwards to avoid issues with
-            // concurrent modification.
-            for (int i = subScenes.size() - 1; i >= 0; i--) {
-                callback.accept(subScenes.get(i));
-            }
+            subScenes.forEach(callback);
         }
     }
 }

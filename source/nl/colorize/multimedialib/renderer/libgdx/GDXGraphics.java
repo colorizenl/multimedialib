@@ -164,6 +164,14 @@ public class GDXGraphics implements StageVisitor, StageSubscriber {
         switchMode(false, false);
     }
 
+    private Color getPrimitiveColor(Primitive primitive, Transform globalTransform) {
+        ColorRGB color = globalTransform.getMaskColor();
+        if (color == null) {
+            color = primitive.getColor();
+        }
+        return convertColor(color, globalTransform.getAlpha());
+    }
+
     /**
      * Draws a line using libGDX's {@code ShapeBatch}. Drawing lines will
      * always trigger a mode switch, as "line mode" and "fill mode" are
@@ -171,28 +179,30 @@ public class GDXGraphics implements StageVisitor, StageSubscriber {
      */
     @Override
     public void drawLine(Primitive graphic, Line line, Transform globalTransform) {
+        Color color = getPrimitiveColor(graphic, globalTransform);
         if (graphic.getStroke() == 1f) {
-            drawBasicLines(List.of(line), graphic.getColor());
+            drawBasicLines(List.of(line), color);
         } else {
-            drawComplexLines(List.of(line), graphic.getColor(), graphic.getStroke());
+            drawComplexLines(List.of(line), color, graphic.getStroke());
         }
     }
 
     @Override
     public void drawSegmentedLine(Primitive graphic, SegmentedLine line, Transform globalTransform) {
+        Color color = getPrimitiveColor(graphic, globalTransform);
         if (graphic.getStroke() == 1f) {
-            drawBasicLines(line.getSegments(), graphic.getColor());
+            drawBasicLines(line.getSegments(), color);
         } else {
-            drawComplexLines(line.getSegments(), graphic.getColor(), graphic.getStroke());
+            drawComplexLines(line.getSegments(), color, graphic.getStroke());
         }
     }
 
-    private void drawBasicLines(List<Line> lines, ColorRGB color) {
+    private void drawBasicLines(List<Line> lines, Color color) {
         switchMode(false, false);
         Gdx.gl.glEnable(GL20.GL_BLEND);
 
         shapeBatch.begin(ShapeRenderer.ShapeType.Line);
-        shapeBatch.setColor(convertColor(color));
+        shapeBatch.setColor(color);
 
         for (Line segment : lines) {
             float x0 = toScreenX(segment.start().x());
@@ -206,12 +216,12 @@ public class GDXGraphics implements StageVisitor, StageSubscriber {
         shapeBatch.end();
     }
 
-    private void drawComplexLines(List<Line> lines, ColorRGB color, float stroke) {
+    private void drawComplexLines(List<Line> lines, Color color, float stroke) {
         switchMode(false, false);
         Gdx.gl.glEnable(GL20.GL_BLEND);
 
         shapeBatch.begin(ShapeRenderer.ShapeType.Filled);
-        shapeBatch.setColor(convertColor(color));
+        shapeBatch.setColor(color);
 
         for (Line segment : lines) {
             float x0 = toScreenX(segment.start().x());
@@ -233,7 +243,7 @@ public class GDXGraphics implements StageVisitor, StageSubscriber {
         float height = rect.height() * canvas.getZoomLevel();
 
         switchMode(false, true);
-        shapeBatch.setColor(convertColor(graphic.getColor(), globalTransform.getAlpha()));
+        shapeBatch.setColor(getPrimitiveColor(graphic, globalTransform));
         shapeBatch.rect(x, y, width, height);
     }
 
@@ -244,24 +254,25 @@ public class GDXGraphics implements StageVisitor, StageSubscriber {
         float radius = circle.radius() * canvas.getZoomLevel();
 
         switchMode(false, true);
-        shapeBatch.setColor(convertColor(graphic.getColor(), globalTransform.getAlpha()));
+        shapeBatch.setColor(getPrimitiveColor(graphic, globalTransform));
         shapeBatch.circle(x, y, radius, CIRCLE_SEGMENTS);
     }
 
     @Override
     public void drawPolygon(Primitive graphic, Polygon polygon, Transform globalTransform) {
+        Color color = getPrimitiveColor(graphic, globalTransform);
         if (polygon.getNumPoints() == 3) {
-            drawTriangle(polygon.toPoints(), graphic.getColor(), globalTransform.getAlpha());
+            drawTriangle(polygon.toPoints(), color);
         } else {
             for (Polygon triangle : polygon.subdivide()) {
-                drawTriangle(triangle.toPoints(), graphic.getColor(), globalTransform.getAlpha());
+                drawTriangle(triangle.toPoints(), color);
             }
         }
     }
 
-    private void drawTriangle(float[] vertices, ColorRGB color, float alpha) {
+    private void drawTriangle(float[] vertices, Color color) {
         switchMode(false, true);
-        shapeBatch.setColor(convertColor(color, alpha));
+        shapeBatch.setColor(color);
         shapeBatch.triangle(toScreenX(vertices[0]), toScreenY(vertices[1]),
             toScreenX(vertices[2]), toScreenY(vertices[3]),
             toScreenX(vertices[4]), toScreenY(vertices[5]));

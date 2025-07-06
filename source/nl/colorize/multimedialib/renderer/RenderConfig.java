@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.renderer;
 
 import com.google.common.base.Preconditions;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Size;
@@ -14,8 +15,8 @@ import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
 import nl.colorize.multimedialib.renderer.java2d.Java2DRenderer;
 import nl.colorize.multimedialib.renderer.jfx.JFXRenderer;
 import nl.colorize.multimedialib.renderer.libgdx.GDXRenderer;
-import nl.colorize.multimedialib.renderer.teavm.PixiGraphics;
 import nl.colorize.multimedialib.renderer.teavm.HtmlCanvasGraphics;
+import nl.colorize.multimedialib.renderer.teavm.PixiGraphics;
 import nl.colorize.multimedialib.renderer.teavm.TeaRenderer;
 import nl.colorize.multimedialib.renderer.teavm.ThreeGraphics;
 import nl.colorize.multimedialib.scene.Scene;
@@ -25,6 +26,8 @@ import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
@@ -59,6 +62,11 @@ import java.util.logging.Logger;
  * error and then terminate the renderer. Additional error handlers can be
  * added in order to customize this behavior.
  * <p>
+ * <strong>Global handlers:</strong> The configuration can define "global"
+ * handlers that are always active, independent of the currently active
+ * scene. Global handlers can also be registered at runtime, using
+ * {@link SceneContext#attachGlobal(Scene)}.
+ * <p>
  * <strong>Simulation mode:</strong> During development, the launcher can
  * "simulate" the behavior of mobile platforms when running on desktop
  * platforms. This is comparable to "responsive design mode" in desktop
@@ -75,6 +83,7 @@ public final class RenderConfig {
     private int framerate;
     private final WindowOptions windowOptions;
     private ErrorHandler errorHandler;
+    private final List<Scene> globalHandlers;
     private String simulationMode;
 
     private static final Size SIMULATION_MODE_PHONE = new Size(350, 760);
@@ -88,7 +97,12 @@ public final class RenderConfig {
         this.framerate = 60;
         this.errorHandler = ErrorHandler.DEFAULT;
         this.windowOptions = new WindowOptions();
+        this.globalHandlers = new ArrayList<>();
         this.simulationMode = System.getProperty("multimedialib.simulation");
+
+        if (Platform.isDesktopPlatform()) {
+            globalHandlers.add(this::checkScreenshotHandler);
+        }
     }
 
     public boolean isSimulationMode() {
@@ -115,11 +129,8 @@ public final class RenderConfig {
             throw new UnsupportedOperationException("Renderer does not support graphics mode");
         }
 
-        renderer.start(this, initialScene);
-
-        if (Platform.isDesktopPlatform() && renderer instanceof SceneContext context) {
-            context.attachGlobal((ctx, deltaTime) -> checkScreenshotHandler(ctx));
-        }
+        BootstrapScene bootstrapScene = new BootstrapScene(initialScene, globalHandlers);
+        renderer.start(this, bootstrapScene);
     }
 
     private void applySimulationMode() {
@@ -139,7 +150,7 @@ public final class RenderConfig {
      * whenever the F12 is pressed. This handler is only available on desktop
      * platforms.
      */
-    private void checkScreenshotHandler(SceneContext context) {
+    private void checkScreenshotHandler(SceneContext context, float deltaTime) {
         if (context.getInput().isKeyReleased(KeyCode.F12)) {
             try {
                 File screenshotFile = new File(Platform.getUserDesktopDir(),
@@ -209,5 +220,30 @@ public final class RenderConfig {
     public static RenderConfig headless(GraphicsMode graphicsMode, Canvas canvas) {
         boolean graphicsEnv = graphicsMode != GraphicsMode.HEADLESS;
         return new RenderConfig(() -> new HeadlessRenderer(graphicsEnv), graphicsMode, canvas);
+    }
+
+    /**
+     * Registers a number of global handlers depending on the configuration,
+     * then immediately proceeds to the application's actual initial scene.
+     * Bootstrapping is required because the global handlers can only be
+     * done from callback methods.
+     */
+    @AllArgsConstructor
+    private static class BootstrapScene implements Scene {
+
+        private Scene initialScene;
+        private List<Scene> globalHandlers;
+
+        @Override
+        public void start(SceneContext context) {
+            for (Scene handler : globalHandlers) {
+                context.attachGlobal(handler);
+            }
+            context.changeScene(initialScene);
+        }
+
+        @Override
+        public void update(SceneContext context, float deltaTime) {
+        }
     }
 }

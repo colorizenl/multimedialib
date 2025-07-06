@@ -86,20 +86,20 @@ public class SplashScreen implements Scene {
         context.getStage().getRoot().addChild(progressBar);
 
         if (screenBackgroundColor != null) {
-            Rect screen = Rect.around(canvasWidth, canvasHeight);
+            Rect screen = Rect.aroundOrigin(canvasWidth, canvasHeight);
             progressBar.addChild(new Primitive(screen, screenBackgroundColor));
         }
 
         if (barBorderStroke >= 1 && barBorderColor != null) {
-            Rect border = Rect.around(canvasWidth + barBorderStroke * 2,
+            Rect border = Rect.aroundOrigin(canvasWidth + barBorderStroke * 2,
                 canvasHeight + barBorderStroke * 2);
             progressBar.addChild(new Primitive(border, barBorderColor));
         }
 
-        Rect barBackground = Rect.around(barWidth, barHeight);
+        Rect barBackground = Rect.aroundOrigin(barWidth, barHeight);
         progressBar.addChild(new Primitive(barBackground, barBackgroundColor, barBackgroundAlpha));
 
-        Primitive foreground = new Primitive(Rect.around(1, barHeight), barForegroundColor);
+        Primitive foreground = new Primitive(Rect.aroundOrigin(1, barHeight), barForegroundColor);
         progressBar.addChild(foreground);
 
         context.attach(deltaTime -> animateProgressBar(foreground));

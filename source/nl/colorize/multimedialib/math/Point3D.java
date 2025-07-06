@@ -81,6 +81,15 @@ public record Point3D(float x, float y, float z) {
         return move(other.x, other.y, other.z);
     }
 
+    /**
+     * Returns a new point that has X/Y/Z values that are the inverse of this
+     * point's X/Y/Z values. Negating the result will result in the original
+     * point, i.e. {@code point.negate().negate().equals(point)}.
+     */
+    public Point3D negate() {
+        return new Point3D(-x, -y, -z);
+    }
+
     @Override
     public String toString() {
         return String.format("(%d, %d, %d)", Math.round(x), Math.round(y), Math.round(z));

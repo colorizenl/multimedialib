@@ -22,6 +22,13 @@ public record Circle(Point2D center, float radius) implements Shape {
         this(new Point2D(x, y), radius);
     }
 
+    /**
+     * Creates a circle with its center point located at the origin (0, 0).
+     */
+    public Circle(float radius) {
+        this(Point2D.ORIGIN, radius);
+    }
+
     @Override
     public Point2D getCenter() {
         return center;

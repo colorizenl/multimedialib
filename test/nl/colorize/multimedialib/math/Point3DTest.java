@@ -36,4 +36,12 @@ public class Point3DTest {
         assertEquals("(12, 21, 30)", new Point3D(2, 1, 0).move(10, 20, 30).toString());
         assertEquals("(12, 21, 30)", new Point3D(2, 1, 0).move(new Point3D(10, 20, 30)).toString());
     }
+
+    @Test
+    void negate() {
+        Point3D point = new Point3D(10, 20, 30);
+
+        assertEquals("(-10, -20, -30)", point.negate().toString());
+        assertEquals("(10, 20, 30)", point.negate().negate().toString());
+    }
 }

@@ -34,7 +34,7 @@ public class TeaDemoLauncher {
     public static void main(String[] args) {
         LOGGER.info("MultimediaLib - TeaVM Demo");
 
-        String demoMode = Browser.getBrowserBridge().getMeta("demo", "2d");
+        String demoMode = getDemoMode();
         GraphicsMode graphicsMode = demoMode.equals("3d") ? MODE_3D : MODE_2D;
         Canvas canvas = new Canvas(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT, ScaleStrategy.balanced());
 
@@ -46,11 +46,17 @@ public class TeaDemoLauncher {
         config.setFramerate(BROWSER_FRAMERATE);
         config.setErrorHandler(TeaDemoLauncher::logError);
 
-        switch (graphicsMode) {
-            case MODE_2D -> config.start(new Demo2D());
-            case MODE_3D -> config.start(new Demo3D());
+        switch (demoMode) {
+            case "2d" -> config.start(new Demo2D());
+            case "3d" -> config.start(new Demo3D());
+            case "isometric" -> config.start(new DemoIsometric());
             default -> throw new UnsupportedOperationException();
         }
+    }
+
+    private static String getDemoMode() {
+        String defaultDemoMode = Browser.getBrowserBridge().getMeta("demo", "2d");
+        return Browser.getBrowserBridge().getQueryParameter("demo", defaultDemoMode);
     }
 
     private static void logError(SceneContext context, Exception cause) {

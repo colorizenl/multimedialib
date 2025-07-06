@@ -11,8 +11,8 @@ import lombok.Getter;
 import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.util.SubscribableCollection;
 
-import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static lombok.AccessLevel.PROTECTED;
 
@@ -38,7 +38,7 @@ public class Group implements StageNode3D, Iterable<StageNode3D> {
 
     public Group(String name) {
         this.name = name;
-        this.children = SubscribableCollection.wrap(new ArrayList<>());
+        this.children = SubscribableCollection.wrap(new CopyOnWriteArrayList<>());
         this.transform = new Transform3D();
         this.globalTransform = new Transform3D();
     }

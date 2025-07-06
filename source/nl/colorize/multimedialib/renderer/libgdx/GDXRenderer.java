@@ -262,9 +262,6 @@ public class GDXRenderer implements Renderer, SceneContext, ApplicationListener 
     public void dispose() {
         graphics.dispose();
         mediaLoader.dispose();
-        if (config.getWindowOptions().getAppMenu() != null) {
-            config.getWindowOptions().getAppMenu().onQuit();
-        }
 
         // Hard quit because libGDX otherwise takes several
         // seconds to close the application.
