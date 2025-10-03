@@ -10,18 +10,16 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.PeerConnection;
+import nl.colorize.multimedialib.renderer.Response;
+import nl.colorize.util.EventQueue;
 import nl.colorize.util.LogHelper;
-import nl.colorize.util.Subject;
-import nl.colorize.util.http.Headers;
-import nl.colorize.util.http.PostData;
-import nl.colorize.util.http.URLResponse;
+import nl.colorize.util.http.HttpException;
 import nl.colorize.util.stats.TupleList;
+import org.jspecify.annotations.Nullable;
 import org.teavm.jso.ajax.XMLHttpRequest;
 
-import java.io.IOException;
+import java.util.Map;
 import java.util.logging.Logger;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Sends HTTP requests by delegating them to JavaScript and sending them as
@@ -39,54 +37,46 @@ public class TeaNetwork implements Network {
     private static final Logger LOGGER = LogHelper.getLogger(TeaNetwork.class);
 
     @Override
-    public Subject<URLResponse> get(String url, Headers headers) {
+    public EventQueue<Response> send(
+        String method,
+        String url,
+        Map<String, String> headers,
+        @Nullable String body
+    ) {
         XMLHttpRequest request = XMLHttpRequest.create();
-        Subject<URLResponse> subject = new Subject<>();
-        request.setOnReadyStateChange(() -> handleResponse(request, subject));
-        request.open("GET", url, true);
+        EventQueue<Response> eventQueue = new EventQueue<>();
+        request.setOnReadyStateChange(() -> handleResponse(request, eventQueue));
+        request.open(method, url, true);
         addRequestHeaders(request, headers);
-        request.send();
-        return subject;
-    }
-
-    @Override
-    public Subject<URLResponse> post(String url, Headers headers, PostData data) {
-        XMLHttpRequest request = XMLHttpRequest.create();
-        Subject<URLResponse> subject = new Subject<>();
-        request.setOnReadyStateChange(() -> handleResponse(request, subject));
-        request.open("POST", url, true);
-        addRequestHeaders(request, headers);
-        request.send(data.encode(UTF_8));
-        return subject;
-    }
-
-    private void addRequestHeaders(XMLHttpRequest request, Headers headers) {
-        request.setRequestHeader("X-Requested-With", "MultimediaLib");
-        if (headers != null) {
-            headers.forEach(request::setRequestHeader);
+        if (body != null && !body.isEmpty()) {
+            request.send(body);
+        } else {
+            request.send();
         }
+        return eventQueue;
     }
 
-    private void handleResponse(XMLHttpRequest request, Subject<URLResponse> subject) {
+    private void addRequestHeaders(XMLHttpRequest request, Map<String, String> headers) {
+        request.setRequestHeader("X-Requested-With", "MultimediaLib");
+        headers.forEach(request::setRequestHeader);
+    }
+
+    private void handleResponse(XMLHttpRequest request, EventQueue<Response> eventQueue) {
         if (request.getReadyState() == XMLHttpRequest.DONE) {
             if (request.getStatus() >= 200 && request.getStatus() <= 204) {
-                URLResponse response = parseResponse(request);
-                subject.next(response);
+                eventQueue.onNext(mapResponse(request));
             } else {
-                subject.nextError(new IOException("AJAX request failed: " + request.getStatusText()));
+                HttpException error = new HttpException(
+                    "AJAX request failed: " + request.getStatusText(), request.getStatus());
+                eventQueue.onError(error);
             }
         }
     }
 
-    private URLResponse parseResponse(XMLHttpRequest request) {
+    private Response mapResponse(XMLHttpRequest request) {
         int status = request.getStatus();
-        Headers headers = parseResponseHeaders(request);
-        String body = request.getResponseText();
-        return new URLResponse(status, headers, body.getBytes(UTF_8));
-    }
-
-    private Headers parseResponseHeaders(XMLHttpRequest request) {
         TupleList<String, String> headers = new TupleList<>();
+        String body = request.getResponseText();
 
         for (String line : HEADER_SPLITTER.split(request.getAllResponseHeaders())) {
             if (line.contains(": ")) {
@@ -98,7 +88,7 @@ public class TeaNetwork implements Network {
             }
         }
 
-        return new Headers(headers);
+        return new Response(status, headers, body);
     }
 
     @Override

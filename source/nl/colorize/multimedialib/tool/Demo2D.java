@@ -42,15 +42,16 @@ import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
+import nl.colorize.util.EventQueue;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
-import nl.colorize.util.http.Headers;
 import nl.colorize.util.http.PostData;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
 
@@ -185,7 +186,7 @@ public class Demo2D implements Scene, ErrorHandler {
             button.getTransform().setPosition(buttonX, y);
         });
 
-        Effect.forClickHandler(bounds, click).attach(context);
+        context.attachClickHandler(bounds, click);
     }
 
     private void initEffects() {
@@ -197,11 +198,11 @@ public class Demo2D implements Scene, ErrorHandler {
         Sprite sprite = new Sprite(context.getMediaLoader().loadImage(COLORIZE_LOGO));
         hudLayer.addChild(sprite);
 
-        Effect.forTimeline(timeline, value -> {
+        context.attachTimeline(timeline, value -> {
             sprite.setPosition(context.getCanvas().getWidth() / 2f, context.getCanvas().getHeight() - 50);
             sprite.getTransform().setScale(80 + value * 40f);
-        }).addFrameHandler(dt -> sprite.getTransform().addRotation(dt * 100f))
-        .attach(context);
+        });
+        context.attach(dt -> sprite.getTransform().addRotation(dt * 100f));
 
         Image diamond = context.getMediaLoader().loadImage(ParticleWipe.DIAMOND);
         ParticleWipe wipe = new ParticleWipe(diamond, COLORIZE_COLOR, 1.5f, true);
@@ -231,22 +232,24 @@ public class Demo2D implements Scene, ErrorHandler {
             .addKeyFrame(1f, 100f)
             .addKeyFrame(1.5f, 0f);
 
-        context.attach(Effect.forPrimitiveAlpha(swipeMarker, timeline));
+        context.attachTimeline(timeline,
+            value -> swipeMarker.getTransform().setAlpha(value),
+            () -> context.getStage().detach(swipeMarker));
     }
 
     private void sendHttpRequest(Network network) {
-        Headers headers = Headers.of(HttpHeaders.ACCEPT, "text/plain");
+        Map<String, String> headers = Map.of(HttpHeaders.ACCEPT, "text/plain");
         PostData data = PostData.create("message", "1234");
 
         Text info = new Text("Network request pending", font, Align.RIGHT);
         info.setPosition(context.getCanvas().getWidth() - 20, context.getCanvas().getHeight() - 100);
         hudLayer.addChild(info);
 
-        network.post(EXAMPLE_URL, headers, data).subscribe(response -> {
+        context.attach(network.post(EXAMPLE_URL, headers, data), response -> {
             List<String> text = new ArrayList<>();
             text.add("Network request succeeded");
             text.add("Content-Type: " + response.getContentType().orElse("?"));
-            text.addAll(Splitter.on("\n").omitEmptyStrings().splitToList(response.readBody()));
+            text.addAll(Splitter.on("\n").omitEmptyStrings().splitToList(response.getBody()));
             info.setText(text);
         }, e -> info.setText("Failed to send network request"));
     }
@@ -275,7 +278,9 @@ public class Demo2D implements Scene, ErrorHandler {
     }
 
     private void saveApplicationData() {
-        context.getInput().requestTextInput("Enter some text:", "").subscribe(input -> {
+        EventQueue<String> event = context.getInput().requestTextInput("Enter some text:", "");
+
+        context.attach(event).subscribe(input -> {
             Properties data = new Properties();
             data.setProperty("test", input);
 
@@ -314,7 +319,9 @@ public class Demo2D implements Scene, ErrorHandler {
     }
 
     private void joinPeerConnection() {
-        context.getInput().requestTextInput("Peer-to-peer connection ID", "").subscribe(id -> {
+        EventQueue<String> event = context.getInput().requestTextInput("Peer-to-peer connection ID", "");
+
+        context.attach(event).subscribe(id -> {
             PeerConnection peerConnection = openPeerConnection();
             peerConnection.connect(id);
             peerConnection.sendMessage("Hello from a peer-to-peer connection");
@@ -397,9 +404,11 @@ public class Demo2D implements Scene, ErrorHandler {
         container.addChild(new Text(position.toString(), font, Align.LEFT), 4, -4);
         hudLayer.addChild(container);
 
-        Effect effect = Effect.forTimeline(timeline, value -> container.getTransform().setAlpha(value));
-        effect.removeAfterwards(container);
-        context.attach(effect);
+        context.attachTimeline(timeline, value -> container.getTransform().setAlpha(value));
+
+        context.attachTimeline(timeline,
+            value -> container.getTransform().setAlpha(value),
+            () -> context.getStage().detach(container));
     }
 
     public void addMarios() {

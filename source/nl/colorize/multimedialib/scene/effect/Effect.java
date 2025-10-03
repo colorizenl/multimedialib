@@ -6,23 +6,16 @@
 
 package nl.colorize.multimedialib.scene.effect;
 
-import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.multimedialib.scene.Updatable;
 import nl.colorize.multimedialib.stage.Animation;
-import nl.colorize.multimedialib.stage.StageNode2D;
-import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
-import nl.colorize.multimedialib.stage.Text;
-import nl.colorize.multimedialib.stage.Transform;
+import nl.colorize.multimedialib.stage.StageNode2D;
 import nl.colorize.util.LogHelper;
-import nl.colorize.util.TextUtils;
-import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
 
 import java.util.ArrayList;
@@ -48,7 +41,14 @@ import java.util.logging.Logger;
  * automatically remove all linked graphics from the stage. This allows the
  * effect to control the life cycle for both the effect logic and the
  * associated graphics.
+ *
+ * @deprecated This class is a combination of graphics and logic. The former
+ *             is best handled in application code, the latter is best handled
+ *             by the various convenience methods to create sub-scenes in
+ *             {@link SceneContext}. This class will be removed in a future
+ *             version of MultimediaLib.
  */
+@Deprecated
 public final class Effect implements Scene {
 
     private List<Updatable> frameHandlers;
@@ -291,24 +291,6 @@ public final class Effect implements Scene {
     }
 
     /**
-     * Creates an effect that will use the specified callback every frame for
-     * as long the effect is active.
-     */
-    public static Effect forFrameHandler(Updatable action) {
-        Effect effect = new Effect();
-        effect.addFrameHandler(action);
-        return effect;
-    }
-
-    /**
-     * Creates an effect that will use the specified callback every frame for
-     * as long the effect is active.
-     */
-    public static Effect forFrameHandler(Runnable action) {
-        return forFrameHandler(deltaTime -> action.run());
-    }
-
-    /**
      * Creates an effect that will first wait for the specified period of
      * time, and will then perform an action.
      */
@@ -325,143 +307,6 @@ public final class Effect implements Scene {
             }
         });
         effect.stopIf(timer::isCompleted);
-        return effect;
-    }
-
-    /**
-     * Creates an effect that will invoke a callback function based on the
-     * timeline's current value. The effect is completed once the timeline
-     * has reached the end.
-     */
-    public static Effect forTimeline(Timeline timeline, Consumer<Float> callback) {
-        Effect effect = new Effect();
-        effect.addTimelineHandler(timeline, callback);
-        return effect;
-    }
-
-    public static Effect forClickHandler(StageNode2D graphic, Runnable handler) {
-        Effect effect = new Effect();
-        effect.linkGraphics(graphic);
-        effect.addClickHandler(graphic, handler);
-        return effect;
-    }
-
-    public static Effect forX(StageNode2D graphic, Timeline timeline) {
-        Effect effect = new Effect();
-        effect.addTimelineHandler(timeline, value -> graphic.getTransform().setX(value));
-        effect.linkGraphics(graphic);
-        return effect;
-    }
-
-    public static Effect forY(StageNode2D graphic, Timeline timeline) {
-        Effect effect = new Effect();
-        effect.addTimelineHandler(timeline, value -> graphic.getTransform().setY(value));
-        effect.linkGraphics(graphic);
-        return effect;
-    }
-
-    /**
-     * Shorthand for creating an effect that rotates a sprite.
-     */
-    public static Effect forSpriteRotation(Sprite sprite, float duration) {
-        Preconditions.checkArgument(duration > 0f, "Invalid duration: " + duration);
-
-        Timeline timeline = new Timeline(Interpolation.LINEAR, true);
-        timeline.addKeyFrame(0f, 0f);
-        timeline.addKeyFrame(duration, 360f);
-
-        Effect effect = new Effect();
-        effect.addTimelineHandler(timeline, value -> sprite.getTransform().setRotation(value));
-        effect.removeAfterwards(sprite);
-        return effect;
-    }
-
-    /**
-     * Shorthand for creating an effect that scales a sprite based on the
-     * specified timeline.
-     */
-    public static Effect forSpriteScale(Sprite sprite, Timeline timeline) {
-        Effect effect = new Effect();
-        effect.addTimelineHandler(timeline, value -> sprite.getTransform().setScale(value));
-        effect.removeAfterwards(sprite);
-        return effect;
-    }
-
-    /**
-     * Shorthand for creating an effect that modifies the sprite's alpha value
-     * based on a timeline.
-     */
-    public static Effect forSpriteAlpha(Sprite sprite, Timeline timeline) {
-        Effect effect = new Effect();
-        effect.addTimelineHandler(timeline, value -> sprite.getTransform().setAlpha(value));
-        effect.removeAfterwards(sprite);
-        return effect;
-    }
-
-    /**
-     * Changes a sprite's scale until it fits the canvas. The {@code uniform}
-     * parameter controls how the sprite should handle situations where the
-     * aspect ratio of {@code bound} differs from the sprite's own aspect
-     * ratio. When true, the sprite's horizontal and vertical scale will
-     * always be set to the same values. When false, they can be different,
-     * meaning the sprite could appear as stretched or squashed in certain
-     * situations.
-     */
-    public static Effect scaleToFit(Sprite sprite, Canvas canvas, boolean uniform) {
-        return Effect.forFrameHandler(() -> {
-            float scaleX = (float) canvas.getWidth() / (float) sprite.getCurrentWidth();
-            float scaleY = (float) canvas.getHeight() / (float) sprite.getCurrentHeight();
-
-            if (uniform) {
-                sprite.getTransform().setScale(Math.max(scaleX, scaleY) * 100f);
-            } else {
-                sprite.getTransform().setScaleX(scaleX * 100f);
-                sprite.getTransform().setScaleY(scaleY * 100f);
-            }
-        });
-    }
-
-    /**
-     * Shorthand for creating an effect that modifies the primitive's alpha
-     * value based on a timeline.
-     */
-    public static Effect forPrimitiveAlpha(Primitive primitive, Timeline timeline) {
-        Effect effect = new Effect();
-        effect.addTimelineHandler(timeline, value -> primitive.getTransform().setAlpha(value));
-        effect.removeAfterwards(primitive);
-        return effect;
-    }
-
-    /**
-     * Shorthand for creating an effect that modifies the text's alpha value
-     * based on a timeline.
-     */
-    public static Effect forTextAlpha(Text text, Timeline timeline) {
-        Effect effect = new Effect();
-        effect.addTimelineHandler(timeline, value -> text.getTransform().setAlpha(value));
-        effect.removeAfterwards(text);
-        return effect;
-    }
-
-    /**
-     * Shorthand for creating an effect that will make the text slowly appear
-     * over time, with more and more characters appearing on screen over time
-     * until the entire text is shown.
-     */
-    public static Effect forTextAppear(Text text, float duration) {
-        Preconditions.checkArgument(duration > 0f, "Invalid duration: " + duration);
-
-        String originalText = TextUtils.LINE_JOINER.join(text.getLines());
-
-        Timeline timeline = new Timeline();
-        timeline.addKeyFrame(0f, 0f);
-        timeline.addKeyFrame(duration, originalText.length());
-
-        Effect effect = new Effect();
-        effect.addTimelineHandler(timeline, deltaTime -> {
-            String visibleText = originalText.substring(0, (int) timeline.getValue());
-            text.setText(visibleText);
-        });
         return effect;
     }
 

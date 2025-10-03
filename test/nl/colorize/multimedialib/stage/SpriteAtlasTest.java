@@ -11,6 +11,7 @@ import nl.colorize.multimedialib.mock.MockImage;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -25,6 +26,18 @@ public class SpriteAtlasTest {
 
         assertEquals(100, atlas.get("a").getWidth());
         assertEquals(50, atlas.get("b").getWidth());
+    }
+
+    @Test
+    void rename() {
+        SpriteAtlas atlas = new SpriteAtlas();
+        atlas.add("a", new MockImage(), new Region(0, 0, 100, 100));
+        atlas.add("b", new MockImage(), new Region(0, 0, 50, 50));
+        SpriteAtlas renamed = atlas.rename(name -> "x" + name);
+
+        assertEquals(100, renamed.get("xa").getWidth());
+        assertEquals(50, renamed.get("xb").getWidth());
+        assertThrows(NoSuchElementException.class, () -> renamed.get("a"));
     }
 
     @Test

@@ -18,6 +18,7 @@ import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Group;
+import nl.colorize.multimedialib.stage.ImageTransform;
 import nl.colorize.multimedialib.stage.Light;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
@@ -162,7 +163,9 @@ public class Java2DGraphicsContext implements StageVisitor {
         transform.setPosition(circle.center());
         transform.setAlpha(globalTransform.getAlpha());
 
-        drawImage(image, transform);
+        ImageTransform imageTransform = new ImageTransform();
+        imageTransform.set(transform);
+        drawImage(image, imageTransform);
     }
 
     @Override
@@ -183,20 +186,17 @@ public class Java2DGraphicsContext implements StageVisitor {
     }
 
     private Color getPrimitiveColor(Primitive primitive, Transform globalTransform) {
-        ColorRGB color = globalTransform.getMaskColor();
-        if (color == null) {
-            color = primitive.getColor();
-        }
+        ColorRGB color = primitive.getColor();
         return colorCache.get(color);
     }
 
     @Override
-    public void drawSprite(Sprite sprite, Transform globalTransform) {
+    public void drawSprite(Sprite sprite, ImageTransform globalTransform) {
         AWTImage image = (AWTImage) sprite.getCurrentGraphics();
         drawImage(image.getImage(), globalTransform);
     }
 
-    private void drawImage(BufferedImage image, Transform transform) {
+    private void drawImage(BufferedImage image, ImageTransform transform) {
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(transform.getAlpha());
 
@@ -257,7 +257,7 @@ public class Java2DGraphicsContext implements StageVisitor {
         throw new UnsupportedOperationException();
     }
 
-    private AffineTransform applyTransform(Transform transform, int width, int height) {
+    private AffineTransform applyTransform(ImageTransform transform, int width, int height) {
         float screenX = canvas.toScreenX(transform.getPosition());
         float screenY = canvas.toScreenY(transform.getPosition());
 

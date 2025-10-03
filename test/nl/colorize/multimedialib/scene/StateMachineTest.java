@@ -6,8 +6,6 @@
 
 package nl.colorize.multimedialib.scene;
 
-import nl.colorize.util.stats.Tuple;
-import nl.colorize.util.stats.TupleList;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -15,8 +13,6 @@ import java.util.List;
 
 import static nl.colorize.multimedialib.math.Shape.EPSILON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StateMachineTest {
 
@@ -25,30 +21,6 @@ public class StateMachineTest {
         StateMachine<String> stateMachine = new StateMachine<>("a");
         assertEquals("a", stateMachine.getActiveState());
         stateMachine.requestState("b");
-        assertEquals("b", stateMachine.getActiveState());
-    }
-
-    @Test
-    void restrictTransitions() {
-        StateMachine<String> stateMachine = new StateMachine<>("a");
-        stateMachine.allowTransitions(TupleList.of(Tuple.of("a", "b")));
-
-        assertTrue(stateMachine.requestState("b"));
-        assertEquals("b", stateMachine.getActiveState());
-        assertFalse(stateMachine.requestState("c"));
-        assertFalse(stateMachine.requestState("c", 2f));
-        assertEquals("b", stateMachine.getActiveState());
-    }
-
-    @Test
-    void restrictTransitionsWithPredicate() {
-        StateMachine<String> stateMachine = new StateMachine<>("a");
-        stateMachine.allowTransitions((state1, state2) -> state2.equals("b"));
-
-        assertTrue(stateMachine.requestState("b"));
-        assertEquals("b", stateMachine.getActiveState());
-        assertFalse(stateMachine.requestState("c"));
-        assertFalse(stateMachine.requestState("c", 2f));
         assertEquals("b", stateMachine.getActiveState());
     }
 

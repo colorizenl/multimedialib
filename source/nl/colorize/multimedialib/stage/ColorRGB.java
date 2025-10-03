@@ -27,7 +27,7 @@ public record ColorRGB(int r, int g, int b) {
     public static final ColorRGB YELLOW = new ColorRGB(255, 255, 0);
     public static final ColorRGB ORANGE = new ColorRGB(255, 127, 0);
     public static final ColorRGB PURPLE = new ColorRGB(127, 64, 255);
-    public static final ColorRGB PINK = new ColorRGB(255, 192, 203);
+    public static final ColorRGB PINK = new ColorRGB(255, 107, 228);
     
     /**
      * Creates a color from the specified red, green, and blue components.
@@ -57,16 +57,12 @@ public record ColorRGB(int r, int g, int b) {
     }
 
     /**
-     * Returns the hexadecimal color string for this color, for example
-     * "#FF0000" for red.
+     * Returns the hexadecimal color string describing this color. For
+     * example, the color red will produce "#FF0000".
      */
     public String toHex() {
-        StringBuilder hex = new StringBuilder(7);
-        hex.append("#");
-        hex.append(toHex(r));
-        hex.append(toHex(g));
-        hex.append(toHex(b));
-        return hex.toString().toUpperCase();
+        String hex = "#" + toHex(r) + toHex(g) + toHex(b);
+        return hex.toUpperCase();
     }
 
     private String toHex(int component) {
@@ -119,17 +115,23 @@ public record ColorRGB(int r, int g, int b) {
     }
 
     /**
-     * Parses a color from a hexadecimal color string, for example "#FF0000"
-     * for red.
+     * Parses an RGB color from a hexadecimal color string. For example,
+     * the string "#FF0000" returns red.
      *
-     * @throws IllegalArgumentException if {@code hex} is not a valid color.
+     * @throws IllegalArgumentException if {@code hexColor} is not a valid
+     *         hexadecimal color in the supported notation.
      */
-    public static ColorRGB parseHex(String hex) {
-        Preconditions.checkArgument(hex.length() == 6 || hex.length() == 7,
-            "Invalid hexadecimal color: " + hex);
+    public static ColorRGB parseHex(String hexColor) {
+        String hex = hexColor.startsWith("#") ? hexColor.substring(1) : hexColor;
 
-        if (hex.startsWith("#")) {
-            hex = hex.substring(1);
+        Preconditions.checkArgument(hex.length() == 3 || hex.length() == 6,
+            "Invalid hexadecimal color string: " + hexColor);
+
+        if (hex.length() == 3) {
+            hex = ""
+                + hex.charAt(0) + hex.charAt(0)
+                + hex.charAt(1) + hex.charAt(1)
+                + hex.charAt(2) + hex.charAt(2);
         }
         
         return new ColorRGB(

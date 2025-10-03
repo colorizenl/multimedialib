@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
+import static lombok.AccessLevel.PROTECTED;
+
 /**
  * Draws text to the screen using the specified TrueType font. Multiline text
  * is supported, and any newline characters in the text will be preserved when
@@ -30,8 +32,9 @@ import java.util.stream.Stream;
 @Setter
 public class Text implements StageNode2D {
 
-    private Transform transform;
-    private Transform globalTransform;
+    @Setter(PROTECTED) private Container parent;
+    private final Transform transform;
+    private final Transform globalTransform;
 
     private List<String> lines;
     private FontFace font;

@@ -13,6 +13,8 @@ import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Shape;
 import nl.colorize.multimedialib.scene.Timer;
 
+import static lombok.AccessLevel.PROTECTED;
+
 /**
  * Draws a graphical primitive to the screen. The on-screen position of the
  * primitive is determined by both the coordinates in the original shape and
@@ -26,8 +28,9 @@ import nl.colorize.multimedialib.scene.Timer;
 @Setter
 public class Primitive implements StageNode2D {
 
-    private Transform transform;
-    private Transform globalTransform;
+    @Setter(PROTECTED) private Container parent;
+    private final Transform transform;
+    private final Transform globalTransform;
 
     private Shape shape;
     private ColorRGB color;
@@ -63,5 +66,21 @@ public class Primitive implements StageNode2D {
         } else {
             return shape.getClass().getSimpleName();
         }
+    }
+
+    public static Primitive fromRect(float width, float height, ColorRGB color) {
+        return fromRect(width, height, color, 100f);
+    }
+
+    public static Primitive fromRect(float width, float height, ColorRGB color, float alpha) {
+        return new Primitive(Rect.aroundOrigin(width, height), color, alpha);
+    }
+
+    public static Primitive fromCircle(float radius, ColorRGB color) {
+        return fromCircle(radius, color, 100f);
+    }
+
+    public static Primitive fromCircle(float radius, ColorRGB color, float alpha) {
+        return new Primitive(new Circle(radius), color, alpha);
     }
 }

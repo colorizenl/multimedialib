@@ -14,6 +14,7 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Pointer;
+import nl.colorize.util.EventQueue;
 import nl.colorize.util.Subject;
 import nl.colorize.util.swing.Popups;
 import nl.colorize.util.swing.SwingUtils;
@@ -194,7 +195,7 @@ public class JFXInput implements InputDevice {
     }
 
     @Override
-    public Subject<String> requestTextInput(String labelText, String initialValue) {
+    public EventQueue<String> requestTextInput(String labelText, String initialValue) {
         JLabel label = new JLabel(labelText);
         JTextField field = new JTextField(initialValue);
 
@@ -209,7 +210,8 @@ public class JFXInput implements InputDevice {
         if (field.getText() != null && !field.getText().isEmpty()) {
             subject.next(field.getText());
         }
-        return subject;
+
+        return EventQueue.subscribe(subject);
     }
 
     @Override

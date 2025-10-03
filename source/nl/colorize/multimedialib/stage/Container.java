@@ -8,6 +8,7 @@ package nl.colorize.multimedialib.stage;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
+import lombok.Setter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.Timer;
@@ -35,6 +36,7 @@ import static lombok.AccessLevel.PROTECTED;
 public class Container implements StageNode2D, Iterable<StageNode2D> {
 
     private String name;
+    @Setter(PROTECTED) private Container parent;
     @Getter(PROTECTED) private SubscribableCollection<StageNode2D> children;
     private Transform transform;
     private Transform globalTransform;
@@ -52,6 +54,16 @@ public class Container implements StageNode2D, Iterable<StageNode2D> {
 
     public void addChild(StageNode2D child) {
         Preconditions.checkArgument(this != child, "Cannot attach container to itself");
+        Preconditions.checkState(child.getParent() == null, "Node is already attached to container");
+
+        switch (child) {
+            case Container container -> container.setParent(this);
+            case Primitive primitive -> primitive.setParent(this);
+            case Sprite sprite -> sprite.setParent(this);
+            case Text text -> text.setParent(this);
+            default -> throw new UnsupportedOperationException("Unknown graphics type: " + child);
+        }
+
         children.add(child);
     }
 
@@ -84,10 +96,19 @@ public class Container implements StageNode2D, Iterable<StageNode2D> {
     }
 
     public void removeChild(StageNode2D child) {
+        switch (child) {
+            case Container container -> container.setParent(null);
+            case Primitive primitive -> primitive.setParent(null);
+            case Sprite sprite -> sprite.setParent(null);
+            case Text text -> text.setParent(null);
+            default -> throw new UnsupportedOperationException("Unknown graphics type: " + child);
+        }
+
         children.remove(child);
     }
 
     public void clearChildren() {
+        children.forEach(this::removeChild);
         children.clear();
     }
 

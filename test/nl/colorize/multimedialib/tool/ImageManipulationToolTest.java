@@ -14,6 +14,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -69,5 +70,22 @@ class ImageManipulationToolTest {
 
         assertTrue(new File(outputDir, "test-out-1.png").exists());
         assertFalse(new File(outputDir, "test-out-2.png").exists());
+    }
+
+    @Test
+    void shearImage(@TempDir File tempDir, @TempDir File outputDir) throws IOException {
+        BufferedImage testImage = Utils2D.createTestImage(100, 100);
+        Utils2D.savePNG(testImage, new File(tempDir, "test.png"));
+
+        ImageManipulationTool tool = new ImageManipulationTool();
+        tool.inputDir = tempDir;
+        tool.outputDir = outputDir;
+        tool.shear = 45;
+        tool.run();
+
+        BufferedImage sheared = Utils2D.loadImage(new File(outputDir, "test.png"));
+
+        assertEquals(100, sheared.getWidth());
+        assertEquals(175, sheared.getHeight());
     }
 }

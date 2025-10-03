@@ -26,6 +26,7 @@ import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Group;
+import nl.colorize.multimedialib.stage.ImageTransform;
 import nl.colorize.multimedialib.stage.Light;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
@@ -148,7 +149,7 @@ public class ThreeGraphics implements TeaGraphics, StageSubscriber {
     }
 
     @Override
-    public void drawSprite(Sprite sprite, Transform globalTransform) {
+    public void drawSprite(Sprite sprite, ImageTransform globalTransform) {
         if (globalTransform.isVisible()) {
             overlay.drawSprite(sprite, globalTransform);
         }

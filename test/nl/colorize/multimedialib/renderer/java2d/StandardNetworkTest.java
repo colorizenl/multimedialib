@@ -6,7 +6,9 @@
 
 package nl.colorize.multimedialib.renderer.java2d;
 
-import nl.colorize.util.http.Headers;
+import nl.colorize.multimedialib.renderer.Response;
+import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
+import nl.colorize.util.EventQueue;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -23,10 +25,13 @@ public class StandardNetworkTest {
         List<Throwable> errors = new ArrayList<>();
 
         StandardNetwork internetAccess = new StandardNetwork();
-        internetAccess.get("https://clrz.nl", Headers.none())
-            .subscribe(response -> responses.add(response.readBody()), errors::add);
+        EventQueue<Response> eventQueue = internetAccess.get("https://clrz.nl");
 
         Thread.sleep(3000);
+
+        HeadlessRenderer renderer = new HeadlessRenderer(false);
+        renderer.attach(eventQueue, response -> responses.add(response.getBody()), errors::add);
+        renderer.doFrame();
 
         assertEquals(1, responses.size());
         assertTrue(responses.get(0).contains("<title>Colorize"));

@@ -19,7 +19,6 @@ import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.multimedialib.scene.effect.Effect;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.Animation;
 import nl.colorize.multimedialib.stage.ColorRGB;
@@ -191,22 +190,22 @@ public class Demo3D implements Scene, ErrorHandler {
         Text label = new Text("", font, Align.CENTER);
         hudContainer.addChild(label);
 
-        context.attach(Effect.forFrameHandler(() -> {
+        context.attach(() -> {
             Transform3D transform = model.getGlobalTransform();
             Point3D worldPosition = transform.getPosition();
             Point2D canvasPosition = context.project(worldPosition);
             String rotation = transform.getRotationX() + " " + transform.getRotationY() +
                 " " + transform.getRotationZ();
             label.setText("3D: " + worldPosition + "\n2D: " + canvasPosition + "\n" + rotation);
-            label.getTransform().setPosition(canvasPosition.move(0, -20));
-        }));
+            label.getTransform().setPosition(canvasPosition.add(0, -20));
+        });
     }
 
     private void createHUD() {
         Text hudText = new Text("", font);
         hudText.getTransform().setPosition(20, 30);
         hudText.setLineHeight(20);
-        Effect.forFrameHandler(() -> updateHUD(hudText)).attach(context);
+        context.attach(() -> updateHUD(hudText));
 
         hudContainer = new Container("hud");
         hudContainer.addChild(hudText);
@@ -248,12 +247,12 @@ public class Demo3D implements Scene, ErrorHandler {
             button.getTransform().setPosition(buttonX, yStep * 30f);
         });
 
-        Effect.forClickHandler(bounds, click).attach(context);
+        context.attachClickHandler(bounds, click);
     }
 
     private void moveCamera(int stepX, int stepY, int stepZ) {
         Point3D oldCameraPosition = context.getStage().getCameraPosition();
-        Point3D newCameraPosition = oldCameraPosition.move(stepX, stepY, stepZ);
+        Point3D newCameraPosition = oldCameraPosition.add(stepX, stepY, stepZ);
         context.getStage().setCameraPosition(newCameraPosition);
     }
 
@@ -334,13 +333,13 @@ public class Demo3D implements Scene, ErrorHandler {
         timeline.addKeyFrame(0f, 0f);
         timeline.addKeyFrame(0.4f, 1f);
 
-        context.attach(Effect.forTimeline(timeline, delta -> {
+        context.attachTimeline(timeline, delta -> {
             transform.setRotation(
                 startX + delta * deltaX,
                 startY + delta * deltaY,
                 startZ + delta * deltaZ
             );
-        }));
+        });
     }
 
     private Tuple<Mesh, String> updateWalkingModel(Tuple<Mesh, String> entry) {

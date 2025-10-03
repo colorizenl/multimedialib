@@ -100,7 +100,7 @@ public class JFXAnimationLoop extends Application {
         SceneManager sceneManager = renderer.getSceneManager();
 
         try {
-            if (sceneManager.requestFrameUpdate(renderer) > 0) {
+            if (sceneManager.requestFrameUpdate() > 0) {
                 sceneManager.getFrameStats().markStart(FrameStats.PHASE_FRAME_RENDER);
                 renderer.getStage().visit(graphics);
                 sceneManager.getFrameStats().markEnd(FrameStats.PHASE_FRAME_RENDER);

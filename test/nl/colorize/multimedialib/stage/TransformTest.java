@@ -31,49 +31,13 @@ class TransformTest {
     void combine() {
         Transform a = new Transform();
         a.setPosition(20f, 0f);
-        a.setRotation(90f);
-        a.setScaleX(50f);
 
         Transform b = new Transform();
         b.setPosition(30f, 40f);
-        b.setRotation(180f);
-        b.setScaleX(150f);
 
         Transform combined = a.combine(b);
 
         assertEquals(50f, combined.getPosition().x(), EPSILON);
         assertEquals(40f, combined.getPosition().y(), EPSILON);
-        assertEquals(270f, combined.getRotation().degrees(), EPSILON);
-        assertEquals(75f, combined.getScaleX(), EPSILON);
-    }
-
-    @Test
-    void inheritMaskColorFromParent() {
-        Transform parent = new Transform();
-        parent.setMaskColor(ColorRGB.RED);
-
-        Transform child = new Transform();
-        child.setMaskColor(null);
-
-        assertEquals(ColorRGB.RED, parent.combine(child).getMaskColor());
-    }
-
-    @Test
-    void childMaskColorOverridesParentMaskColor() {
-        Transform parent = new Transform();
-        parent.setMaskColor(ColorRGB.RED);
-
-        Transform otherParent = new Transform();
-        otherParent.setMaskColor(null);
-
-        Transform child = new Transform();
-        child.setMaskColor(ColorRGB.BLUE);
-
-        Transform grandchild = new Transform();
-        grandchild.setMaskColor(null);
-
-        assertEquals(ColorRGB.BLUE, parent.combine(child).getMaskColor());
-        assertEquals(ColorRGB.BLUE, otherParent.combine(child).getMaskColor());
-        assertEquals(ColorRGB.BLUE, otherParent.combine(child).combine(grandchild).getMaskColor());
     }
 }

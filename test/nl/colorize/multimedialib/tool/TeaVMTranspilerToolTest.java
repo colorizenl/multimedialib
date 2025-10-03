@@ -7,7 +7,6 @@
 package nl.colorize.multimedialib.tool;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.io.Files;
 import nl.colorize.util.swing.Utils2D;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -17,6 +16,7 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,7 +36,7 @@ public class TeaVMTranspilerToolTest {
         tool.mainClassName = MockApp.class.getName();
         tool.run();
 
-        String generatedCode = Files.toString(tool.getScriptFile(), UTF_8);
+        String generatedCode = Files.readString(tool.getScriptFile().toPath(), UTF_8);
 
         String expected = """
             ncmt_TeaVMTranspilerToolTest$MockApp_main = $args => {
@@ -87,8 +87,8 @@ public class TeaVMTranspilerToolTest {
 
     @Test
     void rewriteHTML(@TempDir File resourcesDir, @TempDir File outputDir) throws IOException {
-        Files.write("This is a test file\ncontaining multiple lines",
-            new File(resourcesDir, "test.txt"), UTF_8);
+        Files.writeString(new File(resourcesDir, "test.txt").toPath(),
+            "This is a test file\ncontaining multiple lines", UTF_8);
 
         TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
         tool.projectName = "test";
@@ -97,7 +97,7 @@ public class TeaVMTranspilerToolTest {
         tool.mainClassName = MockApp.class.getName();
         tool.run();
 
-        String generatedHTML = Files.toString(new File(outputDir, "index.html"), UTF_8);
+        String generatedHTML = Files.readString(new File(outputDir, "index.html").toPath(), UTF_8);
 
         String expected = "";
         expected += "<div id=\"test_txt\">This is a test file\n";
@@ -108,8 +108,8 @@ public class TeaVMTranspilerToolTest {
 
     @Test
     void generateResourceManifest(@TempDir File resourcesDir, @TempDir File outputDir) throws IOException {
-        Files.write("This is a test file", new File(resourcesDir, "test1.txt"), UTF_8);
-        Files.write("This is a another test file", new File(resourcesDir, "test2.txt"), UTF_8);
+        Files.writeString(new File(resourcesDir, "test1.txt").toPath(), "This is a test file", UTF_8);
+        Files.writeString(new File(resourcesDir, "test2.txt").toPath(), "Another test file", UTF_8);
 
         TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
         tool.projectName = "test";
@@ -118,7 +118,7 @@ public class TeaVMTranspilerToolTest {
         tool.mainClassName = MockApp.class.getName();
         tool.run();
 
-        String generatedHTML = Files.toString(new File(outputDir, "index.html"), UTF_8);
+        String generatedHTML = Files.readString(new File(outputDir, "index.html").toPath(), UTF_8);
 
         String expected = """
             <div id="resource-file-manifest">OpenSans-Regular.ttf
@@ -169,7 +169,7 @@ public class TeaVMTranspilerToolTest {
         tool.meta = "first=value,second=other value";
         tool.run();
 
-        String generatedHTML = Files.toString(new File(outputDir, "index.html"), UTF_8);
+        String generatedHTML = Files.readString(new File(outputDir, "index.html").toPath(), UTF_8);
 
         assertTrue(generatedHTML.contains("<meta name=\"first\" content=\"value\" />"));
         assertTrue(generatedHTML.contains("<meta name=\"second\" content=\"other value\" />"));
@@ -185,7 +185,7 @@ public class TeaVMTranspilerToolTest {
         tool.buildId = "1234";
         tool.run();
 
-        String generatedHTML = Files.toString(new File(outputDir, "index.html"), UTF_8);
+        String generatedHTML = Files.readString(new File(outputDir, "index.html").toPath(), UTF_8);
 
         assertTrue(generatedHTML.contains("<meta name=\"build-id\" content=\"1234\" />"));
     }
@@ -200,7 +200,7 @@ public class TeaVMTranspilerToolTest {
         tool.buildId = "1234";
         tool.run();
 
-        String scriptTags = Files.toString(new File(outputDir, "index.html"), UTF_8)
+        String scriptTags = Files.readString(new File(outputDir, "index.html").toPath(), UTF_8)
             .split("<meta name=\"build-id\" content=\"1234\" />")[1]
             .split("<script src=\"script-")[0]
             .trim();

@@ -4,13 +4,17 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.scene;
+package nl.colorize.multimedialib.scene.effect;
 
 import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
+import nl.colorize.multimedialib.scene.MediaAssetStore;
+import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.LoadStatus;

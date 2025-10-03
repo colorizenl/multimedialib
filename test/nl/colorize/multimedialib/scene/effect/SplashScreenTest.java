@@ -4,12 +4,14 @@
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-package nl.colorize.multimedialib.scene;
+package nl.colorize.multimedialib.scene.effect;
 
 import nl.colorize.multimedialib.mock.MockScene;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
+import nl.colorize.multimedialib.scene.MediaAssetStore;
+import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.multimedialib.stage.LoadStatus;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.Subject;

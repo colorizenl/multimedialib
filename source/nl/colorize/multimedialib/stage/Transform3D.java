@@ -64,7 +64,7 @@ public class Transform3D {
     }
 
     public void addPosition(float deltaX, float deltaY, float deltaZ) {
-        position = position.move(deltaX, deltaY, deltaZ);
+        position = position.add(deltaX, deltaY, deltaZ);
     }
 
     public void setX(float x) {
@@ -108,7 +108,7 @@ public class Transform3D {
     public Transform3D combine(Transform3D other) {
         Transform3D combined = new Transform3D();
         combined.setVisible(visible && other.visible);
-        combined.setPosition(position.move(other.position));
+        combined.setPosition(position.add(other.position));
         combined.setRotation(
             rotationX.degrees() + other.rotationX.degrees(),
             rotationY.degrees() + other.rotationY.degrees(),

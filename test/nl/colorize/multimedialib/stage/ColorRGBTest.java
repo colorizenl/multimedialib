@@ -56,4 +56,11 @@ class ColorRGBTest {
         assertEquals(new ColorRGB(205, 0, 0), color.alter(-50, 0, 0));
         assertEquals(new ColorRGB(0, 0, 0), color.alter(-300, 0, 0));
     }
+
+    @Test
+    void parseHex() {
+        assertEquals(ColorRGB.RED, ColorRGB.parseHex("#FF0000"));
+        assertEquals(ColorRGB.WHITE, ColorRGB.parseHex("ffffff"));
+        assertEquals(ColorRGB.RED, ColorRGB.parseHex("#f00"));
+    }
 }

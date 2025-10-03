@@ -8,6 +8,7 @@ package nl.colorize.multimedialib.stage;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
+import lombok.Setter;
 import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.util.SubscribableCollection;
 
@@ -32,6 +33,7 @@ import static lombok.AccessLevel.PROTECTED;
 public class Group implements StageNode3D, Iterable<StageNode3D> {
 
     private String name;
+    @Setter(PROTECTED) Group parent;
     @Getter(PROTECTED) private SubscribableCollection<StageNode3D> children;
     private Transform3D transform;
     private Transform3D globalTransform;
@@ -49,6 +51,15 @@ public class Group implements StageNode3D, Iterable<StageNode3D> {
 
     public void addChild(StageNode3D child) {
         Preconditions.checkArgument(this != child, "Cannot attach group to itself");
+        Preconditions.checkState(child.getParent() == null, "Node is already attached to group");
+
+        switch (child) {
+            case Group group -> group.setParent(this);
+            case Mesh mesh -> mesh.setParent(this);
+            case Light light -> light.setParent(this);
+            default -> throw new UnsupportedOperationException("Unknown graphics type: " + child);
+        }
+
         children.add(child);
     }
 
@@ -63,10 +74,18 @@ public class Group implements StageNode3D, Iterable<StageNode3D> {
     }
 
     public void removeChild(StageNode3D child) {
+        switch (child) {
+            case Group group -> group.setParent(null);
+            case Mesh mesh -> mesh.setParent(null);
+            case Light light -> light.setParent(null);
+            default -> throw new UnsupportedOperationException("Unknown graphics type: " + child);
+        }
+
         children.remove(child);
     }
 
     public void clearChildren() {
+        children.forEach(this::removeChild);
         children.clear();
     }
 

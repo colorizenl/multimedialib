@@ -251,7 +251,7 @@ public class GDXRenderer implements Renderer, SceneContext, ApplicationListener 
         mediaLoader = new GDXMediaLoader();
         graphics = new GDXGraphics(config.getGraphicsMode(), config.getCanvas(), mediaLoader);
         network = new StandardNetwork();
-        sceneManager = new SceneManager();
+        sceneManager = new SceneManager(this);
         stage = new Stage(config.getGraphicsMode(), config.getCanvas());
 
         resize(config.getCanvas().getWidth(), config.getCanvas().getHeight());
@@ -285,7 +285,7 @@ public class GDXRenderer implements Renderer, SceneContext, ApplicationListener 
 
     @Override
     public void render() {
-        sceneManager.requestFrameUpdate(this);
+        sceneManager.requestFrameUpdate();
 
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);

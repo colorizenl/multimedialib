@@ -6,6 +6,7 @@
 
 package nl.colorize.multimedialib.stage;
 
+import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.mock.MockImage;
 import nl.colorize.multimedialib.renderer.Canvas;
@@ -17,6 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ContainerTest {
 
@@ -86,5 +89,46 @@ class ContainerTest {
 
         assertEquals("[]", a.getChildren().toString());
         assertEquals("[]", b.getChildren().toString());
+    }
+
+    @Test
+    void addParentRelationOnAttach() {
+        Container parent = new Container("parent");
+        Container otherParent = new Container("other");
+        Sprite sprite = new Sprite(new MockImage(100, 100));
+        Primitive primitive = new Primitive(new Circle(100), ColorRGB.RED);
+        Text text = new Text("test", null);
+
+        parent.addChild(sprite);
+        parent.addChild(primitive);
+        parent.addChild(text);
+
+        assertEquals(parent, sprite.getParent());
+        assertEquals(parent, primitive.getParent());
+        assertEquals(parent, text.getParent());
+
+        assertThrows(IllegalStateException.class, () -> otherParent.addChild(sprite));
+        assertThrows(IllegalStateException.class, () -> otherParent.addChild(primitive));
+        assertThrows(IllegalStateException.class, () -> otherParent.addChild(text));
+    }
+
+    @Test
+    void removeParentRelationOnDetach() {
+        Container parent = new Container("parent");
+        Sprite sprite = new Sprite(new MockImage(100, 100));
+        Primitive primitive = new Primitive(new Circle(100), ColorRGB.RED);
+        Text text = new Text("test", null);
+
+        parent.addChild(sprite);
+        parent.addChild(primitive);
+        parent.addChild(text);
+
+        parent.removeChild(sprite);
+        parent.removeChild(primitive);
+        parent.removeChild(text);
+
+        assertNull(sprite.getParent());
+        assertNull(primitive.getParent());
+        assertNull(text.getParent());
     }
 }

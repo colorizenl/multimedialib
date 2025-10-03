@@ -15,6 +15,7 @@ import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
 import nl.colorize.multimedialib.renderer.java2d.Java2DRenderer;
 import nl.colorize.multimedialib.renderer.jfx.JFXRenderer;
 import nl.colorize.multimedialib.renderer.libgdx.GDXRenderer;
+import nl.colorize.multimedialib.renderer.teavm.Browser;
 import nl.colorize.multimedialib.renderer.teavm.HtmlCanvasGraphics;
 import nl.colorize.multimedialib.renderer.teavm.PixiGraphics;
 import nl.colorize.multimedialib.renderer.teavm.TeaRenderer;
@@ -24,6 +25,8 @@ import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.util.Development;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
+import nl.colorize.util.http.PostData;
+import nl.colorize.util.stats.Tuple;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -65,7 +68,7 @@ import java.util.logging.Logger;
  * <strong>Global handlers:</strong> The configuration can define "global"
  * handlers that are always active, independent of the currently active
  * scene. Global handlers can also be registered at runtime, using
- * {@link SceneContext#attachGlobal(Scene)}.
+ * {@link SceneContext#attachGlobalSubScene(Scene)}.
  * <p>
  * <strong>Simulation mode:</strong> During development, the launcher can
  * "simulate" the behavior of mobile platforms when running on desktop
@@ -123,6 +126,10 @@ public final class RenderConfig {
             applySimulationMode();
         }
 
+        if (Platform.isTeaVM()) {
+            initQueryStringSystemProperties();
+        }
+
         Renderer renderer = launcher.get();
 
         if (!renderer.isSupported(graphicsMode)) {
@@ -143,6 +150,19 @@ public final class RenderConfig {
 
         windowOptions.setFullscreen(false);
         windowOptions.setWindowSize(simulationModeScreenSize);
+    }
+
+    private void initQueryStringSystemProperties() {
+        String queryString = Browser.getQueryString();
+        PostData queryParams = PostData.parse(queryString);
+
+        for (Tuple<String, String> param : queryParams) {
+            if (!param.left().isEmpty() && !param.right().isEmpty()) {
+                if (System.getProperty(param.left()) == null) {
+                    System.setProperty(param.left(), param.right());
+                }
+            }
+        }
     }
 
     /**
@@ -237,8 +257,9 @@ public final class RenderConfig {
         @Override
         public void start(SceneContext context) {
             for (Scene handler : globalHandlers) {
-                context.attachGlobal(handler);
+                context.attachGlobalSubScene(handler);
             }
+
             context.changeScene(initialScene);
         }
 

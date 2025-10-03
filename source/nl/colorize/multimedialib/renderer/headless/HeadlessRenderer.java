@@ -33,7 +33,7 @@ import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.Development;
-import nl.colorize.util.Subject;
+import nl.colorize.util.EventQueue;
 
 import java.io.File;
 import java.util.List;
@@ -93,7 +93,7 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
         this.graphics = null;
         this.mediaLoader = new StandardMediaLoader();
         this.network = new StandardNetwork();
-        this.sceneManager = new SimulatedSceneManager();
+        this.sceneManager = new SimulatedSceneManager(this);
         this.stage = new Stage(config.getGraphicsMode(), config.getCanvas());
 
         sceneManager.changeScene(initialScene);
@@ -159,7 +159,7 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
     @Override
     public void update(float deltaTime) {
         if (sceneManager instanceof SimulatedSceneManager simulated) {
-            simulated.simulateFrameUpdate(this, deltaTime);
+            simulated.simulateFrameUpdate(deltaTime);
         }
     }
 
@@ -205,8 +205,8 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
     }
 
     @Override
-    public Subject<String> requestTextInput(String label, String initialValue) {
-        return new Subject<>();
+    public EventQueue<String> requestTextInput(String label, String initialValue) {
+        return new EventQueue<>();
     }
 
     @Override
@@ -219,8 +219,12 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
      */
     private static class SimulatedSceneManager extends SceneManager {
 
-        public void simulateFrameUpdate(SceneContext context, float deltaTime) {
-            performFrameUpdate(context, deltaTime);
+        public SimulatedSceneManager(SceneContext context) {
+            super(context);
+        }
+
+        public void simulateFrameUpdate(float deltaTime) {
+            performFrameUpdate(deltaTime);
         }
     }
 }

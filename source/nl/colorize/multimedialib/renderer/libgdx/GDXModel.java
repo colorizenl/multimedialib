@@ -14,22 +14,25 @@ import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import lombok.Getter;
+import lombok.Setter;
 import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Group;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Transform3D;
 
-import static lombok.AccessLevel.PROTECTED;
 import static nl.colorize.multimedialib.stage.ColorRGB.WHITE;
 
+@Getter
 public class GDXModel implements Mesh {
 
-    @Getter(PROTECTED) private ModelInstance modelInstance;
-    @Getter private Transform3D transform;
-    @Getter private Transform3D globalTransform;
-    @Getter private Sprite dynamicTexture;
+    @Setter Group parent;
+    private Transform3D transform;
+    private Transform3D globalTransform;
+    private ModelInstance modelInstance;
+    private Sprite dynamicTexture;
 
     protected GDXModel(ModelInstance modelInstance) {
         this.modelInstance = modelInstance;

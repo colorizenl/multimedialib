@@ -9,7 +9,8 @@ package nl.colorize.multimedialib.renderer;
 import com.google.common.collect.Streams;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.Updatable;
-import nl.colorize.util.Subject;
+import nl.colorize.multimedialib.stage.StageNode2D;
+import nl.colorize.util.EventQueue;
 
 /**
  * Used to poll the status of the platform's input devices. This includes
@@ -41,12 +42,30 @@ public interface InputDevice extends Updatable {
     }
 
     /**
+     * Convenience method that returns true if <em>any</em> of the pointers
+     * is currently pressed within the specified node's bounds (as described
+     * by {@link StageNode2D#getStageBounds()}).
+     */
+    default boolean isPointerPressed(StageNode2D node) {
+        return isPointerPressed(node.getStageBounds()) && node.getGlobalTransform().isVisible();
+    }
+
+    /**
      * Convenience method that returns true if <em>any</em> of the pointer
      * devices has been released within the specified bounds.
      */
     default boolean isPointerReleased(Rect bounds) {
         return Streams.stream(getPointers())
             .anyMatch(pointer -> pointer.isReleased(bounds));
+    }
+
+    /**
+     * Convenience method that returns true if <em>any</em> of the pointers
+     * is currently released within the specified node's bounds (as described
+     * by {@link StageNode2D#getStageBounds()}).
+     */
+    default boolean isPointerReleased(StageNode2D node) {
+        return isPointerReleased(node.getStageBounds()) && node.getGlobalTransform().isVisible();
     }
 
     /**
@@ -81,7 +100,7 @@ public interface InputDevice extends Updatable {
      * Shows a dialog window with a text input field. The dialog window is not
      * part of the scene, it uses the platform's native user interface.
      */
-    public Subject<String> requestTextInput(String label, String initialValue);
+    public EventQueue<String> requestTextInput(String label, String initialValue);
 
     /**
      * Copies the specified text to the system clipboard.

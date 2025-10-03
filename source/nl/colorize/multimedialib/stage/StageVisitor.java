@@ -41,7 +41,7 @@ public interface StageVisitor {
 
     public void drawBackground(ColorRGB color);
 
-    public void drawSprite(Sprite sprite, Transform globalTransform);
+    public void drawSprite(Sprite sprite, ImageTransform globalTransform);
 
     public void drawLine(Primitive graphic, Line line, Transform globalTransform);
 

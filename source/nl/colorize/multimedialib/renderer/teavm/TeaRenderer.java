@@ -36,7 +36,7 @@ public class TeaRenderer implements Renderer, SceneContext {
 
     private RenderConfig config;
     private TeaGraphics graphics;
-    private TeaInputDevice input;
+    private TeaInput input;
     private TeaMediaLoader mediaLoader;
     private TeaNetwork network;
     private SceneManager sceneManager;
@@ -55,11 +55,11 @@ public class TeaRenderer implements Renderer, SceneContext {
     public void start(RenderConfig config, Scene initialScene) {
         this.config = config;
         network = new TeaNetwork();
-        sceneManager = new SceneManager();
+        sceneManager = new SceneManager(this);
         stage = new Stage(config.getGraphicsMode(), config.getCanvas());
         mediaLoader = new TeaMediaLoader(config.getGraphicsMode());
 
-        input = new TeaInputDevice(config.getCanvas(), graphics);
+        input = new TeaInput(config.getCanvas(), graphics);
         input.bindEventHandlers();
 
         graphics.init(this);
@@ -77,7 +77,7 @@ public class TeaRenderer implements Renderer, SceneContext {
      */
     private void onAnimationFrame(double timestamp) {
         if (prepareCanvas()) {
-            if (sceneManager.requestFrameUpdate(this) > 0) {
+            if (sceneManager.requestFrameUpdate() > 0) {
                 sceneManager.getFrameStats().markStart(FrameStats.PHASE_FRAME_RENDER);
                 getStage().visit(graphics);
                 sceneManager.getFrameStats().markEnd(FrameStats.PHASE_FRAME_RENDER);

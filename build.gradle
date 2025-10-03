@@ -1,19 +1,18 @@
 plugins {
-    id "io.freefair.lombok" version "8.14"
-    id "com.github.ben-manes.versions" version "0.52.0"
+    id "io.freefair.lombok" version "9.0.0"
+    id "com.vanniktech.maven.publish" version "0.34.0"
+    id "com.github.ben-manes.versions" version "0.53.0"
 }
 
 apply plugin: "java-library"
 apply plugin: "jacoco"
-apply plugin: "maven-publish"
-apply plugin: "signing"
 
 group = "nl.colorize"
-version = "2025.2"
+version = "2025.3"
 compileJava.options.encoding = "UTF-8"
 
-ext.libgdxVersion = "1.13.0"
-ext.teavmVersion = "0.11.0"
+ext.libgdxVersion = "1.13.5"
+ext.teavmVersion = "0.13.0-dev-5"
 ext.jfxVersion = "21.0.2"
 
 java {
@@ -22,8 +21,6 @@ java {
     sourceSets.main.java.srcDirs = ["source"]
     sourceSets.main.resources.srcDirs = ["resources"]
     sourceSets.test.java.srcDirs = ["test"]
-    withJavadocJar()
-    withSourcesJar()
 }
 
 repositories {
@@ -31,10 +28,13 @@ repositories {
     maven {
         url = "https://jitpack.io"
     }
+    maven {
+        url = "https://teavm.org/maven/repository"
+    }
 }
 
 dependencies {
-    implementation "nl.colorize:colorize-java-commons:2025.1"
+    implementation "nl.colorize:colorize-java-commons:2025.3"
 
     implementation "org.openjfx:javafx-base:${jfxVersion}"
     implementation "org.openjfx:javafx-base:${jfxVersion}:mac-aarch64"
@@ -63,7 +63,9 @@ dependencies {
     implementation "com.github.mgsx-dev.gdx-gltf:gltf:2.2.1"
     implementation "com.tagtraum:casampledsp-complete:0.9.32"
 
-    testImplementation "org.junit.jupiter:junit-jupiter:5.13.2"
+    testImplementation "org.junit.jupiter:junit-jupiter:6.0.0"
+    testImplementation "com.tngtech.archunit:archunit-junit5:1.4.1"
+    testImplementation "org.slf4j:slf4j-jdk14:2.0.9"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
@@ -112,53 +114,32 @@ task transpileDemoApplication3D(type: JavaExec, dependsOn: jar) {
          "--meta", "demo:3d"
 }
 
-publishing {
-    publications {
-        maven(MavenPublication) {
-            artifactId = "multimedialib"
-            from components.java
-
-            pom {
-                name = "MultimediaLib"
-                description = "Build multimedia applications that support desktop, mobile, and web."
-                url = "https://www.clrz.nl"
-
-                licenses {
-                    license {
-                        name = "The Apache License, Version 2.0"
-                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
-                    }
+mavenPublishing {
+    coordinates("nl.colorize", "multimedialib", version)
+    
+    pom {
+        name = "MultimediaLib"
+        description = "Build multimedia applications that support desktop, mobile, and web."
+        url = "https://www.clrz.nl"
+        inceptionYear = "2009"
+        licenses {
+            license {
+                name = "The Apache License, Version 2.0"
+                url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                distribution = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+            }
+            developers {
+                developer {
+                    id = "colorize"
+                    name = "Colorize"
+                    url = "https://clrz.nl"
                 }
-
-                developers {
-                    developer {
-                        id = "colorize"
-                        name = "Colorize"
-                        email = "contact@colorize.nl"
-                    }
-                }
-
-                scm {
-                    connection = "scm:git:https://github.com/colorizenl/multimedialib.git"
-                    developerConnection = "scm:git:https://github.com/colorizenl/multimedialib.git"
-                    url = "https://github.com/colorizenl/multimedialib"
-                }
+            }
+            scm {
+                url = "https://github.com/colorizenl/multimedialib"
+                connection = "scm:git:https://github.com/colorizenl/multimedialib.git"
+                developerConnection = "scm:git:https://github.com/colorizenl/multimedialib.git"
             }
         }
     }
-
-    repositories {
-        maven {
-            name = "ossrh-staging-api"
-            url = "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
-            credentials {
-                username = project.hasProperty("mavenCentralUser") ? mavenCentralUser : "dummy"
-                password = project.hasProperty("mavenCentralPassword") ? mavenCentralPassword : "dummy"
-            }
-        }
-    }
-}
-
-signing {
-    sign publishing.publications.maven
 }

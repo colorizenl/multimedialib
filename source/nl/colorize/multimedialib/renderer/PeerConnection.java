@@ -13,6 +13,8 @@ import nl.colorize.multimedialib.renderer.teavm.PeerMessage;
  * from {@link Network}. The protocol used for the connection depends on both
  * the renderer and the current platform. The same {@link PeerConnection}
  * instance can be connected to <em>multiple</em> peers.
+ *
+ * @see Network
  */
 public interface PeerConnection {
 

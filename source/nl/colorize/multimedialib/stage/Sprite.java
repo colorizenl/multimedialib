@@ -8,6 +8,7 @@ package nl.colorize.multimedialib.stage;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
+import lombok.Setter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.Timer;
@@ -15,6 +16,8 @@ import nl.colorize.multimedialib.scene.Timer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
+import static lombok.AccessLevel.PROTECTED;
 
 /**
  * Static or animated image that can be displayed on the stage. Multiple
@@ -28,8 +31,9 @@ import java.util.Set;
  */
 public class Sprite implements StageNode2D {
 
-    @Getter private Transform transform;
-    @Getter private Transform globalTransform;
+    @Getter @Setter(PROTECTED) private Container parent;
+    @Getter private ImageTransform transform;
+    @Getter private ImageTransform globalTransform;
 
     private Map<String, SpriteState> stateGraphics;
     private SpriteState currentState;
@@ -45,8 +49,8 @@ public class Sprite implements StageNode2D {
      * before graphics have been added will result in an exception.
      */
     public Sprite() {
-        this.transform = new Transform();
-        this.globalTransform = new Transform();
+        this.transform = new ImageTransform();
+        this.globalTransform = new ImageTransform();
 
         stateGraphics = new HashMap<>();
         currentState = new SpriteState(NULL_STATE, null);

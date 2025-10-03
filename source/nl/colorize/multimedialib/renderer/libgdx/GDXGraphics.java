@@ -38,6 +38,7 @@ import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Group;
+import nl.colorize.multimedialib.stage.ImageTransform;
 import nl.colorize.multimedialib.stage.Light;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
@@ -165,10 +166,7 @@ public class GDXGraphics implements StageVisitor, StageSubscriber {
     }
 
     private Color getPrimitiveColor(Primitive primitive, Transform globalTransform) {
-        ColorRGB color = globalTransform.getMaskColor();
-        if (color == null) {
-            color = primitive.getColor();
-        }
+        ColorRGB color = primitive.getColor();
         return convertColor(color, globalTransform.getAlpha());
     }
 
@@ -279,12 +277,12 @@ public class GDXGraphics implements StageVisitor, StageSubscriber {
     }
 
     @Override
-    public void drawSprite(Sprite sprite, Transform globalTransform) {
+    public void drawSprite(Sprite sprite, ImageTransform globalTransform) {
         TextureRegion textureRegion = ((GDXImage) sprite.getCurrentGraphics()).getTextureRegion();
         drawSprite(textureRegion, globalTransform);
     }
 
-    private void drawSprite(TextureRegion textureRegion, Transform transform) {
+    private void drawSprite(TextureRegion textureRegion, ImageTransform transform) {
         float screenX = toScreenX(transform.getPosition().x());
         float screenY = toScreenY(transform.getPosition().y());
         float screenWidth = textureRegion.getRegionWidth() * canvas.getZoomLevel();

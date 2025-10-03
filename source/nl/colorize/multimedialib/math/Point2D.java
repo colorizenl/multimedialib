@@ -75,7 +75,7 @@ public record Point2D(float x, float y) {
      * Returns a new point that starts from this point and then adds the
      * specified offset.
      */
-    public Point2D move(float deltaX, float deltaY) {
+    public Point2D add(float deltaX, float deltaY) {
         return new Point2D(x + deltaX, y + deltaY);
     }
 
@@ -83,8 +83,8 @@ public record Point2D(float x, float y) {
      * Returns a new point that starts from this point and then adds the
      * specified offset.
      */
-    public Point2D move(Point2D other) {
-        return move(other.x, other.y);
+    public Point2D add(Point2D other) {
+        return add(other.x, other.y);
     }
 
     /**

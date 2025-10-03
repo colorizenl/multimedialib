@@ -20,10 +20,8 @@ import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.util.LogHelper;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -38,7 +36,7 @@ import java.util.logging.Logger;
  */
 @Getter
 @Setter
-public final class Stage implements StageSubscriber {
+public final class Stage {
 
     private final GraphicsMode graphicsMode;
     private final Canvas canvas;
@@ -46,13 +44,11 @@ public final class Stage implements StageSubscriber {
 
     private final Container root;
     private ColorRGB backgroundColor;
-    private Map<StageNode2D, Container> parentMap2D;
 
     private final Group root3D;
     private Point3D cameraPosition;
     private Point3D cameraFocus;
     private ColorRGB ambientLightColor;
-    private Map<StageNode3D, Group> parentMap3D;
 
     public static final ColorRGB DEFAULT_AMBIENT_LIGHT_COLOR = new ColorRGB(220, 220, 220);
 
@@ -72,35 +68,11 @@ public final class Stage implements StageSubscriber {
 
         this.root = new Container(ROOT_CONTAINER_2D);
         this.backgroundColor = ColorRGB.BLACK;
-        this.parentMap2D = new HashMap<>();
 
         this.root3D = new Group(ROOT_CONTAINER_3D);
         this.cameraPosition = new Point3D(0, 20, 10);
         this.cameraFocus = Point3D.ORIGIN;
         this.ambientLightColor = DEFAULT_AMBIENT_LIGHT_COLOR;
-        this.parentMap3D = new HashMap<>();
-
-        subscribe(this);
-    }
-
-    @Override
-    public void onNodeAdded(Container parent, StageNode2D node) {
-        parentMap2D.put(node, parent);
-    }
-
-    @Override
-    public void onNodeRemoved(Container parent, StageNode2D node) {
-        parentMap2D.remove(node);
-    }
-
-    @Override
-    public void onNodeAdded(Group parent, StageNode3D node) {
-        parentMap3D.put(node, parent);
-    }
-
-    @Override
-    public void onNodeRemoved(Group parent, StageNode3D node) {
-        parentMap3D.remove(node);
     }
 
     /**
@@ -138,35 +110,25 @@ public final class Stage implements StageSubscriber {
     /**
      * Detaches the specified node from the scene graph. If the node is not
      * currently part of the stage, calling this method does nothing.
-     * <p>
-     * Prefer using {@link Container#removeChild(StageNode2D)} over this
-     * method, as it has better performance. This method exists for
-     * convenience, as it does not require references to both parent and
-     * child, and can be used in situations that are not performance-critical.
+     *
+     * @deprecated Prefer using {@link StageNode2D#detach()} instead. This
+     *             method remains only for backward compatibility.
      */
+    @Deprecated
     public void detach(StageNode2D node) {
-        Container parent = parentMap2D.get(node);
-        if (parent != null) {
-            parent.removeChild(node);
-            parentMap2D.remove(node);
-        }
+        node.detach();
     }
 
     /**
      * Detaches the specified node from the scene graph. If the node is not
      * currently part of the stage, calling this method does nothing.
-     * <p>
-     * Prefer using {@link Group#removeChild(StageNode3D)} over this
-     * method, as it has better performance. This method exists for
-     * convenience, as it does not require references to both parent and
-     * child, and can be used in situations that are not performance-critical.
+     *
+     * @deprecated Prefer using {@link StageNode2D#detach()} instead. This
+     *             method remains only for backward compatibility.
      */
+    @Deprecated
     public void detach(StageNode3D node) {
-        Group parent = parentMap3D.get(node);
-        if (parent != null) {
-            parent.removeChild(node);
-            parentMap3D.remove(node);
-        }
+        node.detach();
     }
 
     /**
@@ -175,10 +137,7 @@ public final class Stage implements StageSubscriber {
      */
     public void clear() {
         root.getChildren().clear();
-        parentMap2D.clear();
-
         root3D.getChildren().clear();
-        parentMap3D.clear();
     }
 
     /**
@@ -208,7 +167,7 @@ public final class Stage implements StageSubscriber {
 
         switch (node) {
             case Container container -> visitContainer(container, globalTransform, visitor);
-            case Sprite sprite -> visitor.drawSprite(sprite, globalTransform);
+            case Sprite sprite -> visitor.drawSprite(sprite, (ImageTransform) globalTransform);
             case Primitive primitive -> visitPrimitive(primitive, globalTransform, visitor);
             case Text text -> visitor.drawText(text, globalTransform);
             default -> LOGGER.warning("Unknown 2D graphics type: " + node.getClass());
@@ -343,7 +302,7 @@ public final class Stage implements StageSubscriber {
         StageNode2D currentNode = node;
         while (currentNode != null) {
             nodePath.addFirst(currentNode);
-            currentNode = parentMap2D.get(currentNode);
+            currentNode = currentNode.getParent();
         }
         return nodePath;
     }
@@ -359,7 +318,7 @@ public final class Stage implements StageSubscriber {
         StageNode3D currentNode = node;
         while (currentNode != null) {
             nodePath.addFirst(currentNode);
-            currentNode = parentMap3D.get(currentNode);
+            currentNode = currentNode.getParent();
         }
         return nodePath;
     }

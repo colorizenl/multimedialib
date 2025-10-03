@@ -17,9 +17,11 @@ import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.multimedialib.renderer.RenderConfig;
+import nl.colorize.util.EventQueue;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.Subject;
+import nl.colorize.util.swing.MacIntegration;
 import nl.colorize.util.swing.Popups;
 import nl.colorize.util.swing.SwingUtils;
 
@@ -35,6 +37,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static nl.colorize.util.swing.MacIntegration.MACOS_TAHOE;
 
 public class GDXInput implements InputDevice {
 
@@ -170,8 +173,12 @@ public class GDXInput implements InputDevice {
 
     @Override
     public boolean isTouchAvailable() {
+        if (config.isSimulationMode()) {
+            return true;
+        }
+
         Platform platform = Platform.getPlatform();
-        return config.isSimulationMode() || platform == Platform.IOS || platform == Platform.ANDROID;
+        return platform == Platform.IOS || platform == Platform.ANDROID;
     }
 
     @Override
@@ -190,14 +197,14 @@ public class GDXInput implements InputDevice {
     }
 
     @Override
-    public Subject<String> requestTextInput(String labelText, String initialValue) {
+    public EventQueue<String> requestTextInput(String labelText, String initialValue) {
         Subject<String> subject = new Subject<>();
-        if (Platform.isMac()) {
-            showAppleScriptTextInputDialog(labelText, initialValue, subject);
-        } else {
+        if (!Platform.isMac() || MacIntegration.isMacOS(MACOS_TAHOE)) {
             showSwingTextInputDialog(labelText, initialValue, subject);
+        } else {
+            showAppleScriptTextInputDialog(labelText, initialValue, subject);
         }
-        return subject;
+        return EventQueue.subscribe(subject);
     }
 
     /**

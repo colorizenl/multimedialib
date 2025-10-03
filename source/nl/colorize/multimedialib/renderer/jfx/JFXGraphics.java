@@ -28,6 +28,7 @@ import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Group;
+import nl.colorize.multimedialib.stage.ImageTransform;
 import nl.colorize.multimedialib.stage.Light;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
@@ -88,7 +89,7 @@ public class JFXGraphics implements StageVisitor {
     }
 
     @Override
-    public void drawSprite(Sprite sprite, Transform transform) {
+    public void drawSprite(Sprite sprite, ImageTransform transform) {
         JFXImage image = (JFXImage) sprite.getCurrentGraphics();
         Image fxImage = image.getImage();
         Region region = image.getRegion();

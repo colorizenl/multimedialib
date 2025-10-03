@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
@@ -145,6 +146,19 @@ public class SpriteAtlas {
             result = result.merge(atlases.get(i));
         }
 
+        return result;
+    }
+
+    /**
+     * Returns a {@link SpriteAtlas} with the same sub-images as this one,
+     * but uses the specified function to rename each sub-image.
+     */
+    public SpriteAtlas rename(Function<String, String> nameFunction) {
+        SpriteAtlas result = new SpriteAtlas();
+        for (SubImage subImage : subImages.values()) {
+            String renamed = nameFunction.apply(subImage.name);
+            result.add(new SubImage(renamed, subImage.atlas, subImage.region));
+        }
         return result;
     }
 

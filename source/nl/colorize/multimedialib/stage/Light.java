@@ -10,6 +10,8 @@ import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.scene.Timer;
 
+import static lombok.AccessLevel.PROTECTED;
+
 /**
  * Light source that influences 3D graphics on the stage. Note these lights
  * exist in addition to the ambient light, which can be changed using
@@ -18,6 +20,7 @@ import nl.colorize.multimedialib.scene.Timer;
 @Getter
 public class Light implements StageNode3D {
 
+    @Setter(PROTECTED) Group parent;
     private Transform3D transform;
     private Transform3D globalTransform;
     @Setter private ColorRGB color;

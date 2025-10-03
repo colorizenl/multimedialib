@@ -7,10 +7,12 @@
 package nl.colorize.multimedialib.renderer.teavm;
 
 import lombok.Getter;
+import lombok.Setter;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.renderer.teavm.ThreeBridge.ThreeObject;
 import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.multimedialib.stage.ColorRGB;
+import nl.colorize.multimedialib.stage.Group;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Sprite;
@@ -29,6 +31,7 @@ import static nl.colorize.multimedialib.renderer.teavm.TeaImage.IMAGE_LOADING_RE
 @Getter
 public class ThreeMeshWrapper implements Mesh {
 
+    @Setter Group parent;
     private Subject<ThreeObject> meshPromise;
     private ThreeObject threeObject;
     private Transform3D transform;

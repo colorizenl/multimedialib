@@ -132,10 +132,6 @@ public class DemoIsometric implements Scene {
             cameraTransform.addPosition(0f, MOVE);
         } else if (input.isKeyReleased(KeyCode.DOWN)) {
             cameraTransform.addPosition(0f, -MOVE);
-        } else if (input.isKeyReleased(KeyCode.MINUS)) {
-            cameraTransform.setScale(Math.max(cameraTransform.getScaleX() - ZOOM, 20f));
-        } else if (input.isKeyReleased(KeyCode.PLUS)) {
-            cameraTransform.setScale(cameraTransform.getScaleX() + ZOOM);
         } else if (input.isKeyReleased(KeyCode.SPACEBAR)) {
             startSineWave(context, cameraTransform);
         }
@@ -145,12 +141,12 @@ public class DemoIsometric implements Scene {
         Point2D cameraWorldPosition = camera.getGlobalTransform().getPosition();
 
         for (Pointer pointer : input.getPointers()) {
-            Point2D worldPosition = pointer.getPosition().move(cameraWorldPosition.negate());
+            Point2D worldPosition = pointer.getPosition().add(cameraWorldPosition.negate());
             Coordinate highlighted = toBlockCoordinate(worldPosition);
 
             for (Map.Entry<Coordinate, Container> entry : blocks.entrySet()) {
-                ColorRGB mask = entry.getKey().equals(highlighted) ? HIGHLIGHT : null;
-                entry.getValue().getTransform().setMaskColor(mask);
+                float alpha = entry.getKey().equals(highlighted) ? 50f : 100f;
+                entry.getValue().getTransform().setAlpha(alpha);
             }
         }
     }

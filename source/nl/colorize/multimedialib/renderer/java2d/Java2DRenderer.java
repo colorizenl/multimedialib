@@ -100,7 +100,7 @@ public class Java2DRenderer implements Renderer, SceneContext, ApplicationMenuLi
         mediaLoader = new StandardMediaLoader();
         graphicsContext = new Java2DGraphicsContext(config.getCanvas(), StandardMediaLoader.fontCache);
         network = new StandardNetwork();
-        sceneManager = new SceneManager();
+        sceneManager = new SceneManager(this);
         stage = new Stage(config.getGraphicsMode(), config.getCanvas());
 
         changeScene(initialScene);
@@ -196,7 +196,7 @@ public class Java2DRenderer implements Renderer, SceneContext, ApplicationMenuLi
                     prepareCanvas();
                 }
 
-                if (sceneManager.requestFrameUpdate(this) > 0) {
+                if (sceneManager.requestFrameUpdate() > 0) {
                     renderFrame();
                 }
 

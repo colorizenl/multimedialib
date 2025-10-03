@@ -39,6 +39,12 @@ public class Browser {
     @JSBody(script = "return window.browserBridge.isMobileDevice();")
     public static native boolean isMobileDevice();
 
+    @JSBody(script = "return window.location.toString();")
+    public static native String getPageURL();
+
+    @JSBody(script = "return window.location.search;")
+    public static native String getQueryString();
+
     /**
      * Returns the query parameter with the specified name, or the default
      * value if no such query parameter exists.

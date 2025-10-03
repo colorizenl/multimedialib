@@ -67,7 +67,7 @@ public class JFXRenderer implements Renderer, SceneContext {
         network = new StandardNetwork();
         input = new JFXInput(config.getCanvas());
         graphics = new JFXGraphics(config, mediaLoader);
-        sceneManager = new SceneManager();
+        sceneManager = new SceneManager(this);
         stage = new Stage(config.getGraphicsMode(), config.getCanvas());
 
         changeScene(initialScene);

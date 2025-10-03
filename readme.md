@@ -35,13 +35,13 @@ to the dependencies section in `pom.xml`:
     <dependency>
         <groupId>nl.colorize</groupId>
         <artifactId>multimedialib</artifactId>
-        <version>2025.2</version>
+        <version>2025.3</version>
     </dependency>  
     
 The library can also be used in Gradle projects:
 
     dependencies {
-        implementation "nl.colorize:multimedialib:2025.2"
+        implementation "nl.colorize:multimedialib:2025.3"
     }
     
 Supported platforms
@@ -198,8 +198,11 @@ other tools for each supported platform. Other tools can be used to create a nat
 - [Cordova](https://cordova.apache.org) can wrap the web application in a hybrid web/native app
   for Android, iOS, and Mac.
 
-MultimediaLib includes a command line tool that generates application icons for various platforms,
-based on a PNG image. This tool is called `IconTool`. 
+### Application icons
+
+MultimediaLib includes a command line tool that generates application icons for all supported
+platforms, based on a single PNG image. This tool is called `IconTool`, and takes the arguments
+`--input` with the original 512x125 PNG file, and `--output` for the output directory.
 
 More documentation
 ------------------
@@ -223,8 +226,17 @@ The following Gradle build tasks are available:
 - `gradle coverage` runs all unit tests and reports on test coverage
 - `gradle javadoc` generates the JavaDoc API documentation
 - `gradle dependencyUpdates` checks for and reports on library updates
-- `gradle publish` publishes the library to Maven central
-  (requires the Gradle properties `mavenCentralUser` and `mavenCentralPassword`)
+- `gradle publishToMavenCentral` publishes the library to Maven Central.
+  Requires [credentials](https://vanniktech.github.io/gradle-maven-publish-plugin/central/#secrets).
+
+### Portability
+
+In order to retain portability across all supported platforms, MultimediaLib is limited to a
+subset of the Java standard library. `ArchitectureTest`, which runs as part of the unit tests
+and uses [ArchUnit](https://www.archunit.org), is used to validate these portability constraints.
+
+Note that applications created *using* MultimediaLib will have the same portability restrictions,
+so you may want to consider introducing similar tests for your application code.
   
 License
 -------

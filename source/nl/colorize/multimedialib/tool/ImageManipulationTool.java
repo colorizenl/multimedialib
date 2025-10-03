@@ -13,6 +13,7 @@ import nl.colorize.util.cli.CommandLineArgumentParser;
 import nl.colorize.util.swing.Utils2D;
 
 import java.awt.Graphics2D;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -31,18 +32,35 @@ import java.util.logging.Logger;
  *   <li>Generate variants with a horizontal offset to simulate texture animation.</li>
  *   <li>Generate variants with a vertical offset to simulate texture animation.</li>
  *   <li>Mirror the image horizontally and vertically so it can be used for tiling.</li>
- *   <li>Extract sub-images of the specified width and height</li>
+ *   <li>Extract sub-images of the specified width and height.</li>
+ *   <li>Created a version of the image that is sheared at an angle.</li>
  * </ul>
  */
 public class ImageManipulationTool {
 
-    @Arg(name = "input") protected File inputDir;
-    @Arg(name = "output") protected File outputDir;
-    @Arg(defaultValue = "") protected String outputPrefix;
-    @Arg protected int horizontalOffset;
-    @Arg protected int verticalOffset;
-    @Arg protected boolean mirror;
-    @Arg protected int subImageSize;
+    @Arg(name = "input")
+    protected File inputDir;
+
+    @Arg(name = "output")
+    protected File outputDir;
+
+    @Arg(defaultValue = "")
+    protected String outputPrefix;
+
+    @Arg(required = false)
+    protected int horizontalOffset;
+
+    @Arg(required = false)
+    protected int verticalOffset;
+
+    @Arg(required = false)
+    protected boolean mirror;
+
+    @Arg(required = false)
+    protected int subImageSize;
+
+    @Arg(required = false)
+    protected float shear;
 
     private int counter;
 
@@ -63,7 +81,7 @@ public class ImageManipulationTool {
         for (File imageFile : FileUtils.walkFiles(inputDir, this::isImageFile)) {
             LOGGER.info("Processing " + imageFile.getName());
             BufferedImage image = Utils2D.loadImage(imageFile);
-            processImage(image);
+            processImage(imageFile, image);
         }
     }
 
@@ -72,7 +90,7 @@ public class ImageManipulationTool {
         return SpriteAtlasPacker.IMAGE_FILE_EXTENSIONS.contains(ext);
     }
 
-    private void processImage(BufferedImage original) {
+    private void processImage(File imageFile, BufferedImage original) {
         if (horizontalOffset > 0) {
             applyHorizontalOffset(original);
         }
@@ -87,6 +105,10 @@ public class ImageManipulationTool {
 
         if (subImageSize > 0) {
             extractSubImages(original);
+        }
+
+        if (shear != 0) {
+            shearImage(imageFile, original);
         }
     }
 
@@ -133,6 +155,25 @@ public class ImageManipulationTool {
         }
     }
 
+    private void shearImage(File imageFile, BufferedImage original) {
+        double shearedWidth = original.getWidth();
+        double shearedHeight = (((shear / 90.0) * 1.5) + 1.0) * original.getHeight();
+
+        AffineTransform transform = new AffineTransform();
+        transform.setToIdentity();
+        transform.translate(0.0, (shearedHeight - original.getHeight()) / 2.0);
+        transform.translate(shearedWidth / 2.0, shearedHeight / 2.0);
+        transform.shear(0.0, Math.toRadians(shear));
+        transform.translate(-shearedWidth / 2.0, -shearedHeight / 2.0);
+
+        BufferedImage result = new BufferedImage((int) Math.round(shearedWidth),
+            (int) Math.round(shearedHeight), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = Utils2D.createGraphics(result, true, true);
+        g2.drawImage(original, transform, null);
+        g2.dispose();
+        writePNG(result, imageFile.getName());
+    }
+
     private void generateVariant(BufferedImage original, Consumer<Graphics2D> drawCallback) {
         BufferedImage image = new BufferedImage(original.getWidth(), original.getHeight(),
             BufferedImage.TYPE_INT_ARGB);
@@ -144,7 +185,12 @@ public class ImageManipulationTool {
 
     private void writePNG(BufferedImage image) {
         counter++;
-        File outputFile = new File(outputDir, outputPrefix + counter + ".png");
+        String outputFileName = outputPrefix + counter + ".png";
+        writePNG(image, outputFileName);
+    }
+
+    private void writePNG(BufferedImage image, String outputFileName) {
+        File outputFile = new File(outputDir, outputFileName);
 
         if (outputFile.exists()) {
             LOGGER.warning(outputFile.getAbsolutePath() + " already exists");

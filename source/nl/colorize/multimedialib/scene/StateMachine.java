@@ -6,13 +6,8 @@
 
 package nl.colorize.multimedialib.scene;
 
-import com.google.common.base.Preconditions;
-import nl.colorize.util.stats.Tuple;
-import nl.colorize.util.stats.TupleList;
-
 import java.util.Deque;
 import java.util.LinkedList;
-import java.util.function.BiPredicate;
 
 /**
  * Finite state machine that allows a number of possible states, but can
@@ -37,12 +32,10 @@ public class StateMachine<S> implements Updatable {
 
     private Deque<StateQueueElement<S>> stateQueue;
     private StateQueueElement<S> defaultState;
-    private BiPredicate<S, S> allowedTransitions;
 
     public StateMachine(S defaultState) {
         this.stateQueue = new LinkedList<>();
         this.defaultState = new StateQueueElement<>(defaultState, Timer.infinite(), true);
-        this.allowedTransitions = (a, b) -> true;
     }
 
     /**
@@ -87,33 +80,13 @@ public class StateMachine<S> implements Updatable {
         requestState(nextState);
     }
 
-    /**
-     * Restricts state transitions based on the specified predicate. The first
-     * and second argument in the callback function refer to the current state
-     * and requested state respectively.
-     */
-    public void allowTransitions(BiPredicate<S, S> callback) {
-        allowedTransitions = callback;
-    }
-
-    /**
-     * Restricts state transitions to only those included in the specified
-     * list. The first and second argument in each tuple refers to the current
-     * state and requested state respectively.
-     */
-    public void allowTransitions(TupleList<S, S> allowed) {
-        Preconditions.checkArgument(!allowed.isEmpty(), "Provided list is empty");
-        allowedTransitions = (a, b) -> allowed.contains(Tuple.of(a, b));
-    }
-
     private boolean isTransitionAllowed(S requestedState) {
         if (stateQueue.isEmpty()) {
             return !requestedState.equals(defaultState);
         }
 
         S precedingState = stateQueue.getLast().state;
-        return !requestedState.equals(precedingState) &&
-            allowedTransitions.test(precedingState, requestedState);
+        return !requestedState.equals(precedingState);
     }
 
     /**

@@ -8,59 +8,37 @@ package nl.colorize.multimedialib.stage;
 
 import lombok.Getter;
 import lombok.Setter;
-import nl.colorize.multimedialib.math.Angle;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.util.stats.Aggregate;
 
 /**
- * Defines the list of transformation properties that should be applied
- * to graphics when displaying them.
- * <p>
- * The following transform properties are available:
+ * Describes how 2D graphics should be displayed, using a number of
+ * properties. The following properties are available:
  * <p>
  * <pre>
- * | Property          | Defined as                                 | Supported by       |
- * |-------------------|--------------------------------------------|--------------------|
- * | Visible           | true/false                                 | All graphics       |
- * | Position          | X/Y relative to the graphic's center       | All graphics       |
- * | Rotation          | Degrees, clockwise                         | Sprite             |
- * | Scale             | Percentage, 100% indicates original size   | Sprite             |
- * | Flip horizontally | true/false                                 | Sprite             |
- * | Flip vertically   | true/false                                 | Sprite             |
- * | Alpha             | Percentage, 100% indicates opaque          | All graphics       |
- * | Mask color        | Replaces non-transparent pixels with color | Sprite, Primitive  |
+ * | Property        | Description                                                                |
+ * |-----------------|----------------------------------------------------------------------------|
+ * | Visible         | When set to false, the graphic will not be displayed at all.               |
+ * | Position        | X/Y coordinates of where the graphic's center is displayed on the canvas.  |
+ * | Alpha           | Percentage, where 0% is fully transparent and 100% is fully opaque.        |
  * </pre>
  * <p>
- * The properties in a {@link Transform} instance are relative to its location
- * in the scene graph. In other words, it describes a graphic's <em>local</em>
- * transform. The renderer then combines this with the transform of the
- * graphic's parents to calculate the <em>global</em> transform relative to
- * the stage.
+ * This class contains the "base" properties that are available to all
+ * graphics types. See {@link ImageTransform} for additional properties
+ * that are available when displaying images.
  */
 @Getter
 @Setter
-public final class Transform {
+public class Transform {
 
     private boolean visible;
     private Point2D position;
-    private Angle rotation;
-    private float scaleX;
-    private float scaleY;
-    private boolean flipHorizontal;
-    private boolean flipVertical;
     private float alpha;
-    private ColorRGB maskColor;
 
     public Transform() {
         this.visible = true;
         this.position = new Point2D(0f, 0f);
-        this.rotation = Angle.ORIGIN;
-        this.scaleX = 100f;
-        this.scaleY = 100f;
-        this.flipHorizontal = false;
-        this.flipVertical = false;
         this.alpha = 100f;
-        this.maskColor = null;
     }
 
     public void setPosition(Point2D position) {
@@ -80,7 +58,7 @@ public final class Transform {
     }
 
     public void addPosition(float deltaX, float deltaY) {
-        setPosition(position.move(deltaX, deltaY));
+        setPosition(position.add(deltaX, deltaY));
     }
 
     public float getX() {
@@ -91,57 +69,14 @@ public final class Transform {
         return position.y();
     }
 
-    public void setRotation(Angle rotation) {
-        this.rotation = rotation;
-    }
-
-    public void setRotation(float degrees) {
-        setRotation(new Angle(degrees));
-    }
-
-    public void addRotation(float degrees) {
-        setRotation(rotation.move(degrees));
-    }
-
-    public void setScale(float scale) {
-        setScaleX(scale);
-        setScaleY(scale);
-    }
-
-    public void setScaleX(float scaleX) {
-        this.scaleX = Math.abs(scaleX);
-    }
-    
-    public float getScaleX() {
-        return flipHorizontal ? -scaleX : scaleX;
-    }
-
-    public void setScaleY(float scaleY) {
-        this.scaleY = Math.abs(scaleY);
-    }
-
-    public float getScaleY() {
-        return flipVertical ? -scaleY : scaleY;
-    }
-
     public void setAlpha(float alpha) {
         this.alpha = Math.clamp(alpha, 0f, 100f);
     }
 
-    /**
-     * Replaces all transformation properties in this {@link Transform} with
-     * the values from the specified other {@link Transform}.
-     */
     public void set(Transform other) {
         setVisible(other.visible);
         setPosition(other.position.x(), other.position.y());
-        setRotation(other.rotation.degrees());
-        setScaleX(other.scaleX);
-        setScaleY(other.scaleY);
-        setFlipHorizontal(other.flipHorizontal);
-        setFlipVertical(other.flipVertical);
         setAlpha(other.alpha);
-        setMaskColor(other.maskColor);
     }
 
     /**
@@ -149,16 +84,16 @@ public final class Transform {
      * this transform with the specified other transform.
      */
     public Transform combine(Transform other) {
+        if (other instanceof ImageTransform) {
+            ImageTransform imageTransform = new ImageTransform();
+            imageTransform.set(this);
+            return imageTransform.combine(other);
+        }
+
         Transform combined = new Transform();
         combined.setVisible(visible && other.visible);
-        combined.setPosition(position.move(other.position));
-        combined.setRotation(rotation.degrees() + other.rotation.degrees());
-        combined.setScaleX(Aggregate.multiplyPercentage(scaleX, other.scaleX));
-        combined.setScaleY(Aggregate.multiplyPercentage(scaleY, other.scaleY));
-        combined.setFlipHorizontal(flipHorizontal || other.flipHorizontal);
-        combined.setFlipVertical(flipVertical || other.flipVertical);
+        combined.setPosition(position.add(other.position));
         combined.setAlpha(Aggregate.multiplyPercentage(alpha, other.alpha));
-        combined.setMaskColor(other.maskColor != null ? other.maskColor : maskColor);
         return combined;
     }
 }

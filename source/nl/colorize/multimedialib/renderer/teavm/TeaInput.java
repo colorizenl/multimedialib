@@ -12,6 +12,7 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Pointer;
+import nl.colorize.util.EventQueue;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Subject;
 import org.teavm.jso.browser.Window;
@@ -36,7 +37,7 @@ import java.util.logging.Logger;
  * buffer. When the frame update takes place, the buffer is processed to determine
  * the current state for each input device.
  */
-public class TeaInputDevice implements InputDevice {
+public class TeaInput implements InputDevice {
 
     private BrowserBridge bridge;
     private Canvas canvas;
@@ -115,9 +116,9 @@ public class TeaInputDevice implements InputDevice {
             .build();
 
     private static final String CONTAINER = "#multimediaLibContainer";
-    private static final Logger LOGGER = LogHelper.getLogger(TeaInputDevice.class);
+    private static final Logger LOGGER = LogHelper.getLogger(TeaInput.class);
 
-    public TeaInputDevice(Canvas canvas, TeaGraphics graphics) {
+    public TeaInput(Canvas canvas, TeaGraphics graphics) {
         this.bridge = Browser.getBrowserBridge();
         this.canvas = canvas;
         this.graphics = graphics;
@@ -268,14 +269,14 @@ public class TeaInputDevice implements InputDevice {
     }
 
     @Override
-    public Subject<String> requestTextInput(String label, String initialValue) {
+    public EventQueue<String> requestTextInput(String label, String initialValue) {
         Subject<String> subject = new Subject<>();
 
         bridge.requestTextInput(label, initialValue, (name, value) -> {
             subject.next(value);
         });
 
-        return subject;
+        return EventQueue.subscribe(subject);
     }
 
     @Override

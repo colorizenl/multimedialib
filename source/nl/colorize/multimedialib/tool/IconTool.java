@@ -50,9 +50,6 @@ public class IconTool {
     @Arg(name = "output", usage = "Directory where the ICNS file will be generated")
     protected File outputDir;
 
-    @Arg(name = "mask", usage = "Adds a rounded rectangle image mask for supported platforms")
-    protected boolean mask;
-
     private static final List<IconVariant> MAC_ICONS = List.of(
         new IconVariant("icon_16x16.png", 16, true),
         new IconVariant("icon_16x16@2x.png", 32, true),
@@ -154,7 +151,7 @@ public class IconTool {
     }
 
     private BufferedImage generateIconVariant(BufferedImage original, IconVariant variant) {
-        if (mask && variant.maskable) {
+        if (variant.maskable) {
             return generateMaskIcon(original, variant);
         } else {
             return generateRegularIcon(original, variant);

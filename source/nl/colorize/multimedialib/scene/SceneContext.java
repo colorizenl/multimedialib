@@ -20,10 +20,16 @@ import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Stage;
+import nl.colorize.multimedialib.stage.StageNode2D;
+import nl.colorize.util.EventQueue;
+import nl.colorize.util.Subject;
+import nl.colorize.util.animation.Timeline;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 /**
  * The currently active scene (and its sub-scenes) receive access to the
@@ -69,39 +75,138 @@ public interface SceneContext {
 
     /**
      * Attaches a sub-scene to the currently active scene. The sub-scene will
-     * remain active until it is detached or the parent scene ends.
+     * remain active until {@link Scene#isCompleted()} returns true or the
+     * parent scene ends.
+     * 
+     * @see SceneManager#attach(Scene)
      */
     default void attach(Scene subScene) {
-        getSceneManager().attach(this, subScene);
+        getSceneManager().attach(subScene);
     }
 
     /**
-     * Attaches an {@link Updatable} to act as a sub-scene for the currently
-     * active scene. The sub-scene will remain active until it is detached or
-     * the parent scene ends.
+     * Creates a sub-scene using the specified callback methods, then attaches
+     * that sub-scene to the currently active scene. The sub-scene will remain
+     * active until {@code completed} returns true or the parent scene ends.
+     *
+     * @see SceneManager#attach(Scene)
+     * @see FluentScene
      */
-    default void attach(Updatable subScene) {
-        Scene wrappedSubScene = (context, deltaTime) -> subScene.update(deltaTime);
-        attach(wrappedSubScene);
+    default void attach(Updatable onFrame, BooleanSupplier completed, Runnable onComplete) {
+        FluentScene subScene = new FluentScene(onFrame)
+            .withCompletion(completed, onComplete);
+        getSceneManager().attach(subScene);
     }
 
     /**
-     * Wraps a {@code Runnable} so that is acts as a sub-scene for the
-     * currently active scene.  The sub-scene will remain active until
-     * it is detached or the parent scene ends.
+     * Attaches a sub-scene, based on the specified callback, to the currently
+     * active scene. The sub-scene will remain active until the parent scene
+     * ends.
      */
-    default void attach(Runnable subScene) {
-        Scene wrappedSubScene = (context, deltaTime) -> subScene.run();
-        attach(wrappedSubScene);
+    default void attach(Updatable callback) {
+        Scene subScene = (context, deltaTime) -> callback.update(deltaTime);
+        attach(subScene);
     }
 
     /**
-     * Attaches a scene that is *not* tied to the currently active scene, and
-     * will remain active for the rest of the application. Multiple global
-     * scenes can be attached.
+     * Attaches a sub-scene, based on the specified callback, to the currently
+     * active scene. The sub-scene will remain active until the parent scene
+     * ends.
      */
-    default void attachGlobal(Scene globalSubScene) {
-        getSceneManager().attachGlobal(this, globalSubScene);
+    default void attach(Runnable callback) {
+        Scene subScene = (context, deltaTime) -> callback.run();
+        attach(subScene);
+    }
+
+    /**
+     * Attaches a sub-scene that processes an {@link EventQueue} using the
+     * provided callback functions. This ensures asynchronous events are
+     * processed during frame updates, instead of when they are received.
+     */
+    default <T> void attach(EventQueue<T> events, Consumer<T> onEvent, Consumer<Exception> onError) {
+        attach(() -> events.flush(onEvent, onError));
+    }
+
+    /**
+     * Attaches a sub-scene that processes an {@link EventQueue} during frame
+     * updates. This returns a {@link Subject} that only publishes events
+     * during frame updates, instead of publishing events whenever they arrive.
+     */
+    default <T> Subject<T> attach(EventQueue<T> eventQueue) {
+        Subject<T> frameUpdateSubject = new Subject<>();
+        attach(() -> eventQueue.flush(frameUpdateSubject::next, frameUpdateSubject::nextError));
+        return frameUpdateSubject;
+    }
+
+    /**
+     * Attaches a sub-scene that will (A) update the timer during every frame
+     * update, (B) invoke the specified callback function exactly once when
+     * the timer has completed. This method is effectively performing an action
+     * with a time delay.
+     */
+    default void attachTimer(Timer timer, Runnable callback) {
+        attach(timer, timer::isCompleted, callback);
+    }
+
+    /**
+     * Attaches a sub-scene that will (A) update the timer during every frame
+     * update, (B) invoke the specified callback function exactly once when
+     * the timer has completed. This method is effectively performing an action
+     * with a time delay.
+     */
+    default void attachTimer(float delay, Runnable callback) {
+        attachTimer(new Timer(delay), callback);
+    }
+
+    /**
+     * Attaches a sub-scene that will (A) update the timeline during every
+     * frame update, (B) invoke the callback function with the timeline's
+     * value. The sub-scene will run until the timeline is completed.
+     */
+    default void attachTimeline(Timeline timeline, Consumer<Float> callback, Runnable onComplete) {
+        Updatable frameHandler = deltaTime -> {
+            timeline.movePlayhead(deltaTime);
+            callback.accept(timeline.getValue());
+        };
+
+        BooleanSupplier completionCheck = () -> timeline.isCompleted() && !timeline.isLoop();
+
+        attach(frameHandler, completionCheck, onComplete);
+    }
+
+    /**
+     * Attaches a sub-scene that will (A) update the timeline during every
+     * frame update, (B) invoke the callback function with the timeline's
+     * value. The sub-scene will run until the timeline is completed.
+     */
+    default void attachTimeline(Timeline timeline, Consumer<Float> callback) {
+        attachTimeline(timeline, callback, null);
+    }
+
+    /**
+     * Attaches a sub-scene that will invoke the specified callback function
+     * when the specified graphics are clicked.
+     * <p>
+     * Note: This should be called "pointer released handler", since it also
+     * supports touch events. The term "click handler" exists for historic
+     * reasons.
+     */
+    default void attachClickHandler(StageNode2D node, Runnable callback) {
+        attach(() -> {
+            if (getInput().isPointerReleased(node)) {
+                callback.run();
+            }
+        });
+    }
+
+    /**
+     * Attaches a sub-scene that is <em>not</em> tied to the currently active
+     * scene, and will remain active for as long as the application is active.
+     * 
+     * @see SceneManager#attachGlobalSubScene(Scene)
+     */
+    default void attachGlobalSubScene(Scene globalSubScene) {
+        getSceneManager().attachGlobalSubScene(globalSubScene);
     }
 
     /**

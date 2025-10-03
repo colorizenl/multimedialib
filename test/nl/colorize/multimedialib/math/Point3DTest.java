@@ -32,9 +32,9 @@ public class Point3DTest {
     }
 
     @Test
-    void move() {
-        assertEquals("(12, 21, 30)", new Point3D(2, 1, 0).move(10, 20, 30).toString());
-        assertEquals("(12, 21, 30)", new Point3D(2, 1, 0).move(new Point3D(10, 20, 30)).toString());
+    void add() {
+        assertEquals("(12, 21, 30)", new Point3D(2, 1, 0).add(10, 20, 30).toString());
+        assertEquals("(12, 21, 30)", new Point3D(2, 1, 0).add(new Point3D(10, 20, 30)).toString());
     }
 
     @Test

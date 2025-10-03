@@ -20,7 +20,6 @@ import nl.colorize.util.cli.Arg;
 import nl.colorize.util.cli.CommandLineArgumentParser;
 import nl.colorize.util.cli.CommandLineInterfaceException;
 import nl.colorize.util.http.URLLoader;
-import nl.colorize.util.http.URLResponse;
 import org.teavm.diagnostics.DefaultProblemTextConsumer;
 import org.teavm.diagnostics.Problem;
 import org.teavm.tooling.ConsoleTeaVMToolLog;
@@ -32,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Date;
@@ -245,12 +245,11 @@ public class TeaVMTranspilerTool {
 
         try {
             LOGGER.info("Downloading " + url);
-            URLLoader request = URLLoader.get(url);
-            URLResponse response = request.send();
+            HttpResponse<String> response = URLLoader.get(url);
 
             File outputFile = new File(outputDir, lib.getOutputFilePath());
             outputFile.getParentFile().mkdirs();
-            Files.write(outputFile.toPath(), response.getBody());
+            Files.writeString(outputFile.toPath(), response.body());
             return lib;
         } catch (IOException e) {
             throw new RuntimeException("Failed to download " + url, e);

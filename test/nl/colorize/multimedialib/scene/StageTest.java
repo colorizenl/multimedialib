@@ -22,6 +22,7 @@ import nl.colorize.multimedialib.renderer.headless.CollectingStageVisitor;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Group;
+import nl.colorize.multimedialib.stage.ImageTransform;
 import nl.colorize.multimedialib.stage.Light;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
@@ -83,7 +84,7 @@ class StageTest {
             }
 
             @Override
-            public void drawSprite(Sprite sprite, Transform globalTransform) {
+            public void drawSprite(Sprite sprite, ImageTransform globalTransform) {
                 visited.add("sprite");
             }
 

@@ -69,7 +69,7 @@ public record Point3D(float x, float y, float z) {
      * Returns a new point that starts from this point and then adds the
      * specified offset.
      */
-    public Point3D move(float deltaX, float deltaY, float deltaZ) {
+    public Point3D add(float deltaX, float deltaY, float deltaZ) {
         return new Point3D(x + deltaX, y + deltaY, z + deltaZ);
     }
 
@@ -77,8 +77,8 @@ public record Point3D(float x, float y, float z) {
      * Returns a new point that starts from this point and then adds the
      * specified offset.
      */
-    public Point3D move(Point3D other) {
-        return move(other.x, other.y, other.z);
+    public Point3D add(Point3D other) {
+        return add(other.x, other.y, other.z);
     }
 
     /**

@@ -43,6 +43,14 @@ public class PolygonTest {
     }
 
     @Test
+    void map() {
+        Polygon original = Polygon.fromPoints(1, 2, 3, 4, 5, 6);
+        Polygon mapped = original.map(p -> p.add(1, 1));
+
+        assertEquals("[(2, 3), (4, 5), (6, 7)]", mapped.points().toString());
+    }
+
+    @Test
     public void testContainsPoint() {
         float[] points = {100, 100, 200, 100, 200, 200, 100, 200};
         Polygon polygon = Polygon.fromPoints(points);

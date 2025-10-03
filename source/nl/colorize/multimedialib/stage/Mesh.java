@@ -13,6 +13,9 @@ package nl.colorize.multimedialib.stage;
  */
 public interface Mesh extends StageNode3D {
 
+    @Deprecated
+    public void setParent(Group parent);
+
     public void applyColor(ColorRGB color);
 
     public void applyTexture(Image texture);

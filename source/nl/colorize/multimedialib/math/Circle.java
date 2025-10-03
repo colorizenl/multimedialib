@@ -66,7 +66,7 @@ public record Circle(Point2D center, float radius) implements Shape {
 
     @Override
     public Circle reposition(Point2D offset) {
-        Point2D newCenter = center.move(offset.x(), offset.y());
+        Point2D newCenter = center.add(offset.x(), offset.y());
         return new Circle(newCenter, radius);
     }
 

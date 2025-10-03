@@ -10,6 +10,7 @@ import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * A two-dimensional convex polygon with float precision coordinates.
@@ -229,13 +230,21 @@ public record Polygon(List<Point2D> points) implements Shape {
         return vertices;
     }
 
-    @Override
-    public Polygon reposition(Point2D offset) {
+    /**
+     * Applies the specified mapping function to each of the points within
+     * this polygon, and returns a new polygon based on those points.
+     */
+    public Polygon map(Function<Point2D, Point2D> mapper) {
         List<Point2D> newPoints = points.stream()
-            .map(point -> point.move(offset))
+            .map(mapper)
             .toList();
 
         return new Polygon(newPoints);
+    }
+
+    @Override
+    public Polygon reposition(Point2D offset) {
+        return map(p -> p.add(offset));
     }
 
     @Override
@@ -256,20 +265,29 @@ public record Polygon(List<Point2D> points) implements Shape {
     }
 
     /**
-     * Convenience method to create a polygon in the shape of a circle with the
-     * specified properties.
+     * Convenience method to create a polygon in the shape of a circle. The
+     * circle will be centered around the specified origin.
      */
     public static Polygon createCircle(Point2D origin, float radius, int numPoints) {
         Preconditions.checkArgument(numPoints >= 4, "Too few points: " + numPoints);
         Preconditions.checkArgument(radius > EPSILON, "Invalid radius: " + radius);
 
         List<Point2D> points = new ArrayList<>();
+
         for (int i = 0; i < numPoints; i++) {
             Vector vector = new Vector(i * (360f / numPoints), radius);
             points.add(new Point2D(origin.x() + vector.getX(), origin.y() + vector.getY()));
         }
 
         return new Polygon(points);
+    }
+
+    /**
+     * Convenience method to create a polygon in the shape of a circle. The
+     * circle will be centered around {@link Point2D#ORIGIN}.
+     */
+    public static Polygon createCircle(float radius, int numPoints) {
+        return createCircle(Point2D.ORIGIN, radius, numPoints);
     }
 
     /**

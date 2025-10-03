@@ -28,6 +28,7 @@ import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Group;
+import nl.colorize.multimedialib.stage.ImageTransform;
 import nl.colorize.multimedialib.stage.Light;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
@@ -192,7 +193,7 @@ public class PixiGraphics implements TeaGraphics, StageSubscriber {
     }
 
     @Override
-    public void drawSprite(Sprite sprite, Transform globalTransform) {
+    public void drawSprite(Sprite sprite, ImageTransform globalTransform) {
         PixiDisplayObject displayObject = getDisplayObject(sprite);
         PixiDisplayObject[] containerContents = displayObject.getChildren();
 
@@ -205,7 +206,7 @@ public class PixiGraphics implements TeaGraphics, StageSubscriber {
         updateSprite(sprite, globalTransform, spriteDisplayObject);
     }
 
-    private void updateSprite(Sprite sprite, Transform transform, PixiDisplayObject displayObject) {
+    private void updateSprite(Sprite sprite, ImageTransform transform, PixiDisplayObject displayObject) {
         TeaImage image = getImage(sprite);
         float zoom = canvas.getZoomLevel();
 

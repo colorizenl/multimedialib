@@ -28,19 +28,21 @@ import java.util.function.Consumer;
  */
 public class SceneManager {
 
+    private SceneContext context;
     private Stopwatch timer;
     private long elapsedTime;
     @Getter private FrameStats frameStats;
 
-    private SceneTree activeScene;
-    private Queue<SceneTree> requestedSceneQueue;
+    private SceneState activeScene;
+    private Queue<SceneState> requestedSceneQueue;
     private List<Scene> globalSubScenes;
 
     private static final long FRAME_LEEWAY_MS = 5;
     private static final float MIN_FRAME_TIME = 0.01f;
     private static final float MAX_FRAME_TIME = 0.2f;
 
-    public SceneManager(Stopwatch timer) {
+    public SceneManager(SceneContext context, Stopwatch timer) {
+        this.context = context;
         this.timer = timer;
         this.elapsedTime = 0L;
         this.frameStats = new FrameStats();
@@ -49,8 +51,8 @@ public class SceneManager {
         this.globalSubScenes = new ArrayList<>();
     }
 
-    public SceneManager() {
-        this(new Stopwatch());
+    public SceneManager(SceneContext context) {
+        this(context, new Stopwatch());
     }
 
     /**
@@ -79,7 +81,7 @@ public class SceneManager {
      *         indicates no frame updates were performed, meaning that it is
      *         not necessary for the renderer to render the frame.
      */
-    public int requestFrameUpdate(SceneContext context) {
+    public int requestFrameUpdate() {
         long frameTime = timer.tick();
         elapsedTime += frameTime;
 
@@ -95,7 +97,7 @@ public class SceneManager {
 
         float deltaTime = Math.clamp(elapsedTime / 1000f, MIN_FRAME_TIME, MAX_FRAME_TIME);
         frameStats.markStart(FrameStats.PHASE_FRAME_UPDATE);
-        performFrameUpdate(context, deltaTime);
+        performFrameUpdate(deltaTime);
         frameStats.markEnd(FrameStats.PHASE_FRAME_UPDATE);
         elapsedTime = 0L;
 
@@ -104,18 +106,18 @@ public class SceneManager {
 
     /**
      * Performs an application frame update. The renderer will first call
-     * {@link #requestFrameUpdate(SceneContext)}, which then calls this method
-     * depending on how much time has elapsed since the last frame.
+     * {@link #requestFrameUpdate()}, which then calls this method depending
+     * on how much time has elapsed since the last frame.
      */
-    protected void performFrameUpdate(SceneContext context, float deltaTime) {
+    protected void performFrameUpdate(float deltaTime) {
         updateInput(context.getInput(), deltaTime);
 
         if (!requestedSceneQueue.isEmpty()) {
-            activateRequestedScene(context);
+            activateRequestedScene();
         }
 
-        updateCurrentScene(context, activeScene, deltaTime);
-        updateGlobalSubScenes(context, deltaTime);
+        updateCurrentScene(activeScene, deltaTime);
+        updateGlobalSubScenes(deltaTime);
     }
 
     private void updateInput(InputDevice input, float deltaTime) {
@@ -128,23 +130,23 @@ public class SceneManager {
         }
     }
 
-    private void updateCurrentScene(SceneContext context, SceneTree current, float deltaTime) {
+    private void updateCurrentScene(SceneState current, float deltaTime) {
         current.scene.update(context, deltaTime);
 
         for (Scene subScene : current.subScenes) {
             // We need to check twice if the sub-scene has
             // been completed, both before and after its
             // own update.
-            if (!checkCompleted(context, current, subScene)) {
+            if (!checkCompleted(current, subScene)) {
                 subScene.update(context, deltaTime);
-                checkCompleted(context, current, subScene);
+                checkCompleted(current, subScene);
             }
         }
 
         context.getStage().getAnimationTimer().update(deltaTime);
     }
 
-    private boolean checkCompleted(SceneContext context, SceneTree parent, Scene subScene) {
+    private boolean checkCompleted(SceneState parent, Scene subScene) {
         if (subScene.isCompleted()) {
             subScene.end(context);
             parent.subScenes.remove(subScene);
@@ -162,14 +164,14 @@ public class SceneManager {
      * replaced by the next requested scene, meaning they will never actually
      * receive frame updates.
      */
-    private void activateRequestedScene(SceneContext context) {
+    private void activateRequestedScene() {
         if (activeScene != null) {
             activeScene.walk(scene -> scene.end(context));
             context.getStage().clear();
             context.getStage().getAnimationTimer().reset();
         }
 
-        SceneTree requestedScene = requestedSceneQueue.peek();
+        SceneState requestedScene = requestedSceneQueue.peek();
 
         if (requestedScene != null) {
             activeScene = requestedScene;
@@ -177,12 +179,12 @@ public class SceneManager {
             requestedSceneQueue.poll();
 
             if (!requestedSceneQueue.isEmpty()) {
-                activateRequestedScene(context);
+                activateRequestedScene();
             }
         }
     }
 
-    private void updateGlobalSubScenes(SceneContext context, float deltaTime) {
+    private void updateGlobalSubScenes(float deltaTime) {
         Iterator<Scene> iterator = globalSubScenes.iterator();
 
         while (iterator.hasNext()) {
@@ -201,20 +203,21 @@ public class SceneManager {
      * this method again will overrule that request.
      */
     public void changeScene(Scene requestedScene) {
-        requestedSceneQueue.offer(new SceneTree(requestedScene));
+        requestedSceneQueue.offer(new SceneState(requestedScene));
     }
 
     /**
      * Attaches a sub-scene to the currently active scene. The sub-scene will
-     * remain active until it is detached or the parent scene ends.
+     * remain active until {@link Scene#isCompleted()} returns true or the
+     * parent scene ends.
      */
-    public void attach(SceneContext context, Scene subScene) {
+    public void attach(Scene subScene) {
         if (requestedSceneQueue.isEmpty()) {
-            activeScene.attachSubScene(subScene);
+            activeScene.subScenes.add(subScene);
             subScene.start(context);
         } else {
-            SceneTree requestedScene = requestedSceneQueue.peek();
-            requestedScene.attachSubScene(subScene);
+            SceneState requestedScene = requestedSceneQueue.peek();
+            requestedScene.subScenes.add(subScene);
         }
     }
 
@@ -223,7 +226,7 @@ public class SceneManager {
      * will remain active for the rest of the application. Multiple global
      * scenes can be attached.
      */
-    public void attachGlobal(SceneContext context, Scene globalSubScene) {
+    public void attachGlobalSubScene(Scene globalSubScene) {
         globalSubScenes.add(globalSubScene);
         globalSubScene.start(context);
     }
@@ -247,21 +250,17 @@ public class SceneManager {
     }
 
     /**
-     * Combines a scene with all sub-scenes attached to it. The parent
-     * scene will be updated before its sub-scenes.
+     * Combines a scene with all sub-scenes attached to it. The parent scene
+     * will be updated before its sub-scenes.
      */
-    private static class SceneTree {
+    private static class SceneState {
 
         private Scene scene;
         private List<Scene> subScenes;
 
-        public SceneTree(Scene scene) {
+        public SceneState(Scene scene) {
             this.scene = scene;
             this.subScenes = new CopyOnWriteArrayList<>();
-        }
-
-        public void attachSubScene(Scene subScene) {
-            subScenes.add(subScene);
         }
 
         public void walk(Consumer<Scene> callback) {

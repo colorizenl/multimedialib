@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.stage;
 
 import nl.colorize.multimedialib.scene.Timer;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Shared interface for all 3D graphics that can be added to the stage's
@@ -24,23 +25,24 @@ import nl.colorize.multimedialib.scene.Timer;
  * interface. Nodes are not expected to be updated <em>every</em> frame: The
  * renderer will generally not draw graphics that are not currently visible,
  * for performance reasons. Therefore, instead of relying on frame updates,
- * the renderer will use {@link #animate(Timer)} to update currently visible
- * nodes while rendering the stage.
+ * the renderer will use {@link StageNode#animate(Timer)} to update currently
+ * visible nodes while rendering the stage.
  * <p>
  * Although the stage can contain both 2D and 3D graphics, it has a hard
  * separation between the two. Refer to {@link StageNode2D} for the equivalent
  * interface for 2D graphics.
  */
-public interface StageNode3D {
+public interface StageNode3D extends StageNode {
 
-    /**
-     * Called by the renderer at the end of frame updates, while rendering the
-     * stage. {@code animationTimer} contains the elapsed time since the
-     * currently active scene was started. This allows animations to display
-     * correctly, without the need to update every single node during each
-     * frame update.
-     */
-    public void animate(Timer animationTimer);
+    @Override
+    public @Nullable Group getParent();
+
+    @Override
+    default void detach() {
+        if (getParent() != null) {
+            getParent().removeChild(this);
+        }
+    }
 
     /**
      * Returns this node's local transform, which is interpreted relative to

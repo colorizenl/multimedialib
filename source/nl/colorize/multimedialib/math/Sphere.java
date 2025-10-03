@@ -42,6 +42,6 @@ public record Sphere(Point3D center, float radius) implements Shape3D {
 
     @Override
     public Sphere reposition(Point3D offset) {
-        return new Sphere(center.move(offset), radius);
+        return new Sphere(center.add(offset), radius);
     }
 }

@@ -24,6 +24,7 @@ import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Group;
+import nl.colorize.multimedialib.stage.ImageTransform;
 import nl.colorize.multimedialib.stage.Light;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
@@ -122,7 +123,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
     }
 
     @Override
-    public void drawSprite(Sprite sprite, Transform globalTransform) {
+    public void drawSprite(Sprite sprite, ImageTransform globalTransform) {
         TeaImage teaImage = (TeaImage) sprite.getCurrentGraphics();
 
         if (teaImage.getWidth() > 0f && teaImage.getHeight() > 0f) {
@@ -130,7 +131,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
         }
     }
 
-    private void drawImage(TeaImage image, Region region, Transform transform) {
+    private void drawImage(TeaImage image, Region region, ImageTransform transform) {
         CanvasImageSource source = prepareImage(image, transform.getMaskColor());
         Point2D position = transform.getPosition();
 
@@ -161,11 +162,7 @@ public class HtmlCanvasGraphics implements TeaGraphics {
     }
 
     private String getPrimitiveColorHex(Primitive primitive, Transform globalTransform) {
-        ColorRGB color = globalTransform.getMaskColor();
-        if (color == null) {
-            color = primitive.getColor();
-        }
-        return color.toHex();
+        return primitive.getColor().toHex();
     }
 
     @Override
