@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -13,6 +13,10 @@ package nl.colorize.multimedialib.math;
 public record Coordinate(int x, int y) {
 
     public static final Coordinate ORIGIN = new Coordinate(0, 0);
+
+    public Coordinate add(int deltaX, int deltaY) {
+        return new Coordinate(x + deltaX, y + deltaY);
+    }
 
     @Override
     public String toString() {

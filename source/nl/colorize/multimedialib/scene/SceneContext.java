@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -93,8 +93,10 @@ public interface SceneContext {
      * @see FluentScene
      */
     default void attach(Updatable onFrame, BooleanSupplier completed, Runnable onComplete) {
-        FluentScene subScene = new FluentScene(onFrame)
-            .withCompletion(completed, onComplete);
+        FluentScene subScene = FluentScene.create()
+            .withFrameHandler(onFrame)
+            .withCompletionCheck(completed)
+            .withCompletionHandler(onComplete);
         getSceneManager().attach(subScene);
     }
 
@@ -139,20 +141,30 @@ public interface SceneContext {
     }
 
     /**
-     * Attaches a sub-scene that will (A) update the timer during every frame
-     * update, (B) invoke the specified callback function exactly once when
-     * the timer has completed. This method is effectively performing an action
-     * with a time delay.
+     * Attaches a sub-scene that will update the timer during every frame
+     * update, and then call the {@code onFrame} callback based on the
+     * timer's value. Invokes the {@code onComplete} callback exactly once
+     * when the timer has completed.
+     */
+    default void attachTimer(Timer timer, Consumer<Float> onFrame, Runnable onComplete) {
+        FluentScene subScene = FluentScene.create()
+            .withTimerHandler(timer, onFrame)
+            .withCompletionHandler(onComplete);
+        getSceneManager().attach(subScene);
+    }
+
+    /**
+     * Attaches a sub-scene that will update the timer during every frame
+     * update, and will then invoke the specified callback function exactly
+     * once when the timer has completed.
      */
     default void attachTimer(Timer timer, Runnable callback) {
         attach(timer, timer::isCompleted, callback);
     }
 
     /**
-     * Attaches a sub-scene that will (A) update the timer during every frame
-     * update, (B) invoke the specified callback function exactly once when
-     * the timer has completed. This method is effectively performing an action
-     * with a time delay.
+     * Attaches a sub-scene that will invoke the specified callback function
+     * exactly once, after the specified delay.
      */
     default void attachTimer(float delay, Runnable callback) {
         attachTimer(new Timer(delay), callback);
@@ -164,14 +176,10 @@ public interface SceneContext {
      * value. The sub-scene will run until the timeline is completed.
      */
     default void attachTimeline(Timeline timeline, Consumer<Float> callback, Runnable onComplete) {
-        Updatable frameHandler = deltaTime -> {
-            timeline.movePlayhead(deltaTime);
-            callback.accept(timeline.getValue());
-        };
-
-        BooleanSupplier completionCheck = () -> timeline.isCompleted() && !timeline.isLoop();
-
-        attach(frameHandler, completionCheck, onComplete);
+        FluentScene subScene = FluentScene.create()
+            .withTimelineHandler(timeline, callback)
+            .withCompletionHandler(onComplete);
+        getSceneManager().attach(subScene);
     }
 
     /**
@@ -180,7 +188,7 @@ public interface SceneContext {
      * value. The sub-scene will run until the timeline is completed.
      */
     default void attachTimeline(Timeline timeline, Consumer<Float> callback) {
-        attachTimeline(timeline, callback, null);
+        attachTimeline(timeline, callback, () -> {});
     }
 
     /**

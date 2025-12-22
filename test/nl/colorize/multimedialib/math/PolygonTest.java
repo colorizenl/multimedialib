@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -67,15 +67,22 @@ public class PolygonTest {
     public void testCreateCircle() {
         Polygon circle = Polygon.createCircle(new Point2D(0, 0), 1f, 4);
 
-        assertEquals(4, circle.getNumPoints());
-        assertEquals(1f, circle.getPointX(0), Shape.EPSILON);
-        assertEquals(0f, circle.getPointY(0), Shape.EPSILON);
-        assertEquals(0f, circle.getPointX(1), Shape.EPSILON);
-        assertEquals(1f, circle.getPointY(1), Shape.EPSILON);
-        assertEquals(-1f, circle.getPointX(2), Shape.EPSILON);
-        assertEquals(0f, circle.getPointY(2), Shape.EPSILON);
-        assertEquals(0f, circle.getPointX(3), Shape.EPSILON);
-        assertEquals(-1f, circle.getPointY(3), Shape.EPSILON);
+        assertEquals(4, circle.points().size());
+        assertEquals("(1, 0)", circle.points().get(0).toString());
+        assertEquals("(0, 1)", circle.points().get(1).toString());
+        assertEquals("(-1, 0)", circle.points().get(2).toString());
+        assertEquals("(0, -1)", circle.points().get(3).toString());
+    }
+
+    @Test
+    void createEllipse() {
+        Polygon ellipse = Polygon.createEllipse(10f, 20f, 4);
+
+        assertEquals(4, ellipse.points().size());
+        assertEquals("(10, 0)", ellipse.points().get(0).toString());
+        assertEquals("(0, 20)", ellipse.points().get(1).toString());
+        assertEquals("(-10, 0)", ellipse.points().get(2).toString());
+        assertEquals("(0, -20)", ellipse.points().get(3).toString());
     }
 
     @Test
@@ -154,5 +161,29 @@ public class PolygonTest {
 
         assertEquals(1, result.size());
         assertEquals("[10.0, 10.0, 20.0, 10.0, 20.0, 20.0]", Arrays.toString(result.get(0).toPoints()));
+    }
+
+    @Test
+    void createRectangle() {
+        Polygon rect = Polygon.createRectangle(new Point2D(10f, 20f), 30f, 40);
+        float[] points = rect.toPoints();
+
+        assertEquals("[-5.0, 0.0, 25.0, 0.0, 25.0, 40.0, -5.0, 40.0]", Arrays.toString(points));
+    }
+
+    @Test
+    void rotate() {
+        Polygon rect = Polygon.createRectangle(Point2D.ORIGIN, 30f, 40);
+        Polygon rotated = rect.rotate(new Angle(90));
+
+        assertEquals("[(20, -15), (20, 15), (-20, 15), (-20, -15)]", rotated.points().toString());
+    }
+
+    @Test
+    void move() {
+        Polygon rect = Polygon.createRectangle(Point2D.ORIGIN, 30f, 40);
+        Polygon moved = rect.move(new Point2D(10, 20));
+
+        assertEquals("[(-5, 0), (25, 0), (25, 40), (-5, 40)]", moved.points().toString());
     }
 }

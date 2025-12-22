@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -9,7 +9,7 @@ package nl.colorize.multimedialib.stage;
 import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Angle;
-import nl.colorize.util.stats.Aggregate;
+import nl.colorize.util.FloatStats;
 
 /**
  * Extension of {@link Transform} that adds additional properties for
@@ -106,12 +106,12 @@ public class ImageTransform extends Transform {
         ImageTransform combined = new ImageTransform();
         combined.setVisible(isVisible() && other.isVisible());
         combined.setPosition(getPosition().add(other.getPosition()));
-        combined.setAlpha(Aggregate.multiplyPercentage(getAlpha(), other.getAlpha()));
+        combined.setAlpha(FloatStats.multiplyPercentage(getAlpha(), other.getAlpha()));
 
         if (other instanceof ImageTransform otherIT) {
             combined.setRotation(rotation.degrees() + otherIT.rotation.degrees());
-            combined.setScaleX(Aggregate.multiplyPercentage(scaleX, otherIT.scaleX));
-            combined.setScaleY(Aggregate.multiplyPercentage(scaleY, otherIT.scaleY));
+            combined.setScaleX(FloatStats.multiplyPercentage(scaleX, otherIT.scaleX));
+            combined.setScaleY(FloatStats.multiplyPercentage(scaleY, otherIT.scaleY));
             combined.setFlipHorizontal(flipHorizontal || otherIT.flipHorizontal);
             combined.setFlipVertical(flipVertical || otherIT.flipVertical);
             combined.setMaskColor(otherIT.maskColor != null ? otherIT.maskColor : maskColor);

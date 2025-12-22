@@ -1,13 +1,13 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.renderer;
 
+import nl.colorize.util.FloatStats;
 import nl.colorize.util.Stopwatch;
-import nl.colorize.util.stats.Aggregate;
 
 import java.util.Deque;
 import java.util.LinkedHashMap;
@@ -83,7 +83,7 @@ public class FrameStats {
      */
     public int getAverageTimeMS(String phase) {
         PhaseStats phaseStats = prepare(phase);
-        return (int) Aggregate.average(phaseStats.values);
+        return (int) FloatStats.of(phaseStats.values).average();
     }
 
     /**

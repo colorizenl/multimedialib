@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -10,7 +10,7 @@ import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Angle;
 import nl.colorize.multimedialib.math.Point3D;
-import nl.colorize.util.stats.Aggregate;
+import nl.colorize.util.FloatStats;
 
 /**
  * Transformation matrix that controls how polygonal 3D graphics are displayed.
@@ -115,9 +115,9 @@ public class Transform3D {
             rotationZ.degrees() + other.rotationZ.degrees()
         );
         combined.setScale(
-            Aggregate.multiplyPercentage(scaleX, other.scaleX),
-            Aggregate.multiplyPercentage(scaleY, other.scaleY),
-            Aggregate.multiplyPercentage(scaleZ, other.scaleZ)
+            FloatStats.multiplyPercentage(scaleX, other.scaleX),
+            FloatStats.multiplyPercentage(scaleY, other.scaleY),
+            FloatStats.multiplyPercentage(scaleZ, other.scaleZ)
         );
         return combined;
     }

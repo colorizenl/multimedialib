@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -592,6 +592,20 @@ public class SceneManagerTest {
         renderer.doFrame();
         assertEquals(1, events.size());
         assertEquals(0, errors.size());
+    }
+
+    @Test
+    void attachTimerWithCallback() {
+        List<String> events = new ArrayList<>();
+        context.attachTimer(new Timer(2f),
+            value -> events.add(String.format("%.0f", value)),
+            () -> events.add("complete"));
+
+        context.doFrame(1f);
+        context.doFrame(1f);
+        context.doFrame(1f);
+
+        assertEquals(List.of("1", "2", "complete"), events);
     }
 
     private record Counter(List<String> frames) implements Scene {

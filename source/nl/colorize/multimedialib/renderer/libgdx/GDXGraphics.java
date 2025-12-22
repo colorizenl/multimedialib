@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -50,7 +50,7 @@ import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.multimedialib.stage.Transform3D;
-import nl.colorize.util.stats.Cache;
+import nl.colorize.util.Cache;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -247,13 +247,14 @@ public class GDXGraphics implements StageVisitor, StageSubscriber {
 
     @Override
     public void drawCircle(Primitive graphic, Circle circle, Transform globalTransform) {
-        float x = toScreenX(circle.center().x());
-        float y = toScreenY(circle.center().y());
-        float radius = circle.radius() * canvas.getZoomLevel();
+        float width = circle.radius() * canvas.getZoomLevel() * 2f;
+        float height = circle.radius() * canvas.getZoomLevel() * 2f;
+        float x = toScreenX(circle.center().x()) - width / 2f;
+        float y = toScreenY(circle.center().y()) - height / 2f;
 
         switchMode(false, true);
         shapeBatch.setColor(getPrimitiveColor(graphic, globalTransform));
-        shapeBatch.circle(x, y, radius, CIRCLE_SEGMENTS);
+        shapeBatch.ellipse(x, y, width, height, CIRCLE_SEGMENTS);
     }
 
     @Override

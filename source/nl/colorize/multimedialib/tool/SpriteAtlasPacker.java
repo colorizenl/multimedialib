@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -16,9 +16,11 @@ import nl.colorize.util.cli.CommandLineArgumentParser;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 /**
  * Command line tool that generates a sprite atlas from a directory of images.
@@ -68,9 +70,8 @@ public class SpriteAtlasPacker {
             return List.of(inputDir);
         }
 
-        try {
-            return Files.walk(inputDir.toPath())
-                .map(path -> path.toFile())
+        try (Stream<Path> stream = Files.walk(inputDir.toPath())) {
+            return stream.map(path -> path.toFile())
                 .filter(File::isDirectory)
                 .filter(this::containsImages)
                 .toList();

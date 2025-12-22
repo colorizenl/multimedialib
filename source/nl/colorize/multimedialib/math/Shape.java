@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -22,9 +22,6 @@ public interface Shape {
 
     public Point2D getCenter();
 
-    /**
-     * Returns whether this shape contains the specified point.
-     */
     public boolean contains(Point2D p);
 
     /**

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -110,7 +110,6 @@ public class GDXRenderer implements Renderer, SceneContext, ApplicationListener 
 
     private static final int TEXTURE_FLAGS = Position | Normal | TextureCoordinates;
     private static final int SPHERE_SEGMENTS = 32;
-    private static final float HALF_PI = (float) Math.PI / 2f;
     private static final Logger LOGGER = LogHelper.getLogger(GDXRenderer.class);
 
     public GDXRenderer() {

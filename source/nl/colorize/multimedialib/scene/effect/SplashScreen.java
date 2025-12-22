@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -19,8 +19,8 @@ import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.LoadStatus;
 import nl.colorize.multimedialib.stage.Primitive;
+import nl.colorize.util.FloatStats;
 import nl.colorize.util.Platform;
-import nl.colorize.util.stats.Aggregate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -114,7 +114,7 @@ public class SplashScreen implements Scene {
             .filter(LoadStatus::isLoaded)
             .count();
 
-        float loadDelta = Aggregate.fraction(completed, loading.size());
+        float loadDelta = FloatStats.percentage(completed, loading.size()) / 100f;
         float delayDelta = delay.isCompleted() ? 1f : delay.getRatio();
         float delta = 0.5f * loadDelta + 0.5f * delayDelta;
         foreground.setShape(new Rect(-barWidth / 2f, -barHeight / 2f, delta * barWidth, barHeight));

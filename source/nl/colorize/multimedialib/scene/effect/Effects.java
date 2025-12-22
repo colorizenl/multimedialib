@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -63,8 +63,9 @@ public final class Effects {
             text.setText(visibleText);
         };
 
-        return new FluentScene(onFrame)
-            .withCompletion(timeline::isCompleted);
+        return FluentScene.create()
+            .withFrameHandler(onFrame)
+            .withCompletionCheck(timeline::isCompleted);
     }
 
     /**

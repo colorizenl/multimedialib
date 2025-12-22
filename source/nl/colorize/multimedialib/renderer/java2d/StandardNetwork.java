@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -12,8 +12,8 @@ import nl.colorize.multimedialib.renderer.PeerConnection;
 import nl.colorize.multimedialib.renderer.Response;
 import nl.colorize.util.EventQueue;
 import nl.colorize.util.Platform;
+import nl.colorize.util.TupleList;
 import nl.colorize.util.http.URLLoader;
-import nl.colorize.util.stats.TupleList;
 import org.jspecify.annotations.Nullable;
 
 import java.net.http.HttpRequest;

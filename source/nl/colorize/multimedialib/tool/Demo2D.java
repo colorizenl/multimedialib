@@ -1,19 +1,23 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
 package nl.colorize.multimedialib.tool;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.Streams;
 import com.google.common.net.HttpHeaders;
+import nl.colorize.multimedialib.math.Angle;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Point2D;
+import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.RandomGenerator;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Region;
+import nl.colorize.multimedialib.math.Shape;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.renderer.InputDevice;
@@ -125,7 +129,11 @@ public class Demo2D implements Scene, ErrorHandler {
         audioClip = mediaLoader.loadAudio(AUDIO_FILE);
 
         initHUD();
-        initEffects();
+        initLogoEffect();
+        initShapeEffect(new Circle(20), 200);
+        initRotatingShapeEffect(Polygon.createCircle(20, 6), 300);
+        initMovingShapeEffect(Polygon.createCircle(20, 6), Polygon.createCircle(20, 6), 400);
+        initWipeEffect();
         attachSwipeTracker();
         sendHttpRequest(context.getNetwork());
         loadApplicationData();
@@ -189,7 +197,13 @@ public class Demo2D implements Scene, ErrorHandler {
         context.attachClickHandler(bounds, click);
     }
 
-    private void initEffects() {
+    private void initWipeEffect() {
+        Image diamond = context.getMediaLoader().loadImage(ParticleWipe.DIAMOND);
+        ParticleWipe wipe = new ParticleWipe(diamond, COLORIZE_COLOR, 1.5f, true);
+        context.attach(wipe);
+    }
+
+    private void initLogoEffect() {
         Timeline timeline = new Timeline(Interpolation.LINEAR, true);
         timeline.addKeyFrame(0f, 0f);
         timeline.addKeyFrame(2f, 1f);
@@ -199,14 +213,62 @@ public class Demo2D implements Scene, ErrorHandler {
         hudLayer.addChild(sprite);
 
         context.attachTimeline(timeline, value -> {
-            sprite.setPosition(context.getCanvas().getWidth() / 2f, context.getCanvas().getHeight() - 50);
+            sprite.setPosition(600, context.getCanvas().getHeight() - 50);
             sprite.getTransform().setScale(80 + value * 40f);
         });
         context.attach(dt -> sprite.getTransform().addRotation(dt * 100f));
+    }
 
-        Image diamond = context.getMediaLoader().loadImage(ParticleWipe.DIAMOND);
-        ParticleWipe wipe = new ParticleWipe(diamond, COLORIZE_COLOR, 1.5f, true);
-        context.attach(wipe);
+    private Primitive initShapeEffect(Shape shape, int xOffset) {
+        Primitive prim = new Primitive(shape, RED_BUTTON);
+        hudLayer.addChild(prim);
+
+        context.attach(() -> {
+            boolean hover = Streams.stream(context.getInput().getPointers())
+                .map(Pointer::getPosition)
+                .anyMatch(p -> prim.getStageShape().contains(p));
+
+            prim.setPosition(xOffset, context.getCanvas().getHeight() - 40);
+            prim.setColor(hover ? WHITE : RED_BUTTON);
+        });
+
+        return prim;
+    }
+
+    private void initRotatingShapeEffect(Polygon shape, int xOffset) {
+        Timeline timeline = new Timeline(Interpolation.LINEAR, true)
+            .addKeyFrame(0f, 0f)
+            .addKeyFrame(10f, 360f);
+
+        Primitive prim = initShapeEffect(shape, xOffset);
+        context.attachTimeline(timeline, value -> {
+            Polygon rotatedShape = shape.rotate(new Angle(value));
+            prim.setShape(rotatedShape);
+        });
+    }
+
+    private void initMovingShapeEffect(Polygon left, Polygon right, int xOffset) {
+        Primitive leftPrimitive = new Primitive(left, RED_BUTTON);
+        hudLayer.addChild(leftPrimitive);
+
+        Primitive rightPrimitive = new Primitive(right, RED_BUTTON);
+        hudLayer.addChild(rightPrimitive);
+
+        Timeline timeline = new Timeline(Interpolation.LINEAR, true)
+            .addKeyFrame(0f, xOffset + 100)
+            .addKeyFrame(2f, xOffset)
+            .addKeyFrame(4f, xOffset + 100);
+
+        context.attach(deltaTime -> {
+            timeline.movePlayhead(deltaTime);
+            leftPrimitive.setPosition(xOffset, context.getCanvas().getHeight() - 40);
+            rightPrimitive.setPosition(timeline.getValue(), context.getCanvas().getHeight() - 40);
+
+            Polygon currentLeft = (Polygon) leftPrimitive.getStageShape();
+            Polygon currentRight = (Polygon) rightPrimitive.getStageShape();
+            leftPrimitive.setColor(currentLeft.intersects(currentRight) ? WHITE : RED_BUTTON);
+            rightPrimitive.setColor(currentLeft.intersects(currentRight) ? WHITE : RED_BUTTON);
+        });
     }
 
     private void attachSwipeTracker() {

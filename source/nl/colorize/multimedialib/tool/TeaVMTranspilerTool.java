@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -33,12 +33,14 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -366,9 +368,8 @@ public class TeaVMTranspilerTool {
     }
 
     private List<ResourceFile> gatherApplicationResourceFiles() {
-        try {
-            return Files.walk(resourceDir.toPath())
-                .map(path -> path.toFile())
+        try (Stream<Path> stream = Files.walk(resourceDir.toPath())) {
+            return stream.map(path -> path.toFile())
                 .filter(file -> !file.isDirectory() && !file.getName().startsWith("."))
                 .filter(file -> !file.getAbsolutePath().contains("/lib/"))
                 .map(ResourceFile::new)

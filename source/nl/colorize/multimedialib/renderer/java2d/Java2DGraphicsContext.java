@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -28,7 +28,7 @@ import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.multimedialib.stage.Transform3D;
-import nl.colorize.util.stats.Cache;
+import nl.colorize.util.Cache;
 import nl.colorize.util.swing.Utils2D;
 
 import java.awt.AlphaComposite;
@@ -114,7 +114,7 @@ public class Java2DGraphicsContext implements StageVisitor {
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(graphic.getTransform().getAlpha());
         g2.setStroke(new BasicStroke(graphic.getStroke()));
-        g2.setColor(getPrimitiveColor(graphic, globalTransform));
+        g2.setColor(getPrimitiveColor(graphic));
         g2.drawLine(Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1));
         g2.setComposite(originalComposite);
     }
@@ -124,7 +124,7 @@ public class Java2DGraphicsContext implements StageVisitor {
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(graphic.getTransform().getAlpha());
         g2.setStroke(new BasicStroke(graphic.getStroke()));
-        g2.setColor(getPrimitiveColor(graphic, globalTransform));
+        g2.setColor(getPrimitiveColor(graphic));
 
         for (Line segment : line.getSegments()) {
             float x0 = canvas.toScreenX(segment.start().x());
@@ -147,7 +147,7 @@ public class Java2DGraphicsContext implements StageVisitor {
 
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(globalTransform.getAlpha());
-        g2.setColor(getPrimitiveColor(graphic, globalTransform));
+        g2.setColor(getPrimitiveColor(graphic));
         g2.fillRect(Math.round(screenX), Math.round(screenY), Math.round(screenWidth),
             Math.round(screenHeight));
         g2.setComposite(originalComposite);
@@ -155,7 +155,7 @@ public class Java2DGraphicsContext implements StageVisitor {
 
     @Override
     public void drawCircle(Primitive graphic, Circle circle, Transform globalTransform) {
-        Color color = getPrimitiveColor(graphic, globalTransform);
+        Color color = getPrimitiveColor(graphic);
         CircleImage key = new CircleImage(circle.radius(), color);
         BufferedImage image = circleCache.get(key);
 
@@ -180,12 +180,12 @@ public class Java2DGraphicsContext implements StageVisitor {
 
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(globalTransform.getAlpha());
-        g2.setColor(getPrimitiveColor(graphic, globalTransform));
+        g2.setColor(getPrimitiveColor(graphic));
         g2.fillPolygon(px, py, polygon.getNumPoints());
         g2.setComposite(originalComposite);
     }
 
-    private Color getPrimitiveColor(Primitive primitive, Transform globalTransform) {
+    private Color getPrimitiveColor(Primitive primitive) {
         ColorRGB color = primitive.getColor();
         return colorCache.get(color);
     }
@@ -294,11 +294,13 @@ public class Java2DGraphicsContext implements StageVisitor {
     private record CircleImage(float radius, Color color) {
 
         public BufferedImage render() {
-            int size = Math.round(radius * 2f);
-            BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+            int sizeX = Math.round(radius * 2f);
+            int sizeY = Math.round(radius * 2f);
+
+            BufferedImage image = new BufferedImage(sizeX, sizeY, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g2 = Utils2D.createGraphics(image, true, false);
             g2.setColor(color);
-            g2.fillOval(0, 0, size, size);
+            g2.fillOval(0, 0, sizeX, sizeY);
             g2.dispose();
             return image;
         }

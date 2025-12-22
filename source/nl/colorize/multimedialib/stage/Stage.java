@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -217,7 +217,7 @@ public final class Stage {
     }
 
     private void visitPrimitive(Primitive graphic, Transform globalTransform, StageVisitor visitor) {
-        Shape displayedShape = graphic.getShape().reposition(globalTransform.getPosition());
+        Shape displayedShape = graphic.getRawShape().reposition(globalTransform.getPosition());
 
         switch (displayedShape) {
             case Line line -> visitor.drawLine(graphic, line, globalTransform);

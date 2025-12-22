@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -33,10 +33,10 @@ import nl.colorize.multimedialib.stage.SpriteAtlas;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform3D;
 import nl.colorize.util.ResourceFile;
+import nl.colorize.util.Tuple;
+import nl.colorize.util.TupleList;
 import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
-import nl.colorize.util.stats.Tuple;
-import nl.colorize.util.stats.TupleList;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -325,9 +325,6 @@ public class Demo3D implements Scene, ErrorHandler {
         float startX = transform.getRotationX().degrees();
         float startY = transform.getRotationY().degrees();
         float startZ = transform.getRotationZ().degrees();
-        float endX = startX + deltaX;
-        float endY = startY + deltaY;
-        float endZ = startZ + deltaZ;
 
         Timeline timeline = new Timeline(Interpolation.EASE);
         timeline.addKeyFrame(0f, 0f);

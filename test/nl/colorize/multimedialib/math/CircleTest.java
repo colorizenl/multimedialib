@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,12 +8,13 @@ package nl.colorize.multimedialib.math;
 
 import org.junit.jupiter.api.Test;
 
+import static nl.colorize.multimedialib.math.Point2D.EPSILON;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class CircleTest {
 
     @Test
-    public void testContainsPoint() {
+    public void circleContains() {
         Circle circle = new Circle(10f, 10f, 10f);
 
         assertTrue(circle.contains(new Point2D(10f, 10f)));
@@ -22,6 +23,16 @@ public class CircleTest {
 
         assertFalse(circle.contains(new Point2D(0f, 0f)));
         assertFalse(circle.contains(new Point2D(20f, 20f)));
+    }
+
+    @Test
+    void reposition() {
+        Circle original = new Circle(new Point2D(10, 20), 30);
+        Circle result = original.reposition(new Point2D(50, 60));
+
+        assertEquals(60f, result.getCenter().x(), EPSILON);
+        assertEquals(80f, result.getCenter().y(), EPSILON);
+        assertEquals(30f, result.radius(), EPSILON);
     }
 
     @Test

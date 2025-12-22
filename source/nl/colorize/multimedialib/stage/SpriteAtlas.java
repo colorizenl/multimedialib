@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -9,7 +9,7 @@ package nl.colorize.multimedialib.stage;
 import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.util.TextUtils;
-import nl.colorize.util.stats.Cache;
+import nl.colorize.util.Cache;
 
 import java.util.HashMap;
 import java.util.List;

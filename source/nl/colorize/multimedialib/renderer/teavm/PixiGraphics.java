@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -39,8 +39,8 @@ import nl.colorize.multimedialib.stage.StageSubscriber;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.multimedialib.stage.Transform3D;
+import nl.colorize.util.Cache;
 import nl.colorize.util.TextUtils;
-import nl.colorize.util.stats.Cache;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
 import org.teavm.jso.dom.html.HTMLImageElement;
 
@@ -62,6 +62,7 @@ public class PixiGraphics implements TeaGraphics, StageSubscriber {
     private Cache<TeaImage, PixiTexture> textureCache;
 
     private static final int TEXTURE_CACHE_SIZE = 2048;
+    private static final int CIRCLE_SEGMENTS = 32;
 
     public PixiGraphics() {
         this.displayObjects = new HashMap<>();
@@ -304,17 +305,9 @@ public class PixiGraphics implements TeaGraphics, StageSubscriber {
 
     @Override
     public void drawCircle(Primitive graphic, Circle circle, Transform globalTransform) {
-        PixiDisplayObject displayObject = getDisplayObject(graphic);
-
-        displayObject.clear();
-        displayObject.beginFill(graphic.getColor().getRGB(), 1f);
-        displayObject.drawCircle(
-            toScreenX(circle.center().x()),
-            toScreenY(circle.center().y()),
-            circle.radius() * canvas.getZoomLevel()
-        );
-        displayObject.endFill();
-        displayObject.setAlpha(globalTransform.getAlpha() / 100f);
+        Polygon polygon = Polygon.createEllipse(circle.getCenter(),
+            circle.radius(), circle.radius(), CIRCLE_SEGMENTS);
+        drawPolygon(graphic, polygon, globalTransform);
     }
 
     @Override

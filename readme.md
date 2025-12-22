@@ -1,9 +1,9 @@
 MultimediaLib
 =============
 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/nl.colorize/multimedialib/badge.svg)](
+[![Maven Central](https://img.shields.io/maven-central/v/nl.colorize/multimedialib)](
 https://central.sonatype.com/artifact/nl.colorize/multimedialib)
-[![Documentation](https://img.shields.io/badge/docs-javadoc-blue)](
+[![Documentation](https://img.shields.io/badge/docs-javadoc-yellow)](
 https://api.clrz.nl/multimedialib)
 [![License](https://img.shields.io/badge/license-apache_2.0-purple)](
 https://www.apache.org/licenses/LICENSE-2.0)
@@ -32,17 +32,21 @@ Usage
 The library is available from the Maven Central repository. To use it in a Maven project, add it 
 to the dependencies section in `pom.xml`:
 
-    <dependency>
-        <groupId>nl.colorize</groupId>
-        <artifactId>multimedialib</artifactId>
-        <version>2025.3</version>
-    </dependency>  
+```xml
+<dependency>
+    <groupId>nl.colorize</groupId>
+    <artifactId>multimedialib</artifactId>
+    <version>2026.1</version>
+</dependency>  
+```
     
 The library can also be used in Gradle projects:
 
-    dependencies {
-        implementation "nl.colorize:multimedialib:2025.3"
-    }
+```groovy
+dependencies {
+    implementation "nl.colorize:multimedialib:2026.1"
+}
+```
     
 Supported platforms
 -------------------
@@ -198,12 +202,6 @@ other tools for each supported platform. Other tools can be used to create a nat
 - [Cordova](https://cordova.apache.org) can wrap the web application in a hybrid web/native app
   for Android, iOS, and Mac.
 
-### Application icons
-
-MultimediaLib includes a command line tool that generates application icons for all supported
-platforms, based on a single PNG image. This tool is called `IconTool`, and takes the arguments
-`--input` with the original 512x125 PNG file, and `--output` for the output directory.
-
 More documentation
 ------------------
 
@@ -215,7 +213,7 @@ Build instructions
 
 Building the library requires the following:
 
-- [Java JDK](http://java.oracle.com) 21+
+- [Java JDK](http://java.oracle.com) 25+
 - [Gradle](http://gradle.org)
 
 The following Gradle build tasks are available:
@@ -241,7 +239,7 @@ so you may want to consider introducing similar tests for your application code.
 License
 -------
 
-Copyright 2009-2025 Colorize
+Copyright 2009-2026 Colorize
 
 > Licensed under the Apache License, Version 2.0 (the "License");
 > you may not use this file except in compliance with the License.

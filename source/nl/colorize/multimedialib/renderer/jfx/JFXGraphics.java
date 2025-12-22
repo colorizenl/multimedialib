@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -38,7 +38,7 @@ import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.multimedialib.stage.Transform3D;
-import nl.colorize.util.stats.Cache;
+import nl.colorize.util.Cache;
 
 import java.util.List;
 
@@ -158,16 +158,18 @@ public class JFXGraphics implements StageVisitor {
 
     @Override
     public void drawPolygon(Primitive graphic, Polygon polygon, Transform globalTransform) {
-        double[] screenX = new double[polygon.getNumPoints()];
-        double[] screenY = new double[polygon.getNumPoints()];
-
-        for (int i = 0; i < polygon.getNumPoints(); i++) {
-            screenX[i] = toScreenX(polygon.getPointX(i));
-            screenX[i] = toScreenY(polygon.getPointY(i));
-        }
+        List<Point2D> screenPoints = polygon.points().stream()
+            .map(p -> new Point2D(toScreenX(p.x()), toScreenY(p.y())))
+            .toList();
 
         gc.setFill(toColor(graphic.getColor(), globalTransform.getAlpha()));
-        gc.fillPolygon(screenX, screenY, polygon.getNumPoints());
+        gc.beginPath();
+        gc.moveTo(screenPoints.getFirst().x(), screenPoints.getFirst().y());
+        for (int i = 1; i < screenPoints.size(); i++) {
+            gc.lineTo(screenPoints.get(i).x(), screenPoints.get(i).y());
+        }
+        gc.fill();
+        gc.closePath();
     }
 
     @Override

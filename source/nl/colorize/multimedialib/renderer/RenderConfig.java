@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -25,8 +25,8 @@ import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.util.Development;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
+import nl.colorize.util.Tuple;
 import nl.colorize.util.http.PostData;
-import nl.colorize.util.stats.Tuple;
 
 import java.io.File;
 import java.util.ArrayList;

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -9,7 +9,7 @@ package nl.colorize.multimedialib.stage;
 import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.util.stats.Aggregate;
+import nl.colorize.util.FloatStats;
 
 /**
  * Describes how 2D graphics should be displayed, using a number of
@@ -93,7 +93,7 @@ public class Transform {
         Transform combined = new Transform();
         combined.setVisible(visible && other.visible);
         combined.setPosition(position.add(other.position));
-        combined.setAlpha(Aggregate.multiplyPercentage(alpha, other.alpha));
+        combined.setAlpha(FloatStats.multiplyPercentage(alpha, other.alpha));
         return combined;
     }
 }

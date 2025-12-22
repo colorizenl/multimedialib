@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -13,7 +13,9 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * A two-dimensional convex polygon with float precision coordinates.
+ * A two-dimensional convex polygon with float precision coordinates. The
+ * polygon is described by a number of points, with the polygon's outline
+ * consisting of lines from each point to the next.
  */
 public record Polygon(List<Point2D> points) implements Shape {
 
@@ -37,24 +39,20 @@ public record Polygon(List<Point2D> points) implements Shape {
         return result;
     }
 
-    @Deprecated
     public int getNumPoints() {
         return points.size();
     }
 
-    @Deprecated
+    public Point2D getPoint(int n) {
+        return points.get(n);
+    }
+
     public float getPointX(int n) {
         return points.get(n).x();
     }
 
-    @Deprecated
     public float getPointY(int n) {
         return points.get(n).y();
-    }
-
-    @Deprecated
-    public Point2D getPoint(int n) {
-        return points.get(n);
     }
 
     @Override
@@ -77,7 +75,7 @@ public record Polygon(List<Point2D> points) implements Shape {
             x1 = points.get(i).x();
             y1 = points.get(i).y();
 
-            if ((y1 < py && y2 >= py) || y1 >= py && y2 < py) {
+            if ((y1 < py && y2 >= py) || (y1 >= py && y2 < py)) {
                 if ((py - y1) / (y2 - y1) * (x2 - x1) < (px - x1)) {
                     oddNodes = !oddNodes;
                 }
@@ -242,6 +240,27 @@ public record Polygon(List<Point2D> points) implements Shape {
         return new Polygon(newPoints);
     }
 
+    /**
+     * Returns a new {@link Polygon} that is based on adding the specified
+     * delta to every point in this polygon.
+     */
+    public Polygon move(Point2D delta) {
+        return map(p -> p.add(delta));
+    }
+
+    /**
+     * Returns a new {@link Polygon} that is based on rotating this polygon
+     * around {@link Point2D#ORIGIN}.
+     */
+    public Polygon rotate(Angle angle) {
+        return map(p -> {
+            float radians = angle.getRadians();
+            double rotatedX = p.x() * Math.cos(radians) - p.y() * Math.sin(radians);
+            double rotatedY = p.x() * Math.sin(radians) + p.y() * Math.cos(radians);
+            return new Point2D((float) rotatedX, (float) rotatedY);
+        });
+    }
+
     @Override
     public Polygon reposition(Point2D offset) {
         return map(p -> p.add(offset));
@@ -262,6 +281,22 @@ public record Polygon(List<Point2D> points) implements Shape {
             result.add(new Point2D(points[i], points[i + 1]));
         }
         return new Polygon(result);
+    }
+
+    /**
+     * Convenience method to create a rectangle-shaped polygon with its center
+     * located at the specified origin.
+     */
+    public static Polygon createRectangle(Point2D origin, float width, float height) {
+        Preconditions.checkArgument(width > 0, "Invalid width: " + width);
+        Preconditions.checkArgument(height > 0, "Invalid height: " + height);
+
+        return new Polygon(List.of(
+            new Point2D(origin.x() - width / 2, origin.y() - height / 2),
+            new Point2D(origin.x() + width / 2, origin.y() - height / 2),
+            new Point2D(origin.x() + width / 2, origin.y() + height / 2),
+            new Point2D(origin.x() - width / 2, origin.y() + height / 2)
+        ));
     }
 
     /**
@@ -288,6 +323,36 @@ public record Polygon(List<Point2D> points) implements Shape {
      */
     public static Polygon createCircle(float radius, int numPoints) {
         return createCircle(Point2D.ORIGIN, radius, numPoints);
+    }
+
+    /**
+     * Convenience method to create a polygon in the shape of an ecllipse. The
+     * ellipse will be centered around the specified origin.
+     */
+    public static Polygon createEllipse(Point2D origin, float radiusX, float radiusY, int numPoints) {
+        Preconditions.checkArgument(numPoints >= 4, "Too few points: " + numPoints);
+        Preconditions.checkArgument(radiusX > EPSILON, "Invalid X-radius: " + radiusX);
+        Preconditions.checkArgument(radiusY > EPSILON, "Invalid Y-radius: " + radiusY);
+
+        List<Point2D> points = new ArrayList<>();
+        float aspectRatio = radiusY / radiusX;
+
+        for (int i = 0; i < numPoints; i++) {
+            Vector vector = new Vector(i * (360f / numPoints), radiusX);
+            float x = origin.x() + vector.getX();
+            float y = origin.y() + (vector.getY() * aspectRatio);
+            points.add(new Point2D(x, y));
+        }
+
+        return new Polygon(points);
+    }
+
+    /**
+     * Convenience method to create a polygon in the shape of an ecllipse. The
+     * ellipse will be centered around {@link Point2D#ORIGIN}.
+     */
+    public static Polygon createEllipse(float radiusX, float radiusY, int numPoints) {
+        return createEllipse(Point2D.ORIGIN, radiusX, radiusY, numPoints);
     }
 
     /**

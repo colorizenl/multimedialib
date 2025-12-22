@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -8,8 +8,8 @@ package nl.colorize.multimedialib.renderer;
 
 import com.google.common.net.HttpHeaders;
 import lombok.Getter;
-import nl.colorize.util.stats.Tuple;
-import nl.colorize.util.stats.TupleList;
+import nl.colorize.util.Tuple;
+import nl.colorize.util.TupleList;
 
 import java.util.List;
 import java.util.Optional;

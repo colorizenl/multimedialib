@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -142,10 +142,10 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
         resetState();
         
         for (InputEvent event : bufferSnapshot) {
-            if (event instanceof KeyEvent) {
-                handleKeyEvent((KeyEvent) event);
-            } else if (event instanceof MouseEvent) {
-                handleMouseEvent((MouseEvent) event);
+            if (event instanceof KeyEvent keyEvent) {
+                handleKeyEvent(keyEvent);
+            } else if (event instanceof MouseEvent mouseEvent) {
+                handleMouseEvent(mouseEvent);
             }
         }
     }

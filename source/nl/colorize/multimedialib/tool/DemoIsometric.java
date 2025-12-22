@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -40,11 +40,9 @@ public class DemoIsometric implements Scene {
     private static final int BLOCK_SIZE = 70;
     private static final ColorRGB RED_BLOCK = new ColorRGB(228, 93, 97);
     private static final ColorRGB LIGHT_BLOCK = new ColorRGB(235, 235, 235);
-    private static final ColorRGB HIGHLIGHT = ColorRGB.parseHex("#adadad");
     private static final int DARK_LEFT = -30;
     private static final int DARK_RIGHT = -60;
     private static final float MOVE = 50f;
-    private static final float ZOOM = 20f;
     private static final float SINE_WAVE_SPEED = 2f;
     private static final float SINE_WAVE_AMPLITUDE = 10f;
 
@@ -133,7 +131,7 @@ public class DemoIsometric implements Scene {
         } else if (input.isKeyReleased(KeyCode.DOWN)) {
             cameraTransform.addPosition(0f, -MOVE);
         } else if (input.isKeyReleased(KeyCode.SPACEBAR)) {
-            startSineWave(context, cameraTransform);
+            startSineWave(context);
         }
     }
 
@@ -166,7 +164,7 @@ public class DemoIsometric implements Scene {
         );
     }
 
-    private void startSineWave(SceneContext context, Transform cameraTransform) {
+    private void startSineWave(SceneContext context) {
         Timer waveTimer = Timer.infinite();
 
         Map<Container, Float> orginalBlockY = new HashMap<>();

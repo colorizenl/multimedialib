@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -19,8 +19,8 @@ import nl.colorize.multimedialib.math.Shape3D;
 import nl.colorize.multimedialib.math.Sphere;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
-import nl.colorize.multimedialib.renderer.teavm.ThreeBridge.ThreeObject;
 import nl.colorize.multimedialib.renderer.teavm.ThreeBridge.ThreeLight;
+import nl.colorize.multimedialib.renderer.teavm.ThreeBridge.ThreeObject;
 import nl.colorize.multimedialib.renderer.teavm.ThreeBridge.ThreeVector;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.ColorRGB;
@@ -55,18 +55,14 @@ import java.util.Map;
 public class ThreeGraphics implements TeaGraphics, StageSubscriber {
 
     private Canvas canvas;
-    private TeaMediaLoader mediaLoader;
     private ThreeBridge three;
     private HtmlCanvasGraphics overlay;
     private Map<StageNode3D, ThreeObject> threeObjects;
     private Map<Light, ThreeLight> lights;
 
-    private static final float PI = (float) Math.PI;
-
     @Override
     public void init(SceneContext context) {
         this.canvas = context.getCanvas();
-        this.mediaLoader = (TeaMediaLoader) context.getMediaLoader();
         this.threeObjects = new HashMap<>();
         this.lights = new HashMap<>();
 

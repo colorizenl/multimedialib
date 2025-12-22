@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -13,6 +13,7 @@ import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Shape;
 import nl.colorize.multimedialib.scene.Timer;
 
+import static lombok.AccessLevel.NONE;
 import static lombok.AccessLevel.PROTECTED;
 
 /**
@@ -32,7 +33,7 @@ public class Primitive implements StageNode2D {
     private final Transform transform;
     private final Transform globalTransform;
 
-    private Shape shape;
+    @Getter(NONE) private Shape shape;
     private ColorRGB color;
     private float stroke;
 
@@ -53,6 +54,25 @@ public class Primitive implements StageNode2D {
     @Override
     public Rect getStageBounds() {
         return shape.reposition(globalTransform.getPosition()).getBoundingBox();
+    }
+
+    /**
+     * Returns the "raw" {@link Shape} that was used to create this primitive.
+     * This might differ from this primitive's <em>current</em> appearance on,
+     * the stage, which can be obtained using {@link #getStageShape()}.
+     */
+    public Shape getRawShape() {
+        return shape;
+    }
+
+    /**
+     * Returns a {@link Shape} that represents this primitive's current
+     * appearance on the stage, based on {@link #getGlobalTransform()}.
+     * This is different from the "raw" shape that was used to create this
+     * primitive, which can be obtained by using {@link #getRawShape()}.
+     */
+    public Shape getStageShape() {
+        return shape.reposition(getGlobalTransform().getPosition());
     }
 
     @Override

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -9,8 +9,8 @@ package nl.colorize.multimedialib.math;
 import com.google.common.base.Preconditions;
 
 /**
- * Circle that is defined by its center point and a radius. Circles are
- * immutable and are defined with float precision.
+ * A circle that is defined by its center point and a radius. Instances of this
+ * class are immutable and are defined with float precision.
  */
 public record Circle(Point2D center, float radius) implements Shape {
 
@@ -22,9 +22,6 @@ public record Circle(Point2D center, float radius) implements Shape {
         this(new Point2D(x, y), radius);
     }
 
-    /**
-     * Creates a circle with its center point located at the origin (0, 0).
-     */
     public Circle(float radius) {
         this(Point2D.ORIGIN, radius);
     }
@@ -36,32 +33,21 @@ public record Circle(Point2D center, float radius) implements Shape {
 
     @Override
     public boolean contains(Point2D p) {
-        return calculateDistance(p) <= radius;
+        return center.distanceTo(p) <= radius;
     }
 
+    /**
+     * Returns true if this circle is either partially or entirely contained
+     * within the other circle.
+     */
     public boolean intersects(Circle other) {
-        return calculateDistance(other) <= radius + other.radius;
-    }
-
-    /**
-     * Returns the distance between the center of this circle and the specified
-     * point.
-     */
-    public float calculateDistance(Point2D p) {
-        return center.distanceTo(p);
-    }
-
-    /**
-     * Returns the distance between the center of this circle and the center of
-     * the specified other circle.
-     */
-    public float calculateDistance(Circle other) {
-        return center.distanceTo(other.center);
+        return center.distanceTo(other.center) <= radius + other.radius;
     }
 
     @Override
     public Rect getBoundingBox() {
-        return new Rect(center.x() - radius, center.y() - radius, 2f * radius, 2f * radius);
+        float diameter = 2f * radius;
+        return new Rect(center.x() - radius, center.y() - radius, diameter, diameter);
     }
 
     @Override

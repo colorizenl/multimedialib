@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Colorize MultimediaLib
-// Copyright 2009-2025 Colorize
+// Copyright 2009-2026 Colorize
 // Apache license (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
@@ -97,7 +97,7 @@ public class JavaSoundPlayer implements Audio, LineListener {
 
     @Override
     public void update(LineEvent event) {
-        if (event.getType() == LineEvent.Type.STOP) {
+        if (event.getType().equals(LineEvent.Type.STOP)) {
             stop();
         }
     }
