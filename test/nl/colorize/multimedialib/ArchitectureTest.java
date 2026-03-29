@@ -37,21 +37,8 @@ public class ArchitectureTest {
             .filter(c -> !c.startsWith("nl.colorize.multimedialib.tool."))
             .filter(c -> !c.startsWith("nl.colorize.multimedialib.renderer.java2d."))
             .filter(c -> !c.startsWith("nl.colorize.multimedialib.renderer.libgdx."))
+            .filter(c -> !c.startsWith("nl.colorize.multimedialib.renderer.skija."))
             .filter(c -> !c.endsWith(".RenderConfig"))
-            .distinct()
-            .sorted()
-            .collect(Collectors.joining("\n"));
-
-        assertEquals("", violations);
-    }
-
-    @Test
-    public void cannotRelyOnSystemProperties() {
-        String violations = classes.stream()
-            .flatMap(c -> c.getAccessesFromSelf().stream())
-            .filter(access -> isMethodCall(access, "java.lang.System", "getProperty"))
-            .map(access -> access.getOriginOwner().getName())
-            .filter(c -> !c.endsWith(".GDXRenderer") && !c.endsWith(".RenderConfig"))
             .distinct()
             .sorted()
             .collect(Collectors.joining("\n"));

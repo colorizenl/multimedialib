@@ -29,7 +29,7 @@ public class StandardNetworkTest {
 
         Thread.sleep(3000);
 
-        HeadlessRenderer renderer = new HeadlessRenderer(false);
+        HeadlessRenderer renderer = new HeadlessRenderer();
         renderer.attach(eventQueue, response -> responses.add(response.getBody()), errors::add);
         renderer.doFrame();
 

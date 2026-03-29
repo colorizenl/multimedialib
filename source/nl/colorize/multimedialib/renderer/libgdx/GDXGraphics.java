@@ -17,25 +17,36 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g3d.Environment;
+import com.badlogic.gdx.graphics.g3d.Material;
+import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.PointLight;
+import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Intersector;
+import com.badlogic.gdx.math.Quaternion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.math.collision.BoundingBox;
+import com.badlogic.gdx.math.collision.Ray;
 import com.google.common.base.Preconditions;
+import nl.colorize.multimedialib.math.Box;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
+import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Point3D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.SegmentedLine;
+import nl.colorize.multimedialib.math.Shape3D;
+import nl.colorize.multimedialib.math.Sphere;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
+import nl.colorize.multimedialib.renderer.World3D;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.ColorRGB;
-import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Group;
 import nl.colorize.multimedialib.stage.ImageTransform;
@@ -58,11 +69,14 @@ import java.util.List;
 import java.util.Map;
 
 import static com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888;
+import static com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal;
+import static com.badlogic.gdx.graphics.VertexAttributes.Usage.Position;
+import static com.badlogic.gdx.graphics.VertexAttributes.Usage.TextureCoordinates;
 import static com.badlogic.gdx.utils.Align.center;
 import static com.badlogic.gdx.utils.Align.left;
 import static com.badlogic.gdx.utils.Align.right;
 
-public class GDXGraphics implements StageVisitor, StageSubscriber {
+public class GDXGraphics implements StageVisitor, StageSubscriber, World3D {
 
     private GraphicsMode graphicsMode;
     private Canvas canvas;
@@ -83,6 +97,8 @@ public class GDXGraphics implements StageVisitor, StageSubscriber {
     private static final float FAR_PLANE = 300;
     private static final int CIRCLE_SEGMENTS = 32;
     private static final int MASK_CACHE_SIZE = 1024;
+    private static final int TEXTURE_FLAGS = Position | Normal | TextureCoordinates;
+    private static final int SPHERE_SEGMENTS = 32;
 
     protected GDXGraphics(GraphicsMode graphicsMode, Canvas canvas, GDXMediaLoader mediaLoader) {
         this.graphicsMode = graphicsMode;
@@ -151,10 +167,6 @@ public class GDXGraphics implements StageVisitor, StageSubscriber {
     @Override
     public boolean shouldVisitAllNodes() {
         return false;
-    }
-
-    @Override
-    public void visitContainer(Container container, Transform globalTransform) {
     }
 
     @Override
@@ -469,6 +481,65 @@ public class GDXGraphics implements StageVisitor, StageSubscriber {
         if (shapeBatch.isDrawing()) {
             shapeBatch.end();
         }
+    }
+
+    @Override
+    public Mesh createMesh(Shape3D shape, ColorRGB color) {
+        Material material = createMaterial(color);
+        Model model = buildModel(shape, material);
+        return new GDXModel(model);
+    }
+
+    private Model buildModel(Shape3D shape, Material material) {
+        if (shape instanceof Box box) {
+            ModelBuilder modelBuilder = new ModelBuilder();
+            // Need to manipulate the box created by ModelBuilder so we end
+            // up with the same texture coordinates as used by other renderers.
+            float sizeX = box.depth();
+            float sizeY = box.width();
+            float sizeZ = box.height();
+            Model boxModel = modelBuilder.createBox(sizeX, sizeY, sizeZ, material, TEXTURE_FLAGS);
+            Quaternion quaternionY = new Quaternion().setFromAxis(0, 1, 0, 90);
+            Quaternion quaternionZ = new Quaternion().setFromAxis(1, 0, 0, 90);
+            boxModel.nodes.get(0).rotation.set(quaternionY.mul(quaternionZ));
+            return boxModel;
+        } else if (shape instanceof Sphere sphere) {
+            ModelBuilder modelBuilder = new ModelBuilder();
+            float diameter = sphere.radius() * 2f;
+            return modelBuilder.createSphere(diameter, diameter, diameter,
+                SPHERE_SEGMENTS, SPHERE_SEGMENTS, material, TEXTURE_FLAGS);
+        } else {
+            throw new IllegalArgumentException("Unknown shape: " + shape.getClass());
+        }
+    }
+
+    private Material createMaterial(ColorRGB color) {
+        ColorAttribute colorAttr = ColorAttribute.createDiffuse(GDXMediaLoader.toColor(color));
+        return new Material(colorAttr);
+    }
+
+    @Override
+    public Point2D project(Point3D position) {
+        Vector3 positionVector = new Vector3(position.x(), position.y(), position.z());
+        Vector3 screenPosition = camera.project(positionVector);
+        float canvasX = canvas.toCanvasX(Math.round(screenPosition.x));
+        float canvasY = canvas.toCanvasY(Gdx.graphics.getHeight() - Math.round(screenPosition.y));
+        return new Point2D(canvasX, canvasY);
+    }
+
+    @Override
+    public boolean castPickRay(Point2D canvasPosition, Box area) {
+        float screenX = canvas.toScreenX(canvasPosition.x());
+        float screenY = canvas.toScreenY(canvasPosition.y());
+
+        BoundingBox boundingBox = new BoundingBox(
+            new Vector3(area.x(), area.y(), area.z()),
+            new Vector3(area.getEndX(), area.getEndY(), area.getEndZ())
+        );
+
+        Ray pickRay = camera.getPickRay(screenX, screenY);
+        Vector3 intersection = new Vector3();
+        return Intersector.intersectRayBounds(pickRay, boundingBox, intersection);
     }
 
     private Vector3 toVector(Point3D point) {

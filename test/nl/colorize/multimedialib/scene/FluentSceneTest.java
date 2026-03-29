@@ -27,7 +27,7 @@ class FluentSceneTest {
             .withCompletionCheck(() -> frames.size() >= 3)
             .withCompletionHandler(() -> frames.add("end"));
 
-        HeadlessRenderer context = new HeadlessRenderer(false);
+        HeadlessRenderer context = new HeadlessRenderer();
         context.changeScene(new MockScene());
         context.attach(scene);
         context.doFrame(1f);
@@ -51,7 +51,7 @@ class FluentSceneTest {
             .withCompletionHandler(() -> actions.add("c"))
             .withCompletionHandler(() -> actions.add("d"));
 
-        HeadlessRenderer context = new HeadlessRenderer(false);
+        HeadlessRenderer context = new HeadlessRenderer();
         context.changeScene(new MockScene());
         context.attach(scene);
         context.doFrame(1f);
@@ -70,7 +70,7 @@ class FluentSceneTest {
             .withCompletionCheck(() -> actions.size() >= 3)
             .withCompletionCheck(() -> actions.size() >= 2);
 
-        HeadlessRenderer context = new HeadlessRenderer(false);
+        HeadlessRenderer context = new HeadlessRenderer();
         context.changeScene(new MockScene());
         context.attach(scene);
         context.doFrame(1f);

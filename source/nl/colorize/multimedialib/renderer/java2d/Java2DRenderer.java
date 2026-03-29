@@ -7,10 +7,6 @@
 package nl.colorize.multimedialib.renderer.java2d;
 
 import lombok.Getter;
-import nl.colorize.multimedialib.math.Box;
-import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.math.Point3D;
-import nl.colorize.multimedialib.math.Shape3D;
 import nl.colorize.multimedialib.math.Size;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
@@ -21,9 +17,6 @@ import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.SceneManager;
-import nl.colorize.multimedialib.stage.ColorRGB;
-import nl.colorize.multimedialib.stage.Mesh;
-import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.ResourceFile;
@@ -48,14 +41,10 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.image.BufferStrategy;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static java.awt.image.BufferedImage.TYPE_INT_ARGB;
 
 /**
  * Implementation of a renderer that uses APIs from the Java standard library.
@@ -72,7 +61,6 @@ public class Java2DRenderer implements Renderer, SceneContext, ApplicationMenuLi
     @Getter private StandardMediaLoader mediaLoader;
     @Getter private Network network;
     @Getter private SceneManager sceneManager;
-    @Getter private Stage stage;
 
     private JFrame window;
     private Java2DGraphicsContext graphicsContext;
@@ -98,10 +86,9 @@ public class Java2DRenderer implements Renderer, SceneContext, ApplicationMenuLi
         window = initializeWindow(config.getWindowOptions());
         input = initializeInput();
         mediaLoader = new StandardMediaLoader();
-        graphicsContext = new Java2DGraphicsContext(config.getCanvas(), StandardMediaLoader.fontCache);
+        graphicsContext = new Java2DGraphicsContext(config.getCanvas());
         network = new StandardNetwork();
         sceneManager = new SceneManager(this);
-        stage = new Stage(config.getGraphicsMode(), config.getCanvas());
 
         changeScene(initialScene);
 
@@ -258,50 +245,18 @@ public class Java2DRenderer implements Renderer, SceneContext, ApplicationMenuLi
     }
 
     @Override
-    public Mesh createMesh(Shape3D shape, ColorRGB color) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Point2D project(Point3D position) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean castPickRay(Point2D canvasPosition, Box area) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean isSupported(GraphicsMode graphicsMode) {
-        return graphicsMode == GraphicsMode.MODE_2D;
-    }
-
-    @Override
     public void terminate() {
         System.exit(0);
     }
 
     @Override
-    public void takeScreenshot(File screenshotFile) {
-        Java2DGraphicsContext screenshotContext = new Java2DGraphicsContext(
-            config.getCanvas(), StandardMediaLoader.fontCache);
-        BufferedImage image = new BufferedImage(window.getWidth(), window.getHeight(), TYPE_INT_ARGB);
-        Graphics2D g2 = Utils2D.createGraphics(image, false, false);
-        screenshotContext.bind(g2);
-        getStage().visit(screenshotContext);
-        screenshotContext.dispose();
-
-        try {
-            Utils2D.savePNG(image, screenshotFile);
-        } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Failed to save screenshot", e);
-        }
+    public String getDisplayName() {
+        return "Java2D renderer";
     }
 
     @Override
-    public String getRendererName() {
-        return "Java2D renderer";
+    public List<GraphicsMode> getSupportedGraphicsModes() {
+        return List.of(GraphicsMode.MODE_2D);
     }
 
     @Override

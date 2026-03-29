@@ -15,8 +15,8 @@ import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.SegmentedLine;
 import nl.colorize.multimedialib.mock.MockImage;
 import nl.colorize.multimedialib.mock.MockMesh;
+import nl.colorize.multimedialib.mock.MockWorld3D;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.renderer.headless.CollectingStageVisitor;
 import nl.colorize.multimedialib.stage.ColorRGB;
@@ -57,7 +57,7 @@ class StageTest {
         Sprite spriteB = new Sprite();
         spriteB.addGraphics("b", new MockImage());
 
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
+        Stage stage = new Stage(CANVAS);
         stage.getRoot().addChild(spriteA);
         stage.getRoot().addChild(new Primitive(new Rect(10, 20, 30, 40), ColorRGB.RED));
         stage.getRoot().addChild(spriteB);
@@ -139,7 +139,7 @@ class StageTest {
         Rect rect = new Rect(100, 200, 100, 100);
         Primitive primitive = new Primitive(rect, ColorRGB.RED);
 
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
+        Stage stage = new Stage(CANVAS);
         stage.getRoot().addChild(primitive);
         stage.recalculateGlobalTransform(primitive);
 
@@ -160,7 +160,7 @@ class StageTest {
 
     @Test
     void stringForm() {
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
+        Stage stage = new Stage(CANVAS);
         Container layer = stage.addContainer();
         layer.addChild(new Sprite(new MockImage()));
         layer.addChild(new Primitive(new Rect(10, 10, 200, 200), ColorRGB.RED));
@@ -185,7 +185,7 @@ class StageTest {
         sprite.addGraphics("b", new MockImage(200, 200));
         sprite.changeGraphics("a");
 
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
+        Stage stage = new Stage(CANVAS);
         stage.getRoot().addChild(sprite);
         stage.recalculateGlobalTransform(sprite);
 
@@ -212,7 +212,7 @@ class StageTest {
         Primitive d = new Primitive(new Rect(1, 1, 100, 100), ColorRGB.RED);
         Primitive e = new Primitive(new Rect(2, 2, 200, 200), ColorRGB.BLUE);
 
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
+        Stage stage = new Stage(CANVAS);
         stage.getRoot().addChild(a);
         stage.getRoot().addChild(b);
         a.addChild(d);
@@ -239,7 +239,8 @@ class StageTest {
         Mesh c = new MockMesh();
         Mesh d = new MockMesh();
 
-        Stage stage = new Stage(GraphicsMode.MODE_3D, CANVAS);
+        Stage stage = new Stage(CANVAS);
+        stage.setWorld3D(new MockWorld3D());
         stage.getRoot3D().addChild(a);
         stage.getRoot3D().addChild(b);
         a.addChild(c);
@@ -262,7 +263,7 @@ class StageTest {
     void findStagePath2D() {
         Sprite child = new Sprite(new MockImage(100, 100));
         Container parent = new Container();
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
+        Stage stage = new Stage(CANVAS);
         stage.getRoot().addChild(parent);
         parent.addChild(child);
 
@@ -274,7 +275,8 @@ class StageTest {
     void findStagePath3D() {
         MockMesh child = new MockMesh();
         Group parent = new Group();
-        Stage stage = new Stage(GraphicsMode.MODE_3D, CANVAS);
+        Stage stage = new Stage(CANVAS);
+        stage.setWorld3D(new MockWorld3D());
         stage.getRoot3D().addChild(parent);
         parent.addChild(child);
 
@@ -291,7 +293,7 @@ class StageTest {
         parent.getTransform().setPosition(10, 20);
         parent.addChild(child);
 
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
+        Stage stage = new Stage(CANVAS);
         stage.getRoot().addChild(parent);
         stage.recalculateGlobalTransform(child);
 
@@ -308,7 +310,8 @@ class StageTest {
         parent.getTransform().setPosition(10, 20, 30);
         parent.addChild(child);
 
-        Stage stage = new Stage(GraphicsMode.MODE_3D, CANVAS);
+        Stage stage = new Stage(CANVAS);
+        stage.setWorld3D(new MockWorld3D());
         stage.getRoot3D().addChild(parent);
         stage.recalculateGlobalTransform(child);
 
@@ -320,7 +323,7 @@ class StageTest {
     void subscribe2D() {
         TupleList<Container, StageNode2D> added = new TupleList<>();
 
-        Stage stage = new Stage(GraphicsMode.MODE_2D, CANVAS);
+        Stage stage = new Stage(CANVAS);
         stage.subscribe(new StageSubscriber() {
             @Override
             public void onNodeAdded(Container parent, StageNode2D node) {
@@ -340,7 +343,8 @@ class StageTest {
     void subscribe3D() {
         TupleList<Group, StageNode3D> added = new TupleList<>();
 
-        Stage stage = new Stage(GraphicsMode.MODE_3D, CANVAS);
+        Stage stage = new Stage(CANVAS);
+        stage.setWorld3D(new MockWorld3D());
         stage.subscribe(new StageSubscriber() {
             @Override
             public void onNodeAdded(Group parent, StageNode3D node) {

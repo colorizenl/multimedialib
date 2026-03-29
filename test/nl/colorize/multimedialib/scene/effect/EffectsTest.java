@@ -25,7 +25,7 @@ class EffectsTest {
 
     @BeforeEach
     public void before() {
-        context = new HeadlessRenderer(false);
+        context = new HeadlessRenderer();
     }
 
     @Test
@@ -55,5 +55,64 @@ class EffectsTest {
 
         effect.update(null, 3f);
         assertEquals(List.of("This is a test"), text.getLines());
+    }
+
+    @Test
+    void doNotShowOrientationLockInLandscapeMode() {
+        HeadlessRenderer context = new HeadlessRenderer();
+
+        Sprite sprite = new MockImage("orientation lock").toSprite();
+        Scene orientationLockScreen = Effects.showOrientationLock(sprite);
+        orientationLockScreen.update(context, 1f);
+
+        String expected = """
+            Stage
+                $$root [0]
+            """;
+
+        assertEquals(expected, context.getStage().toString());
+    }
+
+    @Test
+    void showOrientationLockWhenPortraitMode() {
+        HeadlessRenderer context = new HeadlessRenderer();
+        context.getCanvas().resizeScreen(200, 600);
+
+        Sprite sprite = new MockImage("orientation lock").toSprite();
+        context.getStage().getRoot().addChild(sprite);
+
+        Scene orientationLockScreen = Effects.showOrientationLock(sprite);
+        orientationLockScreen.update(context, 1f);
+
+        String expected = """
+            Stage
+                $$root [1]
+                    Sprite [$$default]
+            """;
+
+        assertEquals(expected, context.getStage().toString());
+    }
+
+    @Test
+    void showThenHideOrientationLockWhenSwitching() {
+        HeadlessRenderer context = new HeadlessRenderer();
+
+        Sprite sprite = new MockImage("orientation lock").toSprite();
+        context.getStage().getRoot().addChild(sprite);
+
+        Scene orientationLockScreen = Effects.showOrientationLock(sprite);
+        orientationLockScreen.update(context, 1f);
+        context.getCanvas().resizeScreen(200, 600);
+        orientationLockScreen.update(context, 1f);
+        context.getCanvas().resizeScreen(600, 200);
+        orientationLockScreen.update(context, 1f);
+
+        String expected = """
+            Stage
+                $$root [1]
+                    Sprite [$$default]
+            """;
+
+        assertEquals(expected, context.getStage().toString());
     }
 }

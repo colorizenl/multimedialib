@@ -11,7 +11,6 @@ import lombok.Getter;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.util.ResourceFile;
 
 import java.awt.image.BufferedImage;
 
@@ -24,21 +23,19 @@ public class AWTImage implements Image {
 
     private BufferedImage image;
     private Region region;
-    private ResourceFile origin;
 
-    public AWTImage(BufferedImage image, ResourceFile origin) {
+    public AWTImage(BufferedImage image) {
         Preconditions.checkArgument(image != null, "Image is null");
 
         this.image = image;
         this.region = new Region(0, 0, image.getWidth(), image.getHeight());
-        this.origin = origin;
     }
 
     @Override
     public Image extractRegion(Region subRegion) {
         BufferedImage subImage = image.getSubimage(
             subRegion.x(), subRegion.y(), subRegion.width(), subRegion.height());
-        return new AWTImage(subImage, origin);
+        return new AWTImage(subImage);
     }
 
     @Override
@@ -52,13 +49,5 @@ public class AWTImage implements Image {
         int rgba = image.getRGB(x, y);
         int alpha = (rgba >> 24) & 0xFF;
         return Math.round(alpha / 2.55f);
-    }
-
-    @Override
-    public String toString() {
-        if (origin == null) {
-            return "AWTImage";
-        }
-        return origin.toString();
     }
 }

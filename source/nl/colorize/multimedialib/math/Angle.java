@@ -6,6 +6,9 @@
 
 package nl.colorize.multimedialib.math;
 
+import java.util.List;
+import java.util.stream.IntStream;
+
 /**
  * Immutable angle in degrees, in the range between 0° and 360°. Angles are
  * normalized upon creation, so {@code new Angle(20).equals(new Angle(380)}.
@@ -13,6 +16,8 @@ package nl.colorize.multimedialib.math;
 public record Angle(float degrees) {
 
     public static final Angle ORIGIN = new Angle(0f);
+    public static final List<Angle> CARDINAL = toAngles(0, 90, 180, 270);
+    public static final List<Angle> INTERCARDINAL = toAngles(0, 45, 90, 135, 180, 225, 270, 315);
 
     public Angle(float degrees) {
         while (degrees < 0f) {
@@ -26,10 +31,12 @@ public record Angle(float degrees) {
     }
 
     /**
-     * Returns the difference between this angle and the specified other angle,
-     * in the range between 0 and 180 degrees.
+     * Returns the absolute difference between this angle and the specified
+     * other angle, in the range between 0 and 180 degrees. For example,
+     * if this angle is 350 degrees, and {@code other} is 10 degrees,
+     * this will return 20.
      */
-    public float absoluteDifference(Angle other) {
+    public float distanceTo(Angle other) {
         float phi = Math.abs(other.degrees - degrees) % 360f;
         if (phi > 180f) {
             phi = 360f - phi;
@@ -39,9 +46,11 @@ public record Angle(float degrees) {
 
     /**
      * Returns the difference between this angle and the specified other angle,
-     * in the range between -180 and 180 degrees.
+     * in the range between -180 and 180 degrees. This method is similar to
+     * {@link #distanceTo(Angle)}, but also considers the "direction" of the
+     * difference and can therefore return negative values.
      */
-    public float relativeDifference(Angle other) {
+    public float angleTo(Angle other) {
         float phi = other.degrees - degrees;
 
         if (phi > 180f) {
@@ -81,5 +90,11 @@ public record Angle(float degrees) {
      */
     public static Angle fromRadians(float radians) {
         return new Angle((float) Math.toDegrees(radians));
+    }
+
+    private static List<Angle> toAngles(int... values) {
+        return IntStream.of(values)
+            .mapToObj(Angle::new)
+            .toList();
     }
 }

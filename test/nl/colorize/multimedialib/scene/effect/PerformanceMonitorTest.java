@@ -17,7 +17,7 @@ class PerformanceMonitorTest {
     @Test
     void depictPerformanceStats() {
         PerformanceMonitor performanceMonitor = new PerformanceMonitor(true);
-        HeadlessRenderer renderer = new HeadlessRenderer(false);
+        HeadlessRenderer renderer = new HeadlessRenderer();
         renderer.start(performanceMonitor);
 
         for (int i = 0; i < 20; i++) {

@@ -69,7 +69,7 @@ public class Demo3D implements Scene, ErrorHandler {
     private Container hudContainer;
 
     private static final ResourceFile CRATE_MODEL_FILE = new ResourceFile("demo/crate.vox.obj");
-    private static final ResourceFile LOGO_FILE = new ResourceFile("colorize-logo.png");
+    private static final ResourceFile LOGO_FILE = new ResourceFile("colorize-emblem-64.png");
     private static final ColorRGB BLACK_TILE_COLOR = new ColorRGB(50, 50, 50);
     private static final int GRID_SIZE = 5;
     private static final int NUM_MODELS = 50;
@@ -102,7 +102,8 @@ public class Demo3D implements Scene, ErrorHandler {
         for (int i = -GRID_SIZE; i <= GRID_SIZE; i++) {
             for (int j = -GRID_SIZE; j <= GRID_SIZE; j++) {
                 ColorRGB color = white ? WHITE : BLACK_TILE_COLOR;
-                Mesh tile = context.createMesh(Box.around(Point3D.ORIGIN, 1f, EPSILON, 1f), color);
+                Box box = Box.around(Point3D.ORIGIN, 1f, EPSILON, 1f);
+                Mesh tile = context.getStage().getWorld3D().createMesh(box, color);
                 if (i == 0 && j == 0) {
                     tile.applyTexture(logo);
                 }
@@ -120,7 +121,8 @@ public class Demo3D implements Scene, ErrorHandler {
         Sprite sprite = createMarioSprite();
 
         for (int i = 0; i < NUM_MODELS; i++) {
-            Mesh mesh = context.createMesh(Box.around(Point3D.ORIGIN, 0.96f, 1.28f, EPSILON), WHITE);
+            Box box = Box.around(Point3D.ORIGIN, 0.96f, 1.28f, EPSILON);
+            Mesh mesh = context.getStage().getWorld3D().createMesh(box, WHITE);
             mesh.getTransform().setPosition(generateRandomModelPosition());
             mesh.applyDynamicTexture(sprite.copy());
             context.getStage().getRoot3D().addChild(mesh);
@@ -193,7 +195,7 @@ public class Demo3D implements Scene, ErrorHandler {
         context.attach(() -> {
             Transform3D transform = model.getGlobalTransform();
             Point3D worldPosition = transform.getPosition();
-            Point2D canvasPosition = context.project(worldPosition);
+            Point2D canvasPosition = context.getStage().getWorld3D().project(worldPosition);
             String rotation = transform.getRotationX() + " " + transform.getRotationY() +
                 " " + transform.getRotationZ();
             label.setText("3D: " + worldPosition + "\n2D: " + canvasPosition + "\n" + rotation);
@@ -303,7 +305,7 @@ public class Demo3D implements Scene, ErrorHandler {
                 Box tileBounds = Box.around(new Point3D(i, 0, j), 1, EPSILON, 1);
                 Mesh tileModel = tiles.get(new Coordinate(i, j));
 
-                if (context.castPickRay(pointerPosition, tileBounds)) {
+                if (context.getStage().getWorld3D().castPickRay(pointerPosition, tileBounds)) {
                     tileModel.applyColor(RED_BUTTON);
                 }
             }

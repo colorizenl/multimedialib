@@ -9,6 +9,8 @@ package nl.colorize.multimedialib.renderer;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 
+import java.util.List;
+
 /**
  * The renderer acts as the entry point from the application to the underlying
  * platform, managing the animation loop, graphics, audio, and input.
@@ -21,7 +23,10 @@ import nl.colorize.multimedialib.scene.SceneContext;
  * <p>
  * Application code does not interact with the {@link Renderer} directly.
  * Instead, the currently active scene is given access to the renderer in
- * callback methods via the {@link SceneContext}.
+ * callback methods via the {@link SceneContext}. All methods provided by
+ * the {@link Renderer} interface are "safe" to call from outside the
+ * animation loop. Methods that can only be called from within the animation
+ * loop are provided via {@link SceneContext}.
  */
 public interface Renderer {
 
@@ -38,5 +43,7 @@ public interface Renderer {
      */
     public void start(RenderConfig config, Scene initialScene);
 
-    public boolean isSupported(GraphicsMode graphicsMode);
+    public String getDisplayName();
+
+    public List<GraphicsMode> getSupportedGraphicsModes();
 }

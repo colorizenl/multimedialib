@@ -6,6 +6,9 @@
 
 package nl.colorize.multimedialib.tool;
 
+import com.github.xpenatan.gdx.teavm.backends.shared.config.AssetFileHandle;
+import com.github.xpenatan.gdx.teavm.backends.shared.config.compiler.TeaCompiler;
+import com.github.xpenatan.gdx.teavm.backends.web.config.backend.WebBackend;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
@@ -20,27 +23,26 @@ import nl.colorize.util.cli.Arg;
 import nl.colorize.util.cli.CommandLineArgumentParser;
 import nl.colorize.util.cli.CommandLineInterfaceException;
 import nl.colorize.util.http.URLLoader;
+import nl.colorize.util.swing.Utils2D;
 import org.teavm.diagnostics.DefaultProblemTextConsumer;
 import org.teavm.diagnostics.Problem;
 import org.teavm.tooling.ConsoleTeaVMToolLog;
 import org.teavm.tooling.TeaVMTargetType;
 import org.teavm.tooling.TeaVMTool;
 import org.teavm.tooling.TeaVMToolException;
+import org.teavm.vm.TeaVMOptimizationLevel;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -48,6 +50,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * Transpiles MultimediaLib applications to JavaScript using TeaVM. After transpilation
  * has been completed, the generated JavaScript code is combined with the application's
  * resource files and copied to the output directory.
+ * <p>
+ * Applications generated with this tool now follow the same directory structure as the
+ * {@code gdx-teavm} library. However, this structure can still be used when using
+ * other browser-based renderers.
  */
 public class TeaVMTranspilerTool {
 
@@ -66,54 +72,26 @@ public class TeaVMTranspilerTool {
     @Arg(usage = "Build ID used for caching resource files, default is random")
     protected String buildId = String.valueOf(System.currentTimeMillis());
 
-    @Arg(usage = "Minifies the generated JavaScript, off by default")
-    protected boolean minify;
-
     @Arg(usage = "Inserts <meta> tags into the HTML, passed as name=value.", required = false)
     protected String meta;
+
+    @Arg(usage = "Primary application language, defaults to en-US.")
+    protected String language = "en-US";
 
     @Arg(usage = "Overrides the application with the demo application, for testing purposes.")
     protected boolean demo;
 
+    private static final List<String> FRAMEWORK_JS_FILES = List.of(
+        "browser/multimedialib.js",
+        "browser/browser-bridge.js",
+        "browser/peerjs-bridge.js"
+    );
+
     private static final ResourceFile INDEX_FILE = new ResourceFile("browser/index.html");
-    private static final ResourceFile RESOURCES_LIST = new ResourceFile("browser/browser-resources.txt");
-    private static final ResourceFile JS_LIST = new ResourceFile("browser/javascript-libraries.txt");
-    private static final Splitter JS_LIB_SPLITTER = Splitter.on("->").trimResults();
-    private static final String SCRIPT_FILE_NAME = "script-" + System.currentTimeMillis() + ".js";
-    private static final List<String> EXPECTED_RESOURCES = List.of("favicon.png", "apple-favicon.png");
-    private static final Splitter PATH_SPLITTER = Splitter.on("/").omitEmptyStrings();
+    private static final ResourceFile JS_LIBS = new ResourceFile("browser/javascript-libraries.txt");
+    private static final List<String> TEXT_EXTS = List.of(
+        ".atlas", ".csv", ".fnt", ".glsl", ".json", ".md", ".properties", ".txt", ".yaml", ".yml");
     private static final Logger LOGGER = LogHelper.getLogger(TeaVMTranspilerTool.class);
-
-    private static final List<String> TEXT_FILE_TYPES = List.of(
-        ".atlas",
-        ".csv",
-        ".fnt",
-        ".glsl",
-        ".json",
-        ".md",
-        ".properties",
-        ".txt",
-        ".yaml",
-        ".yml",
-        "-manifest"
-    );
-
-    private static final List<String> RESOURCE_FILE_TYPES = List.of(
-        ".css",
-        ".fbx",
-        ".g3db",
-        ".gif",
-        ".gltf",
-        ".jpg",
-        ".mp3",
-        ".mtl",
-        ".obj",
-        ".ogg",
-        ".png",
-        ".svg",
-        ".ttf",
-        ".wav"
-    );
 
     public static void main(String[] argv) {
         CommandLineArgumentParser argParser = new CommandLineArgumentParser("TeaVMTranspilerTool");
@@ -125,19 +103,22 @@ public class TeaVMTranspilerTool {
         Preconditions.checkArgument(resourceDir.exists(),
             "Resource directory not found: " + resourceDir.getAbsolutePath());
 
+        Stopwatch timer = new Stopwatch();
         outputDir.mkdir();
         checkMainClass();
 
         try {
-            cleanOldScripts();
-            copyResources();
+            cleanOutputDir();
             transpile();
-            printSummary();
+            copyFrameworkFiles();
+            copyResources();
+            printSummary(timer);
         } catch (TeaVMToolException | IOException e) {
             LOGGER.log(Level.SEVERE, "Transpiling failed", e);
         }
     }
 
+    @SuppressWarnings("ReturnValueIgnored")
     private void checkMainClass() {
         if (demo) {
             mainClassName = TeaDemoLauncher.class.getName();
@@ -151,14 +132,13 @@ public class TeaVMTranspilerTool {
         }
     }
 
-    private void printSummary() throws IOException {
+    private void printSummary(Stopwatch timer) throws IOException {
         long htmlSize = new File(outputDir, "index.html").length();
-        long jsSize = getScriptFile().length();
-        long resourceSize = FileUtils.countDirectorySize(new File(outputDir, "resources"));
+        long jsSize = new File(outputDir, getScriptFileName()).length();
 
         LOGGER.info("HTML file size:                   " + FileUtils.formatFileSize(htmlSize));
         LOGGER.info("Transpiled JavaScript file size:  " + FileUtils.formatFileSize(jsSize));
-        LOGGER.info("Resource file size:               " + FileUtils.formatFileSize(resourceSize));
+        LOGGER.info("Time taken:                       " + (timer.tock() / 1000L) + "s");
         LOGGER.info("Results saved to " + outputDir.getAbsolutePath());
     }
 
@@ -172,11 +152,11 @@ public class TeaVMTranspilerTool {
         transpiler.setLog(new ConsoleTeaVMToolLog(true));
         transpiler.setMainClass(mainClassName);
         transpiler.setEntryPointName("main");
-        transpiler.setObfuscated(minify);
-        transpiler.setSourceMapsFileGenerated(!minify);
+        transpiler.setObfuscated(false);
+        transpiler.setSourceMapsFileGenerated(true);
         transpiler.setTargetDirectory(outputDir);
         transpiler.setTargetType(TeaVMTargetType.JAVASCRIPT);
-        transpiler.setTargetFileName(SCRIPT_FILE_NAME);
+        transpiler.setTargetFileName(getScriptFileName());
         transpiler.generate();
 
         checkTranspilerOutput(transpiler);
@@ -207,73 +187,82 @@ public class TeaVMTranspilerTool {
         return text;
     }
 
-    protected void copyResources() {
-        List<ResourceFile> applicationResourceFiles = gatherApplicationResourceFiles();
-        inspectApplicationResourceFiles(applicationResourceFiles);
-
-        List<ResourceFile> resourceFiles = new ArrayList<>();
-        resourceFiles.addAll(gatherFrameworkResourceFiles());
-        resourceFiles.addAll(applicationResourceFiles);
-        resourceFiles.add(generateManifest(resourceFiles));
-
-        LOGGER.info("Copying " + resourceFiles.size() + " resource files");
-        
-        List<ResourceFile> textFiles = new ArrayList<>();
-        List<JavaScriptLibrary> jsLibraries = copyJavaScriptLibraries();
-
-        for (ResourceFile file : resourceFiles) {
-            if (isFileType(file, TEXT_FILE_TYPES)) {
-                textFiles.add(file);
-            } else {
-                copyBinaryResourceFile(file);
-            }
+    private void copyFrameworkFiles() throws IOException {
+        for (String jsFilePath : FRAMEWORK_JS_FILES) {
+            ResourceFile inputFile = new ResourceFile(jsFilePath);
+            File outputFile = new File(outputDir, inputFile.getName());
+            Files.writeString(outputFile.toPath(), inputFile.read(), UTF_8);
         }
-
-        rewriteHTML(textFiles, jsLibraries);
     }
 
-    private List<JavaScriptLibrary> copyJavaScriptLibraries() {
-        return JS_LIST.readLines(UTF_8).stream()
+    private void copyResources() throws IOException {
+        File tempDir = FileUtils.createTempDir();
+
+        new TeaCompiler(new WebBackend())
+            .addAssets(new AssetFileHandle(resourceDir.getAbsolutePath()))
+            .setOptimizationLevel(TeaVMOptimizationLevel.SIMPLE)
+            .setMainClass(mainClassName)
+            .setObfuscated(false)
+            .build(tempDir);
+
+        File assetsDir = new File(outputDir, "assets");
+        File scriptsDir = new File(outputDir, "scripts");
+
+        FileUtils.copyDirectory(new File(tempDir, "webapp/assets"), assetsDir);
+        FileUtils.copyDirectory(new File(tempDir, "webapp/scripts"), scriptsDir);
+
+        replaceLoadingImage(assetsDir);
+
+        List<File> textResourceFiles = FileUtils.walkFiles(assetsDir, this::isTextResourceFile);
+        List<File> jsLibraries = copyJavaScriptLibraries(scriptsDir);
+
+        rewriteHTML(textResourceFiles, jsLibraries);
+    }
+
+    private List<File> copyJavaScriptLibraries(File scriptsDir) {
+        return JS_LIBS.readLines(UTF_8).stream()
             .filter(line -> !line.isEmpty() && !line.startsWith("#"))
-            .map(line -> copyJavaScriptLibrary(line))
+            .map(line -> copyJavaScriptLibrary(line, scriptsDir))
             .toList();
     }
 
-    private JavaScriptLibrary copyJavaScriptLibrary(String entry) {
-        List<String> entryParts = JS_LIB_SPLITTER.splitToList(entry);
-        String url = entryParts.getLast();
-        String importAlias = entryParts.size() == 2 ? entryParts.getFirst() : null;
-        JavaScriptLibrary lib = new JavaScriptLibrary(url, importAlias);
-
+    private File copyJavaScriptLibrary(String url, File scriptsDir) {
         try {
             LOGGER.info("Downloading " + url);
             HttpResponse<String> response = URLLoader.get(url);
 
-            File outputFile = new File(outputDir, lib.getOutputFilePath());
-            outputFile.getParentFile().mkdirs();
-            Files.writeString(outputFile.toPath(), response.body());
-            return lib;
+            String fileName = Splitter.on("/").omitEmptyStrings().splitToList(url).getLast();
+            File outputFile = new File(scriptsDir, fileName);
+            Files.writeString(outputFile.toPath(), response.body(), UTF_8);
+            return outputFile;
         } catch (IOException e) {
             throw new RuntimeException("Failed to download " + url, e);
         }
     }
 
-    private boolean isFileType(ResourceFile needle, List<String> haystack) {
-        return haystack.stream()
-            .anyMatch(type -> needle.getName().toLowerCase().endsWith(type));
+    private boolean isTextResourceFile(File file) {
+        return TEXT_EXTS.stream()
+            .anyMatch(type -> file.getName().toLowerCase().endsWith(type));
     }
 
-    private void rewriteHTML(List<ResourceFile> textFiles, List<JavaScriptLibrary> libs) {
-        File outputFile = getOutputFile(INDEX_FILE);
+    private void replaceLoadingImage(File assetsDir) throws IOException {
+        BufferedImage image = new BufferedImage(500, 83, BufferedImage.TYPE_INT_ARGB);
+        File startupImageFile = new File(assetsDir, "startup-logo.png");
+        Utils2D.savePNG(image, startupImageFile);
+    }
 
-        try (PrintWriter writer = new PrintWriter(outputFile, UTF_8.displayName())) {
+    private void rewriteHTML(List<File> textFiles, List<File> jsLibraries) {
+        File outputFile = new File(outputDir, "index.html");
+
+        try (PrintWriter writer = new PrintWriter(outputFile, UTF_8)) {
             for (String line : INDEX_FILE.readLines(UTF_8)) {
                 line = line.replace("{project}", projectName);
-                line = line.replace("{js-libraries}", generateScriptTags(libs));
-                line = line.replace("{teavm-js-file}", SCRIPT_FILE_NAME);
+                line = line.replace("{js-libraries}", generateScriptTags(jsLibraries));
+                line = line.replace("{teavm-js-file}", getScriptFileName());
                 line = line.replace("{timestamp}", generateTimestampTag());
                 line = line.replace("{build-id}", buildId);
                 line = line.replace("{meta}", generateMetaTags());
+                line = line.replace("{language}", language);
                 if (line.trim().equals("{resources}")) {
                     line = generateTextResourceFilesHTML(textFiles);
                 }
@@ -284,28 +273,10 @@ public class TeaVMTranspilerTool {
         }
     }
 
-    private String generateScriptTags(List<JavaScriptLibrary> libs) {
-        String html = libs.stream()
-            .filter(lib -> lib.importAlias == null)
-            .map(lib -> "<script src=\"" + lib.getOutputFilePath() + "\"></script>\n")
+    private String generateScriptTags(List<File> jsLibraries) {
+        return jsLibraries.stream()
+            .map(lib -> "<script src=\"scripts/" + lib.getName() + "\"></script>\n")
             .collect(Collectors.joining(""));
-
-        String importMapTemplate = """
-            <script type="importmap">
-                {
-                    "imports": {
-                        {importmap}
-                    }
-                }
-            </script>
-            """.trim();
-
-        String importMapEntries = libs.stream()
-            .filter(lib -> lib.importAlias != null && !lib.importAlias.isEmpty())
-            .map(lib -> "\"" + lib.importAlias + "\": \"./" + lib.getOutputFilePath() + "\"")
-            .collect(Collectors.joining(",\n            "));
-
-        return html + importMapTemplate.replace("{importmap}", importMapEntries);
     }
 
     private String generateTimestampTag() {
@@ -331,131 +302,55 @@ public class TeaVMTranspilerTool {
         return String.format("<meta name=\"%s\" content=\"%s\" />", parts.get(0), parts.get(1));
     }
 
-    private String generateTextResourceFilesHTML(List<ResourceFile> files) {
+    private String generateTextResourceFilesHTML(List<File> files) throws IOException {
         StringBuilder buffer = new StringBuilder();
 
-        for (ResourceFile file : files) {
+        for (File file : files) {
             String id = normalizeFileName(file).replace(".", "_");
-            String contents = file.read(UTF_8);
+            String contents = Files.readString(file.toPath(), UTF_8);
 
             buffer.append("<div id=\"" + id + "\">");
             buffer.append(XmlEscapers.xmlContentEscaper().escape(contents));
             buffer.append("</div>\n");
         }
 
+        buffer.append("<div id=\"resource-file-manifest\">");
+        buffer.append(XmlEscapers.xmlContentEscaper().escape(generateResourceFileManifest()));
+        buffer.append("</div>\n");
+
         return buffer.toString();
     }
 
-    private void copyBinaryResourceFile(ResourceFile file, File outputFile) {
-        try (InputStream stream = file.openStream()) {
-            byte[] contents = stream.readAllBytes();
-            Files.write(outputFile.toPath(), contents);
-        } catch (IOException e) {
-            throw new RuntimeException("Cannot copy file: " + file, e);
-        }
+    private String generateResourceFileManifest() throws IOException {
+        File assetsDir = new File(outputDir, "assets");
+
+        return FileUtils.walkFiles(assetsDir, f -> true).stream()
+            .filter(file -> !file.getName().endsWith(".js"))
+            .filter(file -> !file.getName().endsWith(".DS_Store"))
+            .map(file -> FileUtils.getRelativePath(file, assetsDir))
+            .distinct()
+            .sorted()
+            .collect(Collectors.joining("\n"));
     }
 
-    private void copyBinaryResourceFile(ResourceFile file) {
-        File outputFile = getOutputFile(file);
-        copyBinaryResourceFile(file, outputFile);
+    private String getScriptFileName() {
+        return "script-" + buildId + ".js";
     }
 
-    private List<ResourceFile> gatherFrameworkResourceFiles() {
-        return RESOURCES_LIST.readLines(UTF_8).stream()
-            .filter(line -> !line.isEmpty() && !line.startsWith("#"))
-            .map(ResourceFile::new)
-            .toList();
-    }
-
-    private List<ResourceFile> gatherApplicationResourceFiles() {
-        try (Stream<Path> stream = Files.walk(resourceDir.toPath())) {
-            return stream.map(path -> path.toFile())
-                .filter(file -> !file.isDirectory() && !file.getName().startsWith("."))
-                .filter(file -> !file.getAbsolutePath().contains("/lib/"))
-                .map(ResourceFile::new)
-                .toList();
-        } catch (IOException e) {
-            throw new MediaException("Cannot read resource files directory: " + resourceDir, e);
-        }
-    }
-
-    private ResourceFile generateManifest(List<ResourceFile> resourceFiles) {
-        try {
-            File tempDir = Files.createTempDirectory("resource-file-manifest").toFile();
-            File manifestFile = new File(tempDir, "resource-file-manifest");
-
-            List<String> entries = resourceFiles.stream()
-                .map(file -> normalizeFileName(file))
-                .filter(file -> !file.endsWith(".js"))
-                .distinct()
-                .sorted()
-                .toList();
-
-            Files.write(manifestFile.toPath(), entries, UTF_8);
-
-            return new ResourceFile(manifestFile);
-        } catch (IOException e) {
-            throw new MediaException("Cannot generate resource file manifest", e);
-        }
-    }
-
-    private File getOutputFile(ResourceFile file) {
-        if (isFileType(file, RESOURCE_FILE_TYPES)) {
-            File resourcesDir = new File(outputDir, "resources");
-            resourcesDir.mkdir();
-            return new File(resourcesDir, normalizeFileName(file));
-        } else {
-            return new File(outputDir, normalizeFileName(file));
-        }
-    }
-
-    protected File getScriptFile() {
-        return new File(outputDir, SCRIPT_FILE_NAME);
-    }
-
-    private String normalizeFileName(ResourceFile file) {
+    private String normalizeFileName(File file) {
         return file.getName().replace("/", "_");
     }
 
-    private void cleanOldScripts() throws IOException {
+    private void cleanOutputDir() throws IOException {
         for (File file : FileUtils.walkFiles(outputDir, f -> f.getName().startsWith("script-"))) {
             FileUtils.delete(file);
         }
-    }
 
-    private void inspectApplicationResourceFiles(List<ResourceFile> resourceFiles) {
-        List<String> fileNames = resourceFiles.stream()
-            .map(ResourceFile::getName)
-            .toList();
-
-        for (String expected : EXPECTED_RESOURCES) {
-            if (!fileNames.contains(expected)) {
-                LOGGER.warning("Missing resource file " + expected);
+        for (String subDirName : List.of("assets", "scripts")) {
+            File subDir = new File(outputDir, subDirName);
+            if (subDir.exists()) {
+                FileUtils.deleteDirectory(subDir);
             }
-        }
-    }
-
-    /**
-     * JavaScript library that was downloaded during the build, and was then
-     * embedded within the application.
-     */
-    private record JavaScriptLibrary(String url, String importAlias) {
-
-        public String getOutputFilePath() {
-            String fileName = PATH_SPLITTER.splitToList(url).getLast();
-
-            if (importAlias == null || importAlias.isEmpty()) {
-                return "libraries/" + fileName;
-            }
-
-            List<String> importPath = PATH_SPLITTER.splitToList(importAlias);
-            List<String> subDirs = importPath.subList(0, importPath.size() - 1);
-
-            List<String> outputFilePath = new ArrayList<>();
-            outputFilePath.add("libraries");
-            outputFilePath.addAll(subDirs);
-            outputFilePath.add(fileName);
-            return String.join("/", outputFilePath);
         }
     }
 }

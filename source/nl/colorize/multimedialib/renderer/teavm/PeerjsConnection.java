@@ -12,7 +12,6 @@ import nl.colorize.util.SubscribableCollection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Stream;
 
 /**
  * Implements the {@link PeerConnection} interface in Java, which is then
@@ -54,8 +53,7 @@ public class PeerjsConnection implements PeerConnection, MessageCallback {
 
     @Override
     public Iterable<PeerMessage> flushReceivedMessages() {
-        Stream<PeerMessage> messages = receivedBuffer.flush();
-        return messages::iterator;
+        return receivedBuffer.flush().toList();
     }
 
     @Override

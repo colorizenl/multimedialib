@@ -6,26 +6,19 @@
 
 package nl.colorize.multimedialib.scene;
 
-import nl.colorize.multimedialib.math.Box;
-import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.math.Point3D;
-import nl.colorize.multimedialib.math.Shape3D;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.RenderConfig;
-import nl.colorize.multimedialib.stage.ColorRGB;
-import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.StageNode2D;
 import nl.colorize.util.EventQueue;
+import nl.colorize.util.Platform;
 import nl.colorize.util.Subject;
 import nl.colorize.util.animation.Timeline;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
@@ -58,7 +51,9 @@ public interface SceneContext {
 
     public SceneManager getSceneManager();
 
-    public Stage getStage();
+    default Stage getStage() {
+        return getSceneManager().getStage();
+    }
 
     default FrameStats getFrameStats() {
         return getSceneManager().getFrameStats();
@@ -155,7 +150,7 @@ public interface SceneContext {
 
     /**
      * Attaches a sub-scene that will update the timer during every frame
-     * update, and will then invoke the specified callback function exactly
+     * update and will then invoke the specified callback function exactly
      * once when the timer has completed.
      */
     default void attachTimer(Timer timer, Runnable callback) {
@@ -218,68 +213,14 @@ public interface SceneContext {
     }
 
     /**
-     * Programmatically creates a 3D polygon mesh with a solid color, based
-     * on the specified shape.
-     *
-     * @throws UnsupportedOperationException if this renderer does not
-     *         support 3D graphics.
+     * Terminates/exits/quits the application.
+     * <p>
+     * This method is only supported on desktop platforms. Mobile and
+     * browser-based platforms do not allow applications to self-terminate.
+     * Calling this method on such a platform will therefore have no effect.
      */
-    public Mesh createMesh(Shape3D shape, ColorRGB color);
-
-    /**
-     * Programmatically creates a 3D polygon mesh that initially does not
-     * have any color or texture information attached to it. The mesh can
-     * be modified after creation using {@link Mesh#applyColor(ColorRGB)}
-     * and {@link Mesh#applyTexture(Image)} respectively.
-     *
-     * @throws UnsupportedOperationException if this renderer does not
-     *         support 3D graphics.
-     */
-    default Mesh createMesh(Shape3D shape) {
-        return createMesh(shape, ColorRGB.WHITE);
+    default void terminate() {
     }
-
-    /**
-     * Returns the 3D world coordinates that correspond to the specified 2D
-     * canvas coordinates, based on the current camera position.
-     *
-     * @throws UnsupportedOperationException if this renderer does not
-     *         support 3D graphics.
-     */
-    public Point2D project(Point3D position);
-
-    /**
-     * Casts a pick ray from the specified 2D canvas position, and returns true
-     * if the pick ray intersects with the specified 3D world coordinates.
-     *
-     * @throws UnsupportedOperationException if this renderer does not
-     *         support 3D graphics.
-     */
-    public boolean castPickRay(Point2D canvasPosition, Box area);
-
-    /**
-     * Captures a screenshot of the renderer's current graphics and then
-     * exports the screenshot to a PNG file.
-     *
-     * @throws UnsupportedOperationException if this renderer does not support
-     *         taking screenshots at runtime.
-     */
-    public void takeScreenshot(File screenshotFile);
-
-    /**
-     * Terminates the renderer, which will end the animation loop and quit the
-     * application.
-     *
-     * @throws UnsupportedOperationException if the current platform does not
-     *         support terminating applications.
-     */
-    public void terminate();
-
-    /**
-     * Returns the display name for the underlying renderer. The display name
-     * will not include the word "renderer".
-     */
-    public String getRendererName();
 
     /**
      * Returns debug and support information that can be displayed when running
@@ -292,9 +233,12 @@ public interface SceneContext {
         int targetFPS = getConfig().getFramerate();
 
         List<String> info = new ArrayList<>();
-        info.add("Renderer:  " + getRendererName());
+        info.add("Renderer:  " + getConfig().getRendererName());
         info.add("Canvas:  " + getCanvas());
         info.add("Framerate:  " + Math.round(frameStats.getAverageFramerate()) + " / " + targetFPS);
+        if (Platform.isDesktopPlatform()) {
+            info.add("Memory:  " + (Runtime.getRuntime().totalMemory() / 1_000_000L) + " MB");
+        }
         info.add("Update time:  " + frameStats.getFrameUpdateTime() + "ms");
         info.add("Render time:  " + frameStats.getFrameRenderTime() + "ms");
 

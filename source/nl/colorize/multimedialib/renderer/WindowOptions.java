@@ -6,8 +6,8 @@
 
 package nl.colorize.multimedialib.renderer;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
 import nl.colorize.multimedialib.math.Size;
 import nl.colorize.util.ResourceFile;
 
@@ -18,14 +18,9 @@ import java.util.Optional;
  * Mobile platforms and browsers do not allow applications to modify the window
  * appearance at runtime, so the renderer will ignore these options when
  * running on those platforms.
- * <p>
- * If the window size is not explicitly defined, it will be based on the size
- * of the application {@link Canvas}. If the application window is set to
- * fullscreen, this takes precedence over both the explicit window size and
- * the canvas size.
  */
+@AllArgsConstructor
 @Getter
-@Setter
 public class WindowOptions {
 
     private String title;
@@ -33,21 +28,21 @@ public class WindowOptions {
     private boolean fullscreen;
     private Size windowSize;
 
-    private static final String DEFAULT_WINDOW_TITLE = "MultimediaLib";
-    private static final ResourceFile DEFAULT_ICON = new ResourceFile("colorize-icon-32.png");
+    public static final ResourceFile DEFAULT_ICON = new ResourceFile("colorize-icon-32.png");
 
-    protected WindowOptions() {
-        this.title = DEFAULT_WINDOW_TITLE;
-        this.iconFile = DEFAULT_ICON;
-        this.fullscreen = false;
-        this.windowSize = null;
+    public WindowOptions(String title, ResourceFile iconFile, boolean fullscreen) {
+        this(title, iconFile, fullscreen, null);
+    }
+
+    public WindowOptions(String title, boolean fullscreen) {
+        this(title, DEFAULT_ICON, fullscreen, null);
     }
 
     /**
-     * Returns the requested window size. If the optional is empty, the
-     * renderer will determine the window size considering both the
-     * application canvas and the screen size. If the optional is present,
-     * the renderer will base the window size directly on the returned value.
+     * Returns the requested window size. If the window size is not explicitly
+     * defined, it will be based on the size of the application {@link Canvas}.
+     * If the application window is set to fullscreen, this takes precedence
+     * over both the requested window size and the canvas size.
      */
     public Optional<Size> getWindowSize() {
         return Optional.ofNullable(windowSize);

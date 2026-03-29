@@ -32,39 +32,39 @@ class AngleTest {
     }
 
     @Test
-    void absoluteDifference() {
-        assertEquals(0f, new Angle(90f).absoluteDifference(new Angle(90f)), EPSILON);
-        assertEquals(90f, new Angle(90f).absoluteDifference(new Angle(180f)), EPSILON);
-        assertEquals(180f, new Angle(90f).absoluteDifference(new Angle(270f)), EPSILON);
-        assertEquals(150f, new Angle(90f).absoluteDifference(new Angle(300f)), EPSILON);
+    void distanceTo() {
+        assertEquals(0f, new Angle(90f).distanceTo(new Angle(90f)), EPSILON);
+        assertEquals(90f, new Angle(90f).distanceTo(new Angle(180f)), EPSILON);
+        assertEquals(180f, new Angle(90f).distanceTo(new Angle(270f)), EPSILON);
+        assertEquals(150f, new Angle(90f).distanceTo(new Angle(300f)), EPSILON);
     }
 
     @Test
-    void relativeDifference() {
+    void angleTo() {
         Angle north = new Angle(0);
         Angle east = new Angle(90);
         Angle south = new Angle(180);
         Angle west = new Angle(270);
 
-        assertEquals(0f, north.relativeDifference(north), EPSILON);
-        assertEquals(90f, north.relativeDifference(east), EPSILON);
-        assertEquals(180f, north.relativeDifference(south), EPSILON);
-        assertEquals(-90f, north.relativeDifference(west), EPSILON);
+        assertEquals(0f, north.angleTo(north), EPSILON);
+        assertEquals(90f, north.angleTo(east), EPSILON);
+        assertEquals(180f, north.angleTo(south), EPSILON);
+        assertEquals(-90f, north.angleTo(west), EPSILON);
 
-        assertEquals(-90f, east.relativeDifference(north), EPSILON);
-        assertEquals(0f, east.relativeDifference(east), EPSILON);
-        assertEquals(90f, east.relativeDifference(south), EPSILON);
-        assertEquals(180f, east.relativeDifference(west), EPSILON);
+        assertEquals(-90f, east.angleTo(north), EPSILON);
+        assertEquals(0f, east.angleTo(east), EPSILON);
+        assertEquals(90f, east.angleTo(south), EPSILON);
+        assertEquals(180f, east.angleTo(west), EPSILON);
 
-        assertEquals(180f, south.relativeDifference(north), EPSILON);
-        assertEquals(-90f, south.relativeDifference(east), EPSILON);
-        assertEquals(0f, south.relativeDifference(south), EPSILON);
-        assertEquals(90f, south.relativeDifference(west), EPSILON);
+        assertEquals(180f, south.angleTo(north), EPSILON);
+        assertEquals(-90f, south.angleTo(east), EPSILON);
+        assertEquals(0f, south.angleTo(south), EPSILON);
+        assertEquals(90f, south.angleTo(west), EPSILON);
 
-        assertEquals(90f, west.relativeDifference(north), EPSILON);
-        assertEquals(180f, west.relativeDifference(east), EPSILON);
-        assertEquals(-90f, west.relativeDifference(south), EPSILON);
-        assertEquals(0f, west.relativeDifference(west), EPSILON);
+        assertEquals(90f, west.angleTo(north), EPSILON);
+        assertEquals(180f, west.angleTo(east), EPSILON);
+        assertEquals(-90f, west.angleTo(south), EPSILON);
+        assertEquals(0f, west.angleTo(west), EPSILON);
     }
 
     @Test
@@ -92,5 +92,11 @@ class AngleTest {
         assertEquals("0°", Angle.fromRadians(0f).toString());
         assertEquals("90°", Angle.fromRadians((float) Math.PI / 2f).toString());
         assertEquals("180°", Angle.fromRadians((float) Math.PI).toString());
+    }
+
+    @Test
+    void constants() {
+        assertEquals("[0°, 90°, 180°, 270°]", Angle.CARDINAL.toString());
+        assertEquals("[0°, 45°, 90°, 135°, 180°, 225°, 270°, 315°]", Angle.INTERCARDINAL.toString());
     }
 }

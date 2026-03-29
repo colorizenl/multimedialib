@@ -6,22 +6,16 @@
 
 package nl.colorize.multimedialib.renderer.teavm;
 
-import lombok.Getter;
-import nl.colorize.multimedialib.math.Box;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.math.Point3D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.math.SegmentedLine;
-import nl.colorize.multimedialib.math.Shape3D;
+import nl.colorize.multimedialib.math.Size;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.GraphicsMode;
-import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.ColorRGB;
-import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Group;
 import nl.colorize.multimedialib.stage.ImageTransform;
@@ -30,6 +24,7 @@ import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
+import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.multimedialib.stage.Transform3D;
@@ -44,18 +39,20 @@ import org.teavm.jso.dom.html.HTMLElement;
  * Renders graphics using the HTML canvas API. The current platform and browser
  * will influence which drawing operations are hardware-accelerated.
  */
-public class HtmlCanvasGraphics implements TeaGraphics {
+public class HtmlCanvasGraphics implements StageVisitor {
 
     private Canvas sceneCanvas;
     private TeaMediaLoader mediaLoader;
-    @Getter private HTMLCanvasElement htmlCanvas;
+
+    private HTMLCanvasElement htmlCanvas;
     private CanvasRenderingContext2D context;
 
-    @Override
-    public void init(SceneContext sceneContext) {
-        this.sceneCanvas = sceneContext.getCanvas();
-        this.mediaLoader = (TeaMediaLoader) sceneContext.getMediaLoader();
+    public HtmlCanvasGraphics(Canvas sceneCanvas, TeaMediaLoader mediaLoader) {
+        this.sceneCanvas = sceneCanvas;
+        this.mediaLoader = mediaLoader;
+    }
 
+    protected void prepareCanvas() {
         HTMLDocument document = Window.current().getDocument();
         HTMLElement container = document.getElementById("multimediaLibContainer");
         htmlCanvas = createFullScreenCanvas(container);
@@ -92,23 +89,13 @@ public class HtmlCanvasGraphics implements TeaGraphics {
         canvas.setHeight(Math.round(height * devicePixelRatio));
     }
 
-    @Override
-    public int getDisplayWidth() {
-        return htmlCanvas.getWidth();
-    }
-
-    @Override
-    public int getDisplayHeight() {
-        return htmlCanvas.getHeight();
+    public Size getDisplaySize() {
+        return new Size(htmlCanvas.getWidth(), htmlCanvas.getHeight());
     }
 
     @Override
     public boolean shouldVisitAllNodes() {
         return false;
-    }
-
-    @Override
-    public void visitContainer(Container container, Transform globalTransform) {
     }
 
     @Override
@@ -263,21 +250,6 @@ public class HtmlCanvasGraphics implements TeaGraphics {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public Mesh createMesh(Shape3D shape, ColorRGB color) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Point2D project(Point3D position) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean castPickRay(Point2D canvasPosition, Box area) {
-        throw new UnsupportedOperationException();
-    }
-
     private float toScreenX(float x) {
         return sceneCanvas.toScreenX(x);
     }
@@ -292,10 +264,5 @@ public class HtmlCanvasGraphics implements TeaGraphics {
 
     private float toScreenY(Point2D point) {
         return sceneCanvas.toScreenY(point.y());
-    }
-
-    @Override
-    public GraphicsMode getGraphicsMode() {
-        return GraphicsMode.MODE_2D;
     }
 }

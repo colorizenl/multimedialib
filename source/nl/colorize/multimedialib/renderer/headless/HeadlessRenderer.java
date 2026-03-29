@@ -8,10 +8,7 @@ package nl.colorize.multimedialib.renderer.headless;
 
 import lombok.Getter;
 import lombok.Setter;
-import nl.colorize.multimedialib.math.Box;
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.math.Point3D;
-import nl.colorize.multimedialib.math.Shape3D;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.InputDevice;
@@ -22,20 +19,17 @@ import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
+import nl.colorize.multimedialib.renderer.World3D;
 import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
 import nl.colorize.multimedialib.renderer.java2d.StandardNetwork;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.SceneManager;
-import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontFace;
-import nl.colorize.multimedialib.stage.Mesh;
-import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.Development;
 import nl.colorize.util.EventQueue;
 
-import java.io.File;
 import java.util.List;
 
 import static nl.colorize.multimedialib.stage.ColorRGB.BLACK;
@@ -53,13 +47,12 @@ import static nl.colorize.multimedialib.stage.ColorRGB.BLACK;
 @Setter
 public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
 
-    private boolean graphicsEnvironmentEnabled;
     private RenderConfig config;
     private StageVisitor graphics;
     private MediaLoader mediaLoader;
     private Network network;
     private SceneManager sceneManager;
-    private Stage stage;
+    private World3D world3D;
 
     private boolean touchAvailable;
     private boolean keyboardAvailable;
@@ -69,21 +62,19 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
 
     public static final FontFace DEFAULT_FONT = new FontFace(null, "sans-serif", 10, BLACK);
 
-    public HeadlessRenderer(boolean graphicsEnvironmentEnabled) {
-        this.graphicsEnvironmentEnabled = graphicsEnvironmentEnabled;
-
+    public HeadlessRenderer() {
         this.touchAvailable = false;
         this.keyboardAvailable = false;
         this.pointer = new Point2D(0f, 0f);
         this.pointerPressed = false;
         this.pointerReleased = false;
 
-        // The headless renderer doesn't need to be started explicitly,
+        // The headless renderer doesn't need to be started explicitly
         // and can be used immediately after creation.
         Canvas defaultCanvas = new Canvas(800, 600, ScaleStrategy.flexible());
-        RenderConfig defaultConfig = RenderConfig.headless(GraphicsMode.HEADLESS, defaultCanvas);
-        defaultConfig.setFramerate(10);
-        Scene nullScene = (context, deltaTime) -> {};
+        RenderConfig defaultConfig = RenderConfig.headless(GraphicsMode.HEADLESS, defaultCanvas)
+            .withFramerate(10);
+        Scene nullScene = (_, _) -> {};
         start(defaultConfig, nullScene);
     }
 
@@ -94,7 +85,6 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
         this.mediaLoader = new StandardMediaLoader();
         this.network = new StandardNetwork();
         this.sceneManager = new SimulatedSceneManager(this);
-        this.stage = new Stage(config.getGraphicsMode(), config.getCanvas());
 
         sceneManager.changeScene(initialScene);
         doFrame(0f);
@@ -105,38 +95,13 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
     }
 
     @Override
-    public void terminate() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Point2D project(Point3D position) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean castPickRay(Point2D canvasPosition, Box area) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Mesh createMesh(Shape3D shape, ColorRGB color) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void takeScreenshot(File screenshotFile) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public String getRendererName() {
+    public String getDisplayName() {
         return "Headless renderer";
     }
 
     @Override
-    public boolean isSupported(GraphicsMode graphicsMode) {
-        return true;
+    public List<GraphicsMode> getSupportedGraphicsModes() {
+        return List.of(GraphicsMode.HEADLESS);
     }
 
     @Deprecated

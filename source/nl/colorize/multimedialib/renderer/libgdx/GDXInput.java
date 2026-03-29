@@ -108,7 +108,6 @@ public class GDXInput implements InputDevice {
         .put(KeyCode.F12, Input.Keys.F12)
         .put(KeyCode.COMMA, Input.Keys.COMMA)
         .put(KeyCode.PERIOD, Input.Keys.PERIOD)
-        .put(KeyCode.PLUS, Input.Keys.PLUS)
         .put(KeyCode.MINUS, Input.Keys.MINUS)
         .put(KeyCode.EQUALS, Input.Keys.EQUALS)
         .build();
@@ -199,10 +198,10 @@ public class GDXInput implements InputDevice {
     @Override
     public EventQueue<String> requestTextInput(String labelText, String initialValue) {
         Subject<String> subject = new Subject<>();
-        if (!Platform.isMac() || MacIntegration.isMacOS(MACOS_TAHOE)) {
-            showSwingTextInputDialog(labelText, initialValue, subject);
-        } else {
+        if (Platform.isMac()) {
             showAppleScriptTextInputDialog(labelText, initialValue, subject);
+        } else {
+            showSwingTextInputDialog(labelText, initialValue, subject);
         }
         return EventQueue.subscribe(subject);
     }

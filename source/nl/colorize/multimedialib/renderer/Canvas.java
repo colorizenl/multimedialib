@@ -6,6 +6,7 @@
 
 package nl.colorize.multimedialib.renderer;
 
+import com.google.common.base.Preconditions;
 import lombok.Getter;
 import nl.colorize.multimedialib.math.Coordinate;
 import nl.colorize.multimedialib.math.Point2D;
@@ -38,12 +39,14 @@ public class Canvas {
     private ScaleStrategy scaleStrategy;
     private Size screenSize;
     private Coordinate screenOffset;
+    private float screenPixelRatio;
 
     public Canvas(Size preferredSize, ScaleStrategy scaleStrategy) {
         this.preferredSize = preferredSize;
         this.scaleStrategy = scaleStrategy;
         this.screenSize = preferredSize;
         this.screenOffset = new Coordinate(0, 0);
+        this.screenPixelRatio = 1f;
     }
 
     public Canvas(int preferredWidth, int preferredHeight, ScaleStrategy scaleStrategy) {
@@ -51,12 +54,27 @@ public class Canvas {
     }
 
     /**
-     * Sets the screen dimensions to the specified values. This method should be
-     * called by the renderer when the application window is first created, and
-     * whenever the window is resized.
+     * Sets the screen dimensions to the specified values. This method is
+     * called by the renderer when the application window is first created
+     * and whenever the application window is resized.
      */
+    public void resizeScreen(int screenWidth, int screenHeight, float screenPixelRatio) {
+        Preconditions.checkArgument(screenPixelRatio > 0f, "Invalid ratio: " + screenPixelRatio);
+
+        this.screenSize = new Size(Math.max(screenWidth, 1), Math.max(screenHeight, 1));
+        this.screenPixelRatio = screenPixelRatio;
+    }
+
+    /**
+     * Sets the screen dimensions to the specified values. This method is
+     * called by the renderer when the application window is first created
+     * and whenever the application window is resized.
+     *
+     * @deprecated Use {@link #resizeScreen(int, int, float)} instead.
+     */
+    @Deprecated
     public void resizeScreen(int screenWidth, int screenHeight) {
-        screenSize = new Size(Math.max(screenWidth, 1), Math.max(screenHeight, 1));
+        resizeScreen(screenWidth, screenHeight, 1f);
     }
 
     /**

@@ -7,7 +7,8 @@
 package nl.colorize.multimedialib.renderer.libgdx;
 
 import com.badlogic.gdx.audio.Sound;
-import com.google.common.base.Preconditions;
+import com.badlogic.gdx.backends.lwjgl3.audio.OpenALSound;
+import lombok.Getter;
 import nl.colorize.multimedialib.stage.Audio;
 
 /**
@@ -18,25 +19,45 @@ import nl.colorize.multimedialib.stage.Audio;
 public class GDXAudio implements Audio {
 
     private Sound sound;
+    private long playbackId;
+    @Getter private int masterVolume;
+    @Getter private float duration;
 
     public GDXAudio(Sound sound) {
         this.sound = sound;
+        this.playbackId = -1;
+        this.masterVolume = 100;
+        this.duration = 0f;
+
+        if (sound instanceof OpenALSound openAL) {
+            duration = openAL.duration();
+        }
     }
 
     @Override
-    public void play(int volume, boolean loop) {
-        Preconditions.checkArgument(volume >= 0 && volume <= 100, "Invalid volume: " + volume);
+    public void play(boolean loop) {
+        stop();
 
-        sound.stop();
         if (loop) {
-            sound.loop(volume / 100f);
+            playbackId = sound.loop(masterVolume / 100f);
         } else {
-            sound.play(volume / 100f);
+            playbackId = sound.play(masterVolume / 100f);
         }
     }
 
     @Override
     public void stop() {
-        sound.stop();
+        if (playbackId != -1) {
+            sound.stop();
+            playbackId = -1;
+        }
+    }
+
+    @Override
+    public void changeVolume(int volume) {
+        masterVolume = Math.clamp(volume, 0, 100);
+        if (playbackId != -1) {
+            sound.setVolume(playbackId, masterVolume / 100f);
+        }
     }
 }

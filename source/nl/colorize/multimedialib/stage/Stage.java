@@ -16,11 +16,11 @@ import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.SegmentedLine;
 import nl.colorize.multimedialib.math.Shape;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.GraphicsMode;
+import nl.colorize.multimedialib.renderer.World3D;
 import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.util.LogHelper;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -38,31 +38,25 @@ import java.util.logging.Logger;
 @Setter
 public final class Stage {
 
-    private final GraphicsMode graphicsMode;
     private final Canvas canvas;
     private final Timer animationTimer;
 
     private final Container root;
     private ColorRGB backgroundColor;
 
+    private World3D world3D;
     private final Group root3D;
     private Point3D cameraPosition;
     private Point3D cameraFocus;
     private ColorRGB ambientLightColor;
 
-    public static final ColorRGB DEFAULT_AMBIENT_LIGHT_COLOR = new ColorRGB(220, 220, 220);
-
     private static final String ROOT_CONTAINER_2D = "$$root";
     private static final String ROOT_CONTAINER_3D = "$$root3D";
     private static final float SAFE_ZONE = 128f;
+    private static final ColorRGB DEFAULT_AMBIENT_LIGHT_COLOR = new ColorRGB(220, 220, 220);
     private static final Logger LOGGER = LogHelper.getLogger(Stage.class);
 
-    /**
-     * Creates a new stage that will be drawn to the specified canvas, using
-     * the specified graphics mode.
-     */
-    public Stage(GraphicsMode graphicsMode, Canvas canvas) {
-        this.graphicsMode = graphicsMode;
+    public Stage(Canvas canvas) {
         this.canvas = canvas;
         this.animationTimer = Timer.infinite();
 
@@ -148,7 +142,7 @@ public final class Stage {
     public void visit(StageVisitor visitor) {
         visitor.prepareStage(this);
         visitor.drawBackground(backgroundColor);
-        if (graphicsMode == GraphicsMode.MODE_3D) {
+        if (world3D != null) {
             visitNode3D(root3D, root3D.getTransform(), visitor);
             visitor.finalize3D(this);
         }
@@ -184,7 +178,7 @@ public final class Stage {
      * this could be skipped if it is already known the container is not
      * visible. However, performing this check is quite expensive, so for
      * most renderers it is actually faster to skip the visibility check
-     * for the container, and just perform the visibility check for the
+     * for the container and perform the visibility check for the
      * container's children.
      */
     private boolean shouldDraw(StageNode2D node, Transform globalTransform, StageVisitor visitor) {
@@ -298,7 +292,7 @@ public final class Stage {
      * only the node itself.
      */
     public List<StageNode2D> findNodePath(StageNode2D node) {
-        List<StageNode2D> nodePath = new LinkedList<>();
+        List<StageNode2D> nodePath = new ArrayList<>();
         StageNode2D currentNode = node;
         while (currentNode != null) {
             nodePath.addFirst(currentNode);
@@ -314,7 +308,7 @@ public final class Stage {
      * only the node itself.
      */
     public List<StageNode3D> findNodePath(StageNode3D node) {
-        List<StageNode3D> nodePath = new LinkedList<>();
+        List<StageNode3D> nodePath = new ArrayList<>();
         StageNode3D currentNode = node;
         while (currentNode != null) {
             nodePath.addFirst(currentNode);
@@ -378,7 +372,7 @@ public final class Stage {
         StringBuilder buffer = new StringBuilder();
         buffer.append("Stage\n");
         append(buffer, root, 1);
-        if (graphicsMode == GraphicsMode.MODE_3D) {
+        if (world3D != null) {
             append(buffer, root3D, 1);
         }
         return buffer.toString();

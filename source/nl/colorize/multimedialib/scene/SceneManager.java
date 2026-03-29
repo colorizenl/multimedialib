@@ -10,12 +10,14 @@ import lombok.Getter;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.Pointer;
+import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.renderer.Renderer;
+import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.util.Stopwatch;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -33,6 +35,7 @@ public class SceneManager {
     private long elapsedTime;
     @Getter private FrameStats frameStats;
 
+    @Getter private Stage stage;
     private SceneState activeScene;
     private Queue<SceneState> requestedSceneQueue;
     private List<Scene> globalSubScenes;
@@ -47,10 +50,24 @@ public class SceneManager {
         this.elapsedTime = 0L;
         this.frameStats = new FrameStats();
 
-        this.requestedSceneQueue = new LinkedList<>();
-        this.globalSubScenes = new ArrayList<>();
+        RenderConfig config = context.getConfig();
+        stage = new Stage(config.getCanvas());
+        requestedSceneQueue = new ArrayDeque<>();
+        globalSubScenes = new ArrayList<>();
     }
 
+    public SceneManager(SceneContext context, Scene initialScene) {
+        this(context);
+        changeScene(initialScene);
+    }
+
+    /**
+     * Creates a new {@link SceneManager} that does not have an initially
+     * active scene.
+     *
+     * @deprecated Prefer using {@link #SceneManager(SceneContext, Scene)}.
+     */
+    @Deprecated
     public SceneManager(SceneContext context) {
         this(context, new Stopwatch());
     }
@@ -143,7 +160,7 @@ public class SceneManager {
             }
         }
 
-        context.getStage().getAnimationTimer().update(deltaTime);
+        stage.getAnimationTimer().update(deltaTime);
     }
 
     private boolean checkCompleted(SceneState parent, Scene subScene) {
@@ -167,8 +184,8 @@ public class SceneManager {
     private void activateRequestedScene() {
         if (activeScene != null) {
             activeScene.walk(scene -> scene.end(context));
-            context.getStage().clear();
-            context.getStage().getAnimationTimer().reset();
+            stage.clear();
+            stage.getAnimationTimer().reset();
         }
 
         SceneState requestedScene = requestedSceneQueue.peek();

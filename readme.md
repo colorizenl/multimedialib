@@ -17,7 +17,7 @@ platforms: desktop applications (Windows, Mac OS, Linux), mobile apps (iOS, Andr
 
 MultimediaLib acts as an abstraction layer between the application and the platform's underlying
 resources, such as graphics, audio, input, and network access. Other frameworks use a similar
-approach, but tend to target mobile platforms, native applications (on mobile/desktop/both), or
+approach but tend to target mobile platforms, native applications (on mobile/desktop/both), or
 web applications. MultimediaLib's main strength is that applications will run on *all* those
 different platforms.
 
@@ -36,7 +36,7 @@ to the dependencies section in `pom.xml`:
 <dependency>
     <groupId>nl.colorize</groupId>
     <artifactId>multimedialib</artifactId>
-    <version>2026.1</version>
+    <version>2026.2</version>
 </dependency>  
 ```
     
@@ -44,7 +44,7 @@ The library can also be used in Gradle projects:
 
 ```groovy
 dependencies {
-    implementation "nl.colorize:multimedialib:2026.1"
+    implementation "nl.colorize:multimedialib:2026.2"
 }
 ```
     
@@ -58,19 +58,29 @@ initializes the application with the correct renderer.
 
 The following renderer implementations are available:
 
-| Renderer                                            | Graphics | Platforms                      |
-|-----------------------------------------------------|----------|--------------------------------|
-| Java2D renderer                                     | 2D       | Windows, Mac                   |
-| [JavaFX](https://openjfx.io) renderer               | 2D       | Windows, Mac                   |
-| [libGDX](https://libgdx.badlogicgames.com) renderer | 2D + 3D  | Windows, Mac, Android          |
-| HTML5 canvas renderer                               | 2D       | Browser, iOS, Android, Windows |
-| [PixiJS](https://www.pixijs.com) renderer           | 2D       | Browser, iOS, Android, Windows |
-| [three.js](https://threejs.org) renderer            | 2D + 3D  | Browser, iOS, Android, Windows |
-| Headless renderer                                   | Headless | Testing/simulation             |
+| Renderer                                                     | Graphics | Platforms                      |
+|--------------------------------------------------------------|----------|--------------------------------|
+| Java2D renderer                                              | 2D       | Windows, Mac, Linux            |
+| [libGDX](https://libgdx.badlogicgames.com) renderer          | 2D + 3D  | Windows, Mac, Android, Browser |
+| [Skija](https://github.com/HumbleUI/Skija) renderer *(Beta)* | 2D       | Windows, Mac                   |
+| HTML canvas renderer                                         | 2D       | Browser, iOS, Android          |
+| Headless renderer                                            | Headless | Testing/simulation             |
 
-That is clearly a ridiculous number of renderers, but that's unfortunately what is necessary to
-get multimedia application implemented in Java to run on such a wide variery of platforms and
-environments.
+The current selection of renderers can be divided into different categories:
+
+- Basic renderers that focus on portability, such as the Java2D renderer for desktop platforms
+  and the HTML canvas renderer for browser-based applications.
+- Hardware-accelerated renderers, which have superior graphics quality and performance, with the
+  libGDX renderer supporting all platforms.
+- The Skija renderer is experimental and mainly exists to have a desktop renderer that has
+  [Direct3D](https://en.wikipedia.org/wiki/Direct3D) and
+  [Metal](https://en.wikipedia.org/wiki/Metal_(API)) as its underlying graphics API, instead
+  of relying on [OpenGL](https://en.wikipedia.org/wiki/OpenGL).
+
+Older versions of MultimediaLib used to support additional renderers, such as
+[JavaFX](https://openjfx.io), [PixiJS](https://www.pixijs.com), and [three.js](https://threejs.org).
+However, with the current selection of renderers, these alternative implementations are no longer
+necessary.
 
 When using a browser-based renderer, the application needs to be transpiled to JavaScript
 using via [TeaVM](https://teavm.org) in order for it to run. MultimediaLib comes with a
@@ -81,10 +91,6 @@ a mobile app and run as a [PWA](https://en.wikipedia.org/wiki/Progressive_web_ap
 Both Java applications and browser applications can be wrapped to native distributions for various
 platforms. Refer to the [documentation on distributing applications](#distributing-applications)
 for instructions on how to provide a more native distribution for each platform.
-
-Not every renderer supports every feature on every platform. For more information, refer to the
-[renderer compatibility table](_development/renderer-compatibility.md) that contains a more
-detailed overview.
 
 Architecture
 ------------
@@ -133,8 +139,8 @@ parameters:
 
 | Name                | Required | Description                                   |
 |---------------------|----------|-----------------------------------------------|
-| `--renderer`        | yes      | One of 'java2d', 'javafx', 'gdx'.             |
-| `--graphics`        | yes      | One of '2d', '3d', 'isometric'.               |
+| `--renderer`        | yes      | One of 'java2d', 'javafx', 'gdx', 'skija'.    |
+| `--graphics`        | yes      | Either '2d' or '3d'.                          |
 | `--framerate`       | no       | Demo framerate, default is 60 fps.            |
 | `--canvas`          | no       | Uses a fixed canvas size to display graphics. |
 
@@ -153,8 +159,8 @@ included as part of the library, and supports the following arguments:
 | `--resources` | yes      | Directory containing the application's resource files.                     |
 | `--out`       | yes      | Output directory for the generated files.                                  |
 | `--buildid`   | no       | Build ID used for caching resource files, default is random.               | 
-| `--minify`    | no       | Minifies the generated JavaScript, off by default.                         |
 | `--meta`      | no       | Inserts `<meta>` tags into the HTML, passed as `name:value`.               |
+| `--lang`      | no       | Primary application language, defaults to `en-US`.                         |
 | `--demo`      | no       | Overrides the application with the demo application, for testing purposes. |
 
 Loading image contents in JavaScript is not allowed unless when running on a remote host. This is
@@ -206,7 +212,6 @@ More documentation
 ------------------
 
 - [JavaDoc](http://api.clrz.nl/multimedialib/)
-- [Renderer compatibility table](_development/renderer-compatibility.md)
 
 Build instructions
 ------------------

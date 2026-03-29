@@ -1,19 +1,5 @@
-# MultimediaLib browser JavaScript libraries
-#
 # Lists JavaScript libraries that will be automatically added
 # when transpiling the application to JavaScript using TeaVM.
-#
 # The libraries are included in the HTML using <script> tags.
-# Use the notation name -> url to instead include the libraries
-# in the import map.
 
-https://cdn.jsdelivr.net/npm/pixi.js@8.9.0/dist/pixi.min.js
-
-https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js
-
-three -> https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js
--> https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.core.js
-three/loaders/GLTFLoader -> https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/loaders/GLTFLoader.js
-three/loaders/OBJLoader -> https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/loaders/OBJLoader.js
-three/loaders/MTLLoader -> https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/loaders/MTLLoader.js
-three/utils/BufferGeometryUtils -> https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/utils/BufferGeometryUtils.js
+https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js

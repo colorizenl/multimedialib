@@ -114,7 +114,6 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
         .put(KeyCode.F12, KeyEvent.VK_F12)
         .put(KeyCode.COMMA, KeyEvent.VK_COMMA)
         .put(KeyCode.PERIOD, KeyEvent.VK_PERIOD)
-        .put(KeyCode.PLUS, KeyEvent.VK_PLUS)
         .put(KeyCode.MINUS, KeyEvent.VK_MINUS)
         .put(KeyCode.EQUALS, KeyEvent.VK_EQUALS)
         .build();

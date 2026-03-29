@@ -7,12 +7,10 @@
 package nl.colorize.multimedialib.tool;
 
 import com.google.common.annotations.VisibleForTesting;
-import nl.colorize.util.swing.Utils2D;
+import nl.colorize.util.FileUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -27,16 +25,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TeaVMTranspilerToolTest {
 
+    private static final File RESOURCES_DIR = new File("resources");
+
     @Test
-    void transpile(@TempDir File resourcesDir, @TempDir File outputDir) throws IOException {
+    void transpile(@TempDir File outputDir) throws IOException {
         TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
         tool.projectName = "test";
-        tool.resourceDir = resourcesDir;
+        tool.resourceDir = RESOURCES_DIR;
         tool.outputDir = outputDir;
         tool.mainClassName = MockApp.class.getName();
         tool.run();
 
-        String generatedCode = Files.readString(tool.getScriptFile().toPath(), UTF_8);
+        List<File> scriptFiles = FileUtils.walkFiles(outputDir,
+            f -> f.getName().startsWith("script-") && f.getName().endsWith(".js"));
+        String generatedCode = Files.readString(scriptFiles.getFirst().toPath(), UTF_8);
 
         String expected = """
             ncmt_TeaVMTranspilerToolTest$MockApp_main = $args => {
@@ -49,103 +51,137 @@ public class TeaVMTranspilerToolTest {
             },
             """;
 
+        assertEquals(1, scriptFiles.size());
         assertTrue(generatedCode.contains(expected), "Generated code:\n" + generatedCode);
     }
 
     @Test
-    void copyStandardOutputFiles(@TempDir File resourcesDir, @TempDir File outputDir) {
+    void copyFiles(@TempDir File outputDir) {
         TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
         tool.projectName = "test";
-        tool.resourceDir = resourcesDir;
+        tool.resourceDir = RESOURCES_DIR;
         tool.outputDir = outputDir;
         tool.mainClassName = MockApp.class.getName();
         tool.run();
 
         assertTrue(new File(outputDir, "multimedialib.js").exists());
-        assertTrue(new File(outputDir, "index.html").exists());
+        assertTrue(new File(outputDir, "assets").exists());
+        assertTrue(new File(outputDir, "assets/colorize-icon-256.png").exists());
+        assertTrue(new File(outputDir, "assets/browser").exists());
+        assertTrue(new File(outputDir, "assets/browser/assets").exists());
+        assertTrue(new File(outputDir, "assets/browser/assets/multimedialib.css").exists());
     }
 
     @Test
-    void copyBinaryFiles(@TempDir File resourcesDir, @TempDir File outputDir) throws IOException {
-        BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = Utils2D.createGraphics(image, false, false);
-        g2.setColor(Color.RED);
-        g2.fillOval(0, 0, 100, 100);
-        g2.dispose();
-
-        Utils2D.savePNG(image, new File(resourcesDir, "test.x"));
-
+    void generateHTML(@TempDir File outputDir) throws IOException {
         TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
         tool.projectName = "test";
-        tool.resourceDir = resourcesDir;
+        tool.resourceDir = RESOURCES_DIR;
         tool.outputDir = outputDir;
         tool.mainClassName = MockApp.class.getName();
+        tool.buildId = "1234";
         tool.run();
 
-        assertTrue(new File(outputDir, "test.x").exists());
-    }
-
-    @Test
-    void rewriteHTML(@TempDir File resourcesDir, @TempDir File outputDir) throws IOException {
-        Files.writeString(new File(resourcesDir, "test.txt").toPath(),
-            "This is a test file\ncontaining multiple lines", UTF_8);
-
-        TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
-        tool.projectName = "test";
-        tool.resourceDir = resourcesDir;
-        tool.outputDir = outputDir;
-        tool.mainClassName = MockApp.class.getName();
-        tool.run();
-
-        String generatedHTML = Files.readString(new File(outputDir, "index.html").toPath(), UTF_8);
-
-        String expected = "";
-        expected += "<div id=\"test_txt\">This is a test file\n";
-        expected += "containing multiple lines</div>\n";
-
-        assertTrue(generatedHTML.contains(expected), "Generated HTML:\n" + generatedHTML);
-    }
-
-    @Test
-    void generateResourceManifest(@TempDir File resourcesDir, @TempDir File outputDir) throws IOException {
-        Files.writeString(new File(resourcesDir, "test1.txt").toPath(), "This is a test file", UTF_8);
-        Files.writeString(new File(resourcesDir, "test2.txt").toPath(), "Another test file", UTF_8);
-
-        TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
-        tool.projectName = "test";
-        tool.resourceDir = resourcesDir;
-        tool.outputDir = outputDir;
-        tool.mainClassName = MockApp.class.getName();
-        tool.run();
-
-        String generatedHTML = Files.readString(new File(outputDir, "index.html").toPath(), UTF_8);
+        File htmlFile = new File(outputDir, "index.html");
+        String html = Files.readString(htmlFile.toPath(), UTF_8);
+        String head = html.split("<body>")[0].trim();
 
         String expected = """
-            <div id="resource-file-manifest">OpenSans-Regular.ttf
-            apple-favicon.png
-            colorize-emblem.png
+            <!DOCTYPE html>
+            <html lang="en-US">
+                <head>
+                    <meta charset="UTF-8" />
+                    <title>test</title>
+                    <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no" />
+                    <link rel="shortcut icon" type="image/x-icon" href="assets/browser/assets/favicon.png" />
+                    <link rel="apple-touch-icon" href="assets/browser/assetsapple-favicon.png" />
+                    <link rel="stylesheet" type="text/css" href="assets/browser/assets/multimedialib.css" />
+            
+                    <meta name="build-id" content="1234" />
+            
+            
+                    <script src="scripts/peerjs.min.js"></script>
+            
+            
+                    <script src="multimedialib.js"></script>
+                    <script src="browser-bridge.js"></script>
+                    <script src="peerjs-bridge.js"></script>
+                    <script src="script-1234.js"></script>
+                </head>""";
+
+        assertEquals(expected.replaceAll("  +", ""), head.replaceAll("  +", ""));
+    }
+
+    @Test
+    void generateManifest(@TempDir File outputDir) throws IOException {
+        TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
+        tool.projectName = "test";
+        tool.resourceDir = RESOURCES_DIR;
+        tool.outputDir = outputDir;
+        tool.mainClassName = MockApp.class.getName();
+        tool.buildId = "1234";
+        tool.run();
+
+        File htmlFile = new File(outputDir, "index.html");
+        String html = Files.readString(htmlFile.toPath(), UTF_8);
+        String manifest = html.split("<div id=\"resource-file-manifest\">")[1].split("</div>")[0];
+
+        String expected = """
+            OpenSans-Regular.ttf
+            browser/assets/OpenSans-Regular.ttf
+            browser/assets/apple-favicon.png
+            browser/assets/favicon.png
+            browser/assets/loading.gif
+            browser/assets/multimedialib.css
+            browser/fragment-shader.glsl
+            browser/index.html
+            browser/javascript-libraries.txt
+            browser/vertex-shader.glsl
+            colorize-emblem-64.png
             colorize-icon-256.png
             colorize-icon-32.png
-            colorize-logo.gltf
-            colorize-logo.png
-            crate.vox.mtl
-            crate.vox.obj
-            crate.vox.png
-            demo-sound.mp3
-            demo.png
-            favicon.png
-            fragment-shader.glsl
-            loading.gif
-            multimedialib.css
-            particle-circle.png
-            particle-diamond.png
-            test1.txt
-            test2.txt
-            vertex-shader.glsl
-            </div>
-            """;
+            colorize-icon.icns
+            com/badlogic/gdx/graphics/g3d/particles/particles.fragment.glsl
+            com/badlogic/gdx/graphics/g3d/particles/particles.vertex.glsl
+            com/badlogic/gdx/graphics/g3d/shaders/default.fragment.glsl
+            com/badlogic/gdx/graphics/g3d/shaders/default.vertex.glsl
+            com/badlogic/gdx/graphics/g3d/shaders/depth.fragment.glsl
+            com/badlogic/gdx/graphics/g3d/shaders/depth.vertex.glsl
+            com/badlogic/gdx/utils/lsans-15.fnt
+            com/badlogic/gdx/utils/lsans-15.png
+            demo/colorize-logo.gltf
+            demo/crate.vox.mtl
+            demo/crate.vox.obj
+            demo/crate.vox.png
+            demo/demo-sound.ogg
+            demo/demo.png
+            effects/particle-circle.png
+            effects/particle-diamond.png
+            net/mgsx/gltf/shaders/brdfLUT.png
+            net/mgsx/gltf/shaders/default.fs.glsl
+            net/mgsx/gltf/shaders/default.vs.glsl
+            net/mgsx/gltf/shaders/depth.fs.glsl
+            net/mgsx/gltf/shaders/depth.vs.glsl
+            net/mgsx/gltf/shaders/emissive-only.fs.glsl
+            net/mgsx/gltf/shaders/ibl-sun.fs.glsl
+            net/mgsx/gltf/shaders/ibl-sun.vs.glsl
+            net/mgsx/gltf/shaders/pbr/compat.fs.glsl
+            net/mgsx/gltf/shaders/pbr/compat.vs.glsl
+            net/mgsx/gltf/shaders/pbr/env.glsl
+            net/mgsx/gltf/shaders/pbr/functions.glsl
+            net/mgsx/gltf/shaders/pbr/ibl.glsl
+            net/mgsx/gltf/shaders/pbr/iridescence.glsl
+            net/mgsx/gltf/shaders/pbr/lights.glsl
+            net/mgsx/gltf/shaders/pbr/material.glsl
+            net/mgsx/gltf/shaders/pbr/pbr.fs.glsl
+            net/mgsx/gltf/shaders/pbr/pbr.vs.glsl
+            net/mgsx/gltf/shaders/pbr/shadows.glsl
+            net/mgsx/gltf/shaders/skybox.fs.glsl
+            net/mgsx/gltf/shaders/skybox.vs.glsl
+            preload.txt
+            startup-logo.png""";
 
-        assertTrue(generatedHTML.contains(expected), "Generated HTML:\n" + generatedHTML);
+        assertEquals(expected, manifest);
     }
 
     @Test
@@ -188,51 +224,6 @@ public class TeaVMTranspilerToolTest {
         String generatedHTML = Files.readString(new File(outputDir, "index.html").toPath(), UTF_8);
 
         assertTrue(generatedHTML.contains("<meta name=\"build-id\" content=\"1234\" />"));
-    }
-
-    @Test
-    void generateImportMap(@TempDir File resourcesDir, @TempDir File outputDir) throws IOException {
-        TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
-        tool.projectName = "test";
-        tool.resourceDir = resourcesDir;
-        tool.outputDir = outputDir;
-        tool.mainClassName = MockApp.class.getName();
-        tool.buildId = "1234";
-        tool.run();
-
-        String scriptTags = Files.readString(new File(outputDir, "index.html").toPath(), UTF_8)
-            .split("<meta name=\"build-id\" content=\"1234\" />")[1]
-            .split("<script src=\"script-")[0]
-            .trim();
-
-        String expected = """
-            <script src="libraries/pixi.min.js"></script>
-            <script src="libraries/peerjs.min.js"></script>
-            <script type="importmap">
-                {
-                    "imports": {
-                        "three": "./libraries/three.module.js",
-                        "three/loaders/GLTFLoader": "./libraries/three/loaders/GLTFLoader.js",
-                        "three/loaders/OBJLoader": "./libraries/three/loaders/OBJLoader.js",
-                        "three/loaders/MTLLoader": "./libraries/three/loaders/MTLLoader.js",
-                        "three/utils/BufferGeometryUtils": "./libraries/three/utils/BufferGeometryUtils.js"
-                    }
-                }
-            </script>
-            
-                    <script src="multimedialib.js" type="module"></script>
-                    <script src="browser-bridge.js" type="module"></script>
-                    <script src="pixi-bridge.js" type="module"></script>
-                    <script src="three-bridge.js" type="module"></script>
-                    <script src="peerjs-bridge.js" type="module"></script>
-            """;
-
-        assertEquals(expected.trim(), scriptTags.trim());
-        assertTrue(new File(outputDir, "libraries/pixi.min.js").exists());
-        assertTrue(new File(outputDir, "libraries/three.module.js").exists());
-        assertTrue(new File(outputDir, "libraries/three.core.js").exists());
-        assertTrue(new File(outputDir, "libraries/three/loaders/GLTFLoader.js").exists());
-        assertTrue(new File(outputDir, "libraries/three/utils/BufferGeometryUtils.js").exists());
     }
 
     /**

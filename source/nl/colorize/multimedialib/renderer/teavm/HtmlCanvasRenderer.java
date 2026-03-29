@@ -7,10 +7,7 @@
 package nl.colorize.multimedialib.renderer.teavm;
 
 import lombok.Getter;
-import nl.colorize.multimedialib.math.Box;
-import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.math.Point3D;
-import nl.colorize.multimedialib.math.Shape3D;
+import nl.colorize.multimedialib.math.Size;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.RenderConfig;
@@ -18,12 +15,9 @@ import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.SceneManager;
-import nl.colorize.multimedialib.stage.ColorRGB;
-import nl.colorize.multimedialib.stage.Mesh;
-import nl.colorize.multimedialib.stage.Stage;
 import org.teavm.jso.browser.Window;
 
-import java.io.File;
+import java.util.List;
 
 /**
  * Renderer based on <a href="http://teavm.org">TeaVM</a> that is transpiled to
@@ -32,41 +26,35 @@ import java.io.File;
  * build or at runtime using a URL parameter.
  */
 @Getter
-public class TeaRenderer implements Renderer, SceneContext {
+public class HtmlCanvasRenderer implements Renderer, SceneContext {
 
     private RenderConfig config;
-    private TeaGraphics graphics;
     private TeaInput input;
     private TeaMediaLoader mediaLoader;
+    private HtmlCanvasGraphics graphics;
     private TeaNetwork network;
     private SceneManager sceneManager;
-    private Stage stage;
 
-    /**
-     * Initializes the TeaVM renderer using the specified graphics library.
-     * Applications should use one of the factory methods rather than using
-     * this constructor directly.
-     */
-    public TeaRenderer(TeaGraphics graphics) {
-        this.graphics = graphics;
-    }
+    public static final String CONTAINER_ID = "multimediaLibContainer";
 
     @Override
     public void start(RenderConfig config, Scene initialScene) {
         this.config = config;
         network = new TeaNetwork();
-        sceneManager = new SceneManager(this);
-        stage = new Stage(config.getGraphicsMode(), config.getCanvas());
-        mediaLoader = new TeaMediaLoader(config.getGraphicsMode());
+        sceneManager = new SceneManager(this, initialScene);
 
-        input = new TeaInput(config.getCanvas(), graphics);
+        Browser.getBrowserBridge().registerErrorHandler(this::handleError);
+
+        mediaLoader = new TeaMediaLoader();
+        mediaLoader.preload();
+
+        graphics = new HtmlCanvasGraphics(config.getCanvas(), mediaLoader);
+        graphics.prepareCanvas();
+
+        input = new TeaInput(config.getCanvas());
         input.bindEventHandlers();
 
-        graphics.init(this);
-        sceneManager.changeScene(initialScene);
-
         Browser.getBrowserBridge().prepareAnimationLoop();
-        Browser.getBrowserBridge().registerErrorHandler(this::handleError);
         Window.requestAnimationFrame(this::onAnimationFrame);
     }
 
@@ -96,11 +84,10 @@ public class TeaRenderer implements Renderer, SceneContext {
      * browser window. Returns true if the canvas is ready to be used.
      */
     private boolean prepareCanvas() {
-        int width = graphics.getDisplayWidth();
-        int height = graphics.getDisplayHeight();
+        Size display = graphics.getDisplaySize();
 
-        if (width > 0 || height > 0) {
-            getCanvas().resizeScreen(width, height);
+        if (display.width() > 0 || display.height() > 0) {
+            getCanvas().resizeScreen(display.width(), display.height());
             return true;
         } else {
             return false;
@@ -113,42 +100,12 @@ public class TeaRenderer implements Renderer, SceneContext {
     }
 
     @Override
-    public void terminate() {
-        throw new UnsupportedOperationException();
+    public String getDisplayName() {
+        return "HTML Canvas renderer";
     }
 
     @Override
-    public Mesh createMesh(Shape3D shape, ColorRGB color) {
-        return graphics.createMesh(shape, color);
-    }
-
-    @Override
-    public Point2D project(Point3D position) {
-        return graphics.project(position);
-    }
-
-    @Override
-    public boolean castPickRay(Point2D canvasPosition, Box area) {
-        return graphics.castPickRay(canvasPosition, area);
-    }
-
-    @Override
-    public void takeScreenshot(File screenshotFile) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public String getRendererName() {
-        return switch (graphics) {
-            case HtmlCanvasGraphics canvas -> "HTML5 Canvas renderer";
-            case PixiGraphics pixi -> "Pixi.js renderer";
-            case ThreeGraphics three -> "Three.js renderer";
-            default -> "TeaVM renderer";
-        };
-    }
-
-    @Override
-    public boolean isSupported(GraphicsMode graphicsMode) {
-        return graphics.getGraphicsMode() == graphicsMode;
+    public List<GraphicsMode> getSupportedGraphicsModes() {
+        return List.of(GraphicsMode.MODE_2D);
     }
 }

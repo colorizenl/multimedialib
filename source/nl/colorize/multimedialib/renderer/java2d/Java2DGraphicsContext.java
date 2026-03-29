@@ -13,9 +13,9 @@ import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.SegmentedLine;
 import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.ColorRGB;
-import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Group;
 import nl.colorize.multimedialib.stage.ImageTransform;
@@ -36,9 +36,12 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Composite;
 import java.awt.Font;
+import java.awt.FontFormatException;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 /**
@@ -58,13 +61,13 @@ public class Java2DGraphicsContext implements StageVisitor {
 
     private static final int CACHE_CAPACITY = 1000;
 
-    protected Java2DGraphicsContext(Canvas canvas, Cache<FontFace, Font> fontCache) {
+    protected Java2DGraphicsContext(Canvas canvas) {
         this.canvas = canvas;
 
         this.colorCache = Cache.from(this::convertColor, CACHE_CAPACITY);
         this.maskCache = Cache.from(MaskImage::render, CACHE_CAPACITY);
         this.circleCache = Cache.from(CircleImage::render, CACHE_CAPACITY);
-        this.fontCache = fontCache;
+        this.fontCache = Cache.from(this::prepareFont, CACHE_CAPACITY);
     }
 
     public Canvas getCanvas() {
@@ -89,10 +92,6 @@ public class Java2DGraphicsContext implements StageVisitor {
     @Override
     public boolean shouldVisitAllNodes() {
         return false;
-    }
-
-    @Override
-    public void visitContainer(Container container, Transform globalTransform) {
     }
 
     @Override
@@ -232,12 +231,10 @@ public class Java2DGraphicsContext implements StageVisitor {
             float screenY = canvas.toScreenY(position.y() + i * lineHeight);
             int estimatedWidth = g2.getFontMetrics().stringWidth(lines.get(i));
 
-            if (align == Align.CENTER) {
-                g2.drawString(lines.get(i), screenX - estimatedWidth / 2f, screenY);
-            } else if (align == Align.RIGHT) {
-                g2.drawString(lines.get(i), screenX - estimatedWidth, screenY);
-            } else {
-                g2.drawString(lines.get(i), screenX, screenY);
+            switch (align) {
+                case LEFT -> g2.drawString(lines.get(i), screenX, screenY);
+                case CENTER -> g2.drawString(lines.get(i), screenX - estimatedWidth / 2f, screenY);
+                case RIGHT -> g2.drawString(lines.get(i), screenX - estimatedWidth, screenY);
             }
         }
     }
@@ -284,6 +281,15 @@ public class Java2DGraphicsContext implements StageVisitor {
 
     private Color convertColor(ColorRGB color) {
         return new Color(color.r(), color.g(), color.b());
+    }
+
+    private Font prepareFont(FontFace fontInfo) {
+        try (InputStream stream = fontInfo.origin().openStream()) {
+            Font baseFont = Font.createFont(Font.TRUETYPE_FONT, stream);
+            return baseFont.deriveFont(Font.PLAIN, fontInfo.size());
+        } catch (IOException | FontFormatException e) {
+            throw new MediaException("Cannot load font from " + fontInfo.origin().path(), e);
+        }
     }
 
     /**

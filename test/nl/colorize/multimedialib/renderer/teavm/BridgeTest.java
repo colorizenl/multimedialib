@@ -23,9 +23,7 @@ public class BridgeTest {
     private static final List<Class<?>> BRIDGE_CLASSES = List.of(
         Browser.class,
         BrowserBridge.class,
-        PeerjsBridge.class,
-        PixiBridge.class,
-        ThreeBridge.class
+        PeerjsBridge.class
     );
 
     private static final List<Class<?>> ALLOWED_TYPES = List.of(

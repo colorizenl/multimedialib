@@ -18,7 +18,6 @@ import nl.colorize.multimedialib.math.RandomGenerator;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.math.Shape;
-import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
@@ -30,7 +29,6 @@ import nl.colorize.multimedialib.renderer.teavm.PeerMessage;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.Updatable;
-import nl.colorize.multimedialib.scene.effect.Effect;
 import nl.colorize.multimedialib.scene.effect.ParticleWipe;
 import nl.colorize.multimedialib.scene.effect.PerformanceMonitor;
 import nl.colorize.multimedialib.scene.effect.SwipeTracker;
@@ -79,6 +77,7 @@ import static nl.colorize.multimedialib.stage.ColorRGB.YELLOW;
 public class Demo2D implements Scene, ErrorHandler {
 
     private SceneContext context;
+    private Container floorLayer;
     private Container contentLayer;
     private Container hudLayer;
 
@@ -101,8 +100,12 @@ public class Demo2D implements Scene, ErrorHandler {
     protected static final ColorRGB ORANGE_BUTTON = ColorRGB.parseHex("#F1723D");
     protected static final ResourceFile MARIO_SPRITES_FILE = new ResourceFile("demo/demo.png");
 
-    private static final ResourceFile AUDIO_FILE = new ResourceFile("demo/demo-sound.mp3");
-    private static final ResourceFile COLORIZE_LOGO = new ResourceFile("colorize-logo.png");
+    private static final int BLOCK_SIZE = 70;
+    private static final ColorRGB RED_BLOCK = new ColorRGB(228, 93, 97);
+    private static final ColorRGB LIGHT_BLOCK = new ColorRGB(235, 235, 235);
+
+    private static final ResourceFile AUDIO_FILE = new ResourceFile("demo/demo-sound.ogg");
+    private static final ResourceFile COLORIZE_LOGO = new ResourceFile("colorize-emblem-64.png");
     private static final ColorRGB BACKGROUND_COLOR = ColorRGB.parseHex("#343434");
     private static final ColorRGB ALT_BACKGROUND_COLOR = ColorRGB.parseHex("#EBEBEB");
     private static final ColorRGB COLORIZE_COLOR = ColorRGB.parseHex("#e45d61");
@@ -114,13 +117,14 @@ public class Demo2D implements Scene, ErrorHandler {
     @Override
     public void start(SceneContext context) {
         this.context = context;
-        this.contentLayer = context.getStage().addContainer();
-        this.hudLayer = context.getStage().addContainer();
-
         MediaLoader mediaLoader = context.getMediaLoader();
 
         context.getStage().setBackgroundColor(BACKGROUND_COLOR);
+        floorLayer = context.getStage().addContainer();
+        contentLayer = context.getStage().addContainer();
+        hudLayer = context.getStage().addContainer();
 
+        initBlocks();
         initMarioSprites(mediaLoader);
         marios = new ArrayList<>();
         addMarios();
@@ -138,9 +142,54 @@ public class Demo2D implements Scene, ErrorHandler {
         sendHttpRequest(context.getNetwork());
         loadApplicationData();
 
-        performanceMonitor = new PerformanceMonitor(false);
-        performanceMonitor.setActive(false);
+        performanceMonitor = new PerformanceMonitor(true);
+        performanceMonitor.setActive(true);
         context.attach(performanceMonitor);
+    }
+
+    private void initBlocks() {
+        for (int x = -5; x <= 5; x++) {
+            for (int y = -5; y <= 5; y++) {
+                Container block = createBlock(x, y);
+                floorLayer.addChild(block);
+            }
+        }
+
+        floorLayer.getTransform().setPosition(context.getCanvas().getCenter());
+        context.getStage().recalculateGlobalTransform(floorLayer);
+    }
+
+    private Container createBlock(int x, int y) {
+        ColorRGB color = (Math.abs(x) % 2) == (Math.abs(y) % 2) ? RED_BLOCK : LIGHT_BLOCK;
+
+        Polygon top = Polygon.fromPoints(
+            0f, -BLOCK_SIZE / 4f,
+            BLOCK_SIZE / 2f, 0f,
+            0f, BLOCK_SIZE / 4f,
+            -BLOCK_SIZE / 2f, 0f
+        );
+
+        Polygon left = Polygon.fromPoints(
+            -BLOCK_SIZE / 2f, 0f,
+            0f, BLOCK_SIZE / 4f,
+            0f, BLOCK_SIZE * 0.75f,
+            -BLOCK_SIZE / 2f, BLOCK_SIZE * 0.5f
+        );
+
+        Polygon right = Polygon.fromPoints(
+            0f, BLOCK_SIZE / 4f,
+            BLOCK_SIZE / 2f, 0f,
+            BLOCK_SIZE / 2f, BLOCK_SIZE * 0.5f,
+            0f, BLOCK_SIZE * 0.75f
+        );
+
+        Container block = new Container();
+        block.addChild(new Primitive(top, color));
+        block.addChild(new Primitive(left, color.alter(-60, -60, -60)));
+        block.addChild(new Primitive(right, color.alter(-90, -90, -90)));
+        block.getTransform().setX(x * 0.5f * BLOCK_SIZE + y * -0.5f * BLOCK_SIZE);
+        block.getTransform().setY(x * 0.25f * BLOCK_SIZE + y * 0.25f * BLOCK_SIZE);
+        return block;
     }
 
     private void initMarioSprites(MediaLoader mediaLoader) {
@@ -404,9 +453,9 @@ public class Demo2D implements Scene, ErrorHandler {
             .addKeyFrame(0f, context.getCanvas().getCenter().y())
             .addKeyFrame(4f, context.getCanvas().getCenter().y() - 100f);
 
-        Effect.delay(4f, () -> hudLayer.removeChild(notification))
-            .addTimelineHandler(timeline, value -> notification.getTransform().setY(value))
-            .attach(context);
+        context.attachTimeline(timeline,
+            value -> notification.getTransform().setY(value),
+            () -> hudLayer.removeChild(notification));
     }
 
     @Override
@@ -478,7 +527,7 @@ public class Demo2D implements Scene, ErrorHandler {
 
         for (int i = 0; i < amount; i++) {
             Sprite marioSprite = createMarioSprite();
-            Mario mario = new Mario(marioSprite, context.getCanvas());
+            Mario mario = new Mario(marioSprite, context.getCanvas().getBounds());
             marios.add(mario);
             mario.update(0f);
             contentLayer.addChild(marioSprite);
@@ -516,15 +565,15 @@ public class Demo2D implements Scene, ErrorHandler {
     private static class Mario implements Updatable {
 
         private Sprite sprite;
-        private Canvas canvas;
+        private Rect walkBounds;
         private int direction;
         private float speed;
         private boolean mask;
 
-        public Mario(Sprite sprite, Canvas canvas) {
+        public Mario(Sprite sprite, Rect walkBounds) {
             this.sprite = sprite;
-            this.canvas = canvas;
-            sprite.getTransform().setPosition(RandomGenerator.pickPoint(canvas.getBounds()));
+            this.walkBounds = walkBounds;
+            sprite.getTransform().setPosition(RandomGenerator.pickPoint(walkBounds));
             this.direction = RandomGenerator.getInt(0, 4);
             this.speed = RandomGenerator.getFloat(20f, 80f);
             this.mask = false;
@@ -551,7 +600,7 @@ public class Demo2D implements Scene, ErrorHandler {
 
         private void checkBounds() {
             Point2D position = sprite.getTransform().getPosition();
-            if (!canvas.getBounds().contains(position)) {
+            if (!walkBounds.contains(position)) {
                 direction = (direction + 2) % 4;
             }
         }

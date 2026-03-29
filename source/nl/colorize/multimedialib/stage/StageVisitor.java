@@ -37,7 +37,12 @@ public interface StageVisitor {
     // 2D graphics
     //----------------------------------------
 
-    public void visitContainer(Container container, Transform globalTransform);
+    /**
+     * Called before the container's graphics are drawn. The default
+     * implementation of this method does nothing.
+     */
+    default void visitContainer(Container container, Transform globalTransform) {
+    }
 
     public void drawBackground(ColorRGB color);
 

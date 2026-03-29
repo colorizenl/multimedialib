@@ -1,29 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="{language}">
     <head>
         <meta charset="UTF-8" />
         <title>{project}</title>
         <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no" />
-        <link rel="shortcut icon" type="image/x-icon" href="resources/favicon.png" />
-        <link rel="apple-touch-icon" href="resources/apple-favicon.png" />
-        <link rel="stylesheet" type="text/css" href="resources/multimedialib.css" />
+        <link rel="shortcut icon" type="image/x-icon" href="assets/browser/assets/favicon.png" />
+        <link rel="apple-touch-icon" href="assets/browser/assetsapple-favicon.png" />
+        <link rel="stylesheet" type="text/css" href="assets/browser/assets/multimedialib.css" />
 
         <meta name="build-id" content="{build-id}" />
         {meta}
 
         {js-libraries}
 
-        <script src="multimedialib.js" type="module"></script>
-        <script src="browser-bridge.js" type="module"></script>
-        <script src="pixi-bridge.js" type="module"></script>
-        <script src="three-bridge.js" type="module"></script>
-        <script src="peerjs-bridge.js" type="module"></script>
-
+        <script src="multimedialib.js"></script>
+        <script src="browser-bridge.js"></script>
+        <script src="peerjs-bridge.js"></script>
         <script src="{teavm-js-file}"></script>
     </head>
 
     <body>
-        <img id="loading" src="resources/loading.gif" />
+        <img id="loading" src="assets/browser/assets/loading.gif" />
         <div id="multimediaLibContainer"></div>
         <div id="fontContainer"></div>
         <div id="resourceContainer">
@@ -33,9 +30,7 @@
 
         {timestamp}
 
-        <script type="module">
-            import {bootstrap} from "./multimedialib.js";
-
+        <script>
             window.addEventListener("load", event => bootstrap());
         </script>
     </body>

@@ -10,7 +10,6 @@ import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.mock.MockImage;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import org.junit.jupiter.api.Test;
 
@@ -62,7 +61,7 @@ class ContainerTest {
         container.addChild(a);
         container.addChild(b);
 
-        Stage stage = new Stage(GraphicsMode.MODE_2D, new Canvas(800, 600, ScaleStrategy.flexible()));
+        Stage stage = new Stage(new Canvas(800, 600, ScaleStrategy.flexible()));
         stage.getRoot().addChild(container);
         stage.recalculateGlobalTransform(a);
         stage.recalculateGlobalTransform(b);

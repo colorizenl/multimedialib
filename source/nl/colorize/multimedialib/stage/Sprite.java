@@ -158,7 +158,6 @@ public class Sprite implements StageNode2D {
         return state.graphics;
     }
 
-    @Deprecated
     public Animation getCurrentStateGraphics() {
         Preconditions.checkState(currentGraphics != null, "Sprite is without graphics");
         return currentState.graphics;

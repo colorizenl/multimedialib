@@ -19,51 +19,48 @@ import com.badlogic.gdx.graphics.g3d.loader.G3dModelLoader;
 import com.badlogic.gdx.graphics.g3d.loader.ObjLoader;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.UBJsonReader;
-import lombok.Getter;
 import net.mgsx.gltf.loaders.gltf.GLTFLoader;
 import net.mgsx.gltf.scene3d.scene.SceneAsset;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
-import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.stage.LoadStatus;
 import nl.colorize.multimedialib.stage.Mesh;
-import nl.colorize.util.ResourceFile;
-import nl.colorize.util.SubscribableCollection;
 import nl.colorize.util.Cache;
+import nl.colorize.util.ResourceFile;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Loads media assets using the libGDX framework.
+ * Loads media assets using the libGDX framework. Media is loaded using "pure"
+ * libGDX and is therefore cross-platform. The only exception is loading and
+ * saving application data, which requires a platform-specific delegate
+ * (i.e. desktop or browser) that is provided via the constructor.
  * <p>
+ * libGDX requires an explicit "dispose" step to close all loaded media files
  * and release the associated resources. This can be done globally for all
  * media files by calling {@link #dispose()}.
  */
 public class GDXMediaLoader implements MediaLoader, Disposable {
 
+    private MediaLoader appDataLoader;
     private List<Disposable> loaded;
     private Cache<FontFace, BitmapFont> fontCache;
-    private StandardMediaLoader appDataDelegate;
     private GLTFLoader gltfLoader;
     private G3dModelLoader g3dLoader;
-    @Getter private SubscribableCollection<LoadStatus> loadStatus;
 
     private static final Texture.TextureFilter TEXTURE_FILTER = Texture.TextureFilter.Linear;
     private static final int FONT_CACHE_SIZE = 100;
     private static final int BITMAP_FONT_SCALE = 2;
 
-    public GDXMediaLoader() {
+    public GDXMediaLoader(MediaLoader appDataLoader) {
+        this.appDataLoader = appDataLoader;
         this.loaded = new ArrayList<>();
-        this.loadStatus = SubscribableCollection.wrap(new CopyOnWriteArrayList<>());
         this.fontCache = Cache.from(this::generateBitmapFont, FONT_CACHE_SIZE);
-        this.appDataDelegate = new StandardMediaLoader();
         this.gltfLoader = new GLTFLoader();
         this.g3dLoader = new G3dModelLoader(new UBJsonReader(), new InternalFileHandleResolver());
     }
@@ -111,11 +108,6 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
     }
 
     @Override
-    public String loadText(ResourceFile file) {
-        return getFileHandle(file).readString("UTF-8");
-    }
-
-    @Override
     public Mesh loadModel(ResourceFile file) {
         Model model = loadModel(getFileHandle(file));
         return new GDXModel(model);
@@ -136,22 +128,27 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
     }
 
     @Override
-    public boolean containsResourceFile(ResourceFile file) {
-        return getFileHandle(file).exists();
+    public String loadText(ResourceFile file) {
+        return getFileHandle(file).readString("UTF-8");
     }
 
     @Override
     public Properties loadApplicationData(String appName) {
-        return appDataDelegate.loadApplicationData(appName);
+        return appDataLoader.loadApplicationData(appName);
     }
 
     @Override
     public void saveApplicationData(String appName, Properties data) {
-        appDataDelegate.saveApplicationData(appName, data);
+        appDataLoader.saveApplicationData(appName, data);
     }
 
-    private FileHandle getFileHandle(ResourceFile file) {
+    protected FileHandle getFileHandle(ResourceFile file) {
         return Gdx.files.internal(file.path());
+    }
+
+    @Override
+    public boolean containsResourceFile(ResourceFile file) {
+        return getFileHandle(file).exists();
     }
 
     @Override

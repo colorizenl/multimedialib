@@ -49,10 +49,6 @@ public class MockStageVisitor implements StageVisitor {
     }
 
     @Override
-    public void visitContainer(Container container, Transform globalTransform) {
-    }
-
-    @Override
     public void drawBackground(ColorRGB color) {
         rendered.add("background");
     }

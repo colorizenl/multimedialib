@@ -19,12 +19,6 @@ public class Browser {
     @JSBody(script = "return window.browserBridge;")
     public static native BrowserBridge getBrowserBridge();
 
-    @JSBody(script = "return window.pixiBridge;")
-    public static native PixiBridge getPixiBridge();
-
-    @JSBody(script = "return window.threeBridge;")
-    public static native ThreeBridge getThreeBridge();
-
     @JSBody(script = "return window.peerjsBridge;")
     public static native PeerjsBridge getPeerJsBridge();
 
@@ -44,6 +38,9 @@ public class Browser {
 
     @JSBody(script = "return window.location.search;")
     public static native String getQueryString();
+
+    @JSBody(script = "return window.navigator.language;")
+    public static native String getLanguage();
 
     /**
      * Returns the query parameter with the specified name, or the default

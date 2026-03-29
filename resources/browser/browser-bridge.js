@@ -9,7 +9,7 @@
  * is used for "general" browser APIs that do not depend on a specific renderer
  * but are always available.
  */
-export class BrowserBridge {
+class BrowserBridge {
 
     isMobileDevice() {
         return /iphone|ipad|android/i.test(window.navigator.userAgent);

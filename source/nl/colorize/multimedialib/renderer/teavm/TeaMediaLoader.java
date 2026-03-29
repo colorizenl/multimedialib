@@ -7,23 +7,17 @@
 package nl.colorize.multimedialib.renderer.teavm;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
-import lombok.Getter;
-import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
-import nl.colorize.multimedialib.renderer.teavm.ThreeBridge.ThreeObject;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.stage.LoadStatus;
 import nl.colorize.multimedialib.stage.Mesh;
+import nl.colorize.util.Cache;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.Subject;
-import nl.colorize.util.SubscribableCollection;
-import nl.colorize.util.Cache;
 import org.teavm.jso.browser.Storage;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.canvas.CanvasRenderingContext2D;
@@ -33,60 +27,110 @@ import org.teavm.jso.dom.html.HTMLDocument;
 import org.teavm.jso.dom.html.HTMLElement;
 import org.teavm.jso.dom.html.HTMLImageElement;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 /**
  * Delegates media loading to the browser. Images, audio, and fonts are loaded
  * using the conventional browser APIs. Text files are embedded into the HTML
- * during the build, and can therefore be loaded immediately.
+ * during the build and can therefore be loaded immediately.
+ * <p>
+ * Media files are loaded asynchronously. Media classes (e.g. {@link TeaImage}
+ * are able to handle situations where the underlying resource is still
+ * loading. However, it is also possible to explicitly preload all media
+ * files, which would typically be done at application startup, using
+ * {@link #preload()}.
  */
 public class TeaMediaLoader implements MediaLoader {
 
-    private GraphicsMode graphicsMode;
     private HTMLDocument document;
     private BrowserBridge bridge;
     private String timestamp;
 
-    private List<ResourceFile> manifest;
-    @Getter private SubscribableCollection<LoadStatus> loadStatus;
+    private Map<ResourceFile, HTMLImageElement> preloadedImages;
+    private Set<ResourceFile> preloadedFonts;
     private Cache<MaskImage, HTMLCanvasElement> maskImageCache;
 
     private static final ResourceFile MANIFEST_FILE = new ResourceFile("resource-file-manifest");
-    private static final Splitter LINE_SPLITTER = Splitter.on("\n").trimResults().omitEmptyStrings();
     private static final int IMAGE_CACHE_SIZE = 500;
     private static final Logger LOGGER = LogHelper.getLogger(TeaMediaLoader.class);
 
-    protected TeaMediaLoader(GraphicsMode graphicsMode) {
-        this.graphicsMode = graphicsMode;
+    public TeaMediaLoader() {
         this.document = Window.current().getDocument();
         this.bridge = Browser.getBrowserBridge();
         this.timestamp = bridge.getMeta("build-id", String.valueOf(System.currentTimeMillis()));
 
-        this.manifest = Collections.emptyList();
-        this.loadStatus = SubscribableCollection.wrap(new ArrayList<>());
-        this.maskImageCache = Cache.from(this::createMaskImage, IMAGE_CACHE_SIZE);
+        preloadedImages = new HashMap<>();
+        preloadedFonts = new HashSet<>();
+        maskImageCache = Cache.from(this::createMaskImage, IMAGE_CACHE_SIZE);
+    }
+
+    /**
+     * Preloads all media files and returns a {@link Subject} to subscribe to
+     * the results. Audio files and text files are exempt: Audio files can be
+     * streamed, and text files are "baked" into the HTML and therefore do
+     * not need to be preloaded.
+     * <p>
+     * Subscribers will only be notified once, when all media files have been
+     * loaded successfully. Subscribers will also be notified when loading
+     * any of the media files fails.
+     */
+    public Subject<List<ResourceFile>> preload() {
+        List<ResourceFile> loading = new CopyOnWriteArrayList<>();
+        List<ResourceFile> loaded = new CopyOnWriteArrayList<>();
+        Subject<List<ResourceFile>> status = new Subject<>();
+
+        Consumer<ResourceFile> checkStatus = file -> {
+            loaded.add(file);
+            if (loading.size() == loaded.size()) {
+                status.next(loaded);
+            }
+        };
+
+        for (ResourceFile file : loadResourceManifest()) {
+            if (file.path().endsWith(".png") || file.path().endsWith("jpg")) {
+                loading.add(file);
+                appendImageElement(file).subscribe(_ -> checkStatus.accept(file));
+            }
+        }
+
+        return status;
     }
 
     @Override
     public Image loadImage(ResourceFile file) {
+        if (preloadedImages.containsKey(file)) {
+            HTMLImageElement imageElement = preloadedImages.get(file);
+            return new TeaImage(Subject.of(imageElement), null);
+        } else {
+            Subject<HTMLImageElement> imageElement = appendImageElement(file);
+            return new TeaImage(imageElement, null);
+        }
+    }
+
+    private Subject<HTMLImageElement> appendImageElement(ResourceFile file) {
+        Subject<HTMLImageElement> promise = new Subject<>();
         HTMLImageElement imageElement = (HTMLImageElement) document.createElement("img");
-        Subject<HTMLImageElement> imagePromise = new Subject<>();
-        loadStatus.add(LoadStatus.track(file, imagePromise));
         imageElement.setCrossOrigin("anonymous");
-        imageElement.addEventListener("load", event -> imagePromise.next(imageElement));
+        imageElement.addEventListener("load", _ -> {
+            preloadedImages.put(file, imageElement);
+            promise.next(imageElement);
+        });
         imageElement.setSrc(getResourceFileURL(file));
-        return new TeaImage(imagePromise, null);
+        return promise;
     }
 
     @Override
     public Audio loadAudio(ResourceFile file) {
-        HTMLAudioElement audioElement = (HTMLAudioElement) document.createElement("audio");
         Subject<HTMLAudioElement> audioPromise = new Subject<>();
-        loadStatus.add(LoadStatus.track(file, audioPromise));
+        HTMLAudioElement audioElement = (HTMLAudioElement) document.createElement("audio");
         audioElement.setCrossOrigin("anonymous");
         audioElement.addEventListener("loadeddata", event -> audioPromise.next(audioElement));
         audioElement.setSrc(getResourceFileURL(file));
@@ -95,45 +139,36 @@ public class TeaMediaLoader implements MediaLoader {
 
     @Override
     public FontFace loadFont(ResourceFile file, String family, int size, ColorRGB color) {
-        String url = "url('" + getResourceFileURL(file) + "')";
-        Subject<String> promise = new Subject<>();
-        loadStatus.add(LoadStatus.track(file, promise));
+        FontFace fontRef = new FontFace(file, family, size, color);
+        if (!preloadedFonts.contains(file)) {
+            appendFont(file, fontRef);
+        }
+        return fontRef;
+    }
 
-        bridge.preloadFontFace(family, url, error -> {
-            promise.next(url);
+    private Subject<FontFace> appendFont(ResourceFile file, FontFace fontRef) {
+        String url = "url('" + getResourceFileURL(file) + "')";
+        Subject<FontFace> promise = new Subject<>();
+
+        bridge.preloadFontFace(fontRef.family(), url, error -> {
+            preloadedFonts.add(file);
+            promise.next(fontRef);
             if (error != null && !error.isEmpty()) {
-                LOGGER.warning("Failed to load font '" + family + "': " + error);
+                LOGGER.warning("Failed to load font " + file + ": " + error);
             }
         });
 
-        return new FontFace(file, family, size, color);
+        return promise;
     }
 
     @Override
     public Mesh loadModel(ResourceFile file) {
-        if (graphicsMode != GraphicsMode.MODE_3D) {
-            throw new UnsupportedOperationException("Renderer does not support 3D graphics");
-        }
-
-        //TODO this is now hard-coded to the Three.js renderer
-        //     when you use 3D graphics.
-        Subject<ThreeObject> modelPromise = new Subject<>();
-
-        if (file.getName().endsWith(".gltf")) {
-            Browser.getThreeBridge().loadGLTF(getResourceFileURL(file), modelPromise::next);
-        } else if (file.getName().endsWith(".obj")) {
-            Browser.getThreeBridge().loadOBJ(getResourceFileURL(file), modelPromise::next);
-        } else {
-            throw new IllegalArgumentException("Unknown model format: " + file);
-        }
-
-        loadStatus.add(LoadStatus.track(file, modelPromise));
-        return new ThreeMeshWrapper(modelPromise);
+        throw new UnsupportedOperationException("Renderer does not support 3D graphics");
     }
 
     @Override
     public String loadText(ResourceFile file) {
-        HTMLElement resource = document.getElementById(normalizeFilePath(file, true));
+        HTMLElement resource = document.getElementById(normalizeFilePath(file));
         if (resource == null) {
             throw new MediaException("Unknown text resource file: " + file);
         }
@@ -142,37 +177,24 @@ public class TeaMediaLoader implements MediaLoader {
 
     @Override
     public boolean containsResourceFile(ResourceFile file) {
-        String fileEntry = file.path().contains("/")
-            ? file.path().substring(file.path().lastIndexOf("/") + 1)
-            : file.path();
-
-        return loadResourceFileManifest().stream()
-            .anyMatch(entry -> entry.path().equals(fileEntry));
+        return loadResourceManifest().contains(file);
     }
 
-    private List<ResourceFile> loadResourceFileManifest() {
-        if (!manifest.isEmpty()) {
-            return manifest;
-        }
-
-        manifest = LINE_SPLITTER.splitToList(loadText(MANIFEST_FILE)).stream()
-            .map(path -> new ResourceFile(path))
+    private List<ResourceFile> loadResourceManifest() {
+        return loadTextLines(MANIFEST_FILE).stream()
+            .filter(line -> !line.isEmpty())
+            .map(path -> new ResourceFile(path.trim()))
             .toList();
-
-        return manifest;
     }
 
     private String getResourceFileURL(ResourceFile file) {
-        return "resources/" + normalizeFilePath(file, false) + "?t=" + timestamp;
+        return "assets/" + file.path() + "?t=" + timestamp;
     }
 
-    protected String normalizeFilePath(ResourceFile file, boolean replaceDot) {
-        String normalized = file.path();
+    protected String normalizeFilePath(ResourceFile file) {
+        String normalized = file.path().replace(".", "_");
         if (normalized.indexOf('/') != -1) {
             normalized = normalized.substring(normalized.lastIndexOf('/') + 1);
-        }
-        if (replaceDot) {
-            normalized = normalized.replace(".", "_");
         }
         return normalized;
     }

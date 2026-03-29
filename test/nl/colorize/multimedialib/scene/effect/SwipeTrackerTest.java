@@ -16,7 +16,7 @@ class SwipeTrackerTest {
 
     @Test
     void noSwipeWithoutPressingPointer() {
-        HeadlessRenderer renderer = new HeadlessRenderer(false);
+        HeadlessRenderer renderer = new HeadlessRenderer();
         SwipeTracker swipeTracker = new SwipeTracker(10f);
 
         renderer.setPointer(new Point2D(10f, 20f));
@@ -30,7 +30,7 @@ class SwipeTrackerTest {
 
     @Test
     void noSwipeWithoutReleasingPointer() {
-        HeadlessRenderer renderer = new HeadlessRenderer(false);
+        HeadlessRenderer renderer = new HeadlessRenderer();
         SwipeTracker swipeTracker = new SwipeTracker(10f);
 
         renderer.setPointerPressed(true);
@@ -45,7 +45,7 @@ class SwipeTrackerTest {
 
     @Test
     void detectSwipes() {
-        HeadlessRenderer renderer = new HeadlessRenderer(false);
+        HeadlessRenderer renderer = new HeadlessRenderer();
         SwipeTracker swipeTracker = new SwipeTracker(10f);
 
         renderer.setPointerPressed(true);
@@ -61,7 +61,7 @@ class SwipeTrackerTest {
 
     @Test
     void swipeBelowToleranceDoesNotCount() {
-        HeadlessRenderer renderer = new HeadlessRenderer(false);
+        HeadlessRenderer renderer = new HeadlessRenderer();
         SwipeTracker swipeTracker = new SwipeTracker(10f);
 
         renderer.setPointerPressed(true);

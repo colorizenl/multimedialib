@@ -13,7 +13,6 @@ import nl.colorize.multimedialib.mock.MockScene;
 import nl.colorize.multimedialib.mock.MockStageVisitor;
 import nl.colorize.multimedialib.mock.MockStopwatch;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
-import nl.colorize.multimedialib.scene.effect.Effect;
 import nl.colorize.multimedialib.stage.Animation;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Primitive;
@@ -27,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static nl.colorize.multimedialib.math.Shape.EPSILON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,7 +39,7 @@ public class SceneManagerTest {
 
     @BeforeEach
     public void before() {
-        context = new HeadlessRenderer(false);
+        context = new HeadlessRenderer();
     }
 
     @Test
@@ -249,9 +249,15 @@ public class SceneManagerTest {
         MockScene parent = new MockScene();
         MockScene child = new MockScene();
 
+        Timer timer = new Timer(2f);
+        FluentScene timerSubScene = FluentScene.create()
+            .withFrameHandler(timer)
+            .withCompletionCheck(timer::isCompleted)
+            .withCompletionHandler(() -> child.start(context));
+
         SceneManager sceneManager = new SceneManager(context);
         sceneManager.changeScene(parent);
-        sceneManager.attach(Effect.delay(2f, () -> child.start(context)));
+        sceneManager.attach(timerSubScene);
         sceneManager.performFrameUpdate(1f);
         sceneManager.performFrameUpdate(1f);
         sceneManager.performFrameUpdate(1f);
@@ -410,13 +416,17 @@ public class SceneManagerTest {
     @Test
     void getDebugInformation() {
         String expected = """
-            Renderer:  Headless renderer
+            Renderer:  <launcher>
             Canvas:  800x600 @ 1.0x
             Framerate:  1000 / 10
             Update time:  0ms
             Render time:  0ms""";
 
-        assertEquals(expected, String.join("\n", context.getDebugInformation()));
+        String debugInfo = context.getDebugInformation().stream()
+            .filter(line -> !line.startsWith("Memory:"))
+            .collect(Collectors.joining("\n"));
+
+        assertEquals(expected, debugInfo);
     }
 
     @Test
@@ -427,6 +437,7 @@ public class SceneManagerTest {
         sprite.animate(Timer.none());
 
         SceneManager sceneManager = new SceneManager(context);
+        context.setSceneManager(sceneManager);
         sceneManager.changeScene(new MockScene());
         context.getStage().getRoot().addChild(sprite);
 
@@ -435,6 +446,7 @@ public class SceneManagerTest {
         sceneManager.performFrameUpdate(1f);
         context.getStage().visit(visitor);
         assertEquals(List.of("background", "sprite"), visitor.getRendered());
+        assertEquals(1f, context.getStage().getAnimationTimer().getTime(), EPSILON);
         assertEquals(1f, sprite.getCurrentStateTimer().getTime(), EPSILON);
 
         sprite.getTransform().setVisible(false);
@@ -541,7 +553,7 @@ public class SceneManagerTest {
         EventQueue<String> eventQueue = new EventQueue<>();
         subject.subscribe(eventQueue);
 
-        HeadlessRenderer renderer = new HeadlessRenderer(false);
+        HeadlessRenderer renderer = new HeadlessRenderer();
         renderer.attach(eventQueue, events::add, errors::add);
 
         Thread.sleep(3000);
@@ -565,7 +577,7 @@ public class SceneManagerTest {
         EventQueue<String> eventQueue = new EventQueue<>();
         subject.subscribe(eventQueue);
 
-        HeadlessRenderer renderer = new HeadlessRenderer(false);
+        HeadlessRenderer renderer = new HeadlessRenderer();
         renderer.attach(eventQueue, events::add, errors::add);
 
         Thread.sleep(3000);
@@ -584,7 +596,7 @@ public class SceneManagerTest {
         Subject<String> originalSubject = Subject.of("a");
         EventQueue<String> eventQueue = EventQueue.subscribe(originalSubject);
 
-        HeadlessRenderer renderer = new HeadlessRenderer(false);
+        HeadlessRenderer renderer = new HeadlessRenderer();
         renderer.attach(eventQueue).subscribe(events::add, errors::add);
 
         assertEquals(0, events.size());

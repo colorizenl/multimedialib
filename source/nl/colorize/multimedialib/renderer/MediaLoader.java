@@ -11,12 +11,10 @@ import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Image;
-import nl.colorize.multimedialib.stage.LoadStatus;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
 import nl.colorize.util.PropertyUtils;
 import nl.colorize.util.ResourceFile;
-import nl.colorize.util.SubscribableCollection;
 import nl.colorize.util.TranslationBundle;
 
 import java.util.List;
@@ -32,8 +30,9 @@ import java.util.Properties;
 public interface MediaLoader {
 
     /**
-     * Loads an image from a file. Images in JPEG and PNG format are supported
-     * by all renderers.
+     * Loads an image from a file. Supported image formats depend on the
+     * renderer and the current platform. JPEG and PNG formats are guaranteed
+     * to be supported by all renderers.
      *
      * @throws MediaException if the format is not supported by the renderer.
      */
@@ -53,8 +52,9 @@ public interface MediaLoader {
     }
 
     /**
-     * Loads an audio clip from a file. MP3 files are supported by all
-     * renderers.
+     * Loads an audio clip from a file. Supported file formats depend on the
+     * renderer and the current platform. OGG format is guaranteed to be
+     * supported by all renderers.
      *
      * @throws MediaException if the format is not supported by the renderer.
      */
@@ -133,7 +133,8 @@ public interface MediaLoader {
     }
 
     /**
-     * Returns whether the specified resource file is available.
+     * Returns true if the specified resource file exists and can be loaded
+     * by this {@link MediaLoader}.
      */
     public boolean containsResourceFile(ResourceFile file);
 
@@ -151,10 +152,4 @@ public interface MediaLoader {
      * data is supported by all platforms.
      */
     public void saveApplicationData(String appName, Properties data);
-
-    /**
-     * Returns a buffer containing the load status of all media files that
-     * have been loaded by this {@link MediaLoader}.
-     */
-    public SubscribableCollection<LoadStatus> getLoadStatus();
 }

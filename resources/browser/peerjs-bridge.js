@@ -8,7 +8,7 @@
  * Bridge interface for accessing PeerJS connections. This interface is called
  * from the renderer via TeaVM.
  */
-export class PeerJsBridge {
+class PeerJsBridge {
 
     constructor() {
         this.peer = null;

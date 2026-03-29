@@ -6,8 +6,8 @@
 
 package nl.colorize.multimedialib.scene;
 
+import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.LinkedList;
 
 /**
  * Finite state machine that allows a number of possible states, but can
@@ -34,7 +34,7 @@ public class StateMachine<S> implements Updatable {
     private StateQueueElement<S> defaultState;
 
     public StateMachine(S defaultState) {
-        this.stateQueue = new LinkedList<>();
+        this.stateQueue = new ArrayDeque<>();
         this.defaultState = new StateQueueElement<>(defaultState, Timer.infinite(), true);
     }
 

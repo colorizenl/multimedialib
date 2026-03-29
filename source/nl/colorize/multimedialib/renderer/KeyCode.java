@@ -75,7 +75,6 @@ public enum KeyCode {
 
     COMMA,
     PERIOD,
-    PLUS,
     MINUS,
     EQUALS;
 }

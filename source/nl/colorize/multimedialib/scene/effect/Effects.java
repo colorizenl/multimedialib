@@ -12,6 +12,7 @@ import nl.colorize.multimedialib.scene.FluentScene;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.Updatable;
 import nl.colorize.multimedialib.stage.Sprite;
+import nl.colorize.multimedialib.stage.StageNode2D;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.util.TextUtils;
 import nl.colorize.util.animation.Interpolation;
@@ -79,9 +80,22 @@ public final class Effects {
         timeline.addKeyFrame(0f, 0f);
         timeline.addKeyFrame(duration, 360f);
 
-        return (context, deltaTime) -> {
+        return (_, deltaTime) -> {
             timeline.movePlayhead(deltaTime);
             graphic.getTransform().setRotation(timeline.getValue());
+        };
+    }
+
+    /**
+     * Displays the specified graphics until the user changes their device
+     * orientation to landscape.
+     */
+    public static Scene showOrientationLock(StageNode2D graphics) {
+        return (context, _) -> {
+            Canvas canvas = context.getCanvas();
+            graphics.getTransform().setVisible(canvas.getWidth() < canvas.getHeight());
+            // Reposition all graphics because the canvas might have changed.
+            graphics.getTransform().setPosition(canvas.getCenter());
         };
     }
 }

@@ -10,6 +10,7 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
+import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.util.cli.Arg;
 import nl.colorize.util.cli.CommandLineArgumentParser;
 
@@ -27,10 +28,10 @@ import static nl.colorize.multimedialib.tool.Demo2D.DEFAULT_CANVAS_WIDTH;
  */
 public class DemoLauncher {
 
-    @Arg(name = "--renderer", usage = "One of 'java2d', 'javafx', 'gdx'.")
+    @Arg(name = "--renderer", usage = "One of 'java2d', 'javafx', 'gdx', 'skija'.")
     protected String rendererName;
 
-    @Arg(usage = "One of '2d', '3d', 'isometric'.")
+    @Arg(usage = "Either '2d' or '3d'.")
     protected String graphics;
 
     @Arg(defaultValue = "60", usage = "Framerate, default is 60 fps.")
@@ -53,15 +54,13 @@ public class DemoLauncher {
         ScaleStrategy scaleStrategy = canvasZoom ? ScaleStrategy.scale() : ScaleStrategy.flexible();
         Canvas canvas = new Canvas(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT, scaleStrategy);
 
-        RenderConfig config = RenderConfig.forDesktop(rendererName, graphicsMode, canvas);
-        config.setFramerate(framerate);
-        config.getWindowOptions().setTitle("MultimediaLib - Demo");
-        config.getWindowOptions().setFullscreen(fullscreen);
+        RenderConfig config = RenderConfig.forDesktop(rendererName, graphicsMode, canvas)
+            .withFramerate(framerate)
+            .withWindowOptions(new WindowOptions("MultimediaLib - Demo", fullscreen));
 
         switch (graphics) {
             case "2d" -> config.start(new Demo2D());
             case "3d" -> config.start(new Demo3D());
-            case "isometric" -> config.start(new DemoIsometric());
             default -> throw new UnsupportedOperationException();
         }
     }

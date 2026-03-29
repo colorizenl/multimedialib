@@ -9,17 +9,15 @@ package nl.colorize.multimedialib.renderer;
 import com.google.common.base.Preconditions;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.With;
 import nl.colorize.multimedialib.math.Size;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
 import nl.colorize.multimedialib.renderer.java2d.Java2DRenderer;
-import nl.colorize.multimedialib.renderer.jfx.JFXRenderer;
-import nl.colorize.multimedialib.renderer.libgdx.GDXRenderer;
+import nl.colorize.multimedialib.renderer.libgdx.GDXBrowserRenderer;
+import nl.colorize.multimedialib.renderer.libgdx.GDXDesktopRenderer;
+import nl.colorize.multimedialib.renderer.skija.SkijaRenderer;
 import nl.colorize.multimedialib.renderer.teavm.Browser;
-import nl.colorize.multimedialib.renderer.teavm.HtmlCanvasGraphics;
-import nl.colorize.multimedialib.renderer.teavm.PixiGraphics;
-import nl.colorize.multimedialib.renderer.teavm.TeaRenderer;
-import nl.colorize.multimedialib.renderer.teavm.ThreeGraphics;
+import nl.colorize.multimedialib.renderer.teavm.HtmlCanvasRenderer;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.util.Development;
@@ -28,11 +26,15 @@ import nl.colorize.util.Platform;
 import nl.colorize.util.Tuple;
 import nl.colorize.util.http.PostData;
 
-import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static lombok.AccessLevel.PRIVATE;
 
 /**
  * Used to configure and launch the renderer, and can also be used to obtain
@@ -76,36 +78,37 @@ import java.util.logging.Logger;
  * browsers. Simulation mode can be activated programmatically, but it can
  * also be enabled using the system property {@code multimedialib.simulation}.
  */
+@AllArgsConstructor(access=PRIVATE)
 @Getter
-@Setter
 public final class RenderConfig {
 
-    private final Supplier<Renderer> launcher;
-    private final GraphicsMode graphicsMode;
-    private final Canvas canvas;
-    private int framerate;
-    private final WindowOptions windowOptions;
-    private ErrorHandler errorHandler;
-    private final List<Scene> globalHandlers;
-    private String simulationMode;
+    private Supplier<Renderer> launcher;
+    private String rendererName;
+    private GraphicsMode graphicsMode;
+    private Canvas canvas;
+    @With private int framerate;
+    @With private WindowOptions windowOptions;
+    @With private ErrorHandler errorHandler;
+    @With private List<Scene> globalHandlers;
+    @With private String simulationMode;
+    private Locale userLocale;
 
     private static final Size SIMULATION_MODE_PHONE = new Size(350, 760);
     private static final Size SIMULATION_MODE_TABLET = new Size(570, 760);
+    private static final Pattern LOCALE_PATTERN = Pattern.compile("([a-z]{2})[-_]([a-zA-Z]{2})");
     private static final Logger LOGGER = LogHelper.getLogger(RenderConfig.class);
 
     private RenderConfig(Supplier<Renderer> launcher, GraphicsMode graphicsMode, Canvas canvas) {
         this.launcher = launcher;
+        this.rendererName = "<launcher>";
         this.graphicsMode = graphicsMode;
         this.canvas = canvas;
         this.framerate = 60;
         this.errorHandler = ErrorHandler.DEFAULT;
-        this.windowOptions = new WindowOptions();
-        this.globalHandlers = new ArrayList<>();
+        this.windowOptions = new WindowOptions("MultimediaLib", WindowOptions.DEFAULT_ICON, false);
+        this.globalHandlers = new CopyOnWriteArrayList<>();
         this.simulationMode = System.getProperty("multimedialib.simulation");
-
-        if (Platform.isDesktopPlatform()) {
-            globalHandlers.add(this::checkScreenshotHandler);
-        }
+        this.userLocale = Locale.getDefault();
     }
 
     public boolean isSimulationMode() {
@@ -128,11 +131,13 @@ public final class RenderConfig {
 
         if (Platform.isTeaVM()) {
             initQueryStringSystemProperties();
+            initBrowserLocale();
         }
 
         Renderer renderer = launcher.get();
+        rendererName = renderer.getDisplayName();
 
-        if (!renderer.isSupported(graphicsMode)) {
+        if (!renderer.getSupportedGraphicsModes().contains(graphicsMode)) {
             throw new UnsupportedOperationException("Renderer does not support graphics mode");
         }
 
@@ -148,8 +153,12 @@ public final class RenderConfig {
             default -> SIMULATION_MODE_PHONE;
         };
 
-        windowOptions.setFullscreen(false);
-        windowOptions.setWindowSize(simulationModeScreenSize);
+        windowOptions = new WindowOptions(
+            windowOptions.getTitle(),
+            windowOptions.getIconFile(),
+            false,
+            simulationModeScreenSize
+        );
     }
 
     private void initQueryStringSystemProperties() {
@@ -165,21 +174,15 @@ public final class RenderConfig {
         }
     }
 
-    /**
-     * Global handler that saves screenshots to the platform default location
-     * whenever the F12 is pressed. This handler is only available on desktop
-     * platforms.
-     */
-    private void checkScreenshotHandler(SceneContext context, float deltaTime) {
-        if (context.getInput().isKeyReleased(KeyCode.F12)) {
-            try {
-                File screenshotFile = new File(Platform.getUserDesktopDir(),
-                    "screenshot-" + System.currentTimeMillis() + ".png");
-                context.takeScreenshot(screenshotFile);
-                LOGGER.info("Saved screenshot to " + screenshotFile.getAbsolutePath());
-            } catch (UnsupportedOperationException e) {
-                LOGGER.warning("Screenshots not supported");
-            }
+    @SuppressWarnings("deprecation")
+    private void initBrowserLocale() {
+        String browserLanguage = Browser.getLanguage();
+        Matcher matcher = LOCALE_PATTERN.matcher(browserLanguage);
+
+        if (matcher.matches()) {
+            userLocale = new Locale(matcher.group(1).toLowerCase(), matcher.group(2).toUpperCase());
+        } else if (browserLanguage.length() == 2) {
+            userLocale = new Locale(matcher.group(1).toLowerCase());
         }
     }
 
@@ -200,8 +203,8 @@ public final class RenderConfig {
 
         Supplier<Renderer> launcher = switch (renderer.toLowerCase()) {
             case "java2d" -> Java2DRenderer::new;
-            case "libgdx", "gdx" -> GDXRenderer::new;
-            case "javafx", "jfx", "openjfx" -> JFXRenderer::launch;
+            case "libgdx", "gdx" -> GDXDesktopRenderer::new;
+            case "skija" -> SkijaRenderer::new;
             default -> throw new IllegalArgumentException("Unknown desktop renderer: " + renderer);
         };
 
@@ -223,9 +226,8 @@ public final class RenderConfig {
         Preconditions.checkState(Platform.isTeaVM(), "Browser-based renderer requires TeaVM");
 
         Supplier<Renderer> launcher = switch (renderer.toLowerCase()) {
-            case "canvas", "html5" -> () -> new TeaRenderer(new HtmlCanvasGraphics());
-            case "pixi", "pixijs" -> () -> new TeaRenderer(new PixiGraphics());
-            case "three", "threejs" -> () -> new TeaRenderer(new ThreeGraphics());
+            case "canvas", "tea", "teavm" -> HtmlCanvasRenderer::new;
+            case "libgdx", "gdx" -> GDXBrowserRenderer::new;
             default -> throw new IllegalArgumentException("Unknown browser renderer: " + renderer);
         };
 
@@ -238,8 +240,7 @@ public final class RenderConfig {
      */
     @Development
     public static RenderConfig headless(GraphicsMode graphicsMode, Canvas canvas) {
-        boolean graphicsEnv = graphicsMode != GraphicsMode.HEADLESS;
-        return new RenderConfig(() -> new HeadlessRenderer(graphicsEnv), graphicsMode, canvas);
+        return new RenderConfig(() -> new HeadlessRenderer(), graphicsMode, canvas);
     }
 
     /**

@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import static nl.colorize.multimedialib.renderer.teavm.HtmlCanvasRenderer.CONTAINER_ID;
+
 /**
  * Captures browser events for various input methods, and makes them accessible
  * from the animation loop. During each frame, incoming events are added to a
@@ -41,7 +43,6 @@ public class TeaInput implements InputDevice {
 
     private BrowserBridge bridge;
     private Canvas canvas;
-    private TeaGraphics graphics;
 
     private Map<String, Pointer> pointers;
     private Set<Integer> keysDown;
@@ -109,19 +110,15 @@ public class TeaInput implements InputDevice {
             .put(KeyCode.F12, 123)
             .put(KeyCode.COMMA, 188)
             .put(KeyCode.PERIOD, 190)
-            .put(KeyCode.PLUS, 187)
             .put(KeyCode.MINUS, 189)
-            // KeyCode.EQUALS is not supported because JavaScript uses
-            // the same keycode for both "+" and "=".
+            .put(KeyCode.EQUALS, 187)
             .build();
 
-    private static final String CONTAINER = "#multimediaLibContainer";
     private static final Logger LOGGER = LogHelper.getLogger(TeaInput.class);
 
-    public TeaInput(Canvas canvas, TeaGraphics graphics) {
+    public TeaInput(Canvas canvas) {
         this.bridge = Browser.getBrowserBridge();
         this.canvas = canvas;
-        this.graphics = graphics;
 
         this.pointers = new HashMap<>();
         this.keysDown = new HashSet<>();
@@ -130,8 +127,7 @@ public class TeaInput implements InputDevice {
 
     public void bindEventHandlers() {
         Window window = Window.current();
-        HTMLElement container = window.getDocument().querySelector(CONTAINER);
-
+        HTMLElement container = window.getDocument().getElementById(CONTAINER_ID);
         container.addEventListener("mousedown", this::onMouseEvent);
         container.addEventListener("mouseup", this::onMouseEvent);
         container.addEventListener("mousemove", this::onMouseEvent);
@@ -232,8 +228,9 @@ public class TeaInput implements InputDevice {
     }
 
     private Point2D getPointerCanvasPosition(float pageX, float pageY) {
-        int screenX = Math.round(pageX * graphics.getDevicePixelRatio());
-        int screenY = Math.round(pageY * graphics.getDevicePixelRatio());
+        float devicePixelRatio = (float) Window.current().getDevicePixelRatio();
+        int screenX = Math.round(pageX * devicePixelRatio);
+        int screenY = Math.round(pageY * devicePixelRatio);
 
         float canvasX = canvas.toCanvasX(screenX);
         float canvasY = canvas.toCanvasY(screenY);

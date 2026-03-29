@@ -13,6 +13,7 @@ import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Subject;
+import org.jspecify.annotations.Nullable;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.canvas.CanvasRenderingContext2D;
 import org.teavm.jso.canvas.ImageData;
@@ -43,7 +44,7 @@ public class TeaImage implements Image {
     private static final int[] UNKNOWN_RGBA = {0, 0, 0, 0};
     private static final Logger LOGGER = LogHelper.getLogger(TeaImage.class);
 
-    protected TeaImage(Subject<HTMLImageElement> imagePromise, Region region) {
+    protected TeaImage(Subject<HTMLImageElement> imagePromise, @Nullable Region region) {
         this.id = UUID.randomUUID();
         this.imagePromise = imagePromise;
         this.region = region;

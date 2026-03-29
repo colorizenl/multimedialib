@@ -14,6 +14,7 @@ import nl.colorize.multimedialib.renderer.teavm.Browser;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.util.LogHelper;
 
+import java.util.UUID;
 import java.util.logging.Logger;
 
 import static nl.colorize.multimedialib.renderer.GraphicsMode.MODE_2D;
@@ -29,27 +30,27 @@ import static nl.colorize.multimedialib.tool.Demo2D.DEFAULT_CANVAS_WIDTH;
 public class TeaDemoLauncher {
 
     private static final int BROWSER_FRAMERATE = 60;
+    private static final UUID SESSION_ID = UUID.randomUUID();
     private static final Logger LOGGER = LogHelper.getLogger(TeaDemoLauncher.class);
 
     public static void main(String[] args) {
         LOGGER.info("MultimediaLib - TeaVM Demo");
+        LOGGER.info("Session ID: " + SESSION_ID);
 
         String demoMode = getDemoMode();
-        GraphicsMode graphicsMode = demoMode.equals("3d") ? MODE_3D : MODE_2D;
         Canvas canvas = new Canvas(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT, ScaleStrategy.balanced());
-
-        String defaultRenderer = graphicsMode == MODE_3D ? "three" : "canvas";
+        GraphicsMode graphicsMode = demoMode.equals("3d") ? MODE_3D : MODE_2D;
+        String defaultRenderer = graphicsMode == MODE_3D ? "gdx" : "canvas";
         String rendererName = Browser.getBrowserBridge().getQueryParameter("renderer", defaultRenderer);
         LOGGER.info("Renderer: " + rendererName);
 
-        RenderConfig config = RenderConfig.forBrowser(rendererName, graphicsMode, canvas);
-        config.setFramerate(BROWSER_FRAMERATE);
-        config.setErrorHandler(TeaDemoLauncher::logError);
+        RenderConfig config = RenderConfig.forBrowser(rendererName, graphicsMode, canvas)
+            .withFramerate(BROWSER_FRAMERATE)
+            .withErrorHandler(TeaDemoLauncher::logError);
 
         switch (demoMode) {
             case "2d" -> config.start(new Demo2D());
             case "3d" -> config.start(new Demo3D());
-            case "isometric" -> config.start(new DemoIsometric());
             default -> throw new UnsupportedOperationException();
         }
     }

@@ -47,6 +47,10 @@ public interface Network {
         return post(url, headers, body.encode());
     }
 
+    default EventQueue<Response> post(String url, PostData body) {
+        return post(url, Collections.emptyMap(), body.encode());
+    }
+
     /**
      * Opens a peer-to-peer connection. The protocol used for the connection
      * depends on both the renderer and the current platform.

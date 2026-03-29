@@ -9,9 +9,9 @@ package nl.colorize.multimedialib.renderer;
 import nl.colorize.util.FloatStats;
 import nl.colorize.util.Stopwatch;
 
+import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -42,7 +42,7 @@ public class FrameStats {
     private PhaseStats prepare(String phase) {
         PhaseStats phaseStats = stats.get(phase);
         if (phaseStats == null) {
-            phaseStats = new PhaseStats(phase, new Stopwatch(), new LinkedList<>());
+            phaseStats = new PhaseStats(phase, new Stopwatch(), new ArrayDeque<>());
             stats.put(phase, phaseStats);
         }
         return phaseStats;
