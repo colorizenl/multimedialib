@@ -10,6 +10,7 @@ import lombok.Getter;
 import nl.colorize.multimedialib.math.Size;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
+import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.renderer.Renderer;
@@ -41,6 +42,9 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.image.BufferStrategy;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -257,6 +261,32 @@ public class Java2DRenderer implements Renderer, SceneContext, ApplicationMenuLi
     @Override
     public List<GraphicsMode> getSupportedGraphicsModes() {
         return List.of(GraphicsMode.MODE_2D);
+    }
+
+    @Override
+    public List<Scene> getGlobalHandlers() {
+        return List.of(this::takeScreenshot);
+    }
+
+    private void takeScreenshot(SceneContext context, float deltaTime) {
+        if (context.getInput().isKeyReleased(KeyCode.F12)) {
+            File screenshotFile = new File(Platform.getUserDesktopDir(),
+                "screenshot-" + System.currentTimeMillis() + ".png");
+            BufferedImage image = new BufferedImage(window.getWidth(), window.getHeight(),
+                BufferedImage.TYPE_INT_ARGB);
+            Java2DGraphicsContext screenshotContext = new Java2DGraphicsContext(config.getCanvas());
+            Graphics2D g2 = Utils2D.createGraphics(image, false, false);
+            screenshotContext.bind(g2);
+            getStage().visit(screenshotContext);
+            screenshotContext.dispose();
+
+            try {
+                Utils2D.savePNG(image, screenshotFile);
+                LOGGER.info("Saved screenshot to " + screenshotFile.getAbsolutePath());
+            } catch (IOException e) {
+                LOGGER.log(Level.WARNING, "Error while taking screenshot", e);
+            }
+        }
     }
 
     @Override

@@ -6,19 +6,25 @@
 
 package nl.colorize.multimedialib.renderer.libgdx;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
+import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.glutils.HdpiMode;
 import com.badlogic.gdx.utils.GdxNativesLoader;
 import com.badlogic.gdx.utils.SharedLibraryLoader;
 import nl.colorize.multimedialib.math.Size;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
+import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.RendererException;
 import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
 import nl.colorize.multimedialib.renderer.java2d.StandardNetwork;
 import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.SceneManager;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
@@ -28,11 +34,13 @@ import org.lwjgl.system.Configuration;
 
 import java.awt.Dimension;
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.Deflater;
 
 import static com.badlogic.gdx.Files.FileType.Internal;
 
@@ -229,9 +237,49 @@ public class GDXDesktopRenderer extends GDXContext implements Renderer {
         return List.of(GraphicsMode.MODE_2D, GraphicsMode.MODE_3D);
     }
 
+    @Override
+    public List<Scene> getGlobalHandlers() {
+        return List.of(this::takeScreenshot);
+    }
+
+    private void takeScreenshot(SceneContext context, float deltaTime) {
+        if (context.getInput().isKeyReleased(KeyCode.F12)) {
+            File screenshotFile = new File(Platform.getUserDesktopDir(),
+                "screenshot-" + System.currentTimeMillis() + ".png");
+            FileHandle file = Gdx.files.absolute(screenshotFile.getAbsolutePath());
+            Pixmap screenshot = prepareScreenshot();
+            PixmapIO.writePNG(file, screenshot, Deflater.DEFAULT_COMPRESSION, false);
+            screenshot.dispose();
+            LOGGER.info("Saved screenshot to " + screenshotFile.getAbsolutePath());
+        }
+    }
+
+    private Pixmap prepareScreenshot() {
+        int width = Gdx.graphics.getBackBufferWidth();
+        int height = Gdx.graphics.getBackBufferHeight();
+        Pixmap screenshot = Pixmap.createFromFrameBuffer(0, 0, width, height);
+
+        ByteBuffer pixels = screenshot.getPixels();
+        byte[] lines = new byte[width * height * 4];
+
+        for (int i = 4; i < pixels.limit(); i += 4) {
+            pixels.put(i - 1, (byte) 255);
+        }
+
+        for (int i = 0; i < height; i++) {
+            pixels.position((height - i - 1) * width * 4);
+            pixels.get(lines, i * width * 4, width * 4);
+        }
+        pixels.clear();
+        pixels.put(lines);
+        pixels.clear();
+
+        return screenshot;
+    }
+
     /**
      * Native library used by libGDX. These are normally managed by libGDX
-     * itself, but when running from a Mac application bundle a different
+     * itself, but when running from a Mac application bundle, a different
      * mechanism is used. See {@link #loadApplicationBundleNativeLibraries()}.
      */
     private record NativeLibrary(String name, String fileName) {

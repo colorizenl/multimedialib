@@ -26,6 +26,7 @@ import nl.colorize.util.Platform;
 import nl.colorize.util.Tuple;
 import nl.colorize.util.http.PostData;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -141,7 +142,11 @@ public final class RenderConfig {
             throw new UnsupportedOperationException("Renderer does not support graphics mode");
         }
 
-        BootstrapScene bootstrapScene = new BootstrapScene(initialScene, globalHandlers);
+        List<Scene> combinedGlobalHandlers = new ArrayList<>();
+        combinedGlobalHandlers.addAll(globalHandlers);
+        combinedGlobalHandlers.addAll(renderer.getGlobalHandlers());
+
+        BootstrapScene bootstrapScene = new BootstrapScene(initialScene, combinedGlobalHandlers);
         renderer.start(this, bootstrapScene);
     }
 

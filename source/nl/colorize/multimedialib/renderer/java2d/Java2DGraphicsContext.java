@@ -6,6 +6,7 @@
 
 package nl.colorize.multimedialib.renderer.java2d;
 
+import lombok.Getter;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Point2D;
@@ -45,13 +46,13 @@ import java.io.InputStream;
 import java.util.List;
 
 /**
- * Uses Java 2D to render graphics. Because of Java 2D's flexibility this class
+ * Uses Java 2D to render graphics. Because of Java 2D's flexibility, this class
  * supports several graphics contexts: drawing can be either directly to a
  * window using active rendering, but also to a Swing component, or to an image.
  */
 public class Java2DGraphicsContext implements StageVisitor {
 
-    private Canvas canvas;
+    @Getter private Canvas canvas;
     private Graphics2D g2;
 
     private Cache<ColorRGB, Color> colorCache;
@@ -70,10 +71,10 @@ public class Java2DGraphicsContext implements StageVisitor {
         this.fontCache = Cache.from(this::prepareFont, CACHE_CAPACITY);
     }
 
-    public Canvas getCanvas() {
-        return canvas;
-    }
-
+    /**
+     * Binds this graphics context to the specified {@link Graphics2D}
+     * instance, which it will use to draw graphics.
+     */
     public void bind(Graphics2D g2) {
         this.g2 = g2;
     }

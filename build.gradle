@@ -1,7 +1,7 @@
 plugins {
-    id "io.freefair.lombok" version "9.2.0"
+    id "io.freefair.lombok" version "9.4.0"
     id "com.vanniktech.maven.publish" version "0.36.0"
-    id "com.github.ben-manes.versions" version "0.53.0"
+    id "com.github.ben-manes.versions" version "0.54.0"
     id "net.ltgt.errorprone" version "5.1.0"
 }
 
@@ -9,7 +9,7 @@ apply plugin: "java-library"
 apply plugin: "jacoco"
 
 group = "nl.colorize"
-version = "2026.2"
+version = "2026.2.1"
 compileJava.options.encoding = "UTF-8"
 
 java {
@@ -40,9 +40,9 @@ dependencies {
     implementation "com.github.xpenatan.gdx-teavm:backend-web:1.5.4"
     implementation "com.github.xpenatan.gdx-teavm:gdx-freetype-teavm:1.5.4"
 
-    implementation "io.github.humbleui:skija-macos-x64:0.143.11"
-    implementation "io.github.humbleui:skija-macos-arm64:0.143.11"
-    implementation "io.github.humbleui:skija-windows-x64:0.143.11"
+    implementation "io.github.humbleui:skija-macos-x64:0.143.13"
+    implementation "io.github.humbleui:skija-macos-arm64:0.143.13"
+    implementation "io.github.humbleui:skija-windows-x64:0.143.13"
 
     implementation "org.teavm:teavm-jso:0.13.1"
     implementation "org.teavm:teavm-jso-apis:0.13.1"
@@ -51,12 +51,11 @@ dependencies {
 
     implementation "nl.colorize:colorize-java-commons:2026.2"
     implementation "com.github.mgsx-dev.gdx-gltf:gltf:2.3.0"
-    implementation "org.slf4j:slf4j-jdk14:2.0.9"
     implementation "org.slf4j:slf4j-jdk14:2.0.17"
     testImplementation "org.junit.jupiter:junit-jupiter:6.0.3"
-    testImplementation "com.tngtech.archunit:archunit-junit5:1.4.1"
+    testImplementation "com.tngtech.archunit:archunit-junit5:1.4.2"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
-    errorprone "com.google.errorprone:error_prone_core:2.48.0"
+    errorprone "com.google.errorprone:error_prone_core:2.49.0"
 }
 
 javadoc {
@@ -128,18 +127,18 @@ mavenPublishing {
                 url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
                 distribution = "http://www.apache.org/licenses/LICENSE-2.0.txt"
             }
-            developers {
-                developer {
-                    id = "colorize"
-                    name = "Colorize"
-                    url = "https://clrz.nl"
-                }
+        }
+        developers {
+            developer {
+                id = "colorize"
+                name = "Colorize"
+                url = "https://clrz.nl"
             }
-            scm {
-                url = "https://github.com/colorizenl/multimedialib"
-                connection = "scm:git:https://github.com/colorizenl/multimedialib.git"
-                developerConnection = "scm:git:https://github.com/colorizenl/multimedialib.git"
-            }
+        }
+        scm {
+            url = "https://github.com/colorizenl/multimedialib"
+            connection = "scm:git:https://github.com/colorizenl/multimedialib.git"
+            developerConnection = "scm:git:https://github.com/colorizenl/multimedialib.git"
         }
     }
 }

@@ -9,6 +9,7 @@ package nl.colorize.multimedialib.renderer;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -46,4 +47,14 @@ public interface Renderer {
     public String getDisplayName();
 
     public List<GraphicsMode> getSupportedGraphicsModes();
+
+    /**
+     * Returns a list of global sub-scenes that is provided by the renderer.
+     * These will <em>always</em> be active, regardless of the currently
+     * active scene. The list of global handlers can be extended using
+     * {@link RenderConfig#withGlobalHandlers(List)}.
+     */
+    default List<Scene> getGlobalHandlers() {
+        return Collections.emptyList();
+    }
 }

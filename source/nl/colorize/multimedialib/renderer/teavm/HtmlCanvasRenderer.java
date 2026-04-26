@@ -37,6 +37,11 @@ public class HtmlCanvasRenderer implements Renderer, SceneContext {
 
     public static final String CONTAINER_ID = "multimediaLibContainer";
 
+    /**
+     * Starts the renderer by initializing all media files. The animation loop
+     * will be started afterwards, but only once all media files have been
+     * loaded.
+     */
     @Override
     public void start(RenderConfig config, Scene initialScene) {
         this.config = config;
@@ -46,8 +51,15 @@ public class HtmlCanvasRenderer implements Renderer, SceneContext {
         Browser.getBrowserBridge().registerErrorHandler(this::handleError);
 
         mediaLoader = new TeaMediaLoader();
-        mediaLoader.preload();
+        mediaLoader.preload().subscribe(_ -> startAnimationLoop());
+    }
 
+    /**
+     * Initializes the canvas and input, then starts the animation loop that
+     * processes input and graphics every frame. The animation will only
+     * start when all media files have been preloaded.
+     */
+    private void startAnimationLoop() {
         graphics = new HtmlCanvasGraphics(config.getCanvas(), mediaLoader);
         graphics.prepareCanvas();
 

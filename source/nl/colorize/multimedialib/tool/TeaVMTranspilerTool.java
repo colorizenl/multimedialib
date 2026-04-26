@@ -35,9 +35,11 @@ import org.teavm.vm.TeaVMOptimizationLevel;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
@@ -87,7 +89,27 @@ public class TeaVMTranspilerTool {
         "browser/peerjs-bridge.js"
     );
 
+    private static final List<String> FRAMEWORK_RESOURCE_FILES = List.of(
+        "colorize-emblem-64.png",
+        "colorize-emblem-180.png",
+        "colorize-icon-256.png",
+        "colorize-icon-32.png",
+        "colorize-logo-180.png",
+        "OpenSans-Regular.ttf",
+        "browser/assets/favicon.png",
+        "browser/assets/loading.gif",
+        "browser/assets/multimedialib.css",
+        "demo/crate.vox.mtl",
+        "demo/crate.vox.obj",
+        "demo/crate.vox.png",
+        "demo/demo.png",
+        "demo/demo-sound.ogg",
+        "effects/particle-circle.png",
+        "effects/particle-diamond.png"
+    );
+
     private static final ResourceFile INDEX_FILE = new ResourceFile("browser/index.html");
+    private static final ResourceFile FRAMEWORK_RESOURCES = new ResourceFile("browser/resources.txt");
     private static final ResourceFile JS_LIBS = new ResourceFile("browser/javascript-libraries.txt");
     private static final List<String> TEXT_EXTS = List.of(
         ".atlas", ".csv", ".fnt", ".glsl", ".json", ".md", ".properties", ".txt", ".yaml", ".yml");
@@ -199,7 +221,7 @@ public class TeaVMTranspilerTool {
         File tempDir = FileUtils.createTempDir();
 
         new TeaCompiler(new WebBackend())
-            .addAssets(new AssetFileHandle(resourceDir.getAbsolutePath()))
+            .addAssets(prepareAssetsDir())
             .setOptimizationLevel(TeaVMOptimizationLevel.SIMPLE)
             .setMainClass(mainClassName)
             .setObfuscated(false)
@@ -217,6 +239,31 @@ public class TeaVMTranspilerTool {
         List<File> jsLibraries = copyJavaScriptLibraries(scriptsDir);
 
         rewriteHTML(textResourceFiles, jsLibraries);
+    }
+
+    /**
+     * The {@code gdx-teavm} library only allows assets directories, meaning
+     * it's not possible to load assets from the classpath. Therefore, we first
+     * copy both the application resource files and the classpath resource
+     * files to a temporary directory, which we then use as the asset
+     * directory.
+     */
+    private AssetFileHandle prepareAssetsDir() throws IOException {
+        File tempDir = FileUtils.createTempDir();
+        File tempAssetsDir = new File(tempDir, "assets");
+
+        FileUtils.copyDirectory(resourceDir, tempAssetsDir);
+
+        for (String path : FRAMEWORK_RESOURCE_FILES) {
+            ResourceFile frameworkResourceFile = new ResourceFile(path);
+            try (InputStream stream = frameworkResourceFile.openStream()) {
+                Path outputFile = tempAssetsDir.toPath().resolve(path);
+                Files.createDirectories(outputFile.getParent());
+                Files.copy(stream, outputFile);
+            }
+        }
+
+        return new AssetFileHandle(tempAssetsDir.getAbsolutePath());
     }
 
     private List<File> copyJavaScriptLibraries(File scriptsDir) {
