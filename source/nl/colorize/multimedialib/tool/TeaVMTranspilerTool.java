@@ -258,8 +258,10 @@ public class TeaVMTranspilerTool {
             ResourceFile frameworkResourceFile = new ResourceFile(path);
             try (InputStream stream = frameworkResourceFile.openStream()) {
                 Path outputFile = tempAssetsDir.toPath().resolve(path);
-                Files.createDirectories(outputFile.getParent());
-                Files.copy(stream, outputFile);
+                if (!Files.exists(outputFile)) {
+                    Files.createDirectories(outputFile.getParent());
+                    Files.copy(stream, outputFile);
+                }
             }
         }
 
