@@ -128,7 +128,6 @@ public class TeaVMTranspilerToolTest {
 
         String expected = """
             OpenSans-Regular.ttf
-            browser/assets/OpenSans-Regular.ttf
             browser/assets/apple-favicon.png
             browser/assets/favicon.png
             browser/assets/loading.gif
@@ -137,10 +136,12 @@ public class TeaVMTranspilerToolTest {
             browser/index.html
             browser/javascript-libraries.txt
             browser/vertex-shader.glsl
+            colorize-emblem-180.png
             colorize-emblem-64.png
             colorize-icon-256.png
             colorize-icon-32.png
             colorize-icon.icns
+            colorize-logo-180.png
             com/badlogic/gdx/graphics/g3d/particles/particles.fragment.glsl
             com/badlogic/gdx/graphics/g3d/particles/particles.vertex.glsl
             com/badlogic/gdx/graphics/g3d/shaders/default.fragment.glsl
