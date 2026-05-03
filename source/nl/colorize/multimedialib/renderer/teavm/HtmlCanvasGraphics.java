@@ -19,7 +19,6 @@ import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Group;
 import nl.colorize.multimedialib.stage.ImageTransform;
-import nl.colorize.multimedialib.stage.Light;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
@@ -91,11 +90,6 @@ public class HtmlCanvasGraphics implements StageVisitor {
 
     public Size getDisplaySize() {
         return new Size(htmlCanvas.getWidth(), htmlCanvas.getHeight());
-    }
-
-    @Override
-    public boolean shouldVisitAllNodes() {
-        return false;
     }
 
     @Override
@@ -242,11 +236,6 @@ public class HtmlCanvasGraphics implements StageVisitor {
 
     @Override
     public void drawMesh(Mesh mesh, Transform3D globalTransform) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void drawLight(Light light, Transform3D globalTransform) {
         throw new UnsupportedOperationException();
     }
 

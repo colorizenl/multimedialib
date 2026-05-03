@@ -46,14 +46,15 @@ public final class Stage {
 
     private World3D world3D;
     private final Group root3D;
+    private List<Light> lights;
     private Point3D cameraPosition;
     private Point3D cameraFocus;
     private ColorRGB ambientLightColor;
 
     private static final String ROOT_CONTAINER_2D = "$$root";
     private static final String ROOT_CONTAINER_3D = "$$root3D";
-    private static final float SAFE_ZONE = 128f;
     private static final ColorRGB DEFAULT_AMBIENT_LIGHT_COLOR = new ColorRGB(220, 220, 220);
+    private static final float SAFE_ZONE_PADDING = 64f;
     private static final Logger LOGGER = LogHelper.getLogger(Stage.class);
 
     public Stage(Canvas canvas) {
@@ -64,6 +65,7 @@ public final class Stage {
         this.backgroundColor = ColorRGB.BLACK;
 
         this.root3D = new Group(ROOT_CONTAINER_3D);
+        this.lights = new ArrayList<>();
         this.cameraPosition = new Point3D(0, 20, 10);
         this.cameraFocus = Point3D.ORIGIN;
         this.ambientLightColor = DEFAULT_AMBIENT_LIGHT_COLOR;
@@ -153,7 +155,7 @@ public final class Stage {
     private void visitNode2D(StageNode2D node, Transform globalTransform, StageVisitor visitor) {
         node.getGlobalTransform().set(globalTransform);
 
-        if (!shouldDraw(node, globalTransform, visitor)) {
+        if (!globalTransform.isVisible() || !shouldDraw(node)) {
             return;
         }
 
@@ -168,36 +170,20 @@ public final class Stage {
         }
     }
 
-    /**
-     * Returns true if the specified graphic should be rendered. Stateful
-     * renderers will need to track the status of every graphic. Stateless
-     * renderers only care about what needs to be drawn this frame, so
-     * visiting non-visible graphics would result in needless overhead.
-     * <p>
-     * This method will <em>always</em> visit containers. Hypothetically,
-     * this could be skipped if it is already known the container is not
-     * visible. However, performing this check is quite expensive, so for
-     * most renderers it is actually faster to skip the visibility check
-     * for the container and perform the visibility check for the
-     * container's children.
-     */
-    private boolean shouldDraw(StageNode2D node, Transform globalTransform, StageVisitor visitor) {
-        if (visitor.shouldVisitAllNodes() || node instanceof Container) {
+    private boolean shouldDraw(StageNode2D node) {
+        if (node instanceof Container) {
             return true;
         }
 
-        if (!node.getTransform().isVisible() || !globalTransform.isVisible()) {
+        if (canvas.getBounds().contains(node.getGlobalTransform().getPosition())) {
+            return true;
+        }
+
+        if (node instanceof Text) {
             return false;
         }
 
-        Rect safeCanvasBounds = new Rect(
-            canvas.getBounds().x() - SAFE_ZONE,
-            canvas.getBounds().y() - SAFE_ZONE,
-            canvas.getBounds().width() + 2f * SAFE_ZONE,
-            canvas.getBounds().height() + 2f * SAFE_ZONE
-        );
-
-        return node.getStageBounds().intersects(safeCanvasBounds);
+        return canvas.getBounds().expand(SAFE_ZONE_PADDING).intersects(node.getStageBounds());
     }
 
     private void visitContainer(Container container, Transform globalTransform, StageVisitor visitor) {
@@ -226,7 +212,7 @@ public final class Stage {
     private void visitNode3D(StageNode3D node, Transform3D globalTransform, StageVisitor visitor) {
         node.getGlobalTransform().set(globalTransform);
 
-        if (!globalTransform.isVisible() && !visitor.shouldVisitAllNodes()) {
+        if (!globalTransform.isVisible()) {
             return;
         }
 
@@ -235,7 +221,6 @@ public final class Stage {
         switch (node) {
             case Group group -> visitGroup(group, globalTransform, visitor);
             case Mesh mesh -> visitor.drawMesh(mesh, globalTransform);
-            case Light light -> visitor.drawLight(light, globalTransform);
             default -> LOGGER.warning("Unknown 3D graphics type: " + node.getClass());
         }
     }
@@ -248,41 +233,6 @@ public final class Stage {
             Transform3D childGlobalTransform = globalTransform.combine(childLocalTransform);
             visitNode3D(child, childGlobalTransform, visitor);
         }
-    }
-
-    /**
-     * Subscribes to this stage, receiving events every time nodes are added
-     * or removed.
-     */
-    public void subscribe(StageSubscriber subscriber) {
-        subscribe(root, subscriber);
-        subscribe(root3D, subscriber);
-    }
-
-    private void subscribe(Container parent, StageSubscriber subscriber) {
-        parent.getChildren().getAddedElements().subscribe(child -> {
-            subscriber.onNodeAdded(parent, child);
-            if (child instanceof Container childContainer) {
-                subscribe(childContainer, subscriber);
-            }
-        });
-
-        parent.getChildren().getRemovedElements().subscribe(child -> {
-            subscriber.onNodeRemoved(parent, child);
-        });
-    }
-
-    private void subscribe(Group parent, StageSubscriber subscriber) {
-        parent.getChildren().getAddedElements().subscribe(child -> {
-            subscriber.onNodeAdded(parent, child);
-            if (child instanceof Group childGroup) {
-                subscribe(childGroup, subscriber);
-            }
-        });
-
-        parent.getChildren().getRemovedElements().subscribe(child -> {
-            subscriber.onNodeRemoved(parent, child);
-        });
     }
 
     /**

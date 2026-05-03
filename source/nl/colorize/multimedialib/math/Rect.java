@@ -71,8 +71,8 @@ public record Rect(float x, float y, float width, float height) implements Shape
     }
 
     /**
-     * Returns true if the specified other retangle intersects with this
-     * rectangle.
+     * Returns true if {@code other} is located either entirely or partially
+     * within this rectangle.
      */
     public boolean intersects(Rect other) {
         boolean outside = other.x + other.width < x ||

@@ -20,7 +20,6 @@ import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Group;
 import nl.colorize.multimedialib.stage.ImageTransform;
-import nl.colorize.multimedialib.stage.Light;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
@@ -88,11 +87,6 @@ public class Java2DGraphicsContext implements StageVisitor {
 
     @Override
     public void prepareStage(Stage stage) {
-    }
-
-    @Override
-    public boolean shouldVisitAllNodes() {
-        return false;
     }
 
     @Override
@@ -247,11 +241,6 @@ public class Java2DGraphicsContext implements StageVisitor {
 
     @Override
     public void drawMesh(Mesh mesh, Transform3D globalTransform) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void drawLight(Light light, Transform3D globalTransform) {
         throw new UnsupportedOperationException();
     }
 

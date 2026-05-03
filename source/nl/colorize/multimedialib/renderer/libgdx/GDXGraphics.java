@@ -55,8 +55,6 @@ import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
-import nl.colorize.multimedialib.stage.StageNode3D;
-import nl.colorize.multimedialib.stage.StageSubscriber;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
@@ -64,9 +62,7 @@ import nl.colorize.multimedialib.stage.Transform3D;
 import nl.colorize.util.Cache;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888;
 import static com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal;
@@ -76,7 +72,7 @@ import static com.badlogic.gdx.utils.Align.center;
 import static com.badlogic.gdx.utils.Align.left;
 import static com.badlogic.gdx.utils.Align.right;
 
-public class GDXGraphics implements StageVisitor, StageSubscriber, World3D {
+public class GDXGraphics implements StageVisitor, World3D {
 
     private GraphicsMode graphicsMode;
     private Canvas canvas;
@@ -88,7 +84,6 @@ public class GDXGraphics implements StageVisitor, StageSubscriber, World3D {
 
     protected PerspectiveCamera camera;
     private Environment environment;
-    private Map<Light, PointLight> lights;
     private ModelBatch modelBatch;
     private List<ModelInstance> displayList;
 
@@ -111,9 +106,6 @@ public class GDXGraphics implements StageVisitor, StageSubscriber, World3D {
         camera.far = FAR_PLANE;
         camera.update();
 
-        environment = new Environment();
-        lights = new HashMap<>();
-
         restartBatch();
     }
 
@@ -130,43 +122,35 @@ public class GDXGraphics implements StageVisitor, StageSubscriber, World3D {
     public void prepareStage(Stage stage) {
         if (displayList == null) {
             displayList = new ArrayList<>();
-            stage.subscribe(this);
         }
 
         if (graphicsMode == GraphicsMode.MODE_3D) {
-            camera.position.set(toVector(stage.getCameraPosition()));
-            camera.up.set(0f, 1f, 0f);
-            camera.lookAt(toVector(stage.getCameraFocus()));
-            camera.update();
-
-            Color ambient = GDXMediaLoader.toColor(stage.getAmbientLightColor());
-            environment.set(new ColorAttribute(ColorAttribute.AmbientLight, ambient));
-
+            prepareCamera(stage);
+            prepareEnvironment(stage);
             displayList.clear();
         }
     }
 
-    @Override
-    public void onNodeAdded(Group parent, StageNode3D node) {
-        if (node instanceof Light light) {
+    private void prepareCamera(Stage stage) {
+        camera.position.set(toVector(stage.getCameraPosition()));
+        camera.up.set(0f, 1f, 0f);
+        camera.lookAt(toVector(stage.getCameraFocus()));
+        camera.update();
+    }
+
+    private void prepareEnvironment(Stage stage) {
+        environment = new Environment();
+
+        Color ambient = GDXMediaLoader.toColor(stage.getAmbientLightColor());
+        environment.set(new ColorAttribute(ColorAttribute.AmbientLight, ambient));
+
+        for (Light light : stage.getLights()) {
             PointLight gdxLight = new PointLight();
+            gdxLight.setPosition(convertVector(light.getPosition()));
+            gdxLight.setColor(convertColor(light.getColor()));
+            gdxLight.setIntensity(light.getIntensity());
             environment.add(gdxLight);
-            lights.put(light, gdxLight);
         }
-    }
-
-    @Override
-    public void onNodeRemoved(Group parent, StageNode3D node) {
-        if (node instanceof Light light) {
-            PointLight gdxLight = lights.get(light);
-            environment.remove(gdxLight);
-            lights.remove(light);
-        }
-    }
-
-    @Override
-    public boolean shouldVisitAllNodes() {
-        return false;
     }
 
     @Override
@@ -395,17 +379,6 @@ public class GDXGraphics implements StageVisitor, StageSubscriber, World3D {
             globalTransform.getScaleY() / 100f,
             globalTransform.getScaleZ() / 100f
         );
-    }
-
-    @Override
-    public void drawLight(Light light, Transform3D globalTransform) {
-        // Unlike models, libGDX does actually keep track
-        // of all lights in its environment. So we only
-        // need to update the light's state.
-        PointLight gdxLight = lights.get(light);
-        gdxLight.setColor(convertColor(light.getColor()));
-        gdxLight.setPosition(convertVector(globalTransform.getPosition()));
-        gdxLight.setIntensity(globalTransform.isVisible() ? light.getIntensity() : 0f);
     }
 
     @Override

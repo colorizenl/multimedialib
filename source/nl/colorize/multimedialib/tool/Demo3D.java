@@ -271,9 +271,8 @@ public class Demo3D implements Scene, ErrorHandler {
         int x = RandomGenerator.getInt(-GRID_SIZE, GRID_SIZE);
         int z = RandomGenerator.getInt(-GRID_SIZE, GRID_SIZE);
 
-        Light light = new Light(color, 50f);
-        light.getTransform().setPosition(x, 5, z);
-        context.getStage().getRoot3D().addChild(light);
+        Light light = new Light(new Point3D(x, 5, z), color, 50f);
+        context.getStage().getLights().add(light);
     }
 
     @Override

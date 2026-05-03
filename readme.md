@@ -36,7 +36,7 @@ to the dependencies section in `pom.xml`:
 <dependency>
     <groupId>nl.colorize</groupId>
     <artifactId>multimedialib</artifactId>
-    <version>2026.2.1</version>
+    <version>2026.3</version>
 </dependency>  
 ```
     
@@ -44,7 +44,7 @@ The library can also be used in Gradle projects:
 
 ```groovy
 dependencies {
-    implementation "nl.colorize:multimedialib:2026.2.1"
+    implementation "nl.colorize:multimedialib:2026.3"
 }
 ```
     

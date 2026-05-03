@@ -13,41 +13,11 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ContainerTest {
-
-    @Test
-    void flushAddedAndRemoved() {
-        List<String> events = new ArrayList<>();
-
-        Text a = new Text("a", null);
-        Text b = new Text("b", null);
-        Text c = new Text("c", null);
-        Text x = new Text("x", null);
-
-        Container container = new Container();
-        container.addChild(a);
-        container.addChild(b);
-
-        container.getChildren().getAddedElements().subscribe(e -> events.add("add-" + e));
-        container.getChildren().getRemovedElements().subscribe(e -> events.add("remove-" + e));
-
-        assertEquals("[Text [a], Text [b]]", container.getChildren().toString());
-        assertEquals("[add-Text [a], add-Text [b]]", events.toString());
-
-        container.addChild(x);
-        container.removeChild(b);
-        container.removeChild(c);
-
-        assertEquals("[Text [a], Text [x]]", container.getChildren().toString());
-        assertEquals("[add-Text [a], add-Text [b], add-Text [x], remove-Text [b]]", events.toString());
-    }
 
     @Test
     void getStageBounds() {

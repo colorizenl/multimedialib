@@ -16,7 +16,6 @@ import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Group;
 import nl.colorize.multimedialib.stage.ImageTransform;
-import nl.colorize.multimedialib.stage.Light;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
@@ -50,11 +49,6 @@ public class CollectingStageVisitor implements StageVisitor {
     public void prepareStage(Stage stage) {
         nodes2D.clear();
         nodes3D.clear();
-    }
-
-    @Override
-    public boolean shouldVisitAllNodes() {
-        return false;
     }
 
     @Override
@@ -109,10 +103,5 @@ public class CollectingStageVisitor implements StageVisitor {
     @Override
     public void drawMesh(Mesh mesh, Transform3D globalTransform) {
         nodes3D.add(mesh);
-    }
-
-    @Override
-    public void drawLight(Light light, Transform3D globalTransform) {
-        nodes3D.add(light);
     }
 }

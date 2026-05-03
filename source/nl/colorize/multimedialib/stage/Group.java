@@ -56,7 +56,6 @@ public class Group implements StageNode3D, Iterable<StageNode3D> {
         switch (child) {
             case Group group -> group.setParent(this);
             case Mesh mesh -> mesh.setParent(this);
-            case Light light -> light.setParent(this);
             default -> throw new UnsupportedOperationException("Unknown graphics type: " + child);
         }
 
@@ -77,7 +76,6 @@ public class Group implements StageNode3D, Iterable<StageNode3D> {
         switch (child) {
             case Group group -> group.setParent(null);
             case Mesh mesh -> mesh.setParent(null);
-            case Light light -> light.setParent(null);
             default -> throw new UnsupportedOperationException("Unknown graphics type: " + child);
         }
 

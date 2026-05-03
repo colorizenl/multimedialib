@@ -21,17 +21,11 @@ import nl.colorize.multimedialib.math.SegmentedLine;
 public interface StageVisitor {
 
     /**
-     * Prepares visiting the stage. This method is called before any of the
+     * Prepares to visit the stage. This method is called before any of the
      * stage's graphics are visited. It can be used to add initialization
      * logic that should be performed before any graphics can be drawn.
      */
     public void prepareStage(Stage stage);
-
-    /**
-     * Indicates whether this visitor should visit <em>all</em> graphics, or
-     * only graphics that are currently visible.
-     */
-    public boolean shouldVisitAllNodes();
 
     //----------------------------------------
     // 2D graphics
@@ -74,8 +68,6 @@ public interface StageVisitor {
     public void visitGroup(Group group, Transform3D globalTransform);
 
     public void drawMesh(Mesh mesh, Transform3D globalTransform);
-
-    public void drawLight(Light light, Transform3D globalTransform);
 
     /**
      * Called after all 3D nodes on the stage have been visited, but before the

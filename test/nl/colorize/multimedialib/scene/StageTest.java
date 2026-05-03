@@ -23,19 +23,14 @@ import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Group;
 import nl.colorize.multimedialib.stage.ImageTransform;
-import nl.colorize.multimedialib.stage.Light;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
-import nl.colorize.multimedialib.stage.StageNode2D;
-import nl.colorize.multimedialib.stage.StageNode3D;
-import nl.colorize.multimedialib.stage.StageSubscriber;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.multimedialib.stage.Transform3D;
-import nl.colorize.util.TupleList;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -68,11 +63,6 @@ class StageTest {
         stage.visit(new StageVisitor() {
             @Override
             public void prepareStage(Stage stage) {
-            }
-
-            @Override
-            public boolean shouldVisitAllNodes() {
-                return true;
             }
 
             @Override
@@ -124,10 +114,6 @@ class StageTest {
 
             @Override
             public void drawMesh(Mesh mesh, Transform3D globalTransform) {
-            }
-
-            @Override
-            public void drawLight(Light light, Transform3D globalTransform) {
             }
         });
 
@@ -317,46 +303,5 @@ class StageTest {
 
         assertEquals(new Point3D(10, 20, 30), parent.getGlobalTransform().getPosition());
         assertEquals(new Point3D(50, 70, 90), child.getGlobalTransform().getPosition());
-    }
-
-    @Test
-    void subscribe2D() {
-        TupleList<Container, StageNode2D> added = new TupleList<>();
-
-        Stage stage = new Stage(CANVAS);
-        stage.subscribe(new StageSubscriber() {
-            @Override
-            public void onNodeAdded(Container parent, StageNode2D node) {
-                added.add(parent, node);
-            }
-        });
-
-        Container sub = new Container();
-        stage.getRoot().addChild(new Primitive(new Circle(0, 0, 10), ColorRGB.RED));
-        stage.getRoot().addChild(sub);
-        sub.addChild(new Primitive(new Circle(0, 0, 10), ColorRGB.BLUE));
-
-        assertEquals(3, added.size());
-    }
-
-    @Test
-    void subscribe3D() {
-        TupleList<Group, StageNode3D> added = new TupleList<>();
-
-        Stage stage = new Stage(CANVAS);
-        stage.setWorld3D(new MockWorld3D());
-        stage.subscribe(new StageSubscriber() {
-            @Override
-            public void onNodeAdded(Group parent, StageNode3D node) {
-                added.add(parent, node);
-            }
-        });
-
-        Group sub = new Group();
-        stage.getRoot3D().addChild(new MockMesh());
-        stage.getRoot3D().addChild(sub);
-        sub.addChild(new MockMesh());
-
-        assertEquals(3, added.size());
     }
 }

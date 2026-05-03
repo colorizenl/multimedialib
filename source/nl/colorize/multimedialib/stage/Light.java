@@ -8,33 +8,35 @@ package nl.colorize.multimedialib.stage;
 
 import lombok.Getter;
 import lombok.Setter;
-import nl.colorize.multimedialib.scene.Timer;
-
-import static lombok.AccessLevel.PROTECTED;
+import nl.colorize.multimedialib.math.Point3D;
 
 /**
- * Light source that influences 3D graphics on the stage. Note these lights
- * exist in addition to the ambient light, which can be changed using
- * {@link Stage#setAmbientLightColor(ColorRGB)}.
+ * Light source that influences 3D graphics on the stage. Light sources are
+ * "global" in the 3D world, they are not part of the scene graph and need
+ * to be added to the stage separately. Also, light sources that are part of
+ * the stage exist <em>in addition</em> to the global ambient light. The latter
+ * can be changed using {@link Stage#setAmbientLightColor(ColorRGB)}.
+ * <p>
+ * Light sources consist of a position, a color, and an intensity value. The
+ * latter is represented by a number between 0 and 100. All properties are
+ * dynamic.
  */
 @Getter
-public class Light implements StageNode3D {
+@Setter
+public class Light {
 
-    @Setter(PROTECTED) Group parent;
-    private Transform3D transform;
-    private Transform3D globalTransform;
-    @Setter private ColorRGB color;
-    @Setter private float intensity;
+    private Point3D position;
+    private ColorRGB color;
+    private float intensity;
 
-    public Light(ColorRGB color, float intensity) {
-        this.transform = new Transform3D();
-        this.globalTransform = new Transform3D();
-        this.color = color;
-        this.intensity = intensity;
+    public Light(Point3D position, ColorRGB color, float intensity) {
+        setPosition(position);
+        setColor(color);
+        setIntensity(intensity);
     }
 
-    @Override
-    public void animate(Timer animationTimer) {
+    public void setIntensity(float intensity) {
+        this.intensity = Math.clamp(intensity, 0f, 100f);
     }
 
     @Override

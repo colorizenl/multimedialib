@@ -57,7 +57,7 @@ public interface StageNode3D extends StageNode {
      * the stage at the end of frame updates. Recalculating the global
      * transform is relatively expensive, and is therefore only done once per
      * frame. This means that any changes made to a node's local transform
-     * since the last frame update may not yet been reflected in the current
+     * since the last frame update may not yet be reflected in the current
      * state of its global transform.
      */
     public Transform3D getGlobalTransform();
