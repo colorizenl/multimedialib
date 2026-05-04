@@ -6,11 +6,11 @@ jobs:
     container: colorizenl/colorize-ci
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-      - name: Compile
-        run: gradle compileJava
+        uses: actions/checkout@v6
       - name: Unit tests
         run: gradle -Djava.awt.headless=true coverage --info
+      - name: Copyright header check
+        run: copyright_check.py
       - name: Transpile TeaVM demo applications
         run: gradle transpileDemoApplication2D transpileDemoApplication3D
     env:
