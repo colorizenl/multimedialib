@@ -52,20 +52,24 @@ public record Point2D(float x, float y) {
     
     /**
      * Returns a new point with a position that is interpolated between this
-     * point and the specified other point. The delta is represented by a number
-     * between 0.0 (position of this point) and 1.0 (position of the other point).
+     * point and {@code other}. The {@code delta} value is a number between
+     * zero (this point's position) and one (the other point's position).
+     * The delta value is intentionally <em>not</em> clamped to the 0-1 range,
+     * so that smaller or bigger values can be used to extrapolate.
      */
     public Point2D interpolate(Point2D other, float delta, Interpolation method) {
         float interpolatedX = method.interpolate(x, other.x, delta);
         float interpolatedY = method.interpolate(y, other.y, delta);
         return new Point2D(interpolatedX, interpolatedY);
     }
-    
+
     /**
-     * Returns a new point with a position that uses linear interpolation between
-     * this point and the specified other point. The delta is represented by a
-     * number between 0.0 (position of this point) and 1.0 (position of the other
-     * point).
+     * Returns a new point with a position based on linear interpolation
+     * between this point and {@code other}. The {@code delta} value is a
+     * number between zero (this point's position) and one (the other point's
+     * position). The delta value is intentionally <em>not</em> clamped to
+     * the 0-1 range, so that smaller or bigger values can be used to
+     * extrapolate.
      */
     public Point2D interpolate(Point2D other, float delta) {
         return interpolate(other, delta, Interpolation.LINEAR);

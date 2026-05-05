@@ -143,7 +143,7 @@ public class Demo2D implements Scene, ErrorHandler {
         loadApplicationData();
 
         performanceMonitor = new PerformanceMonitor(true);
-        performanceMonitor.setActive(true);
+        performanceMonitor.setActive(false);
         context.attach(performanceMonitor);
     }
 
@@ -501,6 +501,10 @@ public class Demo2D implements Scene, ErrorHandler {
         if (input.isKeyReleased(KeyCode.N9) || input.isKeyReleased(KeyCode.B)) {
             toggleBackgroundColor();
         }
+
+        if (input.isKeyReleased(KeyCode.P)) {
+            displayPolygonChecker();
+        }
     }
 
     private void createTouchMarker(Point2D position) {
@@ -557,6 +561,34 @@ public class Demo2D implements Scene, ErrorHandler {
             Mario removed = marios.remove(marios.size() - 1);
             contentLayer.removeChild(removed.sprite);
         }
+    }
+
+    private void displayPolygonChecker() {
+        Primitive polygonA = new Primitive(Polygon.createCircle(50f, 8), RED);
+        polygonA.getTransform().setPosition(100, 100);
+
+        Primitive polygonB = new Primitive(Polygon.createCircle(50f, 8), BLUE);
+        polygonB.getTransform().setPosition(400, 100);
+
+        Container parent = context.getStage().addContainer();
+        parent.addChild(polygonA);
+        parent.addChild(polygonB);
+
+        context.attach(_ -> {
+            Polygon currentA = (Polygon) polygonA.getStageShape();
+            Polygon currentB = (Polygon) polygonB.getStageShape();
+
+            for (Pointer pointer : context.getInput().getPointers()) {
+                if (pointer.isReleased()) {
+                    polygonA.getTransform().setPosition(pointer.getPosition());
+                    if (currentB.contains(pointer.getPosition())) {
+                        polygonB.setColor(polygonB.getColor().equals(BLUE) ? GREEN : BLUE);
+                    }
+                }
+            }
+
+            polygonA.setColor(currentA.intersects(currentB) ? WHITE : RED);
+        });
     }
 
     /**

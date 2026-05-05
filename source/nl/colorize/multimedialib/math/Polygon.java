@@ -117,44 +117,48 @@ public record Polygon(List<Point2D> points) implements Shape {
     }
 
     /**
-     * Returns true if this polygon intersects with the specified other polygon.
-     * Implementation based on <a href="http://slick.cokeandcode.com">Slick</a>.
+     * Returns true if this polygon is located either partially or entirely
+     * within the specified other polygon. This requires both polygons to
+     * be convex. The check itself is based on the Separating Axis Theorem.
      */
-    public boolean intersects(Polygon p) {
-        float[] points = toPoints();
-        float[] pPoints = p.toPoints();
-        double unknownA;
-        double unknownB;
-        
-        for (int i = 0; i < points.length; i += 2) {
-            int iNext = i + 2;
-            if (iNext >= points.length) {
-                iNext = 0;
-            }
-                
-            for (int j = 0; j < pPoints.length; j += 2) {
-                int jNext = j + 2;
-                if (jNext >= pPoints.length) {
-                    jNext = 0;
-                }
+    public boolean intersects(Polygon other) {
+        return !overlaps(points, other.points) && !overlaps(other.points, points);
+    }
 
-                unknownA = (((points[iNext] - points[i]) * (pPoints[j + 1] - points[i + 1])) -
-                        ((points[iNext + 1] - points[i + 1]) * (pPoints[j] - points[i]))) / 
-                        (((points[iNext + 1] - points[i + 1]) * (pPoints[jNext] - pPoints[j])) - 
-                        ((points[iNext] - points[i]) * (pPoints[jNext + 1] - pPoints[j + 1])));
-                
-                unknownB = (((pPoints[jNext] - pPoints[j]) * (pPoints[j + 1] - points[i + 1])) -
-                        ((pPoints[jNext + 1] - pPoints[j + 1]) * (pPoints[j] - points[i]))) / 
-                        (((points[iNext + 1] - points[i + 1]) * (pPoints[jNext] - pPoints[j])) - 
-                        ((points[iNext] - points[i]) * (pPoints[jNext + 1] - pPoints[j + 1])));
-                
-                if (unknownA >= 0 && unknownA <= 1 && unknownB >= 0 && unknownB <= 1) {
-                    return true;
-                }
+    private boolean overlaps(List<Point2D> a, List<Point2D> b) {
+        for (int i = 0; i < a.size(); i++) {
+            Point2D current = a.get(i);
+            Point2D next = a.get((i + 1) % a.size());
+
+            Point2D edge = new Point2D(next.x() - current.x(), next.y() - current.y());
+            Point2D axis = new Point2D(-edge.y(), edge.x());
+
+            float[] projectionA = project(a, axis);
+            float[] projectionB = project(b, axis);
+
+            if (projectionA[1] < projectionB[0] || projectionB[1] < projectionA[0]) {
+                return true;
             }
         }
 
         return false;
+    }
+
+    private float[] project(List<Point2D> points, Point2D axis) {
+        float min = dot(axis, points.getFirst());
+        float max = min;
+
+        for (int i = 1; i < points.size(); i++) {
+            float p = dot(axis, points.get(i));
+            min = (float) Math.min(p, min);
+            max = (float) Math.max(p, max);
+        }
+
+        return new float[] {min, max};
+    }
+
+    private float dot(Point2D p1, Point2D p2) {
+        return p1.x() * p2.x() + p1.y() * p2.y();
     }
 
     /**
