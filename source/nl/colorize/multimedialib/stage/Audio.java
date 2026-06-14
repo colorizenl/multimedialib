@@ -61,5 +61,5 @@ public interface Audio {
      * Returns the duration of this audio clip, in seconds. If this audio
      * clip is still buffering or loading, this will return zero.
      */
-    public float getDuration();
+    public double getDuration();
 }

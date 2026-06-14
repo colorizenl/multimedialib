@@ -67,4 +67,11 @@ public class TimerTest {
         assertEquals(0f, zeroTimer.getRatio(), EPSILON);
         assertTrue(zeroTimer.isCompleted());
     }
+
+    @Test
+    void isInfinite() {
+        assertTrue(Timer.infinite().isInfinite());
+        assertFalse(Timer.none().isInfinite());
+        assertFalse(new Timer(10.0).isInfinite());
+    }
 }

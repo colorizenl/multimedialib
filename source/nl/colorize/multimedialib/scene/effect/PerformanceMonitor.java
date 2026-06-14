@@ -11,14 +11,14 @@ import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.SegmentedLine;
 import nl.colorize.multimedialib.renderer.FrameStats;
-import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.scene.Actor;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
-import nl.colorize.multimedialib.stage.StageNode2D;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Primitive;
+import nl.colorize.multimedialib.stage.Spatial2D;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.util.TextUtils;
 
@@ -29,17 +29,18 @@ import static nl.colorize.multimedialib.stage.ColorRGB.BLACK;
 import static nl.colorize.multimedialib.stage.ColorRGB.WHITE;
 
 /**
- * Depicts various performance statistics, both in terms of overall performance
- * and on a frame-by-frame basis. When the widget is active, it will
- * automatically capture and visualize every frame update. If the widget is
- * marked as inactive, it will disable this logic, ironically in order to
- * conserve performance.
+ * Depicts various performance statistics, both in terms of overall
+ * performance and on a frame-by-frame basis. When the widget is active, it
+ * will automatically capture and visualize every frame update. If the widget
+ * is marked as inactive, it will disable this logic (monitoring performance
+ * is, ironically, bad for performance).
  * <p>
  * This widget is included as part of the library so that it can be used as a
  * debugging tool in applications.
  */
-public class PerformanceMonitor implements Scene {
+public class PerformanceMonitor implements Actor {
 
+    private SceneContext context;
     private Container container;
     private Text framerate;
     private Container frameDataContainer;
@@ -50,14 +51,16 @@ public class PerformanceMonitor implements Scene {
     private static final ColorRGB RENDER_COLOR = ColorRGB.parseHex("#DCBEC0");
     private static final ColorRGB LINE_COLOR = ColorRGB.parseHex("#adadad");
 
-    public PerformanceMonitor(boolean detailed) {
+    public PerformanceMonitor(SceneContext context, boolean detailed) {
+        this.context = context;
         this.detailed = detailed;
         container = new Container();
         container.addChild(new Primitive(new Rect(0, 0, 300, 100), BLACK, 50));
+
+        attachGraphics();
     }
 
-    @Override
-    public void start(SceneContext context) {
+    private void attachGraphics() {
         context.getStage().getRoot().addChild(container);
 
         frameDataContainer = new Container();
@@ -85,7 +88,7 @@ public class PerformanceMonitor implements Scene {
     }
 
     @Override
-    public void update(SceneContext context, float deltaTime) {
+    public void update(double deltaTime) {
         FrameStats stats = context.getSceneManager().getFrameStats();
 
         if (isActive() && stats.getBufferSize() >= 10) {
@@ -105,12 +108,12 @@ public class PerformanceMonitor implements Scene {
         }
     }
 
-    private StageNode2D depictFrameStats(Iterable<Long> frameTimes, ColorRGB color) {
-        float x = 0;
+    private Spatial2D depictFrameStats(Iterable<Long> frameTimes, ColorRGB color) {
+        double x = 0;
         List<Point2D> points = new ArrayList<>();
 
         for (long frameTime : frameTimes) {
-            float y = Math.clamp(100f - frameTime * 2f, 0f, 100f);
+            double y = Math.clamp(100f - frameTime * 2f, 0f, 100f);
             points.add(new Point2D(x, y));
             x += 300f / FrameStats.BUFFER_CAPACITY;
         }

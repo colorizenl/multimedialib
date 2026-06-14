@@ -21,10 +21,10 @@ approach but tend to target mobile platforms, native applications (on mobile/des
 web applications. MultimediaLib's main strength is that applications will run on *all* those
 different platforms.
 
-MultimediaLib has been in use since all the way back to 2007. It used to support long-forgotten
-front-end technologies like [Java Web Start](https://en.wikipedia.org/wiki/Java_Web_Start). It
+MultimediaLib has been in use since all the way back to 2009. It used to support long-forgotten
+front-end technologies like [Java Web Start](https://en.wikipedia.org/wiki/Java_Web_Start) and
 later transitioned to browser-based technologies once [WebGL](https://en.wikipedia.org/wiki/WebGL)
-became widely supported, while still retaining its original support for desktop applications.
+became widely supported, while retaining its original support for desktop applications.
     
 Usage
 -----
@@ -36,7 +36,7 @@ to the dependencies section in `pom.xml`:
 <dependency>
     <groupId>nl.colorize</groupId>
     <artifactId>multimedialib</artifactId>
-    <version>2026.3</version>
+    <version>2026.4</version>
 </dependency>  
 ```
     
@@ -44,7 +44,7 @@ The library can also be used in Gradle projects:
 
 ```groovy
 dependencies {
-    implementation "nl.colorize:multimedialib:2026.3"
+    implementation "nl.colorize:multimedialib:2026.4"
 }
 ```
     
@@ -95,32 +95,34 @@ for instructions on how to provide a more native distribution for each platform.
 Architecture
 ------------
 
-MultimediaLib uses a number of concepts similar to
-[Adobe Flash](https://en.wikipedia.org/wiki/Adobe_Flash), both in terms of its theater-inspired
-terminology and in terms of how applications are structured.
+MultimediaLib uses an architecture that is reminiscent of the old
+[Macromedia Flash](https://en.wikipedia.org/wiki/Adobe_Flash). Applications are structured in a
+similar way, and MultimediaLib also uses theater-inspired terminology for these concepts. 
 
-![MultimediaLib architecture](_development/architecture.svg)
+![MultimediaLib architecture](_development/multimedialib-architecture.svg)
 
-Applications are split into *scenes*. Simple applications may consist of a single scene, but
-larger applications can be split into multiple scenes, each representing a discrete phase of
-the application.
+Each application consists of the following concepts:
 
-Only one scene can be active at the same time, but it is possible to attach sub-scenes to the
-currently active scene. These sub-scenes can contain their own logic, but cannot outlive their 
-parent scene. When the active scene is changed, both the scene itself and its sub-scenes will 
-be terminated and the stage will be cleared in preparation for the next scene.
-
-The currently active scene (and its sub-scenes) receive access to the *scene context*, which
-is provided by the renderer via callback methods.
-
-The currently active scene receives access to the *scene context*, which is provided to the
-scene via callback methods. This allows the scene to access the underlying renderer and the stage.
-
-The *stage* contains the graphics and audio for the currently active scene. The stage can contain
-both 2D and 3D graphics in a [scene graph](https://en.wikipedia.org/wiki/Scene_graph), where
-transforming a parent node propagates to its children. While the scene has full control over the
-stage, this control cannot outlive the scene itself: at the end of the scene the contents of the 
-stage are cleared so the next scene can take over.
+- **The renderer**, which provided access to the underlying platform (graphics, audio, input,
+  files, network). Different renderers are provided for different platforms, as explained in
+  [the section on supported platforms](#supported-platforms). MultimediaLib application code is
+  renderer-independent, allowing the same application to run across different platforms.
+- **Scenes** are the top-level structure to divide an application into different "chapters".
+  Only one scene can be active at the same time. Simple applications may consist of a single
+  scene, but larger applications can be split into multiple scenes, with each scene representing 
+  a different chapter or phase.
+- **The scene context** is provided to the currently active scene by the renderer, allowing the 
+  scene to access the stage, the scene's actors, and the underlying renderer.
+- **Actors** are used to structure scene logic, with each actor being responsible for a certain
+  functional scope. Only one scene can be active at the same time, but a scene can consist of 
+  many actors. Since actors have a smaller functional scope, they (unlike their parent scene)
+  will not automatically receive access to the full scene context. The actor will receive frame
+  updates for as long as its parent scene remains active.
+- **The stage** contains the graphics and audio for the currently active scene. The stage can contain
+  both 2D and 3D graphics in a [scene graph](https://en.wikipedia.org/wiki/Scene_graph), where
+  transforming a parent node propagates to its children. While the scene has full control over the
+  stage, this control cannot outlive the scene itself: at the end of the scene, the contents of the
+  stage are cleared so the next scene can take over.
 
 Starting the demo application
 -----------------------------

@@ -9,8 +9,8 @@ package nl.colorize.multimedialib.math;
 import com.google.common.base.Preconditions;
 
 /**
- * Rectangular region with integer coordinates. Does not allow negative
- * coordinates. Instances are immutable.
+ * Immutable rectangular region with integer precision. Does not allow
+ * negative coordinates.
  */
 public record Region(int x, int y, int width, int height) {
 

@@ -18,6 +18,7 @@ import nl.colorize.multimedialib.renderer.WindowOptions;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.SceneManager;
+import nl.colorize.multimedialib.scene.Actor;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.ResourceFile;
@@ -264,12 +265,12 @@ public class Java2DRenderer implements Renderer, SceneContext, ApplicationMenuLi
     }
 
     @Override
-    public List<Scene> getGlobalHandlers() {
+    public List<Actor> getGlobalHandlers() {
         return List.of(this::takeScreenshot);
     }
 
-    private void takeScreenshot(SceneContext context, float deltaTime) {
-        if (context.getInput().isKeyReleased(KeyCode.F12)) {
+    private void takeScreenshot(double deltaTime) {
+        if (input != null && input.isKeyReleased(KeyCode.F12)) {
             File screenshotFile = new File(Platform.getUserDesktopDir(),
                 "screenshot-" + System.currentTimeMillis() + ".png");
             BufferedImage image = new BufferedImage(window.getWidth(), window.getHeight(),

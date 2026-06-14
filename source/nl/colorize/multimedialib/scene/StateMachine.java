@@ -6,153 +6,142 @@
 
 package nl.colorize.multimedialib.scene;
 
+import com.google.common.base.Preconditions;
+import lombok.Getter;
+import org.jspecify.annotations.Nullable;
+
 import java.util.ArrayDeque;
 import java.util.Deque;
 
 /**
- * Finite state machine that allows a number of possible states, but can
- * only have one currently active state at any point in time.
+ * Finite state machine that can switch its currently active state, which
+ * defines its behavior. The state machine implements the {@link Actor}
+ * interface and is therefore part of the current scene. Frame updates are
+ * forwarded to the currently active state. States remain active until
+ * changed or for a preconfigured amount of time. States can also be queued.
  * <p>
- * The state machine implements the {@link Updatable} interface, so it needs
- * to receive frame updates in order to function. Requested states are stored
- * in a queue, with the actual state change only occurring during the frame
- * update.
+ * State machines can be created with or without a defaut state. If there
+ * is a default state, the state machine will automatically switch to the
+ * default state when the current state is completed and there are no more
+ * states in the queue. If there is no default state, the state machine will
+ * remain in the current state until a new state is queued.
  * <p>
- * By default, every state is allowed to transition into every other state.
- * The state machine can optionally be configured to restrict allowed
- * transitions based on the currently active state.
+ * {@link StateMachine} instances should be encapsulated by the object for
+ * which the state applies. The state machine itself does not have any
+ * knowledge on when it is appropriate to change the state.
  *
  * @param <S> The type of state represented by this finite state machine.
- *            States are considered equal if {@code stateA.equals(stateB)}.
- *            If the state implements the {@link Updatable} interface, the
- *            {@code update} method of the currently active state will be
- *            called when the state machine itself receives frame updates.
+ *            Two objects are considered "the same state" based on
+ *            {@link Object#equals(Object)}. If the state implements the
+ *            {@link Actor} interface, it will receive frame updates
+ *            when it is active.
  */
-public class StateMachine<S> implements Updatable {
+public class StateMachine<S> implements Actor {
 
-    private Deque<StateQueueElement<S>> stateQueue;
-    private StateQueueElement<S> defaultState;
+    @Getter private S currentState;
+    @Getter private Timer currentStateTimer;
+    private Deque<RequestedState<S>> requestedStates;
+    private S defaultState;
 
-    public StateMachine(S defaultState) {
-        this.stateQueue = new ArrayDeque<>();
-        this.defaultState = new StateQueueElement<>(defaultState, Timer.infinite(), true);
+    private StateMachine(S initialState, @Nullable S defaultState) {
+        this.currentState = initialState;
+        this.currentStateTimer = Timer.infinite();
+        this.requestedStates = new ArrayDeque<>();
+        this.defaultState = defaultState;
     }
 
     /**
-     * Requests the state machine to transition into the specified state at
-     * the earliest opportunity. Once active, the state will remain active
-     * until another state is requested.
-     * <p>
-     * Returns a boolean indicating if the state machine allows a transition
-     * from the preceding state in the queue into the requested state.
+     * Changes this state machine to the specified state, immediately changing
+     * to the requested state regardless of the currently active state. The new
+     * state will remain active indefinitely.
      */
-    public boolean requestState(S nextState) {
-        return requestState(nextState, 0f);
+    public void changeState(S state) {
+        changeState(state, Double.MAX_VALUE);
     }
 
     /**
-     * Requests the state machine to transition into the specified state at
-     * the earliest opportunity. Once active, the state will remain active
-     * for the specified duration (in seconds).
-     * <p>
-     * Returns a boolean indicating if the state machine allows a transition
-     * from the preceding state in the queue into the requested state.
+     * Changes this state machine to the specified state, immediately changing
+     * to the requested state regardless of the currently active state. The new
+     * state will remain active for the specified duration (in seconds).
      */
-    public boolean requestState(S nextState, float duration) {
-        if (!isTransitionAllowed(nextState)) {
-            return false;
-        }
+    public void changeState(S state, double duration) {
+        Preconditions.checkArgument(duration >= 0.0, "Invalid duration: " + duration);
 
-        boolean interruptible = duration == 0f;
-        Timer timer = interruptible ? Timer.infinite() : new Timer(duration);
-
-        StateQueueElement<S> element = new StateQueueElement<>(nextState, timer, interruptible);
-        stateQueue.offer(element);
-        return true;
-    }
-
-    /**
-     * Forces this state machine into the specified state, clearing the queue
-     * so that the requested state becomes active during the next frame update.
-     */
-    public void forceState(S nextState) {
-        stateQueue.clear();
-        requestState(nextState);
-    }
-
-    private boolean isTransitionAllowed(S requestedState) {
-        if (stateQueue.isEmpty()) {
-            return !requestedState.equals(defaultState);
-        }
-
-        S precedingState = stateQueue.getLast().state;
-        return !requestedState.equals(precedingState);
-    }
-
-    /**
-     * Updates this state machine based on the elapsed <em>relative</em> time,
-     * as specified by the {@link Updatable} interface.
-     */
-    @Override
-    public void update(float deltaTime) {
-        if (isActiveStateCompleted()) {
-            stateQueue.pop();
-        }
-
-        if (stateQueue.isEmpty()) {
-            updateState(defaultState, deltaTime);
+        if (currentState.equals(state)) {
             return;
         }
 
-        StateQueueElement<S> active = stateQueue.peek();
-        updateState(active, deltaTime);
-
-        // We intentionally check the active state at the start
-        // *and* at the end of every frame, just to ensure the
-        // state machine is in the expected state at all times.
-        if (isActiveStateCompleted()) {
-            stateQueue.pop();
-        }
-    }
-
-    private void updateState(StateQueueElement<S> element, float deltaTime) {
-        element.timer.update(deltaTime);
-
-        if (element.state instanceof Updatable updatableState) {
-            updatableState.update(deltaTime);
-        }
-    }
-
-    public S getActiveState() {
-        StateQueueElement<S> active = stateQueue.peek();
-        if (active == null) {
-            active = defaultState;
-        }
-        return active.state;
-    }
-
-    public Timer getActiveStateTimer() {
-        StateQueueElement<S> active = stateQueue.peek();
-        if (active == null) {
-            active = defaultState;
-        }
-        return active.timer;
-    }
-
-    private boolean isActiveStateCompleted() {
-        if (stateQueue.isEmpty()) {
-            return false;
-        }
-
-        StateQueueElement<S> active = stateQueue.peek();
-        boolean hasNextState = stateQueue.size() >= 2;
-        return active.timer.isCompleted() || (active.interruptible && hasNextState);
+        currentState = state;
+        currentStateTimer = new Timer(duration);
+        requestedStates.clear();
     }
 
     /**
-     * Data structure that combines the state object with information on how
-     * the requested state should behave once it becomes active.
+     * Requests the state machine to change to the specified state, but only
+     * after the currently active state has been completed. The new state will
+     * remain active indefinitely.
      */
-    private record StateQueueElement<S>(S state, Timer timer, boolean interruptible) {
+    public void queueState(S state) {
+        queueState(state, Double.MAX_VALUE);
+    }
+
+    /**
+     * Requests the state machine to change to the specified state, but only
+     * after the currently active state has been completed. The new state will
+     * remain active for the specified duration (in seconds).
+     */
+    public void queueState(S state, double duration) {
+        Preconditions.checkArgument(duration >= 0.0, "Invalid duration: " + duration);
+
+        if (currentState.equals(state)) {
+            return;
+        }
+
+        if (currentStateTimer.isInfinite() || currentStateTimer.isCompleted()) {
+            changeState(state, duration);
+        } else {
+            requestedStates.push(new RequestedState<>(state, duration));
+        }
+    }
+
+    @Override
+    public void update(double deltaTime) {
+        if (currentState instanceof Actor stateActor) {
+            stateActor.update(deltaTime);
+        }
+
+        currentStateTimer.update(deltaTime);
+
+        if (currentStateTimer.isCompleted()) {
+            if (!requestedStates.isEmpty()) {
+                RequestedState<S> nextState = requestedStates.pop();
+                changeState(nextState.state, nextState.duration);
+            } else if (defaultState != null) {
+                changeState(defaultState);
+            }
+        }
+    }
+
+    /**
+     * Creates a new state machine where {@code state} acts as both the
+     * initial state and as the default state.
+     */
+    public static <S> StateMachine<S> withDefaultState(S state) {
+        return new StateMachine<>(state, state);
+    }
+
+    /**
+     * Creates a new state machine where {@code state} acts as the initial
+     * state, but there is no default state.
+     */
+    public static <S> StateMachine<S> withInitialState(S state) {
+        return new StateMachine<>(state, null);
+    }
+
+    /**
+     * Keeps track of the configuration for a requested state that is in
+     * the queue but is not active yet.
+     */
+    private record RequestedState<S>(S state, double duration) {
     }
 }

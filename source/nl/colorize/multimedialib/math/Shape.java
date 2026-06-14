@@ -7,12 +7,12 @@
 package nl.colorize.multimedialib.math;
 
 /**
- * Shared interface for all two-dimensional shapes. Shapes use coordinates
- * with float precision, and instances are immutable.
+ * Shared interface for all two-dimensional shapes. All shapes are defined
+ * with {@code double} precision and are immutable.
  */
 public interface Shape {
 
-    public static final float EPSILON = Point2D.EPSILON;
+    public static final double EPSILON = Point2D.EPSILON;
 
     /**
      * Returns the smallest possible rectangular bounding box that can fit
@@ -34,7 +34,7 @@ public interface Shape {
      * Returns a new {@link Shape} instance that is repositioned by the
      * specified X and Y offset.
      */
-    default Shape reposition(float offsetX, float offsetY) {
+    default Shape reposition(double offsetX, double offsetY) {
         return reposition(new Point2D(offsetX, offsetY));
     }
 }

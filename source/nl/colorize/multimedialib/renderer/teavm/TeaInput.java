@@ -205,8 +205,8 @@ public class TeaInput implements InputDevice {
             pointers.put(identifier, touchPointer);
         }
 
-        float pageX = (float) touch.getClientX();
-        float pageY = (float) touch.getClientY();
+        double pageX = touch.getClientX();
+        double pageY = touch.getClientY();
         touchPointer.setPosition(getPointerCanvasPosition(pageX, pageY));
 
         switch (eventType) {
@@ -227,13 +227,13 @@ public class TeaInput implements InputDevice {
         return List.copyOf(pointers.values());
     }
 
-    private Point2D getPointerCanvasPosition(float pageX, float pageY) {
-        float devicePixelRatio = (float) Window.current().getDevicePixelRatio();
-        int screenX = Math.round(pageX * devicePixelRatio);
-        int screenY = Math.round(pageY * devicePixelRatio);
+    private Point2D getPointerCanvasPosition(double pageX, double pageY) {
+        double devicePixelRatio = Window.current().getDevicePixelRatio();
+        int screenX = (int) Math.round(pageX * devicePixelRatio);
+        int screenY = (int) Math.round(pageY * devicePixelRatio);
 
-        float canvasX = canvas.toCanvasX(screenX);
-        float canvasY = canvas.toCanvasY(screenY);
+        double canvasX = canvas.toCanvasX(screenX);
+        double canvasY = canvas.toCanvasY(screenY);
 
         return new Point2D(canvasX, canvasY);
     }
@@ -288,6 +288,6 @@ public class TeaInput implements InputDevice {
     }
 
     @Override
-    public void update(float deltaTime) {
+    public void update(double deltaTime) {
     }
 }

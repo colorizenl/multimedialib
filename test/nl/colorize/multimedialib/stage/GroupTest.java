@@ -22,7 +22,7 @@ class GroupTest {
         group.addChild(a);
         group.addChild(b);
 
-        for (StageNode3D child : group) {
+        for (Spatial3D child : group) {
             if (child.equals(a)) {
                 group.removeChild(b);
             }

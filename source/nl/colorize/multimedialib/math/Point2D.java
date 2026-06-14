@@ -9,13 +9,13 @@ package nl.colorize.multimedialib.math;
 import nl.colorize.util.animation.Interpolation;
 
 /**
- * Immutable point within a two-dimensional space, with its X and Y coordinates
- * defined with float precision. Negative coordinates are permitted.
+ * Immutable point within a two-dimensional space, defined by its X and Y
+ * coordinates. Negative coordinates are permitted.
  */
-public record Point2D(float x, float y) {
+public record Point2D(double x, double y) {
 
     public static final Point2D ORIGIN = new Point2D(0f, 0f);
-    public static final float EPSILON = 0.001f;
+    public static final double EPSILON = 0.001f;
 
     public boolean isOrigin() {
         return Math.abs(x) < EPSILON && Math.abs(y) < EPSILON;
@@ -24,10 +24,10 @@ public record Point2D(float x, float y) {
     /**
      * Returns the distance between this point and the specified other point.
      */
-    public float distanceTo(Point2D other) {
-        float deltaX = Math.abs(other.x - x);
-        float deltaY = Math.abs(other.y - y);
-        return (float) Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    public double distanceTo(Point2D other) {
+        double deltaX = Math.abs(other.x - x);
+        double deltaY = Math.abs(other.y - y);
+        return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
     }
 
     /**
@@ -36,7 +36,7 @@ public record Point2D(float x, float y) {
      */
     public Angle angleTo(Point2D other) {
         double radians = Math.atan2(other.y - y, other.x - x);
-        float degrees = (float) Math.toDegrees(radians);
+        double degrees = Math.toDegrees(radians);
         return new Angle(degrees);
     }
     
@@ -45,8 +45,8 @@ public record Point2D(float x, float y) {
      * and the specified other point.
      */
     public Point2D findCenter(Point2D other) {
-        float centerX = (x + other.x) / 2f;
-        float centerY = (y + other.y) / 2f;
+        double centerX = (x + other.x) / 2f;
+        double centerY = (y + other.y) / 2f;
         return new Point2D(centerX, centerY);
     }
     
@@ -57,9 +57,9 @@ public record Point2D(float x, float y) {
      * The delta value is intentionally <em>not</em> clamped to the 0-1 range,
      * so that smaller or bigger values can be used to extrapolate.
      */
-    public Point2D interpolate(Point2D other, float delta, Interpolation method) {
-        float interpolatedX = method.interpolate(x, other.x, delta);
-        float interpolatedY = method.interpolate(y, other.y, delta);
+    public Point2D interpolate(Point2D other, double delta, Interpolation method) {
+        double interpolatedX = method.interpolate(x, other.x, delta);
+        double interpolatedY = method.interpolate(y, other.y, delta);
         return new Point2D(interpolatedX, interpolatedY);
     }
 
@@ -71,7 +71,7 @@ public record Point2D(float x, float y) {
      * the 0-1 range, so that smaller or bigger values can be used to
      * extrapolate.
      */
-    public Point2D interpolate(Point2D other, float delta) {
+    public Point2D interpolate(Point2D other, double delta) {
         return interpolate(other, delta, Interpolation.LINEAR);
     }
 
@@ -79,7 +79,7 @@ public record Point2D(float x, float y) {
      * Returns a new point that starts from this point and then adds the
      * specified offset.
      */
-    public Point2D add(float deltaX, float deltaY) {
+    public Point2D add(double deltaX, double deltaY) {
         return new Point2D(x + deltaX, y + deltaY);
     }
 
@@ -95,7 +95,7 @@ public record Point2D(float x, float y) {
      * Returns a new point by multiplying this point's X and Y values with
      * the specified factor.
      */
-    public Point2D multiply(float factor) {
+    public Point2D multiply(double factor) {
         return new Point2D(x * factor, y * factor);
     }
 

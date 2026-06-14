@@ -17,11 +17,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PolygonTest {
 
-    private static final float EPSILON = 0.001f;
+    private static final double EPSILON = 0.001f;
 
     @Test
     public void testPolygonPoints() {
-        float[] points = {1, 2, 3, 4, 5, 6, 7, 8};
+        double[] points = {1, 2, 3, 4, 5, 6, 7, 8};
         Polygon polygon = Polygon.fromPoints(points);
 
         assertEquals(4, polygon.getNumPoints());
@@ -36,7 +36,7 @@ public class PolygonTest {
     
     @Test
     public void testMove() {
-        float[] points = {100, 100, 200, 150, 100, 200};
+        double[] points = {100, 100, 200, 150, 100, 200};
         Polygon polygon = Polygon.fromPoints(points);
         Polygon moved = polygon.reposition(new Point2D(100, 50));
         assertEquals("[200.0, 150.0, 300.0, 200.0, 200.0, 250.0]", Arrays.toString(moved.toPoints()));
@@ -52,7 +52,7 @@ public class PolygonTest {
 
     @Test
     public void testContainsPoint() {
-        float[] points = {100, 100, 200, 100, 200, 200, 100, 200};
+        double[] points = {100, 100, 200, 100, 200, 200, 100, 200};
         Polygon polygon = Polygon.fromPoints(points);
         
         assertTrue(polygon.contains(new Point2D(150, 150)));
@@ -166,7 +166,7 @@ public class PolygonTest {
     @Test
     void createRectangle() {
         Polygon rect = Polygon.createRectangle(new Point2D(10f, 20f), 30f, 40);
-        float[] points = rect.toPoints();
+        double[] points = rect.toPoints();
 
         assertEquals("[-5.0, 0.0, 25.0, 0.0, 25.0, 40.0, -5.0, 40.0]", Arrays.toString(points));
     }

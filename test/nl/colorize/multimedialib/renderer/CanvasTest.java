@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CanvasTest {
 
-    private static final float EPSILON = 0.1f;
+    private static final double EPSILON = 0.1f;
 
     @Test
     public void testFixedCanvas() {

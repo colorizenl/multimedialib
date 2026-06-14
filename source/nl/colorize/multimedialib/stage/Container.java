@@ -33,11 +33,11 @@ import static lombok.AccessLevel.PROTECTED;
  * between 2D and 3D graphics. Use {@link Group} for 3D graphics.
  */
 @Getter
-public class Container implements StageNode2D, Iterable<StageNode2D> {
+public class Container implements Spatial2D, Iterable<Spatial2D> {
 
     private String name;
     @Setter(PROTECTED) private Container parent;
-    @Getter(PROTECTED) private List<StageNode2D> children;
+    @Getter(PROTECTED) private List<Spatial2D> children;
     private Transform transform;
     private Transform globalTransform;
 
@@ -52,9 +52,12 @@ public class Container implements StageNode2D, Iterable<StageNode2D> {
         this("Container");
     }
 
-    public void addChild(StageNode2D child) {
+    public void addChild(Spatial2D child) {
         Preconditions.checkArgument(this != child, "Cannot attach container to itself");
-        Preconditions.checkState(child.getParent() == null, "Node is already attached to container");
+
+        if (child.getParent() != null) {
+            child.detach();
+        }
 
         switch (child) {
             case Container container -> container.setParent(this);
@@ -71,7 +74,7 @@ public class Container implements StageNode2D, Iterable<StageNode2D> {
      * Convenience method that adds the specified graphics to this container,
      * then moved the graphics' position to the specified offset.
      */
-    public void addChild(StageNode2D child, Point2D relativePosition) {
+    public void addChild(Spatial2D child, Point2D relativePosition) {
         addChild(child);
         child.getTransform().setPosition(relativePosition);
     }
@@ -80,7 +83,7 @@ public class Container implements StageNode2D, Iterable<StageNode2D> {
      * Convenience method that adds the specified graphics to this container,
      * then moved the graphics' position to the specified offset.
      */
-    public void addChild(StageNode2D child, float relativeX, float relativeY) {
+    public void addChild(Spatial2D child, double relativeX, double relativeY) {
         addChild(child);
         child.getTransform().setPosition(relativeX, relativeY);
     }
@@ -95,7 +98,7 @@ public class Container implements StageNode2D, Iterable<StageNode2D> {
         return child;
     }
 
-    public void removeChild(StageNode2D child) {
+    public void removeChild(Spatial2D child) {
         switch (child) {
             case Container container -> container.setParent(null);
             case Primitive primitive -> primitive.setParent(null);
@@ -117,8 +120,8 @@ public class Container implements StageNode2D, Iterable<StageNode2D> {
      * within this container.
      */
     @SuppressWarnings("unchecked")
-    public <T extends StageNode2D> void forEach(Class<T> type, Consumer<T> callback) {
-        for (StageNode2D child : children) {
+    public <T extends Spatial2D> void forEach(Class<T> type, Consumer<T> callback) {
+        for (Spatial2D child : children) {
             if (child.getClass() == type) {
                 callback.accept((T) child);
             }
@@ -136,7 +139,7 @@ public class Container implements StageNode2D, Iterable<StageNode2D> {
         }
 
         Rect bounds = children.iterator().next().getStageBounds();
-        for (StageNode2D child : children) {
+        for (Spatial2D child : children) {
             bounds = bounds.combine(child.getStageBounds());
         }
         return bounds;
@@ -147,7 +150,7 @@ public class Container implements StageNode2D, Iterable<StageNode2D> {
     }
 
     @Override
-    public Iterator<StageNode2D> iterator() {
+    public Iterator<Spatial2D> iterator() {
         return children.iterator();
     }
 

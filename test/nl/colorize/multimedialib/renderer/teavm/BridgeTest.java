@@ -31,7 +31,7 @@ public class BridgeTest {
         int.class,
         int[].class,
         float.class,
-        float[].class,
+        double[].class,
         boolean.class,
         boolean[].class,
         double.class,

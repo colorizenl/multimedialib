@@ -91,25 +91,26 @@ public class Java2DGraphicsContext implements StageVisitor {
 
     @Override
     public void drawBackground(ColorRGB backgroundColor) {
-        float width = canvas.toScreenX(canvas.getWidth());
-        float height = canvas.toScreenY(canvas.getHeight());
+        double width = canvas.toScreenX(canvas.getWidth());
+        double height = canvas.toScreenY(canvas.getHeight());
 
         g2.setColor(colorCache.get(backgroundColor));
-        g2.fillRect(0, 0, Math.round(width), Math.round(height) + 30);
+        g2.fillRect(0, 0, (int) Math.round(width), (int) Math.round(height) + 30);
     }
 
     @Override
     public void drawLine(Primitive graphic, Line line, Transform globalTransform) {
-        float x0 = canvas.toScreenX(line.start().x());
-        float y0 = canvas.toScreenY(line.start().y());
-        float x1 = canvas.toScreenX(line.end().x());
-        float y1 = canvas.toScreenY(line.end().y());
+        double x0 = canvas.toScreenX(line.start().x());
+        double y0 = canvas.toScreenY(line.start().y());
+        double x1 = canvas.toScreenX(line.end().x());
+        double y1 = canvas.toScreenY(line.end().y());
 
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(graphic.getTransform().getAlpha());
-        g2.setStroke(new BasicStroke(graphic.getStroke()));
+        g2.setStroke(new BasicStroke((float) graphic.getStroke()));
         g2.setColor(getPrimitiveColor(graphic));
-        g2.drawLine(Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1));
+        g2.drawLine((int) Math.round(x0), (int) Math.round(y0),
+            (int) Math.round(x1), (int) Math.round(y1));
         g2.setComposite(originalComposite);
     }
 
@@ -117,16 +118,17 @@ public class Java2DGraphicsContext implements StageVisitor {
     public void drawSegmentedLine(Primitive graphic, SegmentedLine line, Transform globalTransform) {
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(graphic.getTransform().getAlpha());
-        g2.setStroke(new BasicStroke(graphic.getStroke()));
+        g2.setStroke(new BasicStroke((float) graphic.getStroke()));
         g2.setColor(getPrimitiveColor(graphic));
 
         for (Line segment : line.getSegments()) {
-            float x0 = canvas.toScreenX(segment.start().x());
-            float y0 = canvas.toScreenY(segment.start().y());
-            float x1 = canvas.toScreenX(segment.end().x());
-            float y1 = canvas.toScreenY(segment.end().y());
+            double x0 = canvas.toScreenX(segment.start().x());
+            double y0 = canvas.toScreenY(segment.start().y());
+            double x1 = canvas.toScreenX(segment.end().x());
+            double y1 = canvas.toScreenY(segment.end().y());
 
-            g2.drawLine(Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1));
+            g2.drawLine((int) Math.round(x0), (int) Math.round(y0),
+                (int) Math.round(x1), (int) Math.round(y1));
         }
 
         g2.setComposite(originalComposite);
@@ -134,16 +136,16 @@ public class Java2DGraphicsContext implements StageVisitor {
 
     @Override
     public void drawRect(Primitive graphic, Rect rect, Transform globalTransform) {
-        float screenX = canvas.toScreenX(rect.x());
-        float screenY = canvas.toScreenY(rect.y());
-        float screenWidth = canvas.toScreenX(rect.getEndX()) - screenX;
-        float screenHeight = canvas.toScreenY(rect.getEndY()) - screenY;
+        double screenX = canvas.toScreenX(rect.x());
+        double screenY = canvas.toScreenY(rect.y());
+        double screenWidth = canvas.toScreenX(rect.getEndX()) - screenX;
+        double screenHeight = canvas.toScreenY(rect.getEndY()) - screenY;
 
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(globalTransform.getAlpha());
         g2.setColor(getPrimitiveColor(graphic));
-        g2.fillRect(Math.round(screenX), Math.round(screenY), Math.round(screenWidth),
-            Math.round(screenHeight));
+        g2.fillRect((int) Math.round(screenX), (int) Math.round(screenY),
+            (int) Math.round(screenWidth), (int) Math.round(screenHeight));
         g2.setComposite(originalComposite);
     }
 
@@ -168,8 +170,8 @@ public class Java2DGraphicsContext implements StageVisitor {
         int[] py = new int[polygon.getNumPoints()];
 
         for (int i = 0; i < polygon.getNumPoints(); i++) {
-            px[i] = Math.round(canvas.toScreenX(polygon.getPointX(i)));
-            py[i] = Math.round(canvas.toScreenY(polygon.getPointY(i)));
+            px[i] = (int) Math.round(canvas.toScreenX(polygon.getPointX(i)));
+            py[i] = (int) Math.round(canvas.toScreenY(polygon.getPointY(i)));
         }
 
         Composite originalComposite = g2.getComposite();
@@ -220,10 +222,10 @@ public class Java2DGraphicsContext implements StageVisitor {
         g2.setComposite(originalComposite);
     }
 
-    private void drawLines(List<String> lines, Point2D position, Align align, float lineHeight) {
+    private void drawLines(List<String> lines, Point2D position, Align align, double lineHeight) {
         for (int i = 0; i < lines.size(); i++) {
-            float screenX = canvas.toScreenX(position.x());
-            float screenY = canvas.toScreenY(position.y() + i * lineHeight);
+            int screenX = (int) Math.round(canvas.toScreenX(position.x()));
+            int screenY = (int) Math.round(canvas.toScreenY(position.y() + i * lineHeight));
             int estimatedWidth = g2.getFontMetrics().stringWidth(lines.get(i));
 
             switch (align) {
@@ -245,11 +247,11 @@ public class Java2DGraphicsContext implements StageVisitor {
     }
 
     private AffineTransform applyTransform(ImageTransform transform, int width, int height) {
-        float screenX = canvas.toScreenX(transform.getPosition());
-        float screenY = canvas.toScreenY(transform.getPosition());
+        double screenX = canvas.toScreenX(transform.getPosition());
+        double screenY = canvas.toScreenY(transform.getPosition());
 
-        float scaleX = canvas.getZoomLevel() * (transform.getScaleX() / 100f);
-        float scaleY = canvas.getZoomLevel() * (transform.getScaleY() / 100f);
+        double scaleX = canvas.getZoomLevel() * (transform.getScaleX() / 100f);
+        double scaleY = canvas.getZoomLevel() * (transform.getScaleY() / 100f);
 
         int screenWidth = (int) (width * scaleX);
         int screenHeight = (int) (height * scaleY);
@@ -262,9 +264,9 @@ public class Java2DGraphicsContext implements StageVisitor {
         return transform2D;
     }
 
-    private void applyAlphaComposite(float alpha) {
+    private void applyAlphaComposite(double alpha) {
         if (alpha != 100) {
-            Composite alphaComposite = AlphaComposite.SrcOver.derive(alpha / 100f);
+            Composite alphaComposite = AlphaComposite.SrcOver.derive((float) alpha / 100f);
             g2.setComposite(alphaComposite);
         }
     }
@@ -287,11 +289,11 @@ public class Java2DGraphicsContext implements StageVisitor {
      * This can have a significant performance impact, so shapes are rendered
      * to an image, then that image is drawn by the renderer.
      */
-    private record CircleImage(float radius, Color color) {
+    private record CircleImage(double radius, Color color) {
 
         public BufferedImage render() {
-            int sizeX = Math.round(radius * 2f);
-            int sizeY = Math.round(radius * 2f);
+            int sizeX = (int) Math.round(radius * 2f);
+            int sizeY = (int) Math.round(radius * 2f);
 
             BufferedImage image = new BufferedImage(sizeX, sizeY, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g2 = Utils2D.createGraphics(image, true, false);

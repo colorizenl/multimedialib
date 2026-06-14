@@ -8,9 +8,11 @@ package nl.colorize.multimedialib.stage;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
+import nl.colorize.multimedialib.scene.StateMachine;
 import nl.colorize.multimedialib.scene.Timer;
 
 import java.util.HashMap;
@@ -29,17 +31,15 @@ import static lombok.AccessLevel.PROTECTED;
  * identified by its name. The currently active graphics are updated
  * automatically for as long as the sprite is on the stage.
  */
-public class Sprite implements StageNode2D {
+public class Sprite implements Spatial2D {
 
     @Getter @Setter(PROTECTED) private Container parent;
     @Getter private ImageTransform transform;
     @Getter private ImageTransform globalTransform;
 
-    private Map<String, SpriteState> stateGraphics;
-    private SpriteState currentState;
-    private float currentStateTime;
-    private Image currentGraphics;
-    private float lastTick;
+    private Map<String, StateGraphics> availableStates;
+    private StateMachine<StateGraphics> stateMachine;
+    private double lastTick;
 
     private static final String NULL_STATE = "$$null";
     private static final String DEFAULT_STATE = "$$default";
@@ -52,9 +52,8 @@ public class Sprite implements StageNode2D {
         this.transform = new ImageTransform();
         this.globalTransform = new ImageTransform();
 
-        stateGraphics = new HashMap<>();
-        currentState = new SpriteState(NULL_STATE, null);
-        currentStateTime = 0f;
+        availableStates = new HashMap<>();
+        stateMachine = StateMachine.withInitialState(new StateGraphics(NULL_STATE, null));
         lastTick = -1f;
     }
 
@@ -87,12 +86,12 @@ public class Sprite implements StageNode2D {
     public void addGraphics(String stateName, Animation graphics) {
         Preconditions.checkNotNull(stateName, "Missing state name");
         Preconditions.checkNotNull(graphics, "Missing state graphics");
-        Preconditions.checkArgument(!hasGraphics(stateName), "State already exists: " + stateName);
+        Preconditions.checkArgument(!hasState(stateName), "State already exists: " + stateName);
 
-        SpriteState state = new SpriteState(stateName, graphics);
-        stateGraphics.put(stateName, state);
+        StateGraphics state = new StateGraphics(stateName, graphics);
+        availableStates.put(stateName, state);
 
-        if (stateGraphics.size() == 1) {
+        if (availableStates.size() == 1) {
             changeGraphics(stateName);
         }
 
@@ -120,13 +119,12 @@ public class Sprite implements StageNode2D {
      *         graphics for the requested state.
      */
     public void changeGraphics(String stateName) {
-        SpriteState state = stateGraphics.get(stateName);
+        StateGraphics state = availableStates.get(stateName);
 
-        Preconditions.checkNotNull(state, "No graphics defined for " + stateName);
+        Preconditions.checkNotNull(state, "No graphics defined for state: " + stateName);
 
-        if (!currentState.equals(state)) {
-            currentState = state;
-            currentStateTime = 0f;
+        if (!stateMachine.getCurrentState().equals(state)) {
+            stateMachine.changeState(state);
             updateCurrentGraphics();
         }
     }
@@ -136,66 +134,65 @@ public class Sprite implements StageNode2D {
      * state to play from the beginning.
      */
     public void resetCurrentGraphics() {
-        currentStateTime = 0f;
+        stateMachine.getCurrentStateTimer().reset();
         updateCurrentGraphics();
     }
 
     public String getActiveState() {
-        return currentState.name;
+        return stateMachine.getCurrentState().name;
     }
 
-    public Set<String> getPossibleStates() {
-        return stateGraphics.keySet();
+    public Set<String> getAvailableStates() {
+        return availableStates.keySet();
     }
 
-    public boolean hasGraphics(String stateName) {
-        return stateGraphics.containsKey(stateName);
+    public boolean hasState(String stateName) {
+        return availableStates.containsKey(stateName);
     }
 
     public Animation getGraphics(String stateName) {
-        SpriteState state = stateGraphics.get(stateName);
-        Preconditions.checkArgument(state != null, "No graphics defined: " + stateName);
-        return state.graphics;
+        return availableStates.get(stateName).graphics;
     }
 
+    @Deprecated
     public Animation getCurrentStateGraphics() {
-        Preconditions.checkState(currentGraphics != null, "Sprite is without graphics");
-        return currentState.graphics;
+        return stateMachine.getCurrentState().graphics;
     }
 
     @Deprecated
     public Timer getCurrentStateTimer() {
+        StateGraphics currentState = stateMachine.getCurrentState();
+        double time = stateMachine.getCurrentStateTimer().getTime();
+
         if (currentState.graphics.isLoop() || currentState.graphics.getFrameCount() == 1) {
-            return Timer.at(currentStateTime);
+            return Timer.at(time);
         } else {
-            return Timer.at(currentStateTime, currentState.graphics.getDuration());
+            return Timer.at(time, currentState.graphics.getDuration());
         }
     }
 
     public Image getCurrentGraphics() {
-        Preconditions.checkState(currentGraphics != null, "Sprite is without graphics");
-        return currentGraphics;
+        return stateMachine.getCurrentState().current;
     }
 
     public int getCurrentWidth() {
-        Preconditions.checkState(currentGraphics != null, "Sprite is without graphics");
-        return currentGraphics.getWidth();
+        return stateMachine.getCurrentState().current.getWidth();
     }
 
     public int getCurrentHeight() {
-        Preconditions.checkState(currentGraphics != null, "Sprite is without graphics");
-        return currentGraphics.getHeight();
+        return stateMachine.getCurrentState().current.getHeight();
     }
 
     @Override
     public void animate(Timer sceneTime) {
-        Preconditions.checkState(currentGraphics != null, "Sprite is without graphics");
+        Preconditions.checkState(getCurrentGraphics() != null, "Sprite does not contain graphics");
 
-        float tick = sceneTime.getTime();
+        double tick = sceneTime.getTime();
 
         if (lastTick >= 0f) {
-            float deltaTime = tick - lastTick;
-            currentStateTime += deltaTime;
+            double deltaTime = tick - lastTick;
+            Timer stateTimer = stateMachine.getCurrentStateTimer();
+            stateTimer.setTime(stateTimer.getTime() + deltaTime);
         }
 
         updateCurrentGraphics();
@@ -203,14 +200,16 @@ public class Sprite implements StageNode2D {
     }
 
     private void updateCurrentGraphics() {
-        currentGraphics = currentState.graphics.getFrameAtTime(currentStateTime);
+        StateGraphics state = stateMachine.getCurrentState();
+        double time = stateMachine.getCurrentStateTimer().getTime();
+        state.current = state.graphics.getFrameAtTime(time);
     }
 
     @Override
     public Rect getStageBounds() {
         Point2D position = globalTransform.getPosition();
-        float width = Math.max(getCurrentWidth() * (globalTransform.getScaleX() / 100f), 1f);
-        float height = Math.max(getCurrentHeight() * (globalTransform.getScaleY() / 100f), 1f);
+        double width = Math.max(getCurrentWidth() * (globalTransform.getScaleX() / 100f), 1f);
+        double height = Math.max(getCurrentHeight() * (globalTransform.getScaleY() / 100f), 1f);
         return new Rect(position.x() - width / 2f, position.y() - height / 2f, width, height);
     }
 
@@ -220,23 +219,30 @@ public class Sprite implements StageNode2D {
      */
     public Sprite copy() {
         Sprite copy = new Sprite();
-        for (SpriteState state : stateGraphics.values()) {
+        for (StateGraphics state : availableStates.values()) {
             copy.addGraphics(state.name, state.graphics);
         }
-        copy.changeGraphics(currentState.name);
+        copy.changeGraphics(stateMachine.getCurrentState().name);
         copy.getTransform().set(getTransform());
         return copy;
     }
 
     @Override
     public String toString() {
-        return "Sprite [" + currentState.name + "]";
+        return "Sprite [" + stateMachine.getCurrentState().name + "]";
     }
 
     /**
-     * Connects one of the sprite's graphical states with the name that can
-     * be used to activate that state.
+     * Provides quick access to the name and graphics associated with one
+     * of the possible states for this sprite. This avoids having to call
+     * {@code Map.get} to obtain the sprite's graphics. It also caches the
+     * currently active frame in the animation for similar reasons.
      */
-    private record SpriteState(String name, Animation graphics) {
+    @RequiredArgsConstructor
+    private static class StateGraphics {
+
+        private final String name;
+        private final Animation graphics;
+        private Image current;
     }
 }

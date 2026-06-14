@@ -3,3 +3,4 @@
 # The libraries are included in the HTML using <script> tags.
 
 https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js
+https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js.map

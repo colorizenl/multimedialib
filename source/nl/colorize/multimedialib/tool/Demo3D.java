@@ -10,7 +10,7 @@ import nl.colorize.multimedialib.math.Box;
 import nl.colorize.multimedialib.math.Coordinate;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Point3D;
-import nl.colorize.multimedialib.math.RandomGenerator;
+import nl.colorize.multimedialib.math.RNG;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
@@ -73,8 +73,8 @@ public class Demo3D implements Scene, ErrorHandler {
     private static final ColorRGB BLACK_TILE_COLOR = new ColorRGB(50, 50, 50);
     private static final int GRID_SIZE = 5;
     private static final int NUM_MODELS = 50;
-    private static final float WALK_SPEED = 0.02f;
-    private static final float SPIN_SPEED = 30f;
+    private static final double WALK_SPEED = 0.02f;
+    private static final double SPIN_SPEED = 30f;
     private static final List<String> DIRECTIONS = List.of("north", "east", "south", "west");
 
     @Override
@@ -127,7 +127,7 @@ public class Demo3D implements Scene, ErrorHandler {
             mesh.applyDynamicTexture(sprite.copy());
             context.getStage().getRoot3D().addChild(mesh);
 
-            String direction = RandomGenerator.pick(DIRECTIONS);
+            String direction = RNG.pick(DIRECTIONS);
             mesh.getDynamicTexture().changeGraphics(direction);
             walkingModels.add(Tuple.of(mesh, direction));
         }
@@ -162,8 +162,8 @@ public class Demo3D implements Scene, ErrorHandler {
     }
 
     private Point3D generateRandomModelPosition() {
-        float x = RandomGenerator.getFloat(-GRID_SIZE / 2f, GRID_SIZE / 2f);
-        float z = RandomGenerator.getFloat(-GRID_SIZE / 2f, GRID_SIZE / 2f);
+        double x = RNG.getDouble(-GRID_SIZE / 2f, GRID_SIZE / 2f);
+        double z = RNG.getDouble(-GRID_SIZE / 2f, GRID_SIZE / 2f);
         return new Point3D(x, 0.64f, z);
     }
 
@@ -266,17 +266,17 @@ public class Demo3D implements Scene, ErrorHandler {
 
     private void addLight() {
         List<ColorRGB> colors = List.of(GREEN_BUTTON, ORANGE_BUTTON, PINK_BUTTON, BLUE_BUTTON);
-        ColorRGB color = RandomGenerator.pick(colors);
+        ColorRGB color = RNG.pick(colors);
 
-        int x = RandomGenerator.getInt(-GRID_SIZE, GRID_SIZE);
-        int z = RandomGenerator.getInt(-GRID_SIZE, GRID_SIZE);
+        int x = RNG.getInt(-GRID_SIZE, GRID_SIZE);
+        int z = RNG.getInt(-GRID_SIZE, GRID_SIZE);
 
         Light light = new Light(new Point3D(x, 5, z), color, 50f);
         context.getStage().getLights().add(light);
     }
 
     @Override
-    public void update(SceneContext context, float deltaTime) {
+    public void update(SceneContext context, double deltaTime) {
         updatePointerControls();
         updateKeyboardControls();
 
@@ -321,11 +321,11 @@ public class Demo3D implements Scene, ErrorHandler {
         }
     }
 
-    private void manuallySpin(float deltaX, float deltaY, float deltaZ) {
+    private void manuallySpin(double deltaX, double deltaY, double deltaZ) {
         Transform3D transform = spinningModels.get(2).getTransform();
-        float startX = transform.getRotationX().degrees();
-        float startY = transform.getRotationY().degrees();
-        float startZ = transform.getRotationZ().degrees();
+        double startX = transform.getRotationX().degrees();
+        double startY = transform.getRotationY().degrees();
+        double startZ = transform.getRotationZ().degrees();
 
         Timeline timeline = new Timeline(Interpolation.EASE);
         timeline.addKeyFrame(0f, 0f);

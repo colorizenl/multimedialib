@@ -11,7 +11,7 @@ package nl.colorize.multimedialib.stage;
  * be created programmatically, more advanced meshes can be loaded from 3D
  * model files.
  */
-public interface Mesh extends StageNode3D {
+public interface Mesh extends Spatial3D {
 
     @Deprecated
     public void setParent(Group parent);

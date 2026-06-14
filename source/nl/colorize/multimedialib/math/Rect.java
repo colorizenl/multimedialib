@@ -11,31 +11,30 @@ import com.google.common.base.Preconditions;
 import java.util.List;
 
 /**
- * Immutable two-dimensional rectangle with float precision. Rectangles are
- * specified using their top-left coordinate, width, and height. The
- * rectangle's <em>location</em> permits negative coordinates, but its width
- * and height cannot be negative.
+ * Immutable two-dimensional rectangle that is defined by its top-left
+ * coordinate, and its width and height relative to that point. Negative X/Y
+ * coordinates are allowed, but negative width and height are not allowed.
  */
-public record Rect(float x, float y, float width, float height) implements Shape {
+public record Rect(double x, double y, double width, double height) implements Shape {
 
     public Rect {
         Preconditions.checkArgument(width >= 0f, "Invalid width: %s", width);
         Preconditions.checkArgument(height >= 0f, "Invalid height: %s", height);
     }
 
-    public float getEndX() {
+    public double getEndX() {
         return x + width;
     }
 
-    public float getEndY() {
+    public double getEndY() {
         return y + height;
     }
 
-    public float getCenterX() {
+    public double getCenterX() {
         return x + width / 2f;
     }
 
-    public float getCenterY() {
+    public double getCenterY() {
         return y + height / 2f;
     }
 
@@ -55,7 +54,7 @@ public record Rect(float x, float y, float width, float height) implements Shape
     /**
      * Returns true if the specified point is located within this rectangle.
      */
-    public boolean contains(float px, float py) {
+    public boolean contains(double px, double py) {
         return px >= x && px <= x + width && py >= y && py <= y + height;
     }
 
@@ -113,7 +112,7 @@ public record Rect(float x, float y, float width, float height) implements Shape
      * Using a negative value for {@code amount} is possible and will result
      * in a rectangle that is smaller than the original.
      */
-    public Rect expand(float amount) {
+    public Rect expand(double amount) {
         return around(getCenter(), width + amount, height + amount);
     }
 
@@ -136,7 +135,7 @@ public record Rect(float x, float y, float width, float height) implements Shape
      * Factory method that creates a rectangle based on the points (x0, y0)
      * and (x1, y1).
      */
-    public static Rect fromPoints(float x0, float y0, float x1, float y1) {
+    public static Rect fromPoints(double x0, double y0, double x1, double y1) {
         return new Rect(x0, y0, x1 - x0, y1 - y0);
     }
 
@@ -144,7 +143,7 @@ public record Rect(float x, float y, float width, float height) implements Shape
      * Returns a rectangle that has X and Y coordinates so that the specified
      * point becomes its center.
      */
-    public static Rect around(float x, float y, float width, float height) {
+    public static Rect around(double x, double y, double width, double height) {
         return around(new Point2D(x, y), width, height);
     }
 
@@ -152,7 +151,7 @@ public record Rect(float x, float y, float width, float height) implements Shape
      * Returns a rectangle that has X and Y coordinates so that the specified
      * point becomes its center.
      */
-    public static Rect around(Point2D center, float width, float height) {
+    public static Rect around(Point2D center, double width, double height) {
         return new Rect(center.x() - width / 2f, center.y() - height / 2f, width, height);
     }
 
@@ -161,7 +160,7 @@ public record Rect(float x, float y, float width, float height) implements Shape
      * X and Y coordinates positioned so that the origin {@code (0, 0)} ends
      * up as the center of the rectangle.
      */
-    public static Rect aroundOrigin(float width, float height) {
+    public static Rect aroundOrigin(double width, double height) {
         return new Rect(-width / 2f, -height / 2f, width, height);
     }
 }

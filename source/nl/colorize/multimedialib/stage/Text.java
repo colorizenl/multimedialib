@@ -30,7 +30,7 @@ import static lombok.AccessLevel.PROTECTED;
  */
 @Getter
 @Setter
-public class Text implements StageNode2D {
+public class Text implements Spatial2D {
 
     @Setter(PROTECTED) private Container parent;
     private final Transform transform;
@@ -40,7 +40,7 @@ public class Text implements StageNode2D {
     private FontFace font;
     private Align align;
     private int lineWidth;
-    private float lineHeight;
+    private double lineHeight;
 
     private static final Splitter LINE_BOUNDARY = Splitter.on('\n');
     private static final Splitter WORD_BOUNDARY = Splitter.on(' ');
@@ -49,8 +49,8 @@ public class Text implements StageNode2D {
     //     but of course it would be much better if the renderer
     //     can provide the actual width and height of the text
     //     without needing to rendering it.
-    private static final float ESTIMATED_CHAR_WIDTH_FACTOR = 0.6f;
-    private static final float ESTIMATED_LINE_HEIGHT_FACTOR = 1.7f;
+    private static final double ESTIMATED_CHAR_WIDTH_FACTOR = 0.6f;
+    private static final double ESTIMATED_LINE_HEIGHT_FACTOR = 1.7f;
 
     public Text(String text, FontFace font, Align align, int lineWidth) {
         this.transform = new Transform();
@@ -138,12 +138,12 @@ public class Text implements StageNode2D {
             .max()
             .orElse(1);
 
-        float approximateWidth = longestLine * estimateCharWidth();
-        float approximateHeight = font.size() * lines.size();
+        double approximateWidth = longestLine * estimateCharWidth();
+        double approximateHeight = font.size() * lines.size();
         return Rect.around(position, approximateWidth, approximateHeight);
     }
 
-    private float estimateCharWidth() {
+    private double estimateCharWidth() {
         return font.size() * ESTIMATED_CHAR_WIDTH_FACTOR;
     }
 

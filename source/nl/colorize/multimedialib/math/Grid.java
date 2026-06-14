@@ -19,7 +19,7 @@ import java.util.stream.Stream;
  * it can start at any coordinate, including negative coordinates. Coordinates
  * can contain {@code null}, so not every cell needs to be occupied.
  *
- * @param <E> The type element which acts as a cell within this grid.
+ * @param <E> The type element that acts as a cell within this grid.
  */
 public class Grid<E> {
 

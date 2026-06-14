@@ -54,7 +54,7 @@ public final class Stage {
     private static final String ROOT_CONTAINER_2D = "$$root";
     private static final String ROOT_CONTAINER_3D = "$$root3D";
     private static final ColorRGB DEFAULT_AMBIENT_LIGHT_COLOR = new ColorRGB(220, 220, 220);
-    private static final float SAFE_ZONE_PADDING = 64f;
+    private static final double SAFE_ZONE_PADDING = 64f;
     private static final Logger LOGGER = LogHelper.getLogger(Stage.class);
 
     public Stage(Canvas canvas) {
@@ -107,11 +107,11 @@ public final class Stage {
      * Detaches the specified node from the scene graph. If the node is not
      * currently part of the stage, calling this method does nothing.
      *
-     * @deprecated Prefer using {@link StageNode2D#detach()} instead. This
+     * @deprecated Prefer using {@link Spatial2D#detach()} instead. This
      *             method remains only for backward compatibility.
      */
     @Deprecated
-    public void detach(StageNode2D node) {
+    public void detach(Spatial2D node) {
         node.detach();
     }
 
@@ -119,11 +119,11 @@ public final class Stage {
      * Detaches the specified node from the scene graph. If the node is not
      * currently part of the stage, calling this method does nothing.
      *
-     * @deprecated Prefer using {@link StageNode2D#detach()} instead. This
+     * @deprecated Prefer using {@link Spatial2D#detach()} instead. This
      *             method remains only for backward compatibility.
      */
     @Deprecated
-    public void detach(StageNode3D node) {
+    public void detach(Spatial3D node) {
         node.detach();
     }
 
@@ -152,7 +152,7 @@ public final class Stage {
         visitor.finalize2D(this);
     }
 
-    private void visitNode2D(StageNode2D node, Transform globalTransform, StageVisitor visitor) {
+    private void visitNode2D(Spatial2D node, Transform globalTransform, StageVisitor visitor) {
         node.getGlobalTransform().set(globalTransform);
 
         if (!globalTransform.isVisible() || !shouldDraw(node)) {
@@ -170,7 +170,7 @@ public final class Stage {
         }
     }
 
-    private boolean shouldDraw(StageNode2D node) {
+    private boolean shouldDraw(Spatial2D node) {
         if (node instanceof Container) {
             return true;
         }
@@ -189,7 +189,7 @@ public final class Stage {
     private void visitContainer(Container container, Transform globalTransform, StageVisitor visitor) {
         visitor.visitContainer(container, globalTransform);
 
-        for (StageNode2D child : container) {
+        for (Spatial2D child : container) {
             Transform childLocalTransform = child.getTransform();
             Transform childGlobalTransform = globalTransform.combine(childLocalTransform);
             visitNode2D(child, childGlobalTransform, visitor);
@@ -209,7 +209,7 @@ public final class Stage {
         }
     }
 
-    private void visitNode3D(StageNode3D node, Transform3D globalTransform, StageVisitor visitor) {
+    private void visitNode3D(Spatial3D node, Transform3D globalTransform, StageVisitor visitor) {
         node.getGlobalTransform().set(globalTransform);
 
         if (!globalTransform.isVisible()) {
@@ -228,7 +228,7 @@ public final class Stage {
     private void visitGroup(Group group, Transform3D globalTransform, StageVisitor visitor) {
         visitor.visitGroup(group, globalTransform);
 
-        for (StageNode3D child : group) {
+        for (Spatial3D child : group) {
             Transform3D childLocalTransform = child.getTransform();
             Transform3D childGlobalTransform = globalTransform.combine(childLocalTransform);
             visitNode3D(child, childGlobalTransform, visitor);
@@ -241,9 +241,9 @@ public final class Stage {
      * node is not currently part of the stage, this returns a list containing
      * only the node itself.
      */
-    public List<StageNode2D> findNodePath(StageNode2D node) {
-        List<StageNode2D> nodePath = new ArrayList<>();
-        StageNode2D currentNode = node;
+    public List<Spatial2D> findNodePath(Spatial2D node) {
+        List<Spatial2D> nodePath = new ArrayList<>();
+        Spatial2D currentNode = node;
         while (currentNode != null) {
             nodePath.addFirst(currentNode);
             currentNode = currentNode.getParent();
@@ -257,9 +257,9 @@ public final class Stage {
      * node is not currently part of the stage, this returns a list containing
      * only the node itself.
      */
-    public List<StageNode3D> findNodePath(StageNode3D node) {
-        List<StageNode3D> nodePath = new ArrayList<>();
-        StageNode3D currentNode = node;
+    public List<Spatial3D> findNodePath(Spatial3D node) {
+        List<Spatial3D> nodePath = new ArrayList<>();
+        Spatial3D currentNode = node;
         while (currentNode != null) {
             nodePath.addFirst(currentNode);
             currentNode = currentNode.getParent();
@@ -278,8 +278,8 @@ public final class Stage {
      * This method therefore has a performance impact, and should only be used
      * on/for a limited number of nodes per frame update.
      */
-    public void recalculateGlobalTransform(StageNode2D node) {
-        List<StageNode2D> nodePath = findNodePath(node);
+    public void recalculateGlobalTransform(Spatial2D node) {
+        List<Spatial2D> nodePath = findNodePath(node);
         nodePath.getFirst().getGlobalTransform().set(nodePath.getFirst().getTransform());
 
         for (int i = 1; i < nodePath.size(); i++) {
@@ -301,8 +301,8 @@ public final class Stage {
      * This method therefore has a performance impact, and should only be used
      * on/for a limited number of nodes per frame update.
      */
-    public void recalculateGlobalTransform(StageNode3D node) {
-        List<StageNode3D> nodePath = findNodePath(node);
+    public void recalculateGlobalTransform(Spatial3D node) {
+        List<Spatial3D> nodePath = findNodePath(node);
         nodePath.getFirst().getGlobalTransform().set(nodePath.getFirst().getTransform());
 
         for (int i = 1; i < nodePath.size(); i++) {
@@ -328,25 +328,25 @@ public final class Stage {
         return buffer.toString();
     }
 
-    private void append(StringBuilder buffer, StageNode2D node, int depth) {
+    private void append(StringBuilder buffer, Spatial2D node, int depth) {
         buffer.append("    ".repeat(depth));
         buffer.append(node.toString());
         buffer.append("\n");
 
         if (node instanceof Container container) {
-            for (StageNode2D child : container) {
+            for (Spatial2D child : container) {
                 append(buffer, child, depth + 1);
             }
         }
     }
 
-    private void append(StringBuilder buffer, StageNode3D node, int depth) {
+    private void append(StringBuilder buffer, Spatial3D node, int depth) {
         buffer.append("    ".repeat(depth));
         buffer.append(node.toString());
         buffer.append("\n");
 
         if (node instanceof Group group) {
-            for (StageNode3D child : group) {
+            for (Spatial3D child : group) {
                 append(buffer, child, depth + 1);
             }
         }

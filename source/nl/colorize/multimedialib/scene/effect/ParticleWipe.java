@@ -8,8 +8,8 @@ package nl.colorize.multimedialib.scene.effect;
 
 import lombok.Getter;
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.scene.Actor;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Image;
@@ -26,13 +26,14 @@ import java.util.List;
  * where the particles slowly reveal the screen. Both effects would typically
  * be used on either side of the transition.
  */
-public class ParticleWipe implements Scene {
+public class ParticleWipe implements Actor {
 
+    private SceneContext context;
     @Getter private Container container;
 
     private boolean reverse;
     private Image particleImage;
-    private float duration;
+    private double duration;
     private ColorRGB fillColor;
     private List<Particle> particles;
 
@@ -47,17 +48,20 @@ public class ParticleWipe implements Scene {
      * {@code reverse} is true, the transition will start fully obscured and
      * will then play backwards, slowly revealing the stage.
      */
-    public ParticleWipe(Image particleImage, ColorRGB color, float duration, boolean reverse) {
+    public ParticleWipe(SceneContext context, Image particleImage, ColorRGB color,
+                        double duration, boolean reverse) {
+        this.context = context;
         this.container = new Container();
         this.duration = duration;
         this.particleImage = particleImage;
         this.fillColor = color;
         this.reverse = reverse;
         this.particles = new ArrayList<>();
+
+        attachGraphics();
     }
 
-    @Override
-    public void start(SceneContext context) {
+    private void attachGraphics() {
         int columnIndex = 0;
         int endX = context.getCanvas().getWidth() + PADDING;
         int endY = context.getCanvas().getHeight() + PADDING;
@@ -77,7 +81,7 @@ public class ParticleWipe implements Scene {
     }
 
     @Override
-    public void update(SceneContext context, float deltaTime) {
+    public void update(double deltaTime) {
         for (Particle particle : particles) {
             particle.timeline.movePlayhead(deltaTime);
             particle.sprite.getTransform().setMaskColor(fillColor);
@@ -85,10 +89,14 @@ public class ParticleWipe implements Scene {
             particle.sprite.getTransform().setScale(getParticleScale(particle));
             particle.sprite.getTransform().setVisible(particle.sprite.getTransform().getScaleX() > 1);
         }
+
+        if (isCompleted()) {
+            container.detach();
+        }
     }
 
-    private float getParticleScale(Particle particle) {
-        float delta = particle.timeline.getValue();
+    private double getParticleScale(Particle particle) {
+        double delta = particle.timeline.getValue();
         if (reverse) {
             delta = 1f - delta;
         }
@@ -101,11 +109,6 @@ public class ParticleWipe implements Scene {
             .allMatch(particle -> particle.timeline.isCompleted());
     }
 
-    @Override
-    public void end(SceneContext context) {
-        context.getStage().detach(container);
-    }
-
     /**
      * Internal data structure used to keep track of each particle.
      */
@@ -115,7 +118,7 @@ public class ParticleWipe implements Scene {
         private Timeline timeline;
         private Sprite sprite;
 
-        public Particle(float x, float y, float delay, float duration) {
+        public Particle(double x, double y, double delay, double duration) {
             this.position = new Point2D(x, y);
             this.timeline = new Timeline()
                 .addKeyFrame(0f, 0f)

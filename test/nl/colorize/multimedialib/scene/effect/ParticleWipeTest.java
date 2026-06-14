@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.scene.effect;
 
 import nl.colorize.multimedialib.mock.MockImage;
+import nl.colorize.multimedialib.mock.MockScene;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,9 @@ class ParticleWipeTest {
     @Test
     void renderParticles() {
         HeadlessRenderer renderer = new HeadlessRenderer();
-        renderer.start(new ParticleWipe(new MockImage(), ColorRGB.RED, 10f, false));
+        renderer.start(new MockScene());
+
+        renderer.attach(new ParticleWipe(renderer, new MockImage(), ColorRGB.RED, 10f, false));
         renderer.doFrame();
         renderer.doFrame();
 

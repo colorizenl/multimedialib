@@ -17,13 +17,13 @@ class SwipeTrackerTest {
     @Test
     void noSwipeWithoutPressingPointer() {
         HeadlessRenderer renderer = new HeadlessRenderer();
-        SwipeTracker swipeTracker = new SwipeTracker(10f);
+        SwipeTracker swipeTracker = new SwipeTracker(renderer.getInput(), 10f);
 
         renderer.setPointer(new Point2D(10f, 20f));
-        swipeTracker.update(renderer.getContext(), 1f);
+        swipeTracker.update(1f);
 
         renderer.setPointer(new Point2D(30f, 40f));
-        swipeTracker.update(renderer.getContext(), 1f);
+        swipeTracker.update(1f);
 
         assertEquals("[]", swipeTracker.getSwipes().flush().toList().toString());
     }
@@ -31,14 +31,14 @@ class SwipeTrackerTest {
     @Test
     void noSwipeWithoutReleasingPointer() {
         HeadlessRenderer renderer = new HeadlessRenderer();
-        SwipeTracker swipeTracker = new SwipeTracker(10f);
+        SwipeTracker swipeTracker = new SwipeTracker(renderer.getInput(), 10f);
 
         renderer.setPointerPressed(true);
         renderer.setPointer(new Point2D(10f, 20f));
-        swipeTracker.update(renderer.getContext(), 1f);
+        swipeTracker.update(1f);
 
         renderer.setPointer(new Point2D(30f, 40f));
-        swipeTracker.update(renderer.getContext(), 1f);
+        swipeTracker.update(1f);
 
         assertEquals("[]", swipeTracker.getSwipes().flush().toList().toString());
     }
@@ -46,15 +46,15 @@ class SwipeTrackerTest {
     @Test
     void detectSwipes() {
         HeadlessRenderer renderer = new HeadlessRenderer();
-        SwipeTracker swipeTracker = new SwipeTracker(10f);
+        SwipeTracker swipeTracker = new SwipeTracker(renderer.getInput(), 10f);
 
         renderer.setPointerPressed(true);
         renderer.setPointer(new Point2D(10f, 20f));
-        swipeTracker.update(renderer.getContext(), 1f);
+        swipeTracker.update(1f);
 
         renderer.setPointerReleased(true);
         renderer.setPointer(new Point2D(30f, 40f));
-        swipeTracker.update(renderer.getContext(), 1f);
+        swipeTracker.update(1f);
 
         assertEquals("[(10, 20) -> (30, 40)]", swipeTracker.getSwipes().flush().toList().toString());
     }
@@ -62,15 +62,15 @@ class SwipeTrackerTest {
     @Test
     void swipeBelowToleranceDoesNotCount() {
         HeadlessRenderer renderer = new HeadlessRenderer();
-        SwipeTracker swipeTracker = new SwipeTracker(10f);
+        SwipeTracker swipeTracker = new SwipeTracker(renderer.getInput(), 10f);
 
         renderer.setPointerPressed(true);
         renderer.setPointer(new Point2D(10f, 20f));
-        swipeTracker.update(renderer.getContext(), 1f);
+        swipeTracker.update(1f);
 
         renderer.setPointerReleased(true);
         renderer.setPointer(new Point2D(11f, 21));
-        swipeTracker.update(renderer.getContext(), 1f);
+        swipeTracker.update(1f);
 
         assertEquals("[]", swipeTracker.getSwipes().toString());
     }

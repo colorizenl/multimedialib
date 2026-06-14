@@ -74,8 +74,7 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
         Canvas defaultCanvas = new Canvas(800, 600, ScaleStrategy.flexible());
         RenderConfig defaultConfig = RenderConfig.headless(GraphicsMode.HEADLESS, defaultCanvas)
             .withFramerate(10);
-        Scene nullScene = (_, _) -> {};
-        start(defaultConfig, nullScene);
+        start(defaultConfig, new NullScene());
     }
 
     @Override
@@ -84,9 +83,8 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
         this.graphics = null;
         this.mediaLoader = new StandardMediaLoader();
         this.network = new StandardNetwork();
-        this.sceneManager = new SimulatedSceneManager(this);
+        this.sceneManager = new SimulatedSceneManager(this, initialScene);
 
-        sceneManager.changeScene(initialScene);
         doFrame(0f);
     }
 
@@ -117,12 +115,12 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
         update(1f);
     }
 
-    public void doFrame(float deltaTime) {
+    public void doFrame(double deltaTime) {
         update(deltaTime);
     }
 
     @Override
-    public void update(float deltaTime) {
+    public void update(double deltaTime) {
         if (sceneManager instanceof SimulatedSceneManager simulated) {
             simulated.simulateFrameUpdate(deltaTime);
         }
@@ -184,12 +182,28 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
      */
     private static class SimulatedSceneManager extends SceneManager {
 
-        public SimulatedSceneManager(SceneContext context) {
-            super(context);
+        public SimulatedSceneManager(SceneContext context, Scene initialScene) {
+            super(context, initialScene);
         }
 
-        public void simulateFrameUpdate(float deltaTime) {
+        public void simulateFrameUpdate(double deltaTime) {
             performFrameUpdate(deltaTime);
+        }
+    }
+
+    /**
+     * Empty implementation of the {@link Scene} interface that does not
+     * actually do anything. This mainly exists so that tests do not need
+     * to register an explicit scene when using the headless renderer.
+     */
+    private static class NullScene implements Scene {
+
+        @Override
+        public void start(SceneContext context) {
+        }
+
+        @Override
+        public void update(SceneContext context, double deltaTime) {
         }
     }
 }

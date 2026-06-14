@@ -30,11 +30,11 @@ import static lombok.AccessLevel.PROTECTED;
  * between 2D and 3D graphics. Use {@link Container} for 2D graphics.
  */
 @Getter
-public class Group implements StageNode3D, Iterable<StageNode3D> {
+public class Group implements Spatial3D, Iterable<Spatial3D> {
 
     private String name;
     @Setter(PROTECTED) Group parent;
-    @Getter(PROTECTED) private SubscribableCollection<StageNode3D> children;
+    @Getter(PROTECTED) private SubscribableCollection<Spatial3D> children;
     private Transform3D transform;
     private Transform3D globalTransform;
 
@@ -49,7 +49,7 @@ public class Group implements StageNode3D, Iterable<StageNode3D> {
         this("Group");
     }
 
-    public void addChild(StageNode3D child) {
+    public void addChild(Spatial3D child) {
         Preconditions.checkArgument(this != child, "Cannot attach group to itself");
         Preconditions.checkState(child.getParent() == null, "Node is already attached to group");
 
@@ -72,7 +72,7 @@ public class Group implements StageNode3D, Iterable<StageNode3D> {
         return child;
     }
 
-    public void removeChild(StageNode3D child) {
+    public void removeChild(Spatial3D child) {
         switch (child) {
             case Group group -> group.setParent(null);
             case Mesh mesh -> mesh.setParent(null);
@@ -92,7 +92,7 @@ public class Group implements StageNode3D, Iterable<StageNode3D> {
     }
 
     @Override
-    public Iterator<StageNode3D> iterator() {
+    public Iterator<Spatial3D> iterator() {
         return children.iterator();
     }
 

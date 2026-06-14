@@ -41,7 +41,7 @@ public class LWJGLAudio implements Audio {
     private ResourceFile origin;
     private byte[] oggData;
     @Getter private int masterVolume;
-    @Getter private float duration;
+    @Getter private double duration;
 
     private int bufferId;
     private int sourceId;
@@ -79,7 +79,7 @@ public class LWJGLAudio implements Audio {
 
             bufferId = AL10.alGenBuffers();
             sourceId = AL10.alGenSources();
-            duration = (pcm.limit() / (float) channels) / (float) sampleRate;
+            duration = (pcm.limit() / channels) / sampleRate;
 
             AL10.alBufferData(bufferId, getFormat(channels), pcm, sampleRate);
             AL10.alSourcei(sourceId, AL10.AL_BUFFER, bufferId);

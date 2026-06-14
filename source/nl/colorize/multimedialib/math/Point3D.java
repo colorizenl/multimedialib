@@ -9,14 +9,13 @@ package nl.colorize.multimedialib.math;
 import nl.colorize.util.animation.Interpolation;
 
 /**
- * Immutable point within a three-dimensional space, with its X, Y, and Z
- * coordinates defined with float precision. Negative coordinates are
- * permitted.
+ * Immutable point within a three-dimensional space, defined by its X/Y/Z
+ * coordinates. Negative coordinates are permitted.
  */
-public record Point3D(float x, float y, float z) {
+public record Point3D(double x, double y, double z) {
 
     public static final Point3D ORIGIN = new Point3D(0f, 0f, 0f);
-    public static final float EPSILON = Point2D.EPSILON;
+    public static final double EPSILON = Point2D.EPSILON;
 
     public boolean isOrigin() {
         return Math.abs(x) < EPSILON && Math.abs(y) < EPSILON && Math.abs(z) < EPSILON;
@@ -25,11 +24,11 @@ public record Point3D(float x, float y, float z) {
     /**
      * Returns the distance between this point and the specified other point.
      */
-    public float distanceTo(Point3D other) {
-        float deltaX = Math.abs(other.x - x);
-        float deltaY = Math.abs(other.y - y);
-        float deltaZ = Math.abs(other.z - z);
-        return (float) Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
+    public double distanceTo(Point3D other) {
+        double deltaX = Math.abs(other.x - x);
+        double deltaY = Math.abs(other.y - y);
+        double deltaZ = Math.abs(other.z - z);
+        return Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
     }
 
     /**
@@ -37,9 +36,9 @@ public record Point3D(float x, float y, float z) {
      * and the specified other point.
      */
     public Point3D findCenter(Point3D other) {
-        float centerX = (x + other.x) / 2f;
-        float centerY = (y + other.y) / 2f;
-        float centerZ = (z + other.z) / 2f;
+        double centerX = (x + other.x) / 2f;
+        double centerY = (y + other.y) / 2f;
+        double centerZ = (z + other.z) / 2f;
         return new Point3D(centerX, centerY, centerZ);
     }
 
@@ -48,10 +47,10 @@ public record Point3D(float x, float y, float z) {
      * point and the specified other point. The delta is represented by a number
      * between 0.0 (position of this point) and 1.0 (position of the other point).
      */
-    public Point3D interpolate(Point3D other, float delta, Interpolation method) {
-        float interpolatedX = method.interpolate(x, other.x, delta);
-        float interpolatedY = method.interpolate(y, other.y, delta);
-        float interpolatedZ = method.interpolate(z, other.z, delta);
+    public Point3D interpolate(Point3D other, double delta, Interpolation method) {
+        double interpolatedX = method.interpolate(x, other.x, delta);
+        double interpolatedY = method.interpolate(y, other.y, delta);
+        double interpolatedZ = method.interpolate(z, other.z, delta);
         return new Point3D(interpolatedX, interpolatedY, interpolatedZ);
     }
 
@@ -61,7 +60,7 @@ public record Point3D(float x, float y, float z) {
      * number between 0.0 (position of this point) and 1.0 (position of the other
      * point).
      */
-    public Point3D interpolate(Point3D other, float delta) {
+    public Point3D interpolate(Point3D other, double delta) {
         return interpolate(other, delta, Interpolation.LINEAR);
     }
 
@@ -69,7 +68,7 @@ public record Point3D(float x, float y, float z) {
      * Returns a new point that starts from this point and then adds the
      * specified offset.
      */
-    public Point3D add(float deltaX, float deltaY, float deltaZ) {
+    public Point3D add(double deltaX, double deltaY, double deltaZ) {
         return new Point3D(x + deltaX, y + deltaY, z + deltaZ);
     }
 

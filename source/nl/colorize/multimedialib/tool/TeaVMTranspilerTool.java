@@ -108,10 +108,14 @@ public class TeaVMTranspilerTool {
         "effects/particle-diamond.png"
     );
 
+    private static final List<String> MANIFEST_EXCLUDES = List.of(
+        "webapp/WEB-INF/web.xml",
+        "browser/javascript-libraries.txt"
+    );
+
     private static final ResourceFile INDEX_FILE = new ResourceFile("browser/index.html");
-    private static final ResourceFile FRAMEWORK_RESOURCES = new ResourceFile("browser/resources.txt");
     private static final ResourceFile JS_LIBS = new ResourceFile("browser/javascript-libraries.txt");
-    private static final List<String> TEXT_EXTS = List.of(
+    private static final List<String> TEXT_FILE_EXTENSIONS = List.of(
         ".atlas", ".csv", ".fnt", ".glsl", ".json", ".md", ".properties", ".txt", ".yaml", ".yml");
     private static final Logger LOGGER = LogHelper.getLogger(TeaVMTranspilerTool.class);
 
@@ -290,7 +294,7 @@ public class TeaVMTranspilerTool {
     }
 
     private boolean isTextResourceFile(File file) {
-        return TEXT_EXTS.stream()
+        return TEXT_FILE_EXTENSIONS.stream()
             .anyMatch(type -> file.getName().toLowerCase().endsWith(type));
     }
 
@@ -324,6 +328,7 @@ public class TeaVMTranspilerTool {
 
     private String generateScriptTags(List<File> jsLibraries) {
         return jsLibraries.stream()
+            .filter(lib -> !lib.getName().endsWith(".map"))
             .map(lib -> "<script src=\"scripts/" + lib.getName() + "\"></script>\n")
             .collect(Collectors.joining(""));
     }
@@ -377,6 +382,7 @@ public class TeaVMTranspilerTool {
             .filter(file -> !file.getName().endsWith(".js"))
             .filter(file -> !file.getName().endsWith(".DS_Store"))
             .map(file -> FileUtils.getRelativePath(file, assetsDir))
+            .filter(file -> !MANIFEST_EXCLUDES.contains(file))
             .distinct()
             .sorted()
             .collect(Collectors.joining("\n"));

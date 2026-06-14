@@ -7,59 +7,41 @@
 package nl.colorize.multimedialib.scene;
 
 /**
- * Applications are split into *scenes*. Simple applications may consist of a
- * single scene, but larger applications can be split into multiple scenes,
- * each representing a discrete phase of the application.
+ * Scenes are the top-level structure to divide an application into different
+ * "chapters". Only one scene can be active at the same time. Simple
+ * applications may consist of a single scene, but larger applications can be
+ * split into multiple scenes, with each scene representing a different
+ * chapter or phase.
  * <p>
- * Only one scene can be active at the same time, but it is possible to attach
- * sub-scenes to the currently active scene. These sub-scenes can contain
- * their own logic, but cannot outlive their parent scene. When the active
- * scene is changed, both the scene itself and its sub-scenes will be
- * terminated and the stage will be cleared in preparation for the next scene.
- * <p>
- * The currently active scene (and its sub-scenes) receive access to the
- * {@link SceneContext}, which is provided by the renderer via callback
- * methods.
+ * The renderer uses callback methods to update the currently active scene.
+ * These callback methods provide the {@link SceneContext} for access to the
+ * underlying renderer.
  */
-@FunctionalInterface
 public interface Scene {
 
     /**
-     * Initialization logic that should be performed when the scene is
-     * started. Note that this method is called *every* time the scene is
-     * started, not just the first time.
-     * <p>
-     * This method is optional, the default implementation does nothing.
+     * Called by the renderer, allows the scene to initialize itself when
+     * the renderer starts this scene. Note that this method is called
+     * <em>every</em> time the scene is started, not just the first time.
      */
-    default void start(SceneContext context) {
-    }
+    public void start(SceneContext context);
 
     /**
-     * Called during every frame update for as long as the scene is active.
-     * {@code deltaTime} indicates the elapsed time since the last frame, in
-     * seconds.
+     * Called by the renderer during every frame update for as long as this
+     * scene is active. This is the main method for scene logic, and has full
+     * access to the {@link SceneContext}. If the scene contains
+     * {@link Actor}s, this scene is updated <em>before</em> its actors.
+     *
+     * @param deltaTime Elapsed time since the last frame update, in seconds.
      */
-    public void update(SceneContext context, float deltaTime);
+    public void update(SceneContext context, double deltaTime);
 
     /**
-     * Clean-up logic that is performed every time the scene ends.
+     * Called by the renderer every time this scene ends, either because the
+     * next scene starts or because the application is terminated.
      * <p>
      * This method is optional, the default implementation does nothing.
      */
     default void end(SceneContext context) {
-    }
-
-    /**
-     * Indicates the scene has been completed and no longer wishes to receive
-     * frame updates.
-     * <p>
-     * If this scene is the currently active scene, it might not actually end
-     * until a new scene is requested.
-     * <p>
-     * If this scene is a completed sub-scene, meaning there is a parent scene
-     * which is still active, this sub-scene will end after the current frame.
-     */
-    default boolean isCompleted() {
-        return false;
     }
 }

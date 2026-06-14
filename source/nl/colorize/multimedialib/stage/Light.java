@@ -27,15 +27,15 @@ public class Light {
 
     private Point3D position;
     private ColorRGB color;
-    private float intensity;
+    private double intensity;
 
-    public Light(Point3D position, ColorRGB color, float intensity) {
+    public Light(Point3D position, ColorRGB color, double intensity) {
         setPosition(position);
         setColor(color);
         setIntensity(intensity);
     }
 
-    public void setIntensity(float intensity) {
+    public void setIntensity(double intensity) {
         this.intensity = Math.clamp(intensity, 0f, 100f);
     }
 

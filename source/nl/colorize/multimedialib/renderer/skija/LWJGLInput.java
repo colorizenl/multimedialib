@@ -131,11 +131,11 @@ public class LWJGLInput implements InputDevice {
     }
 
     protected void onMouseMove(long windowId, double x, double y) {
-        float screenPixelRatio = Platform.isMac() ? config.getCanvas().getScreenPixelRatio() : 1f;
+        double screenPixelRatio = Platform.isMac() ? config.getCanvas().getScreenPixelRatio() : 1f;
         int screenX = (int) Math.round(x * screenPixelRatio);
         int screenY = (int) Math.round(y * screenPixelRatio);
-        float canvasX = config.getCanvas().toCanvasX(screenX);
-        float canvasY = config.getCanvas().toCanvasY(screenY);
+        double canvasX = config.getCanvas().toCanvasX(screenX);
+        double canvasY = config.getCanvas().toCanvasY(screenY);
         mouse.setPosition(new Point2D(canvasX, canvasY));
     }
 
@@ -249,6 +249,6 @@ public class LWJGLInput implements InputDevice {
     }
 
     @Override
-    public void update(float deltaTime) {
+    public void update(double deltaTime) {
     }
 }

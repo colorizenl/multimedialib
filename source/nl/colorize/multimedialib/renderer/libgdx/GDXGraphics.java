@@ -88,8 +88,8 @@ public class GDXGraphics implements StageVisitor, World3D {
     private List<ModelInstance> displayList;
 
     private static final int FIELD_OF_VIEW = 75;
-    private static final float NEAR_PLANE = 1;
-    private static final float FAR_PLANE = 300;
+    private static final double NEAR_PLANE = 1;
+    private static final double FAR_PLANE = 300;
     private static final int CIRCLE_SEGMENTS = 32;
     private static final int MASK_CACHE_SIZE = 1024;
     private static final int TEXTURE_FLAGS = Position | Normal | TextureCoordinates;
@@ -102,8 +102,8 @@ public class GDXGraphics implements StageVisitor, World3D {
         this.maskCache = Cache.from(this::createMask, MASK_CACHE_SIZE);
 
         camera = new PerspectiveCamera(FIELD_OF_VIEW, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        camera.near = NEAR_PLANE;
-        camera.far = FAR_PLANE;
+        camera.near = (float) NEAR_PLANE;
+        camera.far = (float) FAR_PLANE;
         camera.update();
 
         restartBatch();
@@ -148,7 +148,7 @@ public class GDXGraphics implements StageVisitor, World3D {
             PointLight gdxLight = new PointLight();
             gdxLight.setPosition(convertVector(light.getPosition()));
             gdxLight.setColor(convertColor(light.getColor()));
-            gdxLight.setIntensity(light.getIntensity());
+            gdxLight.setIntensity((float) light.getIntensity());
             environment.add(gdxLight);
         }
     }
@@ -210,7 +210,7 @@ public class GDXGraphics implements StageVisitor, World3D {
         shapeBatch.end();
     }
 
-    private void drawComplexLines(List<Line> lines, Color color, float stroke) {
+    private void drawComplexLines(List<Line> lines, Color color, double stroke) {
         switchMode(false, false);
         Gdx.gl.glEnable(GL20.GL_BLEND);
 
@@ -223,7 +223,7 @@ public class GDXGraphics implements StageVisitor, World3D {
             float x1 = toScreenX(segment.end().x());
             float y1 = toScreenY(segment.end().y());
 
-            shapeBatch.rectLine(new Vector2(x0, y0), new Vector2(x1, y1), stroke);
+            shapeBatch.rectLine(new Vector2(x0, y0), new Vector2(x1, y1), (float) stroke);
         }
 
         shapeBatch.end();
@@ -233,8 +233,8 @@ public class GDXGraphics implements StageVisitor, World3D {
     public void drawRect(Primitive graphic, Rect rect, Transform globalTransform) {
         float x = toScreenX(rect.x());
         float y = toScreenY(rect.getEndY());
-        float width = rect.width() * canvas.getZoomLevel();
-        float height = rect.height() * canvas.getZoomLevel();
+        float width = (float) rect.width() * (float) canvas.getZoomLevel();
+        float height = (float) rect.height() * (float) canvas.getZoomLevel();
 
         switchMode(false, true);
         shapeBatch.setColor(getPrimitiveColor(graphic, globalTransform));
@@ -243,8 +243,8 @@ public class GDXGraphics implements StageVisitor, World3D {
 
     @Override
     public void drawCircle(Primitive graphic, Circle circle, Transform globalTransform) {
-        float width = circle.radius() * canvas.getZoomLevel() * 2f;
-        float height = circle.radius() * canvas.getZoomLevel() * 2f;
+        float width = (float) circle.radius() * (float) canvas.getZoomLevel() * 2f;
+        float height = (float) circle.radius() * (float) canvas.getZoomLevel() * 2f;
         float x = toScreenX(circle.center().x()) - width / 2f;
         float y = toScreenY(circle.center().y()) - height / 2f;
 
@@ -265,7 +265,7 @@ public class GDXGraphics implements StageVisitor, World3D {
         }
     }
 
-    private void drawTriangle(float[] vertices, Color color) {
+    private void drawTriangle(double[] vertices, Color color) {
         switchMode(false, true);
         shapeBatch.setColor(color);
         shapeBatch.triangle(toScreenX(vertices[0]), toScreenY(vertices[1]),
@@ -282,19 +282,19 @@ public class GDXGraphics implements StageVisitor, World3D {
     private void drawSprite(TextureRegion textureRegion, ImageTransform transform) {
         float screenX = toScreenX(transform.getPosition().x());
         float screenY = toScreenY(transform.getPosition().y());
-        float screenWidth = textureRegion.getRegionWidth() * canvas.getZoomLevel();
-        float screenHeight = textureRegion.getRegionHeight() * canvas.getZoomLevel();
+        float screenWidth = textureRegion.getRegionWidth() * (float) canvas.getZoomLevel();
+        float screenHeight = textureRegion.getRegionHeight() * (float) canvas.getZoomLevel();
 
         if (transform.getMaskColor() != null) {
             textureRegion = maskCache.get(new MaskTexture(textureRegion, transform.getMaskColor()));
         }
 
         switchMode(true, false);
-        spriteBatch.setColor(1f, 1f, 1f, transform.getAlpha() / 100f);
+        spriteBatch.setColor(1f, 1f, 1f, (float) transform.getAlpha() / 100f);
         spriteBatch.draw(textureRegion, screenX - screenWidth / 2f, screenY - screenHeight / 2f,
             screenWidth / 2f, screenHeight / 2f, screenWidth, screenHeight,
-            transform.getScaleX() / 100f, transform.getScaleY() / 100f,
-            -transform.getRotation().degrees());
+            (float) transform.getScaleX() / 100f, (float) transform.getScaleY() / 100f,
+            (float) -transform.getRotation().degrees());
     }
 
     private TextureRegion createMask(MaskTexture config) {
@@ -329,12 +329,12 @@ public class GDXGraphics implements StageVisitor, World3D {
         int align = getTextAlign(text.getAlign());
         // We cannot use the font metrics reported by the BitmapFont
         // itself, since those numbers don't work well with scaling.
-        float ascent = 0.8f * text.getFont().size();
+        double ascent = 0.8f * text.getFont().size();
 
         switchMode(true, false);
 
         text.forLines((i, line) -> {
-            float lineY = globalTransform.getPosition().y() + i * text.getLineHeight() - ascent;
+            double lineY = globalTransform.getPosition().y() + i * text.getLineHeight() - ascent;
             float screenY = toScreenY(lineY);
             bitmapFont.draw(spriteBatch, line, screenX, screenY, 0, align, false);
         });
@@ -370,14 +370,14 @@ public class GDXGraphics implements StageVisitor, World3D {
         Vector3 positionVector = convertVector(globalTransform.getPosition());
         modelInstance.transform.setToTranslation(positionVector);
 
-        modelInstance.transform.rotate(1f, 0f, 0f, globalTransform.getRotationX().degrees());
-        modelInstance.transform.rotate(0f, 1f, 0f, globalTransform.getRotationY().degrees());
-        modelInstance.transform.rotate(0f, 0f, 1f, globalTransform.getRotationZ().degrees());
+        modelInstance.transform.rotate(1f, 0f, 0f, (float) globalTransform.getRotationX().degrees());
+        modelInstance.transform.rotate(0f, 1f, 0f, (float) globalTransform.getRotationY().degrees());
+        modelInstance.transform.rotate(0f, 0f, 1f, (float) globalTransform.getRotationZ().degrees());
 
         modelInstance.transform.scale(
-            globalTransform.getScaleX() / 100f,
-            globalTransform.getScaleY() / 100f,
-            globalTransform.getScaleZ() / 100f
+            (float) globalTransform.getScaleX() / 100f,
+            (float) globalTransform.getScaleY() / 100f,
+            (float) globalTransform.getScaleZ() / 100f
         );
     }
 
@@ -390,16 +390,16 @@ public class GDXGraphics implements StageVisitor, World3D {
         }
     }
 
-    private float toScreenX(float x) {
-        return canvas.toScreenX(x);
+    private float toScreenX(double x) {
+        return (float) canvas.toScreenX(x);
     }
 
-    public float toScreenY(float y) {
-        return Gdx.graphics.getHeight() - canvas.toScreenY(y);
+    public float toScreenY(double y) {
+        return Gdx.graphics.getHeight() - (float) canvas.toScreenY(y);
     }
 
-    private Color convertColor(ColorRGB color, float alpha) {
-        return new Color(color.r() / 255f, color.g() / 255f, color.b() / 255f, alpha / 100f);
+    private Color convertColor(ColorRGB color, double alpha) {
+        return new Color(color.r() / 255f, color.g() / 255f, color.b() / 255f, (float) alpha / 100f);
     }
 
     private Color convertColor(ColorRGB color) {
@@ -407,7 +407,7 @@ public class GDXGraphics implements StageVisitor, World3D {
     }
 
     private Vector3 convertVector(Point3D point) {
-        return new Vector3(point.x(), point.y(), point.z());
+        return new Vector3((float) point.x(), (float) point.y(), (float) point.z());
     }
 
     /**
@@ -468,9 +468,9 @@ public class GDXGraphics implements StageVisitor, World3D {
             ModelBuilder modelBuilder = new ModelBuilder();
             // Need to manipulate the box created by ModelBuilder so we end
             // up with the same texture coordinates as used by other renderers.
-            float sizeX = box.depth();
-            float sizeY = box.width();
-            float sizeZ = box.height();
+            float sizeX = (float) box.depth();
+            float sizeY = (float) box.width();
+            float sizeZ = (float) box.height();
             Model boxModel = modelBuilder.createBox(sizeX, sizeY, sizeZ, material, TEXTURE_FLAGS);
             Quaternion quaternionY = new Quaternion().setFromAxis(0, 1, 0, 90);
             Quaternion quaternionZ = new Quaternion().setFromAxis(1, 0, 0, 90);
@@ -478,7 +478,7 @@ public class GDXGraphics implements StageVisitor, World3D {
             return boxModel;
         } else if (shape instanceof Sphere sphere) {
             ModelBuilder modelBuilder = new ModelBuilder();
-            float diameter = sphere.radius() * 2f;
+            float diameter = (float) sphere.radius() * 2f;
             return modelBuilder.createSphere(diameter, diameter, diameter,
                 SPHERE_SEGMENTS, SPHERE_SEGMENTS, material, TEXTURE_FLAGS);
         } else {
@@ -493,21 +493,21 @@ public class GDXGraphics implements StageVisitor, World3D {
 
     @Override
     public Point2D project(Point3D position) {
-        Vector3 positionVector = new Vector3(position.x(), position.y(), position.z());
+        Vector3 positionVector = convertVector(position);
         Vector3 screenPosition = camera.project(positionVector);
-        float canvasX = canvas.toCanvasX(Math.round(screenPosition.x));
-        float canvasY = canvas.toCanvasY(Gdx.graphics.getHeight() - Math.round(screenPosition.y));
+        double canvasX = canvas.toCanvasX(Math.round(screenPosition.x));
+        double canvasY = canvas.toCanvasY(Gdx.graphics.getHeight() - Math.round(screenPosition.y));
         return new Point2D(canvasX, canvasY);
     }
 
     @Override
     public boolean castPickRay(Point2D canvasPosition, Box area) {
-        float screenX = canvas.toScreenX(canvasPosition.x());
-        float screenY = canvas.toScreenY(canvasPosition.y());
+        float screenX = (float) canvas.toScreenX(canvasPosition.x());
+        float screenY = (float) canvas.toScreenY(canvasPosition.y());
 
         BoundingBox boundingBox = new BoundingBox(
-            new Vector3(area.x(), area.y(), area.z()),
-            new Vector3(area.getEndX(), area.getEndY(), area.getEndZ())
+            new Vector3((float) area.x(), (float) area.y(), (float) area.z()),
+            new Vector3((float) area.getEndX(), (float) area.getEndY(), (float) area.getEndZ())
         );
 
         Ray pickRay = camera.getPickRay(screenX, screenY);
@@ -516,7 +516,7 @@ public class GDXGraphics implements StageVisitor, World3D {
     }
 
     private Vector3 toVector(Point3D point) {
-        return new Vector3(point.x(), point.y(), point.z());
+        return new Vector3((float) point.x(), (float) point.y(), (float) point.z());
     }
 
     protected void dispose() {

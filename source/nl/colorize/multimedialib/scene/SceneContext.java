@@ -12,8 +12,8 @@ import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.RenderConfig;
+import nl.colorize.multimedialib.stage.Spatial2D;
 import nl.colorize.multimedialib.stage.Stage;
-import nl.colorize.multimedialib.stage.StageNode2D;
 import nl.colorize.util.EventQueue;
 import nl.colorize.util.Platform;
 import nl.colorize.util.Subject;
@@ -25,15 +25,13 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 /**
- * The currently active scene (and its sub-scenes) receive access to the
- * <em>scene context</em>, which is provided by the renderer via callback
- * methods. This allows the scene to access the underlying renderer and
- * the stage.
+ * The scene context is provided to the currently active scene by
+ * the renderer, allowing the scene to access the {@link Stage}, the
+ * scene's {@link Actor}s, and the underlying renderer.
  * <p>
- * The <em>stage</em> contains the graphics and audio for the currently
- * active scene. The stage can contain both 2D and 3D graphics, depending
- * on what is supported by the renderer. At the end of a scene, the stage
- * is cleared so the next scene can take over.
+ * Both the scene's actors and the contents of the stage cannot outlive
+ * their parent scene. When the scene ends, the actors are removed and
+ * the stage is cleared.
  */
 public interface SceneContext {
 
@@ -60,74 +58,65 @@ public interface SceneContext {
     }
 
     /**
-     * Requests to change the active scene after the current frame update has
-     * been completed. If another scene had already been requested, calling
-     * this method again will overrule that request.
+     * Requests the renderer to change the active scene after the current
+     * frame update has been completed. If another scene has already been
+     * requested, calling this method again will overrule that request.
      */
     default void changeScene(Scene requestedScene) {
         getSceneManager().changeScene(requestedScene);
     }
 
     /**
-     * Attaches a sub-scene to the currently active scene. The sub-scene will
-     * remain active until {@link Scene#isCompleted()} returns true or the
-     * parent scene ends.
-     * 
-     * @see SceneManager#attach(Scene)
+     * Attaches an actor to the currently active scene. The actor will remain
+     * active until either its parent scene ends or it is marked as completed,
+     * whichever comes first.
      */
-    default void attach(Scene subScene) {
-        getSceneManager().attach(subScene);
+    default void attach(Actor actor) {
+        getSceneManager().attach(actor);
     }
 
     /**
-     * Creates a sub-scene using the specified callback methods, then attaches
-     * that sub-scene to the currently active scene. The sub-scene will remain
-     * active until {@code completed} returns true or the parent scene ends.
-     *
-     * @see SceneManager#attach(Scene)
-     * @see FluentScene
+     * Attaches an actor consisting of the specified callback functions to the
+     * currently active scene. The actor will remain active until either its
+     * parent scene ends or it is marked as completed, whichever comes first.
      */
-    default void attach(Updatable onFrame, BooleanSupplier completed, Runnable onComplete) {
-        FluentScene subScene = FluentScene.create()
+    default void attach(Actor onFrame, BooleanSupplier completed, Runnable onComplete) {
+        FluentActor actor = FluentActor.create()
             .withFrameHandler(onFrame)
             .withCompletionCheck(completed)
             .withCompletionHandler(onComplete);
-        getSceneManager().attach(subScene);
+
+        getSceneManager().attach(actor);
     }
 
     /**
-     * Attaches a sub-scene, based on the specified callback, to the currently
-     * active scene. The sub-scene will remain active until the parent scene
-     * ends.
+     * Attaches an actor to the currently active scene. The actor will remain
+     * active until either its parent scene ends or it is marked as completed,
+     * whichever comes first.
+     *
+     * @deprecated Prefer using {@link #attach(Actor)}.
      */
-    default void attach(Updatable callback) {
-        Scene subScene = (context, deltaTime) -> callback.update(deltaTime);
-        attach(subScene);
-    }
-
-    /**
-     * Attaches a sub-scene, based on the specified callback, to the currently
-     * active scene. The sub-scene will remain active until the parent scene
-     * ends.
-     */
+    @Deprecated
     default void attach(Runnable callback) {
-        Scene subScene = (context, deltaTime) -> callback.run();
-        attach(subScene);
+        Actor actor = _ -> callback.run();
+        attach(actor);
     }
 
     /**
-     * Attaches a sub-scene that processes an {@link EventQueue} using the
-     * provided callback functions. This ensures asynchronous events are
-     * processed during frame updates, instead of when they are received.
+     * Attaches an actor that processes an {@link EventQueue} using the
+     * specified callback functions. This ensures asynchronous events are
+     * processed during frame updates, instead of immediately when they
+     * are received.
      */
     default <T> void attach(EventQueue<T> events, Consumer<T> onEvent, Consumer<Exception> onError) {
-        attach(() -> events.flush(onEvent, onError));
+        Actor actor = _ -> events.flush(onEvent, onError);
+        attach(actor);
     }
 
     /**
-     * Attaches a sub-scene that processes an {@link EventQueue} during frame
+     * Attaches an actor that processes an {@link EventQueue} during frame
      * updates. This returns a {@link Subject} that only publishes events
-     * during frame updates, instead of publishing events whenever they arrive.
+     * during frame updates, instead of immediately when they are received.
      */
     default <T> Subject<T> attach(EventQueue<T> eventQueue) {
         Subject<T> frameUpdateSubject = new Subject<>();
@@ -136,20 +125,21 @@ public interface SceneContext {
     }
 
     /**
-     * Attaches a sub-scene that will update the timer during every frame
+     * Attaches an actor that will update the timer during every frame
      * update, and then call the {@code onFrame} callback based on the
      * timer's value. Invokes the {@code onComplete} callback exactly once
      * when the timer has completed.
      */
-    default void attachTimer(Timer timer, Consumer<Float> onFrame, Runnable onComplete) {
-        FluentScene subScene = FluentScene.create()
+    default void attachTimer(Timer timer, Consumer<Double> onFrame, Runnable onComplete) {
+        FluentActor actor = FluentActor.create()
             .withTimerHandler(timer, onFrame)
             .withCompletionHandler(onComplete);
-        getSceneManager().attach(subScene);
+
+        getSceneManager().attach(actor);
     }
 
     /**
-     * Attaches a sub-scene that will update the timer during every frame
+     * Attaches an actor that will update the timer during every frame
      * update and will then invoke the specified callback function exactly
      * once when the timer has completed.
      */
@@ -158,43 +148,44 @@ public interface SceneContext {
     }
 
     /**
-     * Attaches a sub-scene that will invoke the specified callback function
+     * Attaches an actor that will invoke the specified callback function
      * exactly once, after the specified delay.
      */
-    default void attachTimer(float delay, Runnable callback) {
+    default void attachTimer(double delay, Runnable callback) {
         attachTimer(new Timer(delay), callback);
     }
 
     /**
-     * Attaches a sub-scene that will (A) update the timeline during every
-     * frame update, (B) invoke the callback function with the timeline's
-     * value. The sub-scene will run until the timeline is completed.
+     * Attaches an actor that will first update the timeline during every
+     * frame update and will then invoke the callback function using the
+     * timeline's value. The actor will run for the duration of the timeline.
      */
-    default void attachTimeline(Timeline timeline, Consumer<Float> callback, Runnable onComplete) {
-        FluentScene subScene = FluentScene.create()
+    default void attachTimeline(Timeline timeline, Consumer<Double> callback, Runnable onComplete) {
+        FluentActor actor = FluentActor.create()
             .withTimelineHandler(timeline, callback)
             .withCompletionHandler(onComplete);
-        getSceneManager().attach(subScene);
+
+        getSceneManager().attach(actor);
     }
 
     /**
-     * Attaches a sub-scene that will (A) update the timeline during every
-     * frame update, (B) invoke the callback function with the timeline's
-     * value. The sub-scene will run until the timeline is completed.
+     * Attaches an actor that will first update the timeline during every
+     * frame update and will then invoke the callback function using the
+     * timeline's value. The actor will run for the duration of the timeline.
      */
-    default void attachTimeline(Timeline timeline, Consumer<Float> callback) {
+    default void attachTimeline(Timeline timeline, Consumer<Double> callback) {
         attachTimeline(timeline, callback, () -> {});
     }
 
     /**
-     * Attaches a sub-scene that will invoke the specified callback function
-     * when the specified graphics are clicked.
+     * Attaches an actor that will invoke a callback function whenever the
+     * specified graphics are clicked.
      * <p>
-     * Note: This should be called "pointer released handler", since it also
-     * supports touch events. The term "click handler" exists for historic
-     * reasons.
+     * Note: This method's title is slightly misleading since it supports
+     * pointer events from both mouse and touch devices. The terminology
+     * "click handler" remains for historic reasons.
      */
-    default void attachClickHandler(StageNode2D node, Runnable callback) {
+    default void attachClickHandler(Spatial2D node, Runnable callback) {
         attach(() -> {
             if (getInput().isPointerReleased(node)) {
                 callback.run();
@@ -203,13 +194,12 @@ public interface SceneContext {
     }
 
     /**
-     * Attaches a sub-scene that is <em>not</em> tied to the currently active
-     * scene, and will remain active for as long as the application is active.
-     * 
-     * @see SceneManager#attachGlobalSubScene(Scene)
+     * Attaches an actor that is <em>not</em> tied to the currently active
+     * scene. Instead, it will remain active for the remainder of the
+     * application's life cycle.
      */
-    default void attachGlobalSubScene(Scene globalSubScene) {
-        getSceneManager().attachGlobalSubScene(globalSubScene);
+    default void attachGlobalActor(Actor actor) {
+        getSceneManager().attachGlobalActor(actor);
     }
 
     /**

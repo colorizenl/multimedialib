@@ -134,7 +134,7 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
      * class' internal state. This method must be called every frame.
      */
     @Override
-    public void update(float deltaTime) {
+    public void update(double deltaTime) {
         InputEvent[] bufferSnapshot = eventsBuffer.toArray(new InputEvent[0]);
         eventsBuffer.clear();
         
@@ -247,8 +247,8 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
 
     @Override
     public Iterable<Pointer> getPointers() {
-        float canvasX = canvas.toCanvasX(mouseX);
-        float canvasY = canvas.toCanvasY(mouseY);
+        double canvasX = canvas.toCanvasX(mouseX);
+        double canvasY = canvas.toCanvasY(mouseY);
         Point2D mouseCanvasPosition = new Point2D(canvasX, canvasY);
 
         Pointer pointer = new Pointer("mouse");

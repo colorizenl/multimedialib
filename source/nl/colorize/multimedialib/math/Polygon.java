@@ -13,9 +13,9 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * A two-dimensional convex polygon with float precision coordinates. The
- * polygon is described by a number of points, with the polygon's outline
- * consisting of lines from each point to the next.
+ * Immutable two-dimensional convex polygon defined by 3 or more points. Each
+ * point in the polygon defines an edge to the next point, with the final
+ * point defining an edge to the first point to "close" the polygon.
  */
 public record Polygon(List<Point2D> points) implements Shape {
 
@@ -30,8 +30,8 @@ public record Polygon(List<Point2D> points) implements Shape {
      * Returns an array that contains the X and Y coordinates for all points
      * within this polygon, in the format {@code [x0, y0, x1, y1, ...]}.
      */
-    public float[] toPoints() {
-        float[] result = new float[points.size() * 2];
+    public double[] toPoints() {
+        double[] result = new double[points.size() * 2];
         for (int i = 0; i < points.size(); i++) {
             result[i * 2] = points.get(i).x();
             result[i * 2 + 1] = points.get(i).y();
@@ -47,11 +47,11 @@ public record Polygon(List<Point2D> points) implements Shape {
         return points.get(n);
     }
 
-    public float getPointX(int n) {
+    public double getPointX(int n) {
         return points.get(n).x();
     }
 
-    public float getPointY(int n) {
+    public double getPointY(int n) {
         return points.get(n).y();
     }
 
@@ -64,12 +64,12 @@ public record Polygon(List<Point2D> points) implements Shape {
      * Returns true if the specified point is located within this polygon.
      * Implementation based on http://www.java-gaming.org/index.php?topic=26013.0
      */
-    private boolean isPointInPolygon(float px, float py) {
+    private boolean isPointInPolygon(double px, double py) {
         boolean oddNodes = false;
-        float x1 = 0f;
-        float y1 = 0f;
-        float x2 = points.getLast().x();
-        float y2 = points.getLast().y();
+        double x1 = 0f;
+        double y1 = 0f;
+        double x2 = points.getLast().x();
+        double y2 = points.getLast().y();
 
         for (int i = 0; i < points.size(); x2 = x1, y2 = y1, i++) {
             x1 = points.get(i).x();
@@ -85,7 +85,7 @@ public record Polygon(List<Point2D> points) implements Shape {
         return oddNodes;
     }
     
-    private boolean isPointOnLineSegment(float px, float py) {
+    private boolean isPointOnLineSegment(double px, double py) {
         for (int i = 0; i < points.size() - 1; i++) {
             Point2D current = points.get(i);
             Point2D next = points.get(i + 1);
@@ -99,20 +99,20 @@ public record Polygon(List<Point2D> points) implements Shape {
             points.getFirst().x(), points.getFirst().y(), px, py);
     }
     
-    private boolean isPointOnLineSegment(float x0, float y0, float x1, float y1, float px, float py) {
-        float crossproduct = (py - y0) * (x1 - x0) - (px - x0) * (y1 - y0);
+    private boolean isPointOnLineSegment(double x0, double y0, double x1, double y1, double px, double py) {
+        double crossproduct = (py - y0) * (x1 - x0) - (px - x0) * (y1 - y0);
 
         if (crossproduct != 0) {
             return false;
         }
 
-        float dotproduct = (px - x0) * (x1 - x0) + (py - y0) * (x1 - y0);
+        double dotproduct = (px - x0) * (x1 - x0) + (py - y0) * (x1 - y0);
 
         if (dotproduct < 0) {
             return false;
         }
 
-        float squaredLength = (x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0);
+        double squaredLength = (x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0);
         return dotproduct <= squaredLength;
     }
 
@@ -133,8 +133,8 @@ public record Polygon(List<Point2D> points) implements Shape {
             Point2D edge = new Point2D(next.x() - current.x(), next.y() - current.y());
             Point2D axis = new Point2D(-edge.y(), edge.x());
 
-            float[] projectionA = project(a, axis);
-            float[] projectionB = project(b, axis);
+            double[] projectionA = project(a, axis);
+            double[] projectionB = project(b, axis);
 
             if (projectionA[1] < projectionB[0] || projectionB[1] < projectionA[0]) {
                 return true;
@@ -144,20 +144,20 @@ public record Polygon(List<Point2D> points) implements Shape {
         return false;
     }
 
-    private float[] project(List<Point2D> points, Point2D axis) {
-        float min = dot(axis, points.getFirst());
-        float max = min;
+    private double[] project(List<Point2D> points, Point2D axis) {
+        double min = dot(axis, points.getFirst());
+        double max = min;
 
         for (int i = 1; i < points.size(); i++) {
-            float p = dot(axis, points.get(i));
-            min = (float) Math.min(p, min);
-            max = (float) Math.max(p, max);
+            double p = dot(axis, points.get(i));
+            min = Math.min(p, min);
+            max = Math.max(p, max);
         }
 
-        return new float[] {min, max};
+        return new double[] {min, max};
     }
 
-    private float dot(Point2D p1, Point2D p2) {
+    private double dot(Point2D p1, Point2D p2) {
         return p1.x() * p2.x() + p1.y() * p2.y();
     }
 
@@ -167,10 +167,10 @@ public record Polygon(List<Point2D> points) implements Shape {
      */
     @Override
     public Rect getBoundingBox() {
-        float minX = points.getFirst().x();
-        float minY = points.getFirst().y();
-        float maxX = minX;
-        float maxY = minY;
+        double minX = points.getFirst().x();
+        double minY = points.getFirst().y();
+        double maxX = minX;
+        double maxY = minY;
 
         for (int i = 1; i < points.size(); i++) {
             minX = Math.min(minX, points.get(i).x());
@@ -211,7 +211,7 @@ public record Polygon(List<Point2D> points) implements Shape {
     }
 
     private List<Point2D> subdivideVertices() {
-        float[] points = toPoints();
+        double[] points = toPoints();
         List<Point2D> vertices = new ArrayList<>();
         Point2D center = getCenter();
 
@@ -258,10 +258,10 @@ public record Polygon(List<Point2D> points) implements Shape {
      */
     public Polygon rotate(Angle angle) {
         return map(p -> {
-            float radians = angle.getRadians();
+            double radians = angle.getRadians();
             double rotatedX = p.x() * Math.cos(radians) - p.y() * Math.sin(radians);
             double rotatedY = p.x() * Math.sin(radians) + p.y() * Math.cos(radians);
-            return new Point2D((float) rotatedX, (float) rotatedY);
+            return new Point2D(rotatedX, rotatedY);
         });
     }
 
@@ -279,7 +279,7 @@ public record Polygon(List<Point2D> points) implements Shape {
      * Factory method that creates a polygon from an array of points, in the
      * format {@code [x0, y0, x1, y1, ...]}.
      */
-    public static Polygon fromPoints(float... points) {
+    public static Polygon fromPoints(double... points) {
         List<Point2D> result = new ArrayList<>();
         for (int i = 0; i < points.length; i += 2) {
             result.add(new Point2D(points[i], points[i + 1]));
@@ -291,7 +291,7 @@ public record Polygon(List<Point2D> points) implements Shape {
      * Convenience method to create a rectangle-shaped polygon with its center
      * located at the specified origin.
      */
-    public static Polygon createRectangle(Point2D origin, float width, float height) {
+    public static Polygon createRectangle(Point2D origin, double width, double height) {
         Preconditions.checkArgument(width > 0, "Invalid width: " + width);
         Preconditions.checkArgument(height > 0, "Invalid height: " + height);
 
@@ -307,7 +307,7 @@ public record Polygon(List<Point2D> points) implements Shape {
      * Convenience method to create a polygon in the shape of a circle. The
      * circle will be centered around the specified origin.
      */
-    public static Polygon createCircle(Point2D origin, float radius, int numPoints) {
+    public static Polygon createCircle(Point2D origin, double radius, int numPoints) {
         Preconditions.checkArgument(numPoints >= 4, "Too few points: " + numPoints);
         Preconditions.checkArgument(radius > EPSILON, "Invalid radius: " + radius);
 
@@ -325,7 +325,7 @@ public record Polygon(List<Point2D> points) implements Shape {
      * Convenience method to create a polygon in the shape of a circle. The
      * circle will be centered around {@link Point2D#ORIGIN}.
      */
-    public static Polygon createCircle(float radius, int numPoints) {
+    public static Polygon createCircle(double radius, int numPoints) {
         return createCircle(Point2D.ORIGIN, radius, numPoints);
     }
 
@@ -333,18 +333,18 @@ public record Polygon(List<Point2D> points) implements Shape {
      * Convenience method to create a polygon in the shape of an ecllipse. The
      * ellipse will be centered around the specified origin.
      */
-    public static Polygon createEllipse(Point2D origin, float radiusX, float radiusY, int numPoints) {
+    public static Polygon createEllipse(Point2D origin, double radiusX, double radiusY, int numPoints) {
         Preconditions.checkArgument(numPoints >= 4, "Too few points: " + numPoints);
         Preconditions.checkArgument(radiusX > EPSILON, "Invalid X-radius: " + radiusX);
         Preconditions.checkArgument(radiusY > EPSILON, "Invalid Y-radius: " + radiusY);
 
         List<Point2D> points = new ArrayList<>();
-        float aspectRatio = radiusY / radiusX;
+        double aspectRatio = radiusY / radiusX;
 
         for (int i = 0; i < numPoints; i++) {
             Vector vector = new Vector(i * (360f / numPoints), radiusX);
-            float x = origin.x() + vector.getX();
-            float y = origin.y() + (vector.getY() * aspectRatio);
+            double x = origin.x() + vector.getX();
+            double y = origin.y() + (vector.getY() * aspectRatio);
             points.add(new Point2D(x, y));
         }
 
@@ -355,7 +355,7 @@ public record Polygon(List<Point2D> points) implements Shape {
      * Convenience method to create a polygon in the shape of an ecllipse. The
      * ellipse will be centered around {@link Point2D#ORIGIN}.
      */
-    public static Polygon createEllipse(float radiusX, float radiusY, int numPoints) {
+    public static Polygon createEllipse(double radiusX, double radiusY, int numPoints) {
         return createEllipse(Point2D.ORIGIN, radiusX, radiusY, numPoints);
     }
 
@@ -364,7 +364,7 @@ public record Polygon(List<Point2D> points) implements Shape {
      * indicates in which direction the cone is pointed, its arc indicates
      * its size (in degrees).
      */
-    public static Polygon createCone(Point2D origin, Angle angle, float arc, float length) {
+    public static Polygon createCone(Point2D origin, Angle angle, double arc, double length) {
         return createCone(origin, angle.degrees(), arc, length);
     }
 
@@ -373,7 +373,7 @@ public record Polygon(List<Point2D> points) implements Shape {
      * indicates in which direction the cone is pointed, its arc indicates
      * its size (in degrees).
      */
-    public static Polygon createCone(Point2D origin, float angle, float arc, float length) {
+    public static Polygon createCone(Point2D origin, double angle, double arc, double length) {
         Preconditions.checkArgument(arc > 0f && arc <= 180f, "Invalid arc: " + arc);
         Preconditions.checkArgument(length > 0f, "Invalid length: " + length);
 

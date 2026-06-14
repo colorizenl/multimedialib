@@ -80,7 +80,7 @@ public class SpriteTest {
         sprite.addGraphics("a", new MockImage());
         sprite.addGraphics("b", new MockImage());
 
-        assertEquals(Set.of("a", "b"), sprite.getPossibleStates());
+        assertEquals(Set.of("a", "b"), sprite.getAvailableStates());
     }
 
     @Test

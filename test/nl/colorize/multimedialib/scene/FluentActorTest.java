@@ -17,12 +17,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FluentSceneTest {
+class FluentActorTest {
 
     @Test
     void lifeCycle() {
         List<String> frames = new ArrayList<>();
-        FluentScene scene = FluentScene.create()
+        FluentActor scene = FluentActor.create()
             .withFrameHandler(_ -> frames.add("frame"))
             .withCompletionCheck(() -> frames.size() >= 3)
             .withCompletionHandler(() -> frames.add("end"));
@@ -44,7 +44,7 @@ class FluentSceneTest {
     void combineMultipleFrameHandlers() {
         List<String> actions = new ArrayList<>();
 
-        FluentScene scene = FluentScene.create()
+        FluentActor scene = FluentActor.create()
             .withFrameHandler(_ -> actions.add("a"))
             .withFrameHandler(_ -> actions.add("b"))
             .withCompletionCheck(() -> actions.size() >= 4)
@@ -65,7 +65,7 @@ class FluentSceneTest {
     void multipleCompletionChecks() {
         List<String> actions = new ArrayList<>();
 
-        FluentScene scene = FluentScene.create()
+        FluentActor scene = FluentActor.create()
             .withFrameHandler(_ -> actions.add("a"))
             .withCompletionCheck(() -> actions.size() >= 3)
             .withCompletionCheck(() -> actions.size() >= 2);

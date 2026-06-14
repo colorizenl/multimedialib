@@ -134,7 +134,6 @@ public class TeaVMTranspilerToolTest {
             browser/assets/multimedialib.css
             browser/fragment-shader.glsl
             browser/index.html
-            browser/javascript-libraries.txt
             browser/vertex-shader.glsl
             colorize-emblem-180.png
             colorize-emblem-64.png

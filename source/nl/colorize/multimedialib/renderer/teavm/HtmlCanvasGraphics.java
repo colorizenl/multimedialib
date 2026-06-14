@@ -80,12 +80,12 @@ public class HtmlCanvasGraphics implements StageVisitor {
 
     private void resizeCanvas(HTMLCanvasElement canvas, int width, int height) {
         Window window = Window.current();
-        float devicePixelRatio = (float) window.getDevicePixelRatio();
+        double devicePixelRatio = window.getDevicePixelRatio();
 
         canvas.getStyle().setProperty("width", width + "px");
         canvas.getStyle().setProperty("height", height + "px");
-        canvas.setWidth(Math.round(width * devicePixelRatio));
-        canvas.setHeight(Math.round(height * devicePixelRatio));
+        canvas.setWidth((int) Math.round(width * devicePixelRatio));
+        canvas.setHeight((int) Math.round(height * devicePixelRatio));
     }
 
     public Size getDisplaySize() {
@@ -219,7 +219,7 @@ public class HtmlCanvasGraphics implements StageVisitor {
         context.setFillStyle(font.color().toHex());
         context.setTextAlign(text.getAlign().toString().toLowerCase());
         text.forLines((i, line) -> {
-            float y = toScreenY(globalTransform.getPosition().y() + i * text.getLineHeight());
+            double y = toScreenY(globalTransform.getPosition().y() + i * text.getLineHeight());
             context.fillText(line, toScreenX(globalTransform.getPosition()), y);
         });
         context.setGlobalAlpha(1f);
@@ -239,19 +239,19 @@ public class HtmlCanvasGraphics implements StageVisitor {
         throw new UnsupportedOperationException();
     }
 
-    private float toScreenX(float x) {
+    private double toScreenX(double x) {
         return sceneCanvas.toScreenX(x);
     }
 
-    private float toScreenX(Point2D point) {
+    private double toScreenX(Point2D point) {
         return sceneCanvas.toScreenX(point.x());
     }
 
-    private float toScreenY(float y) {
+    private double toScreenY(double y) {
         return sceneCanvas.toScreenY(y);
     }
 
-    private float toScreenY(Point2D point) {
+    private double toScreenY(Point2D point) {
         return sceneCanvas.toScreenY(point.y());
     }
 }

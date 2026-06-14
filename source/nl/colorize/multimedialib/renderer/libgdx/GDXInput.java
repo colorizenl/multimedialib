@@ -124,14 +124,14 @@ public class GDXInput implements InputDevice {
     }
 
     @Override
-    public void update(float deltaTime) {
+    public void update(double deltaTime) {
         updatePointer();
         updateKeyboard();
     }
 
     private void updatePointer() {
-        float pointerX = canvas.toCanvasX(Gdx.input.getX());
-        float pointerY = canvas.toCanvasY(Gdx.input.getY());
+        double pointerX = canvas.toCanvasX(Gdx.input.getX());
+        double pointerY = canvas.toCanvasY(Gdx.input.getY());
         pointer.setPosition(new Point2D(pointerX, pointerY));
 
         if (Gdx.input.isTouched()) {

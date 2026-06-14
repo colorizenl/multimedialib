@@ -18,24 +18,24 @@ public class StateMachineTest {
 
     @Test
     void changeState() {
-        StateMachine<String> stateMachine = new StateMachine<>("a");
-        assertEquals("a", stateMachine.getActiveState());
-        stateMachine.requestState("b");
-        assertEquals("b", stateMachine.getActiveState());
+        StateMachine<String> stateMachine = StateMachine.withDefaultState("a");
+        assertEquals("a", stateMachine.getCurrentState());
+        stateMachine.queueState("b");
+        assertEquals("b", stateMachine.getCurrentState());
     }
 
     @Test
     void stateReceivesUpdates() {
         List<String> frames = new ArrayList<>();
-        Updatable a = deltaTime -> frames.add("a");
-        Updatable b = deltaTime -> frames.add("b");
+        Actor a = deltaTime -> frames.add("a");
+        Actor b = deltaTime -> frames.add("b");
 
-        StateMachine<Updatable> stateMachine = new StateMachine<>(a);
+        StateMachine<Actor> stateMachine = StateMachine.withDefaultState(a);
         stateMachine.update(1f);
         stateMachine.update(1f);
-        stateMachine.requestState(b);
+        stateMachine.queueState(b);
         stateMachine.update(1f);
-        stateMachine.requestState(a);
+        stateMachine.queueState(a);
         stateMachine.update(1f);
 
         assertEquals("[a, a, b, a]", frames.toString());
@@ -44,12 +44,12 @@ public class StateMachineTest {
     @Test
     void changeStateAfterDuration() {
         List<String> frames = new ArrayList<>();
-        Updatable a = deltaTime -> frames.add("a");
-        Updatable b = deltaTime -> frames.add("b");
+        Actor a = deltaTime -> frames.add("a");
+        Actor b = deltaTime -> frames.add("b");
 
-        StateMachine<Updatable> stateMachine = new StateMachine<>(a);
+        StateMachine<Actor> stateMachine = StateMachine.withDefaultState(a);
         stateMachine.update(1f);
-        stateMachine.requestState(b, 2f);
+        stateMachine.queueState(b, 2f);
         stateMachine.update(1f);
         stateMachine.update(1f);
         stateMachine.update(1f);
@@ -61,12 +61,12 @@ public class StateMachineTest {
     @Test
     void revertStateAfterDuration() {
         List<String> frames = new ArrayList<>();
-        Updatable a = deltaTime -> frames.add("a");
-        Updatable b = deltaTime -> frames.add("b");
+        Actor a = deltaTime -> frames.add("a");
+        Actor b = deltaTime -> frames.add("b");
 
-        StateMachine<Updatable> stateMachine = new StateMachine<>(a);
+        StateMachine<Actor> stateMachine = StateMachine.withDefaultState(a);
         stateMachine.update(1f);
-        stateMachine.requestState(b, 2f);
+        stateMachine.queueState(b, 2f);
         stateMachine.update(1f);
         stateMachine.update(1f);
         stateMachine.update(1f);
@@ -78,14 +78,14 @@ public class StateMachineTest {
     @Test
     void queueStateImmediatelyChangesPermanentState() {
         List<String> frames = new ArrayList<>();
-        Updatable a = deltaTime -> frames.add("a");
-        Updatable b = deltaTime -> frames.add("b");
-        Updatable c = deltaTime -> frames.add("c");
+        Actor a = deltaTime -> frames.add("a");
+        Actor b = deltaTime -> frames.add("b");
+        Actor c = deltaTime -> frames.add("c");
 
-        StateMachine<Updatable> stateMachine = new StateMachine<>(a);
+        StateMachine<Actor> stateMachine = StateMachine.withDefaultState(a);
         stateMachine.update(1f);
-        stateMachine.requestState(b);
-        stateMachine.requestState(c);
+        stateMachine.queueState(b);
+        stateMachine.queueState(c);
         stateMachine.update(1f);
         stateMachine.update(1f);
 
@@ -95,14 +95,14 @@ public class StateMachineTest {
     @Test
     void queueStateWaitsForTemporaryStateToCompleteBeforeChanging() {
         List<String> frames = new ArrayList<>();
-        Updatable a = deltaTime -> frames.add("a");
-        Updatable b = deltaTime -> frames.add("b");
-        Updatable c = deltaTime -> frames.add("c");
+        Actor a = deltaTime -> frames.add("a");
+        Actor b = deltaTime -> frames.add("b");
+        Actor c = deltaTime -> frames.add("c");
 
-        StateMachine<Updatable> stateMachine = new StateMachine<>(a);
+        StateMachine<Actor> stateMachine = StateMachine.withDefaultState(a);
         stateMachine.update(1f);
-        stateMachine.requestState(b, 2f);
-        stateMachine.requestState(c);
+        stateMachine.queueState(b, 2f);
+        stateMachine.queueState(c);
         stateMachine.update(1f);
         stateMachine.update(1f);
         stateMachine.update(1f);
@@ -113,14 +113,14 @@ public class StateMachineTest {
     @Test
     void forceState() {
         List<String> frames = new ArrayList<>();
-        Updatable a = deltaTime -> frames.add("a");
-        Updatable b = deltaTime -> frames.add("b");
-        Updatable c = deltaTime -> frames.add("c");
+        Actor a = deltaTime -> frames.add("a");
+        Actor b = deltaTime -> frames.add("b");
+        Actor c = deltaTime -> frames.add("c");
 
-        StateMachine<Updatable> stateMachine = new StateMachine<>(a);
+        StateMachine<Actor> stateMachine = StateMachine.withDefaultState(a);
         stateMachine.update(1f);
-        stateMachine.requestState(b);
-        stateMachine.forceState(c);
+        stateMachine.queueState(b);
+        stateMachine.changeState(c);
         stateMachine.update(1f);
 
         assertEquals("[a, c]", frames.toString());
@@ -129,11 +129,11 @@ public class StateMachineTest {
     @Test
     void retainState() {
         List<String> frames = new ArrayList<>();
-        Updatable a = deltaTime -> frames.add("a");
-        Updatable b = deltaTime -> frames.add("b");
+        Actor a = deltaTime -> frames.add("a");
+        Actor b = deltaTime -> frames.add("b");
 
-        StateMachine<Updatable> stateMachine = new StateMachine<>(a);
-        stateMachine.requestState(b);
+        StateMachine<Actor> stateMachine = StateMachine.withDefaultState(a);
+        stateMachine.queueState(b);
         stateMachine.update(1f);
         stateMachine.update(1f);
         stateMachine.update(1f);
@@ -143,20 +143,41 @@ public class StateMachineTest {
 
     @Test
     void updateStateTime() {
-        StateMachine<String> stateMachine = new StateMachine<>("a");
-        stateMachine.requestState("b");
+        StateMachine<String> stateMachine = StateMachine.withDefaultState("a");
+        stateMachine.queueState("b");
         stateMachine.update(1f);
         stateMachine.update(1f);
 
-        assertEquals(2f, stateMachine.getActiveStateTimer().getTime(), EPSILON);
+        assertEquals(2f, stateMachine.getCurrentStateTimer().getTime(), EPSILON);
     }
 
     @Test
     void updateDefaultStateTime() {
-        StateMachine<String> stateMachine = new StateMachine<>("a");
+        StateMachine<String> stateMachine = StateMachine.withDefaultState("a");
         stateMachine.update(1f);
         stateMachine.update(1f);
 
-        assertEquals(2f, stateMachine.getActiveStateTimer().getTime(), EPSILON);
+        assertEquals(2f, stateMachine.getCurrentStateTimer().getTime(), EPSILON);
+    }
+
+    @Test
+    void stayInStateIfThereIsNoDefaultState() {
+        List<String> framesA = new ArrayList<>();
+        List<String> framesB = new ArrayList<>();
+
+        StateMachine<Actor> stateMachineA = StateMachine.withDefaultState(_ -> framesA.add("a"));
+        stateMachineA.changeState(_ -> framesA.add("b"), 2f);
+        stateMachineA.update(1f);
+        stateMachineA.update(1f);
+        stateMachineA.update(1f);
+
+        StateMachine<Actor> stateMachineB = StateMachine.withInitialState(_ -> framesB.add("a"));
+        stateMachineB.changeState(_ -> framesB.add("b"), 2f);
+        stateMachineB.update(1f);
+        stateMachineB.update(1f);
+        stateMachineB.update(1f);
+
+        assertEquals("[b, b, a]", framesA.toString());
+        assertEquals("[b, b, b]", framesB.toString());
     }
 }

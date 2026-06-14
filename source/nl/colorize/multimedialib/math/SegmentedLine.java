@@ -13,12 +13,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Line that consists of multiple segments, where each segment is a straight
- * line but the combination still allows for more complex line shapes. The
- * line is defined by a number of points, where each point except the "head"
- * and the "tail" acts as both the end of the previous segment and the start
- * of the next segment. Alternatively, segments can also be described by
- * {@link Line} instances using {@link #getSegments()}.
+ * Immutable line that consists of multiple segments, where each segment is
+ * a straight line, but the combination still allows for more complex line
+ * shapes. The line is defined by a number of points, where each point except
+ * the "head" and the "tail" acts as both the end of the previous segment
+ * and the start of the next segment. Alternatively, segments can also be
+ * described by {@link Line} instances using {@link #getSegments()}.
  */
 public record SegmentedLine(List<Point2D> points) implements Shape {
 
@@ -49,10 +49,10 @@ public record SegmentedLine(List<Point2D> points) implements Shape {
 
     @Override
     public Rect getBoundingBox() {
-        float minX = points.getFirst().x();
-        float maxX = points.getFirst().x();
-        float minY = points.getFirst().y();
-        float maxY = points.getFirst().y();
+        double minX = points.getFirst().x();
+        double maxX = points.getFirst().x();
+        double minY = points.getFirst().y();
+        double maxY = points.getFirst().y();
 
         for (int i = 1; i < points.size(); i++) {
             minX = Math.min(minX, points.get(i).x());

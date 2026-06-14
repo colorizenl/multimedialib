@@ -82,20 +82,20 @@ public class SkijaGraphics implements StageVisitor {
     }
 
     private void drawImage(SkijaImage image, ImageTransform transform) {
-        float screenX = toScreenX(transform.getPosition().x());
-        float screenY = toScreenY(transform.getPosition().y());
+        double screenX = toScreenX(transform.getPosition().x());
+        double screenY = toScreenY(transform.getPosition().y());
 
-        float scaleX = config.getCanvas().getZoomLevel() * (transform.getScaleX() / 100f);
-        float scaleY = config.getCanvas().getZoomLevel() * (transform.getScaleY() / 100f);
+        double scaleX = config.getCanvas().getZoomLevel() * (transform.getScaleX() / 100f);
+        double scaleY = config.getCanvas().getZoomLevel() * (transform.getScaleY() / 100f);
 
         try (Paint paint = new Paint()) {
             paint.setAlpha(getAlpha(transform));
 
             skija.save();
             skija.resetMatrix();
-            skija.translate(screenX, screenY);
+            skija.translate((float) screenX, (float) screenY);
             skija.translate(-image.getWidth() / 2f, -image.getHeight() / 2f);
-            skija.scale(scaleX, scaleY);
+            skija.scale((float) scaleX, (float) scaleY);
             skija.drawImage(image.getImage(), 0f, 0f);
             skija.restore();
         }
@@ -112,13 +112,13 @@ public class SkijaGraphics implements StageVisitor {
         drawLine(line.points(), graphic.getStroke(), graphic.getColor(), globalTransform);
     }
 
-    private void drawLine(List<Point2D> points, float stroke, ColorRGB color, Transform transform) {
+    private void drawLine(List<Point2D> points, double stroke, ColorRGB color, Transform transform) {
         Preconditions.checkArgument(points.size() >= 2, "Invalid line");
 
         try (Paint paint = new Paint()) {
             paint.setColor(color.getRGB());
             paint.setAlpha(getAlpha(transform));
-            paint.setStrokeWidth(stroke);
+            paint.setStrokeWidth((float) stroke);
             paint.setMode(PaintMode.STROKE);
 
             try (Path path = buildPath(points, false)) {
@@ -211,14 +211,14 @@ public class SkijaGraphics implements StageVisitor {
     }
 
     private int getAlpha(Transform transform) {
-        return Math.round(transform.getAlpha() * 2.55f);
+        return (int) Math.round(transform.getAlpha() * 2.55f);
     }
 
-    private float toScreenX(float canvasX) {
-        return config.getCanvas().toScreenX(canvasX);
+    private float toScreenX(double canvasX) {
+        return (float) config.getCanvas().toScreenX(canvasX);
     }
 
-    private float toScreenY(float canvasY) {
-        return config.getCanvas().toScreenY(canvasY);
+    private float toScreenY(double canvasY) {
+        return (float) config.getCanvas().toScreenY(canvasY);
     }
 }

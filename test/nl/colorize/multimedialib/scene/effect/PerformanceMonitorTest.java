@@ -6,6 +6,7 @@
 
 package nl.colorize.multimedialib.scene.effect;
 
+import nl.colorize.multimedialib.mock.MockScene;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
 import org.junit.jupiter.api.Test;
@@ -16,9 +17,11 @@ class PerformanceMonitorTest {
 
     @Test
     void depictPerformanceStats() {
-        PerformanceMonitor performanceMonitor = new PerformanceMonitor(true);
         HeadlessRenderer renderer = new HeadlessRenderer();
-        renderer.start(performanceMonitor);
+        renderer.start(new MockScene());
+
+        PerformanceMonitor performanceMonitor = new PerformanceMonitor(renderer, true);
+        renderer.attach(performanceMonitor);
 
         for (int i = 0; i < 20; i++) {
             FrameStats frameStats = renderer.getSceneManager().getFrameStats();

@@ -12,24 +12,24 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 /**
- * Implementation of the {@link Scene} interface that delegates to callback
- * functions. This class is intended for dynamically creating sub-scenes.
- * It is possible to add <em>multiple</em> callbacks, which are then invoked
- * in sequence during frame updates.
+ * Implementation of an {@link Actor} that is created out of callback
+ * functions.
  */
-public class FluentScene implements Scene {
+public class FluentActor implements Actor {
 
-    private Updatable onFrame;
+    private Actor onFrame;
     private BooleanSupplier completed;
     private Runnable onComplete;
+    private boolean terminated;
 
-    private FluentScene() {
+    private FluentActor() {
         this.onFrame = _ -> {};
         this.onComplete = () -> {};
+        this.terminated = false;
     }
 
-    public FluentScene withFrameHandler(Updatable callback) {
-        Updatable existingCallback = onFrame;
+    public FluentActor withFrameHandler(Actor callback) {
+        Actor existingCallback = onFrame;
         onFrame = deltaTime -> {
             existingCallback.update(deltaTime);
             callback.update(deltaTime);
@@ -37,8 +37,8 @@ public class FluentScene implements Scene {
         return this;
     }
 
-    public FluentScene withTimerHandler(Timer timer, Consumer<Float> callback) {
-        Updatable frameHandler = deltaTime -> {
+    public FluentActor withTimerHandler(Timer timer, Consumer<Double> callback) {
+        Actor frameHandler = deltaTime -> {
             timer.update(deltaTime);
             callback.accept(timer.getPosition());
         };
@@ -48,8 +48,8 @@ public class FluentScene implements Scene {
         return this;
     }
 
-    public FluentScene withTimelineHandler(Timeline timeline, Consumer<Float> callback) {
-        Updatable frameHandler = deltaTime -> {
+    public FluentActor withTimelineHandler(Timeline timeline, Consumer<Double> callback) {
+        Actor frameHandler = deltaTime -> {
             timeline.movePlayhead(deltaTime);
             callback.accept(timeline.getValue());
         };
@@ -59,7 +59,7 @@ public class FluentScene implements Scene {
         return this;
     }
 
-    public FluentScene withCompletionCheck(BooleanSupplier callback) {
+    public FluentActor withCompletionCheck(BooleanSupplier callback) {
         if (completed == null) {
             completed = callback;
         } else {
@@ -69,7 +69,7 @@ public class FluentScene implements Scene {
         return this;
     }
 
-    public FluentScene withCompletionHandler(Runnable callback) {
+    public FluentActor withCompletionHandler(Runnable callback) {
         Runnable existingCallback = onComplete;
         onComplete = () -> {
             existingCallback.run();
@@ -79,26 +79,35 @@ public class FluentScene implements Scene {
     }
 
     @Override
-    public void update(SceneContext context, float deltaTime) {
+    public void update(double deltaTime) {
         onFrame.update(deltaTime);
-    }
 
-    @Override
-    public void end(SceneContext context) {
-        onComplete.run();
+        // Make sure we have a chance to run the completion
+        // handler if this turns out to be the last frame
+        // this actor is going to be around.
+        isCompleted();
     }
 
     @Override
     public boolean isCompleted() {
-        return completed != null && completed.getAsBoolean();
+        if (completed == null || !completed.getAsBoolean()) {
+            return false;
+        }
+
+        if (!terminated) {
+            onComplete.run();
+            terminated = true;
+        }
+
+        return true;
     }
 
     /**
-     * Static factory method that creates a new, empty {@link FluentScene}
+     * Static factory method that creates a new, empty {@link FluentActor}
      * instance. No callbacks will be registered initially, they need to be
      * added using the various {@code withX} methods.
      */
-    public static FluentScene create() {
-        return new FluentScene();
+    public static FluentActor create() {
+        return new FluentActor();
     }
 }

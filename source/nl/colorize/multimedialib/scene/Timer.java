@@ -14,15 +14,12 @@ import nl.colorize.util.TextUtils;
  * Utility class for time-based behavior. A timer consists of a position and
  * a duration. The position is moved during every frame update, until the
  * duration has been reached.
- * <p>
- * The timer is based on float precision, meaning the timer can run for
- * about 2.5-3 hours before float precision errors start to occur.
  */
 @Getter
-public class Timer implements Updatable {
+public class Timer implements Actor {
 
-    private float position;
-    private float duration;
+    private double position;
+    private double duration;
 
     /**
      * Creates a new timer with the specified duration in seconds. A duration
@@ -31,7 +28,7 @@ public class Timer implements Updatable {
      *
      * @throws IllegalArgumentException for a negative timer duration.
      */
-    public Timer(float duration) {
+    public Timer(double duration) {
         Preconditions.checkArgument(duration >= 0f, "Invalid duration: " + duration);
 
         this.position = 0f;
@@ -39,19 +36,19 @@ public class Timer implements Updatable {
     }
 
     @Override
-    public void update(float deltaTime) {
+    public void update(double deltaTime) {
         position = Math.min(position + deltaTime, duration);
     }
 
-    public void setTime(float time) {
+    public void setTime(double time) {
         this.position = Math.clamp(time, 0f, duration);
     }
 
-    public float getTime() {
+    public double getTime() {
         return position;
     }
 
-    public float getTimeRemaining() {
+    public double getTimeRemaining() {
         return duration - position;
     }
 
@@ -59,7 +56,7 @@ public class Timer implements Updatable {
         return position >= duration;
     }
 
-    public float getRatio() {
+    public double getRatio() {
         if (duration == 0f) {
             return 0f;
         }
@@ -74,10 +71,14 @@ public class Timer implements Updatable {
         position = duration;
     }
 
+    public boolean isInfinite() {
+        return duration == Double.MAX_VALUE;
+    }
+
     @Override
     public String toString() {
         String result = TextUtils.numberFormat(position, 1);
-        if (duration < Float.MAX_VALUE) {
+        if (duration < Double.MAX_VALUE) {
             result += " / " + TextUtils.numberFormat(duration, 1);
         }
         return result;
@@ -87,7 +88,7 @@ public class Timer implements Updatable {
      * Factory method that creates a timer with the specified duration, which
      * has its position set to the specified value.
      */
-    public static Timer at(float time, float duration) {
+    public static Timer at(double time, double duration) {
         Timer timer = new Timer(duration);
         timer.setTime(time);
         return timer;
@@ -98,8 +99,8 @@ public class Timer implements Updatable {
      * specified value. The timer will never reach its duration, similar to
      * {@link #infinite()}.
      */
-    public static Timer at(float time) {
-        return at(time, Float.MAX_VALUE);
+    public static Timer at(double time) {
+        return at(time, Double.MAX_VALUE);
     }
 
     /**
@@ -117,14 +118,14 @@ public class Timer implements Updatable {
      * meaning the timer will never be marked as completed.
      */
     public static Timer infinite() {
-        return new Timer(Float.MAX_VALUE);
+        return new Timer(Double.MAX_VALUE);
     }
 
     /**
      * Factory method that creates a timer which starts in the completed state,
      * with the playhead set to the timer's duration.
      */
-    public static Timer ended(float duration) {
+    public static Timer ended(double duration) {
         Timer timer = new Timer(duration);
         timer.end();
         return timer;

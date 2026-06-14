@@ -14,7 +14,7 @@ import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Line;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Polygon;
-import nl.colorize.multimedialib.math.RandomGenerator;
+import nl.colorize.multimedialib.math.RNG;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.math.Shape;
@@ -28,7 +28,7 @@ import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.multimedialib.renderer.teavm.PeerMessage;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.multimedialib.scene.Updatable;
+import nl.colorize.multimedialib.scene.Actor;
 import nl.colorize.multimedialib.scene.effect.ParticleWipe;
 import nl.colorize.multimedialib.scene.effect.PerformanceMonitor;
 import nl.colorize.multimedialib.scene.effect.SwipeTracker;
@@ -142,7 +142,7 @@ public class Demo2D implements Scene, ErrorHandler {
         sendHttpRequest(context.getNetwork());
         loadApplicationData();
 
-        performanceMonitor = new PerformanceMonitor(true);
+        performanceMonitor = new PerformanceMonitor(context, true);
         performanceMonitor.setActive(false);
         context.attach(performanceMonitor);
     }
@@ -248,7 +248,7 @@ public class Demo2D implements Scene, ErrorHandler {
 
     private void initWipeEffect() {
         Image diamond = context.getMediaLoader().loadImage(ParticleWipe.DIAMOND);
-        ParticleWipe wipe = new ParticleWipe(diamond, COLORIZE_COLOR, 1.5f, true);
+        ParticleWipe wipe = new ParticleWipe(context, diamond, COLORIZE_COLOR, 1.5f, true);
         context.attach(wipe);
     }
 
@@ -321,7 +321,7 @@ public class Demo2D implements Scene, ErrorHandler {
     }
 
     private void attachSwipeTracker() {
-        SwipeTracker swipeTracker = new SwipeTracker(50f);
+        SwipeTracker swipeTracker = new SwipeTracker(context.getInput(), 50f);
         context.attach(swipeTracker);
 
         context.attach(deltaTime -> {
@@ -459,7 +459,7 @@ public class Demo2D implements Scene, ErrorHandler {
     }
 
     @Override
-    public void update(SceneContext context, float deltaTime) {
+    public void update(SceneContext context, double deltaTime) {
         InputDevice inputDevice = context.getInput();
         handleClick(inputDevice);
         handleSystemControls(inputDevice);
@@ -594,25 +594,25 @@ public class Demo2D implements Scene, ErrorHandler {
     /**
      * Represents one of the mario sprites that walks around the scene.
      */
-    private static class Mario implements Updatable {
+    private static class Mario implements Actor {
 
         private Sprite sprite;
         private Rect walkBounds;
         private int direction;
-        private float speed;
+        private double speed;
         private boolean mask;
 
         public Mario(Sprite sprite, Rect walkBounds) {
             this.sprite = sprite;
             this.walkBounds = walkBounds;
-            sprite.getTransform().setPosition(RandomGenerator.pickPoint(walkBounds));
-            this.direction = RandomGenerator.getInt(0, 4);
-            this.speed = RandomGenerator.getFloat(20f, 80f);
+            sprite.getTransform().setPosition(RNG.pickPoint(walkBounds));
+            this.direction = RNG.getInt(0, 4);
+            this.speed = RNG.getDouble(20f, 80f);
             this.mask = false;
         }
 
         @Override
-        public void update(float deltaTime) {
+        public void update(double deltaTime) {
             sprite.changeGraphics(DIRECTIONS.get(direction));
 
             Point2D position = sprite.getTransform().getPosition();

@@ -8,7 +8,7 @@ package nl.colorize.multimedialib.scene.effect;
 
 import nl.colorize.multimedialib.mock.MockImage;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
-import nl.colorize.multimedialib.scene.Scene;
+import nl.colorize.multimedialib.scene.Actor;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Text;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +32,7 @@ class EffectsTest {
     void scaleToFit() {
         Sprite sprite = new Sprite(new MockImage(200, 100));
         context.getStage().getRoot().addChild(sprite);
-        context.attach(Effects.scaleToFit(sprite));
+        context.attach(Effects.scaleToFit(sprite, context.getCanvas()));
         context.doFrame(1f);
 
         assertEquals(600f, sprite.getTransform().getScaleX(), EPSILON);
@@ -42,18 +42,18 @@ class EffectsTest {
     @Test
     void appearText() {
         Text text = new Text("This is a test", null);
-        Scene effect = Effects.appearText(text, 2f);
+        Actor effect = Effects.appearText(text, 2f);
 
-        effect.update(null, 0f);
+        effect.update(0f);
         assertEquals(List.of(""), text.getLines());
 
-        effect.update(null, 1f);
+        effect.update(1f);
         assertEquals(List.of("This is"), text.getLines());
 
-        effect.update(null, 2f);
+        effect.update(2f);
         assertEquals(List.of("This is a test"), text.getLines());
 
-        effect.update(null, 3f);
+        effect.update(3f);
         assertEquals(List.of("This is a test"), text.getLines());
     }
 
@@ -62,8 +62,8 @@ class EffectsTest {
         HeadlessRenderer context = new HeadlessRenderer();
 
         Sprite sprite = new MockImage("orientation lock").toSprite();
-        Scene orientationLockScreen = Effects.showOrientationLock(sprite);
-        orientationLockScreen.update(context, 1f);
+        Actor orientationLockScreen = Effects.showOrientationLock(sprite, context.getCanvas());
+        orientationLockScreen.update(1f);
 
         String expected = """
             Stage
@@ -81,8 +81,8 @@ class EffectsTest {
         Sprite sprite = new MockImage("orientation lock").toSprite();
         context.getStage().getRoot().addChild(sprite);
 
-        Scene orientationLockScreen = Effects.showOrientationLock(sprite);
-        orientationLockScreen.update(context, 1f);
+        Actor orientationLockScreen = Effects.showOrientationLock(sprite, context.getCanvas());
+        orientationLockScreen.update(1f);
 
         String expected = """
             Stage
@@ -100,12 +100,12 @@ class EffectsTest {
         Sprite sprite = new MockImage("orientation lock").toSprite();
         context.getStage().getRoot().addChild(sprite);
 
-        Scene orientationLockScreen = Effects.showOrientationLock(sprite);
-        orientationLockScreen.update(context, 1f);
+        Actor orientationLockScreen = Effects.showOrientationLock(sprite, context.getCanvas());
+        orientationLockScreen.update(1f);
         context.getCanvas().resizeScreen(200, 600);
-        orientationLockScreen.update(context, 1f);
+        orientationLockScreen.update(1f);
         context.getCanvas().resizeScreen(600, 200);
-        orientationLockScreen.update(context, 1f);
+        orientationLockScreen.update(1f);
 
         String expected = """
             Stage

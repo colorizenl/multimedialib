@@ -20,6 +20,7 @@ import nl.colorize.multimedialib.renderer.teavm.Browser;
 import nl.colorize.multimedialib.renderer.teavm.HtmlCanvasRenderer;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.scene.Actor;
 import nl.colorize.util.Development;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
@@ -71,7 +72,7 @@ import static lombok.AccessLevel.PRIVATE;
  * <strong>Global handlers:</strong> The configuration can define "global"
  * handlers that are always active, independent of the currently active
  * scene. Global handlers can also be registered at runtime, using
- * {@link SceneContext#attachGlobalSubScene(Scene)}.
+ * {@link SceneContext#attachGlobalActor(Actor)}.
  * <p>
  * <strong>Simulation mode:</strong> During development, the launcher can
  * "simulate" the behavior of mobile platforms when running on desktop
@@ -90,7 +91,7 @@ public final class RenderConfig {
     @With private int framerate;
     @With private WindowOptions windowOptions;
     @With private ErrorHandler errorHandler;
-    @With private List<Scene> globalHandlers;
+    @With private List<Actor> globalHandlers;
     @With private String simulationMode;
     private Locale userLocale;
 
@@ -142,7 +143,7 @@ public final class RenderConfig {
             throw new UnsupportedOperationException("Renderer does not support graphics mode");
         }
 
-        List<Scene> combinedGlobalHandlers = new ArrayList<>();
+        List<Actor> combinedGlobalHandlers = new ArrayList<>();
         combinedGlobalHandlers.addAll(globalHandlers);
         combinedGlobalHandlers.addAll(renderer.getGlobalHandlers());
 
@@ -258,19 +259,16 @@ public final class RenderConfig {
     private static class BootstrapScene implements Scene {
 
         private Scene initialScene;
-        private List<Scene> globalHandlers;
+        private List<Actor> globalHandlers;
 
         @Override
         public void start(SceneContext context) {
-            for (Scene handler : globalHandlers) {
-                context.attachGlobalSubScene(handler);
-            }
-
+            globalHandlers.forEach(context::attachGlobalActor);
             context.changeScene(initialScene);
         }
 
         @Override
-        public void update(SceneContext context, float deltaTime) {
+        public void update(SceneContext context, double deltaTime) {
         }
     }
 }

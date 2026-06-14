@@ -12,7 +12,7 @@ import lombok.Setter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.Timer;
-import nl.colorize.multimedialib.scene.Updatable;
+import nl.colorize.multimedialib.scene.Actor;
 
 /**
  * Represents a pointer device, which can be a mouse, a trackpad, or touch
@@ -27,7 +27,7 @@ import nl.colorize.multimedialib.scene.Updatable;
  */
 @Getter
 @Setter
-public class Pointer implements Updatable {
+public class Pointer implements Actor {
 
     private final String id;
     private Point2D position;
@@ -88,7 +88,7 @@ public class Pointer implements Updatable {
      * returns the time between the pointer originally being pressed and it
      * being released. Returns zero if this pointer is in the idle state.
      */
-    public float getTimePressed() {
+    public double getTimePressed() {
         return pressedTimer.getTime();
     }
 
@@ -104,7 +104,7 @@ public class Pointer implements Updatable {
     }
 
     @Override
-    public void update(float deltaTime) {
+    public void update(double deltaTime) {
         if (state == STATE_PRESSED || state == STATE_RELEASED) {
             pressedTimer.update(deltaTime);
         } else {

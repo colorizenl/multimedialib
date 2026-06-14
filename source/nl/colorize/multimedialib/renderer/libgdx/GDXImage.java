@@ -29,10 +29,10 @@ public class GDXImage implements Image {
     private Region region;
 
     public GDXImage(Texture texture, Region region) {
-        float u0 = region.x() / (float) texture.getWidth();
-        float v0 = region.y() / (float) texture.getHeight();
-        float u1 = region.x1() / (float) texture.getWidth();
-        float v1 = region.y1() / (float) texture.getHeight();
+        float u0 = (float) region.x() / (float) texture.getWidth();
+        float v0 = (float) region.y() / (float) texture.getHeight();
+        float u1 = (float) region.x1() / (float) texture.getWidth();
+        float v1 = (float) region.y1() / (float) texture.getHeight();
 
         this.texture = texture;
         this.textureRegion = new TextureRegion(texture, u0, v0, u1, v1);

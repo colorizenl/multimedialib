@@ -8,19 +8,20 @@ package nl.colorize.multimedialib.scene.effect;
 
 import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.scene.FluentScene;
+import nl.colorize.multimedialib.scene.FluentActor;
 import nl.colorize.multimedialib.scene.Scene;
-import nl.colorize.multimedialib.scene.Updatable;
+import nl.colorize.multimedialib.scene.Actor;
 import nl.colorize.multimedialib.stage.Sprite;
-import nl.colorize.multimedialib.stage.StageNode2D;
+import nl.colorize.multimedialib.stage.Spatial2D;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.util.TextUtils;
 import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
 
 /**
- * Utility methods for creating effects that can be attached to the currently
- * active scene as sub-scenes.
+ * Utility methods for creating visual effects that affect graphics. The
+ * effects are created as actors that can be attached to the currently
+ * active scene.
  */
 public final class Effects {
 
@@ -36,11 +37,10 @@ public final class Effects {
      * sub-scene. This is because the sprite needs to be rescaled every frame,
      * as the sprite's graphics might change over time.
      */
-    public static Scene scaleToFit(Sprite sprite) {
-        return (context, deltaTime) -> {
-            Canvas canvas = context.getCanvas();
-            float scaleX = (float) canvas.getWidth() / (float) sprite.getCurrentWidth();
-            float scaleY = (float) canvas.getHeight() / (float) sprite.getCurrentHeight();
+    public static Actor scaleToFit(Sprite sprite, Canvas canvas) {
+        return _ -> {
+            double scaleX = (double) canvas.getWidth() / (double) sprite.getCurrentWidth();
+            double scaleY = (double) canvas.getHeight() / (double) sprite.getCurrentHeight();
             sprite.getTransform().setScale(Math.max(scaleX, scaleY) * 100f);
         };
     }
@@ -49,7 +49,7 @@ public final class Effects {
      * Makes text slowly appear over time, with more and more characters
      * appearing on screen over time until the entire text is shown.
      */
-    public static Scene appearText(Text text, float duration) {
+    public static Actor appearText(Text text, double duration) {
         Preconditions.checkArgument(duration > 0f, "Invalid duration: " + duration);
 
         String originalText = TextUtils.LINE_JOINER.join(text.getLines());
@@ -58,13 +58,13 @@ public final class Effects {
         timeline.addKeyFrame(0f, 0f);
         timeline.addKeyFrame(duration, originalText.length());
 
-        Updatable onFrame = deltaTime -> {
+        Actor onFrame = deltaTime -> {
             timeline.movePlayhead(deltaTime);
             String visibleText = originalText.substring(0, (int) timeline.getValue());
             text.setText(visibleText);
         };
 
-        return FluentScene.create()
+        return FluentActor.create()
             .withFrameHandler(onFrame)
             .withCompletionCheck(timeline::isCompleted);
     }
@@ -73,14 +73,14 @@ public final class Effects {
      * Makes graphics rotate 360 degrees within the specified duration, with
      * a shorter duration meaning a faster rotation speed.
      */
-    public static Scene spin(Sprite graphic, float duration) {
+    public static Actor spin(Sprite graphic, double duration) {
         Preconditions.checkArgument(duration > 0f, "Invalid duration: " + duration);
 
         Timeline timeline = new Timeline(Interpolation.LINEAR, true);
         timeline.addKeyFrame(0f, 0f);
         timeline.addKeyFrame(duration, 360f);
 
-        return (_, deltaTime) -> {
+        return deltaTime -> {
             timeline.movePlayhead(deltaTime);
             graphic.getTransform().setRotation(timeline.getValue());
         };
@@ -90,9 +90,8 @@ public final class Effects {
      * Displays the specified graphics until the user changes their device
      * orientation to landscape.
      */
-    public static Scene showOrientationLock(StageNode2D graphics) {
-        return (context, _) -> {
-            Canvas canvas = context.getCanvas();
+    public static Actor showOrientationLock(Spatial2D graphics, Canvas canvas) {
+        return _ -> {
             graphics.getTransform().setVisible(canvas.getWidth() < canvas.getHeight());
             // Reposition all graphics because the canvas might have changed.
             graphics.getTransform().setPosition(canvas.getCenter());

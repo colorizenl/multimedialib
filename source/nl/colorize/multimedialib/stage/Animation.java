@@ -39,7 +39,7 @@ public class Animation {
         this.loop = loop;
     }
     
-    public Animation(List<Image> frames, float frameTime, boolean loop) {
+    public Animation(List<Image> frames, double frameTime, boolean loop) {
         this(loop);
         for (Image frame : frames) {
             addFrame(frame, frameTime);
@@ -51,7 +51,7 @@ public class Animation {
         addFrame(frame, 0f);
     }
 
-    public void addFrame(Image frame, float frameTime) {
+    public void addFrame(Image frame, double frameTime) {
         Preconditions.checkNotNull(frame, "Missing frame graphics");
         Preconditions.checkArgument(frameTime >= 0f, "Invalid frame time: " + frameTime);
 
@@ -72,7 +72,7 @@ public class Animation {
         return frames.get(index).image;
     }
 
-    public Image getFrameAtTime(float time) {
+    public Image getFrameAtTime(double time) {
         Preconditions.checkState(!frames.isEmpty(), "Animation does not contain any frames");
 
         if (frames.size() == 1) {
@@ -93,12 +93,12 @@ public class Animation {
         return frames.getLast().image;
     }
 
-    public float getDuration() {
+    public double getDuration() {
         if (frames.size() <= 1) {
             return 0f;
         }
 
-        float duration = 0f;
+        double duration = 0f;
         for (Frame frame : frames) {
             duration += frame.frameTime;
         }
@@ -108,7 +108,7 @@ public class Animation {
     /**
      * Changes the frame time for the frame located at the specified index.
      */
-    public void setFrameTime(int index, float frameTime) {
+    public void setFrameTime(int index, double frameTime) {
         Frame frame = frames.get(index);
         frames.set(index, new Frame(frame.image, frameTime));
     }
@@ -118,13 +118,13 @@ public class Animation {
      * of elements in the list needs to match the number of frames within this
      * animation.
      */
-    public void setFrameTimes(List<Float> frameTimes) {
+    public void setFrameTimes(List<Double> frameTimes) {
         Preconditions.checkArgument(frameTimes.size() == 1 || frameTimes.size() == frames.size(),
             "Animation has " + frames.size() + " frame, but provided " + frameTimes.size());
         
         for (int i = 0; i < frames.size(); i++) {
             Frame frame = frames.get(i);
-            float time = frameTimes.get(frameTimes.size() == 1 ? 0 : i);
+            double time = frameTimes.get(frameTimes.size() == 1 ? 0 : i);
             frames.set(i, new Frame(frame.image, time));
         }
     }
@@ -132,14 +132,14 @@ public class Animation {
     /**
      * Changes the frame time for all frames within this animation.
      */
-    public void setFrameTime(float frameTime) {
+    public void setFrameTime(double frameTime) {
         for (int i = 0; i < frames.size(); i++) {
             Frame frame = frames.get(i);
             frames.set(i, new Frame(frame.image, frameTime));
         }
     }
 
-    public float getFrameTime(int index) {
+    public double getFrameTime(int index) {
         return frames.get(index).frameTime;
     }
 
@@ -214,7 +214,7 @@ public class Animation {
      * Describes how one of the animation frames should be displayed. Frames
      * are immutable, modifying the animation requires swapping out the frame.
      */
-    private record Frame(Image image, float frameTime) {
+    private record Frame(Image image, double frameTime) {
 
         public Frame {
             Preconditions.checkNotNull(image, "Missing frame image");

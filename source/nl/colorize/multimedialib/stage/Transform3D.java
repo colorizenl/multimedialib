@@ -10,7 +10,6 @@ import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Angle;
 import nl.colorize.multimedialib.math.Point3D;
-import nl.colorize.util.FloatStats;
 
 /**
  * Transformation matrix that controls how polygonal 3D graphics are displayed.
@@ -33,9 +32,9 @@ public class Transform3D {
     private Angle rotationX;
     private Angle rotationY;
     private Angle rotationZ;
-    private float scaleX;
-    private float scaleY;
-    private float scaleZ;
+    private double scaleX;
+    private double scaleY;
+    private double scaleZ;
 
     public Transform3D() {
         this.visible = true;
@@ -59,45 +58,45 @@ public class Transform3D {
         this.scaleZ = source.getScaleZ();
     }
 
-    public void setPosition(float x, float y, float z) {
+    public void setPosition(double x, double y, double z) {
         position = new Point3D(x, y, z);
     }
 
-    public void addPosition(float deltaX, float deltaY, float deltaZ) {
+    public void addPosition(double deltaX, double deltaY, double deltaZ) {
         position = position.add(deltaX, deltaY, deltaZ);
     }
 
-    public void setX(float x) {
+    public void setX(double x) {
         position = new Point3D(x, position.y(), position.z());
     }
 
-    public void setY(float y) {
+    public void setY(double y) {
         position = new Point3D(position.x(), y, position.z());
     }
 
-    public void setZ(float z) {
+    public void setZ(double z) {
         position = new Point3D(position.x(), position.y(), z);
     }
 
-    public void setRotation(float rotationX, float rotationY, float rotationZ) {
+    public void setRotation(double rotationX, double rotationY, double rotationZ) {
         this.rotationX = new Angle(rotationX);
         this.rotationY = new Angle(rotationY);
         this.rotationZ = new Angle(rotationZ);
     }
 
-    public void addRotation(float degreesX, float degreesY, float degreesZ) {
+    public void addRotation(double degreesX, double degreesY, double degreesZ) {
         this.rotationX = rotationX.move(degreesX);
         this.rotationY = rotationY.move(degreesY);
         this.rotationZ = rotationZ.move(degreesZ);
     }
 
-    public void setScale(float scaleX, float scaleY, float scaleZ) {
+    public void setScale(double scaleX, double scaleY, double scaleZ) {
         setScaleX(scaleX);
         setScaleY(scaleY);
         setScaleZ(scaleZ);
     }
 
-    public void setScale(float scale) {
+    public void setScale(double scale) {
         setScale(scale, scale, scale);
     }
 
@@ -115,9 +114,9 @@ public class Transform3D {
             rotationZ.degrees() + other.rotationZ.degrees()
         );
         combined.setScale(
-            FloatStats.multiplyPercentage(scaleX, other.scaleX),
-            FloatStats.multiplyPercentage(scaleY, other.scaleY),
-            FloatStats.multiplyPercentage(scaleZ, other.scaleZ)
+            Transform.multiplyPercentage(scaleX, other.scaleX),
+            Transform.multiplyPercentage(scaleY, other.scaleY),
+            Transform.multiplyPercentage(scaleZ, other.scaleZ)
         );
         return combined;
     }

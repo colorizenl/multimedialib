@@ -19,15 +19,15 @@ import nl.colorize.multimedialib.math.Size;
 @FunctionalInterface
 public interface ScaleStrategy {
 
-    default float getZoomLevel(Canvas canvas) {
+    default double getZoomLevel(Canvas canvas) {
         Size preferredSize = canvas.getPreferredSize();
         Size screenSize = canvas.getScreenSize();
-        float horizontalZoom = (float) screenSize.width() / (float) preferredSize.width();
-        float verticalZoom = (float) screenSize.height() / (float) preferredSize.height();
+        double horizontalZoom = (double) screenSize.width() / (double) preferredSize.width();
+        double verticalZoom = (double) screenSize.height() / (double) preferredSize.height();
         return getZoomLevel(horizontalZoom, verticalZoom);
     }
 
-    public float getZoomLevel(float horizontalZoom, float verticalZoom);
+    public double getZoomLevel(double horizontalZoom, double verticalZoom);
 
     /**
      * Does not perform any scaling, and makes the canvas match the native

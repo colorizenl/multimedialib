@@ -7,13 +7,12 @@
 package nl.colorize.multimedialib.math;
 
 /**
- * Shared interface for all three-dimensional shapes. Shapes use coordinates
- * with float precision, and instances are immutable. Sister interface to
- * {@link Shape}, which targets 2D shapes.
+ * Shared interface for all three-dimensional shapes. All shapes are defined
+ * with {@code double} precision and are immutable.
  */
 public interface Shape3D {
 
-    public static final float EPSILON = Shape.EPSILON;
+    public static final double EPSILON = Shape.EPSILON;
 
     /**
      * Returns the smallest possible bounding box that can fit this shape.

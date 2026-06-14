@@ -39,7 +39,7 @@ public class Canvas {
     private ScaleStrategy scaleStrategy;
     private Size screenSize;
     private Coordinate screenOffset;
-    private float screenPixelRatio;
+    private double screenPixelRatio;
 
     public Canvas(Size preferredSize, ScaleStrategy scaleStrategy) {
         this.preferredSize = preferredSize;
@@ -58,7 +58,7 @@ public class Canvas {
      * called by the renderer when the application window is first created
      * and whenever the application window is resized.
      */
-    public void resizeScreen(int screenWidth, int screenHeight, float screenPixelRatio) {
+    public void resizeScreen(int screenWidth, int screenHeight, double screenPixelRatio) {
         Preconditions.checkArgument(screenPixelRatio > 0f, "Invalid ratio: " + screenPixelRatio);
 
         this.screenSize = new Size(Math.max(screenWidth, 1), Math.max(screenHeight, 1));
@@ -70,7 +70,7 @@ public class Canvas {
      * called by the renderer when the application window is first created
      * and whenever the application window is resized.
      *
-     * @deprecated Use {@link #resizeScreen(int, int, float)} instead.
+     * @deprecated Use {@link #resizeScreen(int, int, double)} instead.
      */
     @Deprecated
     public void resizeScreen(int screenWidth, int screenHeight) {
@@ -87,11 +87,11 @@ public class Canvas {
     }
 
     public int getWidth() {
-        return Math.round(screenSize.width() / getZoomLevel());
+        return (int) Math.round(screenSize.width() / getZoomLevel());
     }
 
     public int getHeight() {
-        return Math.round(screenSize.height() / getZoomLevel());
+        return (int) Math.round(screenSize.height() / getZoomLevel());
     }
 
     public Size getSize() {
@@ -119,45 +119,45 @@ public class Canvas {
      * displayed relative to screen pixels. This is based on the current
      * screen size, the canvas' preferred size, and its {@link ScaleStrategy}.
      */
-    public float getZoomLevel() {
+    public double getZoomLevel() {
         return scaleStrategy.getZoomLevel(this);
     }
 
-    public float toCanvasX(int screenX) {
+    public double toCanvasX(int screenX) {
         return (screenX - screenOffset.x()) / getZoomLevel();
     }
 
-    public float toCanvasX(Point2D point) {
-        return toCanvasX(Math.round(point.x()));
+    public double toCanvasX(Point2D point) {
+        return toCanvasX((int) Math.round(point.x()));
     }
 
-    public float toCanvasY(int screenY) {
+    public double toCanvasY(int screenY) {
         return (screenY - screenOffset.y()) / getZoomLevel();
     }
 
-    public float toCanvasY(Point2D point) {
-        return toCanvasY(Math.round(point.y()));
+    public double toCanvasY(Point2D point) {
+        return toCanvasY((int) Math.round(point.y()));
     }
 
-    public float toScreenX(float canvasX) {
+    public double toScreenX(double canvasX) {
         return canvasX * getZoomLevel() + screenOffset.x();
     }
 
-    public float toScreenX(Point2D point) {
+    public double toScreenX(Point2D point) {
         return toScreenX(point.x());
     }
 
-    public float toScreenY(float canvasY) {
+    public double toScreenY(double canvasY) {
         return canvasY * getZoomLevel() + screenOffset.y();
     }
 
-    public float toScreenY(Point2D point) {
+    public double toScreenY(Point2D point) {
         return toScreenY(point.y());
     }
 
     @Override
     public String toString() {
-        float zoomLevel = getZoomLevel();
+        double zoomLevel = getZoomLevel();
         return getWidth() + "x" + getHeight() + " @ " + TextUtils.numberFormat(zoomLevel, 1) + "x";
     }
 }

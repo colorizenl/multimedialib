@@ -27,7 +27,7 @@ import static lombok.AccessLevel.PROTECTED;
  */
 @Getter
 @Setter
-public class Primitive implements StageNode2D {
+public class Primitive implements Spatial2D {
 
     @Setter(PROTECTED) private Container parent;
     private final Transform transform;
@@ -35,7 +35,7 @@ public class Primitive implements StageNode2D {
 
     @Getter(NONE) private Shape shape;
     private ColorRGB color;
-    private float stroke;
+    private double stroke;
 
     public Primitive(Shape shape, ColorRGB color) {
         this.transform = new Transform();
@@ -46,7 +46,7 @@ public class Primitive implements StageNode2D {
         this.stroke = 1f;
     }
 
-    public Primitive(Shape shape, ColorRGB color, float alpha) {
+    public Primitive(Shape shape, ColorRGB color, double alpha) {
         this(shape, color);
         getTransform().setAlpha(alpha);
     }
@@ -88,19 +88,19 @@ public class Primitive implements StageNode2D {
         }
     }
 
-    public static Primitive fromRect(float width, float height, ColorRGB color) {
+    public static Primitive fromRect(double width, double height, ColorRGB color) {
         return fromRect(width, height, color, 100f);
     }
 
-    public static Primitive fromRect(float width, float height, ColorRGB color, float alpha) {
+    public static Primitive fromRect(double width, double height, ColorRGB color, double alpha) {
         return new Primitive(Rect.aroundOrigin(width, height), color, alpha);
     }
 
-    public static Primitive fromCircle(float radius, ColorRGB color) {
+    public static Primitive fromCircle(double radius, ColorRGB color) {
         return fromCircle(radius, color, 100f);
     }
 
-    public static Primitive fromCircle(float radius, ColorRGB color, float alpha) {
+    public static Primitive fromCircle(double radius, ColorRGB color, double alpha) {
         return new Primitive(new Circle(radius), color, alpha);
     }
 }

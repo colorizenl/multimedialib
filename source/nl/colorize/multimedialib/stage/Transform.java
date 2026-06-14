@@ -9,7 +9,6 @@ package nl.colorize.multimedialib.stage;
 import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.util.FloatStats;
 
 /**
  * Describes how 2D graphics should be displayed, using a number of
@@ -33,7 +32,7 @@ public class Transform {
 
     private boolean visible;
     private Point2D position;
-    private float alpha;
+    private double alpha;
 
     public Transform() {
         this.visible = true;
@@ -45,31 +44,31 @@ public class Transform {
         this.position = position;
     }
 
-    public void setPosition(float x, float y) {
+    public void setPosition(double x, double y) {
         setPosition(new Point2D(x, y));
     }
 
-    public void setX(float x) {
+    public void setX(double x) {
         setPosition(new Point2D(x, position.y()));
     }
 
-    public void setY(float y) {
+    public void setY(double y) {
         setPosition(new Point2D(position.x(), y));
     }
 
-    public void addPosition(float deltaX, float deltaY) {
+    public void addPosition(double deltaX, double deltaY) {
         setPosition(position.add(deltaX, deltaY));
     }
 
-    public float getX() {
+    public double getX() {
         return position.x();
     }
 
-    public float getY() {
+    public double getY() {
         return position.y();
     }
 
-    public void setAlpha(float alpha) {
+    public void setAlpha(double alpha) {
         this.alpha = Math.clamp(alpha, 0f, 100f);
     }
 
@@ -93,7 +92,12 @@ public class Transform {
         Transform combined = new Transform();
         combined.setVisible(visible && other.visible);
         combined.setPosition(position.add(other.position));
-        combined.setAlpha(FloatStats.multiplyPercentage(alpha, other.alpha));
+        combined.setAlpha(multiplyPercentage(alpha, other.alpha));
         return combined;
+    }
+
+    @Deprecated
+    protected static double multiplyPercentage(double percentageA, double percentageB) {
+        return ((percentageA / 100f) * (percentageB / 100f)) * 100f;
     }
 }

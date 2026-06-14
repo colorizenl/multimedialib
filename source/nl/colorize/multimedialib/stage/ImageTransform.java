@@ -9,7 +9,6 @@ package nl.colorize.multimedialib.stage;
 import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Angle;
-import nl.colorize.util.FloatStats;
 
 /**
  * Extension of {@link Transform} that adds additional properties for
@@ -34,8 +33,8 @@ import nl.colorize.util.FloatStats;
 public class ImageTransform extends Transform {
 
     private Angle rotation;
-    private float scaleX;
-    private float scaleY;
+    private double scaleX;
+    private double scaleY;
     private boolean flipHorizontal;
     private boolean flipVertical;
     private ColorRGB maskColor;
@@ -54,32 +53,32 @@ public class ImageTransform extends Transform {
         this.rotation = rotation;
     }
 
-    public void setRotation(float degrees) {
+    public void setRotation(double degrees) {
         setRotation(new Angle(degrees));
     }
 
-    public void addRotation(float degrees) {
+    public void addRotation(double degrees) {
         setRotation(rotation.move(degrees));
     }
 
-    public void setScale(float scale) {
+    public void setScale(double scale) {
         setScaleX(scale);
         setScaleY(scale);
     }
 
-    public void setScaleX(float scaleX) {
+    public void setScaleX(double scaleX) {
         this.scaleX = Math.abs(scaleX);
     }
 
-    public float getScaleX() {
+    public double getScaleX() {
         return flipHorizontal ? -scaleX : scaleX;
     }
 
-    public void setScaleY(float scaleY) {
+    public void setScaleY(double scaleY) {
         this.scaleY = Math.abs(scaleY);
     }
 
-    public float getScaleY() {
+    public double getScaleY() {
         return flipVertical ? -scaleY : scaleY;
     }
 
@@ -106,12 +105,12 @@ public class ImageTransform extends Transform {
         ImageTransform combined = new ImageTransform();
         combined.setVisible(isVisible() && other.isVisible());
         combined.setPosition(getPosition().add(other.getPosition()));
-        combined.setAlpha(FloatStats.multiplyPercentage(getAlpha(), other.getAlpha()));
+        combined.setAlpha(Transform.multiplyPercentage(getAlpha(), other.getAlpha()));
 
         if (other instanceof ImageTransform otherIT) {
             combined.setRotation(rotation.degrees() + otherIT.rotation.degrees());
-            combined.setScaleX(FloatStats.multiplyPercentage(scaleX, otherIT.scaleX));
-            combined.setScaleY(FloatStats.multiplyPercentage(scaleY, otherIT.scaleY));
+            combined.setScaleX(Transform.multiplyPercentage(scaleX, otherIT.scaleX));
+            combined.setScaleY(Transform.multiplyPercentage(scaleY, otherIT.scaleY));
             combined.setFlipHorizontal(flipHorizontal || otherIT.flipHorizontal);
             combined.setFlipVertical(flipVertical || otherIT.flipVertical);
             combined.setMaskColor(otherIT.maskColor != null ? otherIT.maskColor : maskColor);

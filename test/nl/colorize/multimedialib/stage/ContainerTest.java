@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ContainerTest {
 
@@ -61,27 +60,6 @@ class ContainerTest {
     }
 
     @Test
-    void addParentRelationOnAttach() {
-        Container parent = new Container("parent");
-        Container otherParent = new Container("other");
-        Sprite sprite = new Sprite(new MockImage(100, 100));
-        Primitive primitive = new Primitive(new Circle(100), ColorRGB.RED);
-        Text text = new Text("test", null);
-
-        parent.addChild(sprite);
-        parent.addChild(primitive);
-        parent.addChild(text);
-
-        assertEquals(parent, sprite.getParent());
-        assertEquals(parent, primitive.getParent());
-        assertEquals(parent, text.getParent());
-
-        assertThrows(IllegalStateException.class, () -> otherParent.addChild(sprite));
-        assertThrows(IllegalStateException.class, () -> otherParent.addChild(primitive));
-        assertThrows(IllegalStateException.class, () -> otherParent.addChild(text));
-    }
-
-    @Test
     void removeParentRelationOnDetach() {
         Container parent = new Container("parent");
         Sprite sprite = new Sprite(new MockImage(100, 100));
@@ -99,5 +77,21 @@ class ContainerTest {
         assertNull(sprite.getParent());
         assertNull(primitive.getParent());
         assertNull(text.getParent());
+    }
+
+    @Test
+    void reattachChild() {
+        Container parent = new Container();
+        Container child = parent.addChildContainer();
+        Container grandchild = child.addChildContainer();
+
+        child.detach();
+        parent.addChild(grandchild);
+
+        assertEquals(1, parent.getChildren().size());
+        assertEquals(grandchild, parent.getChildren().getFirst());
+        assertEquals(0, child.getChildren().size());
+        assertNull(child.getParent());
+        assertEquals(parent, grandchild.getParent());
     }
 }

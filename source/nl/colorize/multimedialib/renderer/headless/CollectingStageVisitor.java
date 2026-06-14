@@ -20,8 +20,8 @@ import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Stage;
-import nl.colorize.multimedialib.stage.StageNode2D;
-import nl.colorize.multimedialib.stage.StageNode3D;
+import nl.colorize.multimedialib.stage.Spatial2D;
+import nl.colorize.multimedialib.stage.Spatial3D;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
@@ -37,8 +37,8 @@ import java.util.List;
 @Getter
 public class CollectingStageVisitor implements StageVisitor {
 
-    private List<StageNode2D> nodes2D;
-    private List<StageNode3D> nodes3D;
+    private List<Spatial2D> nodes2D;
+    private List<Spatial3D> nodes3D;
 
     public CollectingStageVisitor() {
         this.nodes2D = new ArrayList<>();

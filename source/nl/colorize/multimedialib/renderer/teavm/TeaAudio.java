@@ -55,11 +55,11 @@ public class TeaAudio implements Audio {
     }
 
     @Override
-    public float getDuration() {
+    public double getDuration() {
         if (audioElement == null) {
             return 0f;
         }
-        return (float) audioElement.getDuration();
+        return audioElement.getDuration();
     }
 
     @Override

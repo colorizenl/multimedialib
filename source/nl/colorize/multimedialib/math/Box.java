@@ -9,16 +9,17 @@ package nl.colorize.multimedialib.math;
 import com.google.common.base.Preconditions;
 
 /**
- * Immutable three-dimensional box with float precision. The box is specified
- * based on the position of its top-left corner and its size.
+ * Immutable three-dimensional box that is defined by its top-left point and
+ * a width/height/depth relative to that point. Negative sizes are not
+ * allowed.
  */
 public record Box(
-    float x,
-    float y,
-    float z,
-    float width,
-    float height,
-    float depth
+    double x,
+    double y,
+    double z,
+    double width,
+    double height,
+    double depth
 ) implements Shape3D {
 
     public Box {
@@ -27,15 +28,15 @@ public record Box(
         Preconditions.checkArgument(depth >= 0f, "Invalid depth: " + depth);
     }
 
-    public float getEndX() {
+    public double getEndX() {
         return x + width;
     }
 
-    public float getEndY() {
+    public double getEndY() {
         return y + height;
     }
 
-    public float getEndZ() {
+    public double getEndZ() {
         return z + depth;
     }
 
@@ -117,7 +118,7 @@ public record Box(
      * Factory method that creates a box based on the points (x0, y0, z0) and
      * (x1, y1, z1).
      */
-    public static Box fromPoints(float x0, float y0, float z0, float x1, float y1, float z1) {
+    public static Box fromPoints(double x0, double y0, double z0, double x1, double y1, double z1) {
         return new Box(x0, y0, z0, x1 - x0, y1 - y0, z1 - z0);
     }
 
@@ -125,7 +126,7 @@ public record Box(
      * Factory method that creates a box based on the location of its center
      * point.
      */
-    public static Box around(Point3D center, float width, float height, float depth) {
+    public static Box around(Point3D center, double width, double height, double depth) {
         return new Box(
             center.x() - width / 2f,
             center.y() - height / 2f,
@@ -140,7 +141,7 @@ public record Box(
      * Factory method that creates a box with its center point located at the
      * origin (0, 0, 0).
      */
-    public static Box aroundOrigin(float width, float height, float depth) {
+    public static Box aroundOrigin(double width, double height, double depth) {
         return around(Point3D.ORIGIN, width, height, depth);
     }
 }

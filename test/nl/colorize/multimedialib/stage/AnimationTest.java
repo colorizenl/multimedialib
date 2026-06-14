@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AnimationTest {
 
-    private static final float EPSILON = 0.001f;
+    private static final double EPSILON = 0.001f;
 
     @Test
     public void testCreateRegularAnimation() {
@@ -199,7 +199,7 @@ public class AnimationTest {
 
         Animation animation = new Animation(List.of(a, b, c), 1f, false);
         animation.setFrameTime(2f);
-        animation.setFrameTimes(List.of(1f, 2f, 3f));
+        animation.setFrameTimes(List.of(1.0, 2.0, 3.0));
 
         assertEquals(1f, animation.getFrameTime(0), EPSILON);
         assertEquals(2f, animation.getFrameTime(1), EPSILON);

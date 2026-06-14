@@ -6,7 +6,6 @@
 
 package nl.colorize.multimedialib.renderer;
 
-import nl.colorize.util.FloatStats;
 import nl.colorize.util.Stopwatch;
 
 import java.util.ArrayDeque;
@@ -63,7 +62,7 @@ public class FrameStats {
         }
     }
 
-    public float getAverageFramerate() {
+    public double getAverageFramerate() {
         int frameTimeMS = getAverageTimeMS(PHASE_FRAME_TIME);
         return 1000f / Math.max(frameTimeMS, 1);
     }
@@ -83,7 +82,15 @@ public class FrameStats {
      */
     public int getAverageTimeMS(String phase) {
         PhaseStats phaseStats = prepare(phase);
-        return (int) FloatStats.of(phaseStats.values).average();
+
+        if (phaseStats.values.isEmpty()) {
+            return 0;
+        }
+
+        return (int) phaseStats.values.stream()
+            .mapToLong(value -> value)
+            .summaryStatistics()
+            .getAverage();
     }
 
     /**
@@ -91,7 +98,7 @@ public class FrameStats {
      * The average is based on all previously measured frames that are
      * currently in the buffer.
      */
-    public float getAverageTime(String phase) {
+    public double getAverageTime(String phase) {
         return getAverageTimeMS(phase) / 1000f;
     }
 

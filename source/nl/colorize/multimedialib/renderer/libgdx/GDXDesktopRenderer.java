@@ -24,8 +24,8 @@ import nl.colorize.multimedialib.renderer.RendererException;
 import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
 import nl.colorize.multimedialib.renderer.java2d.StandardNetwork;
 import nl.colorize.multimedialib.scene.Scene;
-import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.SceneManager;
+import nl.colorize.multimedialib.scene.Actor;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.TextUtils;
@@ -204,7 +204,7 @@ public class GDXDesktopRenderer extends GDXContext implements Renderer {
         Size windowSize = config.getWindowOptions().getWindowSize()
             .orElse(config.getCanvas().getSize());
         if (Platform.isWindows()) {
-            float uiScale = SwingUtils.getDesktopScaleFactor();
+            double uiScale = SwingUtils.getDesktopScaleFactor();
             windowSize = windowSize.multiply(uiScale);
         }
         return new Size(windowSize.width(), windowSize.height());
@@ -238,12 +238,12 @@ public class GDXDesktopRenderer extends GDXContext implements Renderer {
     }
 
     @Override
-    public List<Scene> getGlobalHandlers() {
+    public List<Actor> getGlobalHandlers() {
         return List.of(this::takeScreenshot);
     }
 
-    private void takeScreenshot(SceneContext context, float deltaTime) {
-        if (context.getInput().isKeyReleased(KeyCode.F12)) {
+    private void takeScreenshot(double deltaTime) {
+        if (input != null && input.isKeyReleased(KeyCode.F12)) {
             File screenshotFile = new File(Platform.getUserDesktopDir(),
                 "screenshot-" + System.currentTimeMillis() + ".png");
             FileHandle file = Gdx.files.absolute(screenshotFile.getAbsolutePath());

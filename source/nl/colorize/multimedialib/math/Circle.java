@@ -9,20 +9,20 @@ package nl.colorize.multimedialib.math;
 import com.google.common.base.Preconditions;
 
 /**
- * A circle that is defined by its center point and a radius. Instances of this
- * class are immutable and are defined with float precision.
+ * Immutable circle that is defined by its center point and a radius around
+ * that center point.
  */
-public record Circle(Point2D center, float radius) implements Shape {
+public record Circle(Point2D center, double radius) implements Shape {
 
     public Circle {
         Preconditions.checkArgument(radius >= 0f, "Invalid radius: " + radius);
     }
 
-    public Circle(float x, float y, float radius) {
+    public Circle(double x, double y, double radius) {
         this(new Point2D(x, y), radius);
     }
 
-    public Circle(float radius) {
+    public Circle(double radius) {
         this(Point2D.ORIGIN, radius);
     }
 
@@ -46,7 +46,7 @@ public record Circle(Point2D center, float radius) implements Shape {
 
     @Override
     public Rect getBoundingBox() {
-        float diameter = 2f * radius;
+        double diameter = 2f * radius;
         return new Rect(center.x() - radius, center.y() - radius, diameter, diameter);
     }
 

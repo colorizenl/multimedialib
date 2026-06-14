@@ -107,7 +107,7 @@ public class SpriteAtlas {
      * returned in alphabetical order based on their name.
      */
     public List<Image> getAll() {
-        return get(name -> true);
+        return get(_ -> true);
     }
 
     public boolean contains(String name) {
@@ -131,9 +131,22 @@ public class SpriteAtlas {
     }
 
     /**
-     * Static factory method that returns a sprite atlas containing all
-     * sub-images from all atlases. The sub-images are merged by calling
-     * {@link #merge(SpriteAtlas)} on each atlas.
+     * Returns a new sprite atlas with the same sub-images as this one,
+     * but that uses the specified function to rename each sub-image.
+     */
+    public SpriteAtlas rename(Function<String, String> nameFunction) {
+        SpriteAtlas result = new SpriteAtlas();
+        for (SubImage subImage : subImages.values()) {
+            String renamed = nameFunction.apply(subImage.name);
+            result.add(new SubImage(renamed, subImage.atlas, subImage.region));
+        }
+        return result;
+    }
+
+    /**
+     * Returns a new sprite atlas containing the combined sub-images. The
+     * sub-images are merged by calling {@link #merge(SpriteAtlas)} on
+     * each atlas.
      *
      * @throws IllegalArgumentException If no atlases are provided, or if
      *         multiple atlases include sub-images with the same name.
@@ -146,19 +159,6 @@ public class SpriteAtlas {
             result = result.merge(atlases.get(i));
         }
 
-        return result;
-    }
-
-    /**
-     * Returns a {@link SpriteAtlas} with the same sub-images as this one,
-     * but uses the specified function to rename each sub-image.
-     */
-    public SpriteAtlas rename(Function<String, String> nameFunction) {
-        SpriteAtlas result = new SpriteAtlas();
-        for (SubImage subImage : subImages.values()) {
-            String renamed = nameFunction.apply(subImage.name);
-            result.add(new SubImage(renamed, subImage.atlas, subImage.region));
-        }
         return result;
     }
 

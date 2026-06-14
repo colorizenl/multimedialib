@@ -18,16 +18,17 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Utility class to help with random numbers. This class uses a shared global
- * {@link Random} instance. This prevents situations where application code
- * creates {@link Random} instances across various locations, making it easier
- * to toggle between "real" random and deterministic pseudo-random.
+ * Utility class to help with random number generation. This class uses a
+ * shared global {@link Random} instance. This prevents situations where
+ * application code creates {@link Random} instances across various
+ * locations, making it easier to toggle between "real" random number
+ * generation versus deterministic pseudo-random.
  */
-public class RandomGenerator {
+public class RNG {
 
     private static Random generator = new Random();
 
-    private RandomGenerator() {
+    private RNG() {
     }
 
     /**
@@ -62,28 +63,28 @@ public class RandomGenerator {
     }
 
     /**
-     * Returns a random float somewhere in the range between the minimum
+     * Returns a random double somewhere in the range between the minimum
      * (inclusive) and maximum (exclusive).
      */
-    public static float getFloat(float min, float max) {
+    public static double getDouble(double min, double max) {
         Preconditions.checkArgument(max >= min, "Invalid range: " + min + " - " + max);
-        
+
         if (min == max) {
             return min;
         }
 
-        return min + generator.nextFloat() * (max - min);
+        return min + generator.nextDouble() * (max - min);
     }
 
     /**
-     * Produces a random float between 0.0 and 1.0, then compares that number
+     * Produces a random double between 0.0 and 1.0, then compares that number
      * against {@code n} and returns the result. In other words, passing a value
      * of 0.9 against this method will have a 90% chance of returning true.
      */
-    public static boolean chance(float n) {
+    public static boolean chance(double n) {
         Preconditions.checkArgument(n >= 0f && n <= 1f, "Number out of range: " + n);
 
-        float value = generator.nextFloat();
+        double value = generator.nextDouble();
         return value <= n;
     }
 
@@ -170,8 +171,8 @@ public class RandomGenerator {
      * Picks a random point somewhere within the specified rectangle.
      */
     public static Point2D pickPoint(Rect bounds) {
-        float x = getFloat(bounds.x(), bounds.getEndX());
-        float y = getFloat(bounds.y(), bounds.getEndY());
+        double x = getDouble(bounds.x(), bounds.getEndX());
+        double y = getDouble(bounds.y(), bounds.getEndY());
         return new Point2D(x, y);
     }
 }

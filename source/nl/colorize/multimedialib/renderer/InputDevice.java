@@ -8,8 +8,8 @@ package nl.colorize.multimedialib.renderer;
 
 import com.google.common.collect.Streams;
 import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.multimedialib.scene.Updatable;
-import nl.colorize.multimedialib.stage.StageNode2D;
+import nl.colorize.multimedialib.scene.Actor;
+import nl.colorize.multimedialib.stage.Spatial2D;
 import nl.colorize.util.EventQueue;
 
 /**
@@ -18,7 +18,7 @@ import nl.colorize.util.EventQueue;
  * depend on the platform and device. MultimediaLib applications are
  * frame-based, so input devices can be checked by polling.
  */
-public interface InputDevice extends Updatable {
+public interface InputDevice extends Actor {
 
     /**
      * Returns all currently active pointers. Depending on the current platform
@@ -44,9 +44,9 @@ public interface InputDevice extends Updatable {
     /**
      * Convenience method that returns true if <em>any</em> of the pointers
      * is currently pressed within the specified node's bounds (as described
-     * by {@link StageNode2D#getStageBounds()}).
+     * by {@link Spatial2D#getStageBounds()}).
      */
-    default boolean isPointerPressed(StageNode2D node) {
+    default boolean isPointerPressed(Spatial2D node) {
         return isPointerPressed(node.getStageBounds()) && node.getGlobalTransform().isVisible();
     }
 
@@ -62,9 +62,9 @@ public interface InputDevice extends Updatable {
     /**
      * Convenience method that returns true if <em>any</em> of the pointers
      * is currently released within the specified node's bounds (as described
-     * by {@link StageNode2D#getStageBounds()}).
+     * by {@link Spatial2D#getStageBounds()}).
      */
-    default boolean isPointerReleased(StageNode2D node) {
+    default boolean isPointerReleased(Spatial2D node) {
         return isPointerReleased(node.getStageBounds()) && node.getGlobalTransform().isVisible();
     }
 

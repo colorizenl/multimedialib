@@ -14,38 +14,38 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class RandomGeneratorTest {
+class RNGTest {
 
     @BeforeEach
     public void before() {
-        RandomGenerator.seed(1234L);
+        RNG.seed(1234L);
     }
 
     @AfterEach
     public void after() {
-        RandomGenerator.randomSeed();
+        RNG.randomSeed();
     }
 
     @Test
     void generateDeterministicRandomNumbers() {
-        assertEquals(28, RandomGenerator.getInt(0, 100));
-        assertEquals(33, RandomGenerator.getInt(0, 100));
-        assertEquals(33, RandomGenerator.getInt(0, 100));
-        assertEquals(20, RandomGenerator.getInt(0, 100));
+        assertEquals(28, RNG.getInt(0, 100));
+        assertEquals(33, RNG.getInt(0, 100));
+        assertEquals(33, RNG.getInt(0, 100));
+        assertEquals(20, RNG.getInt(0, 100));
     }
 
     @Test
     void pickRandomListElement() {
         List<String> items = List.of("1", "2", "3", "4");
 
-        assertEquals("3", RandomGenerator.pick(items));
-        assertEquals("2", RandomGenerator.pick(items));
+        assertEquals("3", RNG.pick(items));
+        assertEquals("2", RNG.pick(items));
     }
 
     @Test
     void shuffleList() {
         List<String> items = List.of("1", "2", "3", "4");
-        List<String> shuffled = RandomGenerator.shuffle(items);
+        List<String> shuffled = RNG.shuffle(items);
 
         assertEquals("[1, 2, 3, 4]", items.toString());
         assertEquals("[1, 2, 4, 3]", shuffled.toString());

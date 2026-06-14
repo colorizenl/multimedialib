@@ -21,7 +21,7 @@ public class GDXAudio implements Audio {
     private Sound sound;
     private long playbackId;
     @Getter private int masterVolume;
-    @Getter private float duration;
+    @Getter private double duration;
 
     public GDXAudio(Sound sound) {
         this.sound = sound;

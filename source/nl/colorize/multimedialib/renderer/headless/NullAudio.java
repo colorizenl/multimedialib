@@ -19,7 +19,7 @@ import nl.colorize.multimedialib.stage.Audio;
 public class NullAudio implements Audio {
 
     private int masterVolume;
-    private float duration;
+    private double duration;
 
     public NullAudio() {
         this.masterVolume = 100;

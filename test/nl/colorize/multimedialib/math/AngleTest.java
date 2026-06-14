@@ -90,8 +90,8 @@ class AngleTest {
     @Test
     void fromRadians() {
         assertEquals("0°", Angle.fromRadians(0f).toString());
-        assertEquals("90°", Angle.fromRadians((float) Math.PI / 2f).toString());
-        assertEquals("180°", Angle.fromRadians((float) Math.PI).toString());
+        assertEquals("90°", Angle.fromRadians(Math.PI / 2f).toString());
+        assertEquals("180°", Angle.fromRadians(Math.PI).toString());
     }
 
     @Test

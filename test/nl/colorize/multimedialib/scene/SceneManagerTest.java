@@ -102,8 +102,8 @@ public class SceneManagerTest {
 
         SceneManager sceneManager = new SceneManager(context);
         sceneManager.changeScene(sceneA);
-        sceneManager.attach((context, deltaTime) -> tracker.add("a"));
-        sceneManager.attach((context, deltaTime) -> tracker.add("b"));
+        sceneManager.attach(deltaTime -> tracker.add("a"));
+        sceneManager.attach(deltaTime -> tracker.add("b"));
         sceneManager.performFrameUpdate(1f);
 
         assertEquals(ImmutableList.of("a", "b"), tracker);
@@ -117,12 +117,12 @@ public class SceneManagerTest {
 
         SceneManager sceneManager = new SceneManager(context);
         sceneManager.changeScene(sceneA);
-        sceneManager.attach((context, deltaTime) -> tracker.add("a"));
-        sceneManager.attach((context, deltaTime) -> tracker.add("b"));
+        sceneManager.attach(deltaTime -> tracker.add("a"));
+        sceneManager.attach(deltaTime -> tracker.add("b"));
         sceneManager.performFrameUpdate(1f);
         sceneManager.performFrameUpdate(1f);
         sceneManager.changeScene(sceneB);
-        sceneManager.attach((context, deltaTime) -> tracker.add("c"));
+        sceneManager.attach(deltaTime -> tracker.add("c"));
         sceneManager.performFrameUpdate(1f);
 
         assertEquals(List.of("a", "b", "a", "b", "c"), tracker);
@@ -134,10 +134,10 @@ public class SceneManagerTest {
         sceneManager.changeScene(new MockScene());
 
         List<String> buffer = new ArrayList<>();
-        sceneManager.attach((ctx, dt) -> {
+        sceneManager.attach(_ -> {
             buffer.add("a");
             if (buffer.size() == 2) {
-                sceneManager.attach((ctx2, dt2) -> buffer.add("b"));
+                sceneManager.attach(_ -> buffer.add("b"));
             }
         });
         sceneManager.performFrameUpdate(1f);
@@ -196,8 +196,9 @@ public class SceneManagerTest {
         sceneManager.performFrameUpdate(1f);
 
         assertEquals(1, parent.getStartCount());
-        assertEquals(1, child1.getStartCount());
-        assertEquals(1, child2.getStartCount());
+        assertEquals(2, parent.getFrameUpdateCount());
+        assertEquals(2, child1.getFrameUpdateCount());
+        assertEquals(1, child2.getFrameUpdateCount());
     }
 
     @Test
@@ -218,9 +219,11 @@ public class SceneManagerTest {
         sceneManager.performFrameUpdate(1f);
 
         assertEquals(1, parent.getStartCount());
-        assertEquals(2, child1.getStartCount());
+        assertEquals(1, parent.getFrameUpdateCount());
         assertEquals(1, newParent.getStartCount());
-        assertEquals(1, child2.getStartCount());
+        assertEquals(2, newParent.getFrameUpdateCount());
+        assertEquals(2, child1.getFrameUpdateCount());
+        assertEquals(2, child2.getFrameUpdateCount());
     }
 
     @Test
@@ -233,7 +236,7 @@ public class SceneManagerTest {
         SceneManager sceneManager = new SceneManager(context);
         sceneManager.changeScene(scene1);
         sceneManager.attach(scene2);
-        sceneManager.attachGlobalSubScene(scene3);
+        sceneManager.attachGlobalActor(scene3);
         sceneManager.performFrameUpdate(1f);
         sceneManager.changeScene(scene4);
         sceneManager.performFrameUpdate(1f);
@@ -250,7 +253,7 @@ public class SceneManagerTest {
         MockScene child = new MockScene();
 
         Timer timer = new Timer(2f);
-        FluentScene timerSubScene = FluentScene.create()
+        FluentActor timerSubScene = FluentActor.create()
             .withFrameHandler(timer)
             .withCompletionCheck(timer::isCompleted)
             .withCompletionHandler(() -> child.start(context));
@@ -369,7 +372,7 @@ public class SceneManagerTest {
             }
 
             @Override
-            public void update(SceneContext context, float deltaTime) {
+            public void update(SceneContext context, double deltaTime) {
                 a.update(context, deltaTime);
             }
         });
@@ -378,39 +381,6 @@ public class SceneManagerTest {
 
         assertEquals(List.of("start", "end"), a.frames);
         assertEquals(List.of("start", "0.10", "0.10"), b.frames);
-    }
-
-    @Test
-    void avoidStartingAttachedSubSceneTwice() {
-        List<String> events = new ArrayList<>();
-
-        Scene child = new Scene() {
-            @Override
-            public void start(SceneContext context) {
-                events.add("child");
-            }
-
-            @Override
-            public void update(SceneContext context, float deltaTime) {
-            }
-        };
-
-        SceneManager sceneManager = new SceneManager(context);
-        sceneManager.changeScene(new Scene() {
-            @Override
-            public void start(SceneContext context) {
-                events.add("parent");
-                context.attach(child);
-            }
-
-            @Override
-            public void update(SceneContext context, float deltaTime) {
-            }
-        });
-        sceneManager.performFrameUpdate(1f);
-        sceneManager.performFrameUpdate(1f);
-
-        assertEquals(List.of("parent", "child"), events);
     }
 
     @Test
@@ -637,7 +607,7 @@ public class SceneManagerTest {
         }
 
         @Override
-        public void update(SceneContext context, float deltaTime) {
+        public void update(SceneContext context, double deltaTime) {
             frames.add(String.format("%.2f", deltaTime));
         }
     }
