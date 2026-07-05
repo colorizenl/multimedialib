@@ -24,7 +24,7 @@ class PerformanceMonitorTest {
         renderer.attach(performanceMonitor);
 
         for (int i = 0; i < 20; i++) {
-            FrameStats frameStats = renderer.getSceneManager().getFrameStats();
+            FrameStats frameStats = renderer.getFrameStats();
             frameStats.markStart(FrameStats.PHASE_FRAME_TIME);
             frameStats.markEnd(FrameStats.PHASE_FRAME_TIME);
             frameStats.markStart(FrameStats.PHASE_FRAME_UPDATE);

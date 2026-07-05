@@ -8,7 +8,6 @@ package nl.colorize.multimedialib.renderer.libgdx;
 
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.backends.lwjgl3.audio.OpenALSound;
-import lombok.Getter;
 import nl.colorize.multimedialib.stage.Audio;
 
 /**
@@ -20,18 +19,14 @@ public class GDXAudio implements Audio {
 
     private Sound sound;
     private long playbackId;
-    @Getter private int masterVolume;
-    @Getter private double duration;
+    private double volume;
+    private double pitch;
 
     public GDXAudio(Sound sound) {
         this.sound = sound;
         this.playbackId = -1;
-        this.masterVolume = 100;
-        this.duration = 0f;
-
-        if (sound instanceof OpenALSound openAL) {
-            duration = openAL.duration();
-        }
+        this.volume = 100;
+        this.pitch = 100;
     }
 
     @Override
@@ -39,25 +34,51 @@ public class GDXAudio implements Audio {
         stop();
 
         if (loop) {
-            playbackId = sound.loop(masterVolume / 100f);
+            playbackId = sound.loop((float) volume / 100f, (float) pitch / 100f, 0f);
         } else {
-            playbackId = sound.play(masterVolume / 100f);
+            playbackId = sound.play((float) volume / 100f, (float) pitch / 100f, 0f);
         }
     }
 
     @Override
     public void stop() {
         if (playbackId != -1) {
-            sound.stop();
+            sound.stop(playbackId);
             playbackId = -1;
         }
     }
 
     @Override
-    public void changeVolume(int volume) {
-        masterVolume = Math.clamp(volume, 0, 100);
-        if (playbackId != -1) {
-            sound.setVolume(playbackId, masterVolume / 100f);
+    public boolean isPlaying() {
+        return playbackId != -1;
+    }
+
+    public double getDuration() {
+        if (sound instanceof OpenALSound openAL) {
+            return openAL.duration();
+        } else {
+            return 0.0;
         }
+    }
+
+    @Override
+    public void changeVolume(double volume) {
+        this.volume = Math.clamp(volume, 0, 100);
+        if (playbackId != -1) {
+            sound.setVolume(playbackId, (float) this.volume / 100f);
+        }
+    }
+
+    @Override
+    public void changePitch(double pitch) {
+        this.pitch = Math.clamp(pitch, 50, 200);
+        if (playbackId != -1) {
+            sound.setPitch(playbackId, (float) this.pitch / 100f);
+        }
+    }
+
+    @Override
+    public Audio copy() {
+        return new GDXAudio(sound);
     }
 }

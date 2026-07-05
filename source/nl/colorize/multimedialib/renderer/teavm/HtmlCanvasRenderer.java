@@ -46,7 +46,7 @@ public class HtmlCanvasRenderer implements Renderer, SceneContext {
     public void start(RenderConfig config, Scene initialScene) {
         this.config = config;
         network = new TeaNetwork();
-        sceneManager = new SceneManager(this, initialScene);
+        sceneManager = new SceneManager(config, initialScene);
 
         Browser.getBrowserBridge().registerErrorHandler(this::handleError);
 
@@ -77,7 +77,7 @@ public class HtmlCanvasRenderer implements Renderer, SceneContext {
      */
     private void onAnimationFrame(double timestamp) {
         if (prepareCanvas()) {
-            if (sceneManager.requestFrameUpdate() > 0) {
+            if (sceneManager.requestFrameUpdate(this) > 0) {
                 sceneManager.getFrameStats().markStart(FrameStats.PHASE_FRAME_RENDER);
                 getStage().visit(graphics);
                 sceneManager.getFrameStats().markEnd(FrameStats.PHASE_FRAME_RENDER);

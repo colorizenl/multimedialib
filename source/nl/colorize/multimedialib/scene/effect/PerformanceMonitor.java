@@ -89,7 +89,7 @@ public class PerformanceMonitor implements Actor {
 
     @Override
     public void update(double deltaTime) {
-        FrameStats stats = context.getSceneManager().getFrameStats();
+        FrameStats stats = context.getFrameStats();
 
         if (isActive() && stats.getBufferSize() >= 10) {
             container.setPosition(20, context.getCanvas().getHeight() - 120);

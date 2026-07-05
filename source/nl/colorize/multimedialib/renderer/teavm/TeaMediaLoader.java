@@ -28,11 +28,10 @@ import org.teavm.jso.dom.html.HTMLElement;
 import org.teavm.jso.dom.html.HTMLImageElement;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -55,7 +54,8 @@ public class TeaMediaLoader implements MediaLoader {
     private String timestamp;
 
     private Map<ResourceFile, HTMLImageElement> preloadedImages;
-    private Set<ResourceFile> preloadedFonts;
+    private Map<ResourceFile, HTMLAudioElement> preloadedAudio;
+    private Map<ResourceFile, String> preloadedFonts;
     private Cache<MaskImage, HTMLCanvasElement> maskImageCache;
 
     private static final ResourceFile MANIFEST_FILE = new ResourceFile("resource-file-manifest");
@@ -68,7 +68,8 @@ public class TeaMediaLoader implements MediaLoader {
         this.timestamp = bridge.getMeta("build-id", String.valueOf(System.currentTimeMillis()));
 
         preloadedImages = new HashMap<>();
-        preloadedFonts = new HashSet<>();
+        preloadedAudio = new HashMap<>();
+        preloadedFonts = new HashMap<>();
         maskImageCache = Cache.from(this::createMaskImage, IMAGE_CACHE_SIZE);
     }
 
@@ -98,6 +99,12 @@ public class TeaMediaLoader implements MediaLoader {
             if (file.path().endsWith(".png") || file.path().endsWith("jpg")) {
                 loading.add(file);
                 appendImageElement(file).subscribe(_ -> checkStatus.accept(file));
+            } else if (file.path().endsWith(".ogg")) {
+                loading.add(file);
+                appendAudioElement(file).subscribe(_ -> checkStatus.accept(file));
+            } else if (file.path().endsWith(".ttf")) {
+                loading.add(file);
+                appendFont(file).subscribe(_ -> checkStatus.accept(file));
             }
         }
 
@@ -129,36 +136,54 @@ public class TeaMediaLoader implements MediaLoader {
 
     @Override
     public Audio loadAudio(ResourceFile file) {
-        Subject<HTMLAudioElement> audioPromise = new Subject<>();
+        if (preloadedAudio.containsKey(file)) {
+            HTMLAudioElement audioElement = preloadedAudio.get(file);
+            return new TeaAudio(Subject.of(audioElement));
+        } else {
+            Subject<HTMLAudioElement> audioElement = appendAudioElement(file);
+            return new TeaAudio(audioElement);
+        }
+    }
+
+    private Subject<HTMLAudioElement> appendAudioElement(ResourceFile file) {
+        Subject<HTMLAudioElement> promise = new Subject<>();
         HTMLAudioElement audioElement = (HTMLAudioElement) document.createElement("audio");
         audioElement.setCrossOrigin("anonymous");
-        audioElement.addEventListener("loadeddata", event -> audioPromise.next(audioElement));
+        audioElement.addEventListener("loadeddata", _ -> {
+            preloadedAudio.put(file, audioElement);
+            promise.next(audioElement);
+        });
         audioElement.setSrc(getResourceFileURL(file));
-        return new TeaAudio(audioPromise);
+        return promise;
     }
 
     @Override
     public FontFace loadFont(ResourceFile file, String family, int size, ColorRGB color) {
         FontFace fontRef = new FontFace(file, family, size, color);
-        if (!preloadedFonts.contains(file)) {
-            appendFont(file, fontRef);
+        if (!preloadedFonts.containsKey(file)) {
+            appendFont(file);
         }
         return fontRef;
     }
 
-    private Subject<FontFace> appendFont(ResourceFile file, FontFace fontRef) {
+    private Subject<String> appendFont(ResourceFile file) {
+        String id = "MultimediaLib-Font-" + UUID.randomUUID();
         String url = "url('" + getResourceFileURL(file) + "')";
-        Subject<FontFace> promise = new Subject<>();
+        Subject<String> promise = new Subject<>();
 
-        bridge.preloadFontFace(fontRef.family(), url, error -> {
-            preloadedFonts.add(file);
-            promise.next(fontRef);
+        bridge.preloadFontFace(id, url, error -> {
+            preloadedFonts.put(file, id);
+            promise.next(id);
             if (error != null && !error.isEmpty()) {
                 LOGGER.warning("Failed to load font " + file + ": " + error);
             }
         });
 
         return promise;
+    }
+
+    protected String getFontId(FontFace font) {
+        return preloadedFonts.getOrDefault(font.origin(), font.family());
     }
 
     @Override

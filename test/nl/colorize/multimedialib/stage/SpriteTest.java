@@ -6,8 +6,10 @@
 
 package nl.colorize.multimedialib.stage;
 
+import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.mock.MockImage;
 import nl.colorize.multimedialib.scene.Timer;
+import nl.colorize.util.TupleList;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -95,5 +97,19 @@ public class SpriteTest {
 
         assertEquals("a", sprite.getActiveState());
         assertEquals("b", copy.getActiveState());
+    }
+
+    @Test
+    void spriteFromSpriteAtlas() {
+        SpriteAtlas atlas = new SpriteAtlas();
+        atlas.add("a", new MockImage(), new Region(0, 0, 100, 100));
+        atlas.add("b", new MockImage(), new Region(0, 0, 100, 100));
+        atlas.add("c", new MockImage(), new Region(0, 0, 100, 100));
+        atlas.addAnimation("x", TupleList.of("a", 0.5, "b", 0.5), false);
+        atlas.addAnimation("y", TupleList.of("c", 0.5, "b", 0.5), true);
+
+        Sprite sprite = new Sprite(atlas);
+
+        assertEquals(Set.of("x", "y"), sprite.getAvailableStates());
     }
 }

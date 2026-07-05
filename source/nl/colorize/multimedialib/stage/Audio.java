@@ -38,28 +38,33 @@ public interface Audio {
      */
     public void stop();
 
-    /**
-     * Changes this audio clip's volume to the specified value between 0
-     * (silent) and 100 (normal volume). If the value of {@code volume} is
-     * outside this range, it will be clamped.
-     * <p>
-     * If this method is called before the audio clip is played, the volume
-     * change will take effect the next time it is played. If this audio clip
-     * is currently playing, calling this method will dynamically change the
-     * volume.
-     */
-    public void changeVolume(int volume);
+    public boolean isPlaying();
 
     /**
-     * Returns this audio clip's master volume, in the range between 0 (silent)
-     * and 100 (normal volume). The master volume will be used the next time
-     * this audio clip is played.
-     */
-    public int getMasterVolume();
-
-    /**
-     * Returns the duration of this audio clip, in seconds. If this audio
-     * clip is still buffering or loading, this will return zero.
+     * Returns the duration of this audio clip, in seconds.
      */
     public double getDuration();
+
+    /**
+     * Changes this audio clip's volume to the specified value between 0%
+     * (silent) and 100% (normal volume). Values outside of this range will
+     * automatically be clamped. This method can be used both before playback
+     * and during playback.
+     */
+    public void changeVolume(double volume);
+
+    /**
+     * Changes this audio clip's pitch to a percentage of the original, within
+     * the range between 50% and 200%. Values outside of this range will
+     * automatically be clamped. This method can be used both before playback
+     * and during playback.
+     */
+    public void changePitch(double pitch);
+
+    /**
+     * Returns a new {@link Audio} instance that is based on the same audio
+     * clip as this instance. This allows multiple instances to be played
+     * simultaneously.
+     */
+    public Audio copy();
 }

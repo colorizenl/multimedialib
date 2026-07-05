@@ -39,7 +39,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class StandardMediaLoader implements MediaLoader {
 
-    private static final String APPLICATION_DATA_FILE_NAME = "data.properties";
+    public static final String APPLICATION_DATA_FILE_NAME = "data.properties";
     private static final Logger LOGGER = LogHelper.getLogger(StandardMediaLoader.class);
 
     /**
@@ -59,7 +59,7 @@ public class StandardMediaLoader implements MediaLoader {
             BufferedImage original = Utils2D.loadImage(source.openStream());
 
             if (Platform.isWindows()) {
-                return prepareImage(file, original);
+                return prepareImage(original);
             } else {
                 return new AWTImage(original);
             }
@@ -73,7 +73,7 @@ public class StandardMediaLoader implements MediaLoader {
      * is not possible on the current platform, the original image will be
      * used.
      */
-    private Image prepareImage(ResourceFile file, BufferedImage original) {
+    private Image prepareImage(BufferedImage original) {
         try {
             BufferedImage compatible = Utils2D.makeImageCompatible(original);
             return new AWTImage(compatible);

@@ -226,7 +226,7 @@ public class HtmlCanvasGraphics implements StageVisitor {
     }
 
     private String getFontString(FontFace font) {
-        return font.size() + "px " + font.family();
+        return font.size() + "px " + mediaLoader.getFontId(font);
     }
 
     @Override

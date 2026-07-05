@@ -3,10 +3,11 @@ MultimediaLib
 
 [![Maven Central](https://img.shields.io/maven-central/v/nl.colorize/multimedialib)](
 https://central.sonatype.com/artifact/nl.colorize/multimedialib)
-[![Documentation](https://img.shields.io/badge/docs-javadoc-yellow)](
+[![Documentation](https://img.shields.io/badge/docs-javadoc-purple)](
 https://api.clrz.nl/multimedialib)
-[![License](https://img.shields.io/badge/license-apache_2.0-purple)](
+[![License](https://img.shields.io/badge/license-apache_2.0-olive)](
 https://www.apache.org/licenses/LICENSE-2.0)
+![Test coverage](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fapi.clrz.nl%2Fcoverage%2Fmultimedialib.yaml&query=%24.coverage&suffix=%25&label=test%20coverage&color=green)
 
 MultimediaLib is a framework for creating multimedia applications in Java that run on multiple
 platforms: desktop applications (Windows, Mac OS, Linux), mobile apps (iOS, Android), and web
@@ -180,7 +181,7 @@ applications dependent on numerous images tend to benefit from using a sprite at
 loading time.
 
 MultimediaLib includes a command line tool that can be used to create a sprite atlas from a
-directory of images. This is done using the `SpriteAtlasPacker` that is includes as part of the
+directory of images. This is done using the `SpriteAtlasPacker` that is included as part of the
 library, and supports the following arguments:
 
 | Name        | Required | Description                                                       |
@@ -191,9 +192,23 @@ library, and supports the following arguments:
 | `--nested`  | no       | Creates a separate sprite atlas for each subdirectory.            |
 | `--flatten` | no       | Base region name on file name only, instead of relative path.     |
 
-This will create a sprite using with the [libGDX](https://libgdx.badlogicgames.com) `.atlas` file
-format. Note that the sprite atlas can still be loaded and usedwhen the application does not use
-the libGDX renderer.
+This will create a sprite using with the [libGDX](https://libgdx.badlogicgames.com) `.atlas`
+[file format](https://en.esotericsoftware.com/spine-atlas-format). This format is supported by
+all renderers; the fact that the file format originates from libGDX does not mean it is only
+supported by that renderer.
+
+If a `.anim` file with the same name exists in the same directory as the `.atlas` file, 
+animation data for the sprite atlas will be loaded from that file. These `.anim` files use
+a similar indentation-based format as the atlas itself:
+
+    walk
+      walk1: 1
+      walk2: 0.5
+
+All image references in the `.anim` file refer to the corresponding images defined in the
+`.atlas` file. Each image will be displayed for the specified duration, in seconds. In addition
+to the animation frames, each animation can also define the special property `loop` (either
+true or false).
 
 Distributing applications
 -------------------------
@@ -239,6 +254,11 @@ The following Gradle build tasks are available:
 In order to retain portability across all supported platforms, MultimediaLib is limited to a
 subset of the Java standard library. `ArchitectureTest`, which runs as part of the unit tests
 and uses [ArchUnit](https://www.archunit.org), is used to validate these portability constraints.
+
+Take extra care when introducing libraries that serialize and/or deserialize file formats. Those
+libraries tend to heavily rely on reflection, which has limited support on some of the platforms
+targeted by MultimediaLib. Usually, it is still possible to use libraries for those file formats,
+as long as you use non-reflection libraries (or the non-reflection parts of a library). 
 
 Note that applications created *using* MultimediaLib will have the same portability restrictions,
 so you may want to consider introducing similar tests for your application code.

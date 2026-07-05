@@ -71,6 +71,13 @@ public class StateMachine<S> implements Actor {
             return;
         }
 
+        // The new overloads of this method use Double.MAX_VALUE,
+        // but we also interpret zero duration as infinite, for
+        // backward compatibility.
+        if (duration == 0.0) {
+            duration = Double.MAX_VALUE;
+        }
+
         currentState = state;
         currentStateTimer = new Timer(duration);
         requestedStates.clear();
@@ -95,6 +102,13 @@ public class StateMachine<S> implements Actor {
 
         if (currentState.equals(state)) {
             return;
+        }
+
+        // The new overloads of this method use Double.MAX_VALUE,
+        // but we also interpret zero duration as infinite, for
+        // backward compatibility.
+        if (duration == 0.0) {
+            duration = Double.MAX_VALUE;
         }
 
         if (currentStateTimer.isInfinite() || currentStateTimer.isCompleted()) {

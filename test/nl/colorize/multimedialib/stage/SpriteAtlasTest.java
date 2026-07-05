@@ -8,13 +8,17 @@ package nl.colorize.multimedialib.stage;
 
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.mock.MockImage;
+import nl.colorize.util.TupleList;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SpriteAtlasTest {
 
@@ -102,5 +106,57 @@ public class SpriteAtlasTest {
         atlasB.add("a", new MockImage(), new Region(0, 0, 100, 200));
 
         assertThrows(IllegalArgumentException.class, () -> atlasA.merge(atlasB));
+    }
+
+    @Test
+    void registerAnimations() {
+        SpriteAtlas atlas = new SpriteAtlas();
+        atlas.add("a", new MockImage(), new Region(0, 0, 100, 100));
+        atlas.add("b", new MockImage(), new Region(0, 0, 100, 100));
+        atlas.add("c", new MockImage(), new Region(0, 0, 100, 100));
+        atlas.addAnimation("x", TupleList.of("a", 0.5, "b", 0.5), false);
+        atlas.addAnimation("y", TupleList.of("c", 0.5, "b", 0.5), true);
+
+        assertEquals(Set.of("a", "b", "c"), atlas.getSubImageNames());
+        assertEquals(Set.of("x", "y"), atlas.getAnimationNames());
+    }
+
+    @Test
+    void filterImagesAndAnimations() {
+        SpriteAtlas atlas = new SpriteAtlas();
+        atlas.add("a", new MockImage(), new Region(0, 0, 100, 100));
+        atlas.add("b", new MockImage(), new Region(0, 0, 100, 100));
+        atlas.add("c", new MockImage(), new Region(0, 0, 100, 100));
+        atlas.addAnimation("x", TupleList.of("a", 0.5, "b", 0.5), false);
+        atlas.addAnimation("y", TupleList.of("c", 0.5, "b", 0.5), true);
+
+        SpriteAtlas filtered = atlas.filter(
+            name -> List.of("a", "b").contains(name),
+            name -> name.startsWith("x")
+        );
+
+        assertTrue(filtered.contains("a"));
+        assertTrue(filtered.contains("b"));
+        assertFalse(filtered.contains("c"));
+        assertTrue(filtered.containsAnimation("x"));
+        assertFalse(filtered.containsAnimation("y"));
+    }
+
+    @Test
+    void filterAnimations() {
+        SpriteAtlas atlas = new SpriteAtlas();
+        atlas.add("a", new MockImage(), new Region(0, 0, 100, 100));
+        atlas.add("b", new MockImage(), new Region(0, 0, 100, 100));
+        atlas.add("c", new MockImage(), new Region(0, 0, 100, 100));
+        atlas.addAnimation("x", TupleList.of("a", 0.5, "b", 0.5), false);
+        atlas.addAnimation("y", TupleList.of("c", 0.5, "b", 0.5), true);
+
+        SpriteAtlas filtered = atlas.filterAnimations(name -> name.startsWith("x"));
+
+        assertFalse(filtered.contains("a"));
+        assertFalse(filtered.contains("b"));
+        assertFalse(filtered.contains("c"));
+        assertTrue(filtered.containsAnimation("x"));
+        assertFalse(filtered.containsAnimation("y"));
     }
 }

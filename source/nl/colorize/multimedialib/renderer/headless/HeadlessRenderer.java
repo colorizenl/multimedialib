@@ -182,12 +182,15 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
      */
     private static class SimulatedSceneManager extends SceneManager {
 
+        private SceneContext context;
+
         public SimulatedSceneManager(SceneContext context, Scene initialScene) {
-            super(context, initialScene);
+            super(context.getConfig(), initialScene);
+            this.context = context;
         }
 
         public void simulateFrameUpdate(double deltaTime) {
-            performFrameUpdate(deltaTime);
+            performFrameUpdate(context, deltaTime);
         }
     }
 

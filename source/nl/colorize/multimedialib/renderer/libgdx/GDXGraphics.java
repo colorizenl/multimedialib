@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.renderer.libgdx;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
@@ -16,6 +17,7 @@ import com.badlogic.gdx.graphics.TextureData;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
@@ -76,11 +78,11 @@ public class GDXGraphics implements StageVisitor, World3D {
 
     private GraphicsMode graphicsMode;
     private Canvas canvas;
-    private GDXMediaLoader mediaLoader;
 
     private SpriteBatch spriteBatch;
     private ShapeRenderer shapeBatch;
     private Cache<MaskTexture, TextureRegion> maskCache;
+    private Cache<FontFace, BitmapFont> fontCache;
 
     protected PerspectiveCamera camera;
     private Environment environment;
@@ -92,14 +94,16 @@ public class GDXGraphics implements StageVisitor, World3D {
     private static final double FAR_PLANE = 300;
     private static final int CIRCLE_SEGMENTS = 32;
     private static final int MASK_CACHE_SIZE = 1024;
+    private static final int FONT_CACHE_SIZE = 1024;
     private static final int TEXTURE_FLAGS = Position | Normal | TextureCoordinates;
     private static final int SPHERE_SEGMENTS = 32;
+    private static final int BITMAP_FONT_SCALE = 2;
 
-    protected GDXGraphics(GraphicsMode graphicsMode, Canvas canvas, GDXMediaLoader mediaLoader) {
+    protected GDXGraphics(GraphicsMode graphicsMode, Canvas canvas) {
         this.graphicsMode = graphicsMode;
         this.canvas = canvas;
-        this.mediaLoader = mediaLoader;
         this.maskCache = Cache.from(this::createMask, MASK_CACHE_SIZE);
+        this.fontCache = Cache.from(this::generateBitmapFont, FONT_CACHE_SIZE);
 
         camera = new PerspectiveCamera(FIELD_OF_VIEW, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera.near = (float) NEAR_PLANE;
@@ -324,7 +328,7 @@ public class GDXGraphics implements StageVisitor, World3D {
     @Override
     public void drawText(Text text, Transform globalTransform) {
         FontFace scaledFont = text.getFont().scale(canvas);
-        BitmapFont bitmapFont = mediaLoader.getBitmapFont(scaledFont);
+        BitmapFont bitmapFont = fontCache.get(scaledFont);
         float screenX = toScreenX(globalTransform.getPosition().x());
         int align = getTextAlign(text.getAlign());
         // We cannot use the font metrics reported by the BitmapFont
@@ -346,6 +350,22 @@ public class GDXGraphics implements StageVisitor, World3D {
             case CENTER -> center;
             case RIGHT -> right;
         };
+    }
+
+    private BitmapFont generateBitmapFont(FontFace font) {
+        var config = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        config.size = font.size() * BITMAP_FONT_SCALE;
+        config.color = GDXMediaLoader.toColor(font.color());
+        config.minFilter = Texture.TextureFilter.Linear;
+        config.magFilter = Texture.TextureFilter.Linear;
+
+        FileHandle file = GDXMediaLoader.getFileHandle(font.origin());
+
+        FreeTypeFontGenerator fontGenerator = new FreeTypeFontGenerator(file);
+        BitmapFont bitmapFont = fontGenerator.generateFont(config);
+        bitmapFont.getData().setScale(1f / BITMAP_FONT_SCALE);
+        fontGenerator.dispose();
+        return bitmapFont;
     }
 
     @Override

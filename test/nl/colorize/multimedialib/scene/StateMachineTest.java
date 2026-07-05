@@ -180,4 +180,14 @@ public class StateMachineTest {
         assertEquals("[b, b, a]", framesA.toString());
         assertEquals("[b, b, b]", framesB.toString());
     }
+
+    @Test
+    void zeroDurationIsInterpretedAsInfiniteForBackwardCompatibility() {
+        StateMachine<String> stateMachine = StateMachine.withInitialState("a");
+        stateMachine.changeState("b", 0.0);
+        stateMachine.update(1.0);
+
+        assertEquals("b", stateMachine.getCurrentState());
+        assertEquals(1.0, stateMachine.getCurrentStateTimer().getTime(), EPSILON);
+    }
 }

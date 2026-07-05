@@ -42,9 +42,11 @@ public interface MediaLoader {
      * Loads a sprite atlas based on the libGDX {@code .atlas} file format.
      * This will parse the {@code .atlas} file, and will then load all images
      * used within the sprite atlas.
-     *
-     * @throws MediaException if one of the images used in the sprite atlas
-     *         uses a format that is not supported by the renderer,
+     * <p>
+     * If a {@code .anim} file with the same name exists in the same directory
+     * as the {@code .atlas} file, animation data for the sprite atlas will
+     * be loaded from that file. Refer to the MultimediaLib README file for
+     * more information on these file formats.
      */
     default SpriteAtlas loadAtlas(ResourceFile file) {
         SpriteAtlasLoader atlasLoader = new SpriteAtlasLoader(this);

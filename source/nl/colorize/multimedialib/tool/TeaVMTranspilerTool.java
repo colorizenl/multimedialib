@@ -113,10 +113,23 @@ public class TeaVMTranspilerTool {
         "browser/javascript-libraries.txt"
     );
 
+    private static final List<String> TEXT_FILE_EXTENSIONS = List.of(
+        ".anim",
+        ".atlas",
+        ".csv",
+        ".fnt",
+        ".glsl",
+        ".json",
+        ".md",
+        ".properties",
+        ".txt",
+        ".xml",
+        ".yaml",
+        ".yml"
+    );
+
     private static final ResourceFile INDEX_FILE = new ResourceFile("browser/index.html");
     private static final ResourceFile JS_LIBS = new ResourceFile("browser/javascript-libraries.txt");
-    private static final List<String> TEXT_FILE_EXTENSIONS = List.of(
-        ".atlas", ".csv", ".fnt", ".glsl", ".json", ".md", ".properties", ".txt", ".yaml", ".yml");
     private static final Logger LOGGER = LogHelper.getLogger(TeaVMTranspilerTool.class);
 
     public static void main(String[] argv) {
@@ -162,10 +175,11 @@ public class TeaVMTranspilerTool {
         long htmlSize = new File(outputDir, "index.html").length();
         long jsSize = new File(outputDir, getScriptFileName()).length();
 
-        LOGGER.info("HTML file size:                   " + FileUtils.formatFileSize(htmlSize));
-        LOGGER.info("Transpiled JavaScript file size:  " + FileUtils.formatFileSize(jsSize));
-        LOGGER.info("Time taken:                       " + (timer.tock() / 1000L) + "s");
-        LOGGER.info("Results saved to " + outputDir.getAbsolutePath());
+        LOGGER.info("-".repeat(60));
+        LOGGER.info("HTML file size:                     " + FileUtils.formatFileSize(htmlSize));
+        LOGGER.info("Transpiled JavaScript file size:    " + FileUtils.formatFileSize(jsSize));
+        LOGGER.info("Time taken:                         " + (timer.tock() / 1000L) + "s");
+        LOGGER.info("Results saved to:                   " + outputDir.getAbsolutePath());
     }
 
     private void transpile() throws TeaVMToolException {

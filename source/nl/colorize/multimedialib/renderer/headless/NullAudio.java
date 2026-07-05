@@ -7,7 +7,6 @@
 package nl.colorize.multimedialib.renderer.headless;
 
 import lombok.Getter;
-import lombok.Setter;
 import nl.colorize.multimedialib.stage.Audio;
 
 /**
@@ -15,15 +14,16 @@ import nl.colorize.multimedialib.stage.Audio;
  * do not support audio playback.
  */
 @Getter
-@Setter
 public class NullAudio implements Audio {
 
-    private int masterVolume;
     private double duration;
+    private double volume;
+    private double pitch;
 
     public NullAudio() {
-        this.masterVolume = 100;
-        this.duration = 0f;
+        this.duration = 0.0;
+        this.volume = 100.0;
+        this.pitch = 100.0;
     }
 
     @Override
@@ -35,7 +35,22 @@ public class NullAudio implements Audio {
     }
 
     @Override
-    public void changeVolume(int volume) {
-        masterVolume = Math.clamp(volume, 0, 100);
+    public boolean isPlaying() {
+        return false;
+    }
+
+    @Override
+    public void changeVolume(double volume) {
+        this.volume = Math.clamp(volume, 0, 100);
+    }
+
+    @Override
+    public void changePitch(double pitch) {
+        this.pitch = Math.clamp(pitch, 50, 200);
+    }
+
+    @Override
+    public Audio copy() {
+        return new NullAudio();
     }
 }

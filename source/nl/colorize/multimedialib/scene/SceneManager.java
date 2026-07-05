@@ -10,14 +10,15 @@ import lombok.Getter;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.Pointer;
+import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.util.Stopwatch;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Responsible for the scene life cycle, including the life cycle of its
@@ -30,13 +31,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class SceneManager {
 
-    private SceneContext context;
     private Stopwatch animationTimer;
     private long elapsedTime;
     @Getter private FrameStats frameStats;
 
     private SceneLogic activeScene;
-    private List<Actor> attachedActors;
     @Getter private Stage stage;
     private Queue<SceneLogic> requestedSceneQueue;
     private List<Actor> globalActors;
@@ -45,27 +44,25 @@ public class SceneManager {
     private static final double MIN_FRAME_TIME = 0.01f;
     private static final double MAX_FRAME_TIME = 0.2f;
 
-    protected SceneManager(SceneContext context, Stopwatch timer) {
-        this.context = context;
+    protected SceneManager(RenderConfig config, Stopwatch timer) {
         this.animationTimer = timer;
         this.elapsedTime = 0L;
         this.frameStats = new FrameStats();
 
         activeScene = null;
-        attachedActors = new CopyOnWriteArrayList<>();
-        stage = new Stage(context.getConfig().getCanvas());
+        stage = new Stage(config.getCanvas());
         requestedSceneQueue = new ArrayDeque<>();
-        globalActors = new CopyOnWriteArrayList<>();
+        globalActors = new ArrayList<>();
     }
 
-    public SceneManager(SceneContext context, Scene initialScene) {
-        this(context, new Stopwatch());
+    public SceneManager(RenderConfig config, Scene initialScene) {
+        this(config, new Stopwatch());
         changeScene(initialScene);
     }
 
     @Deprecated
-    public SceneManager(SceneContext context) {
-        this(context, new Stopwatch());
+    public SceneManager(RenderConfig config) {
+        this(config, new Stopwatch());
     }
 
     /**
@@ -94,7 +91,7 @@ public class SceneManager {
      *         indicates no frame updates were performed, meaning that it is
      *         not necessary for the renderer to render the frame.
      */
-    public int requestFrameUpdate() {
+    public int requestFrameUpdate(SceneContext context) {
         long frameTime = animationTimer.tick();
         elapsedTime += frameTime;
 
@@ -110,7 +107,7 @@ public class SceneManager {
 
         double deltaTime = Math.clamp(elapsedTime / 1000f, MIN_FRAME_TIME, MAX_FRAME_TIME);
         frameStats.markStart(FrameStats.PHASE_FRAME_UPDATE);
-        performFrameUpdate(deltaTime);
+        performFrameUpdate(context, deltaTime);
         frameStats.markEnd(FrameStats.PHASE_FRAME_UPDATE);
         elapsedTime = 0L;
 
@@ -119,18 +116,20 @@ public class SceneManager {
 
     /**
      * Performs an application frame update. The renderer will first call
-     * {@link #requestFrameUpdate()}, which then calls this method depending
-     * on how much time has elapsed since the last frame.
+     * {@link #requestFrameUpdate(SceneContext)}, which then calls this method
+     * depending on how much time has elapsed since the last frame.
      */
-    protected void performFrameUpdate(double deltaTime) {
+    protected void performFrameUpdate(SceneContext context, double deltaTime) {
         updateInput(context.getInput(), deltaTime);
 
         if (!requestedSceneQueue.isEmpty()) {
-            activateRequestedScene();
+            activateRequestedScene(context);
         }
 
-        updateActiveScene(deltaTime);
-        updateGlobalActors(deltaTime);
+        activeScene.scene.update(context, deltaTime);
+        updateActors(activeScene.attachedActors, deltaTime);
+        stage.getAnimationTimer().update(deltaTime);
+        updateActors(globalActors, deltaTime);
     }
 
     private void updateInput(InputDevice input, double deltaTime) {
@@ -143,28 +142,24 @@ public class SceneManager {
         }
     }
 
-    private void updateActiveScene(double deltaTime) {
-        activeScene.scene.update(context, deltaTime);
+    private void updateActors(List<Actor> actors, double deltaTime) {
+        List<Actor> snapshot = List.copyOf(actors);
 
-        for (Actor actor : activeScene.attachedActors) {
-            updateActor(actor, deltaTime);
+        for (Actor actor : snapshot) {
+            if (!actor.isCompleted()) {
+                updateActor(actor, deltaTime);
 
-            // We need to check an actor's status again,
-            // in case it has been marked as completed
-            // during the frame update that just happened.
-            if (actor.isCompleted()) {
-                activeScene.attachedActors.remove(actor);
+                // We need to check an actor's status again,
+                // in case it has been marked as completed
+                // during the frame update that just happened.
+                if (actor.isCompleted()) {
+                    actors.remove(actor);
+                }
             }
         }
-
-        stage.getAnimationTimer().update(deltaTime);
     }
 
     private void updateActor(Actor actor, double deltaTime) {
-        if (actor.isCompleted()) {
-            return;
-        }
-
         actor.update(deltaTime);
 
         for (Actor subActor : actor.getSubActors()) {
@@ -186,7 +181,7 @@ public class SceneManager {
      * replaced by the next requested scene, meaning they will never actually
      * receive frame updates.
      */
-    private void activateRequestedScene() {
+    private void activateRequestedScene(SceneContext context) {
         if (activeScene != null) {
             activeScene.scene.end(context);
             stage.clear();
@@ -200,22 +195,7 @@ public class SceneManager {
             activeScene.scene.start(context);
 
             if (!requestedSceneQueue.isEmpty()) {
-                activateRequestedScene();
-            }
-        }
-    }
-
-    private void updateGlobalActors(double deltaTime) {
-        for (Actor actor : globalActors) {
-            if (!actor.isCompleted()) {
-                actor.update(deltaTime);
-                // Same as with "normal" scene actors,
-                // we need to check again if it was
-                // marked as completed during the
-                // frame update we just did.
-                if (actor.isCompleted()) {
-                    globalActors.remove(actor);
-                }
+                activateRequestedScene(context);
             }
         }
     }
@@ -228,7 +208,7 @@ public class SceneManager {
      * @see SceneContext#changeScene(Scene)
      */
     public void changeScene(Scene requestedScene) {
-        List<Actor> attachedActors = new CopyOnWriteArrayList<>();
+        List<Actor> attachedActors = new ArrayList<>();
         SceneLogic sceneConfig = new SceneLogic(requestedScene, attachedActors);
         requestedSceneQueue.offer(sceneConfig);
     }

@@ -40,22 +40,22 @@ public class LWJGLAudio implements Audio {
 
     private ResourceFile origin;
     private byte[] oggData;
-    @Getter private int masterVolume;
     @Getter private double duration;
-
     private int bufferId;
     private int sourceId;
+    private double volume;
+    private double pitch;
 
     private static AudioSubSystem audioSubSystem;
 
     public LWJGLAudio(ResourceFile origin) {
         this.origin = origin;
         this.oggData = origin.readBytes();
-        this.masterVolume = 100;
         this.duration = 0f;
-
         this.bufferId = -1;
         this.sourceId = -1;
+        this.volume = 100;
+        this.pitch = 100;
     }
 
     private void prepareBuffer() {
@@ -79,7 +79,7 @@ public class LWJGLAudio implements Audio {
 
             bufferId = AL10.alGenBuffers();
             sourceId = AL10.alGenSources();
-            duration = (pcm.limit() / channels) / sampleRate;
+            duration = (pcm.limit() / (double) channels) / sampleRate;
 
             AL10.alBufferData(bufferId, getFormat(channels), pcm, sampleRate);
             AL10.alSourcei(sourceId, AL10.AL_BUFFER, bufferId);
@@ -97,7 +97,8 @@ public class LWJGLAudio implements Audio {
 
         stop();
         AL10.alSourcei(sourceId, AL10.AL_LOOPING, loop ? AL10.AL_TRUE : AL10.AL_FALSE);
-        AL10.alSourcef(sourceId, AL10.AL_GAIN, masterVolume / 100f);
+        AL10.alSourcef(sourceId, AL10.AL_GAIN, (float) volume / 100f);
+        AL10.alSourcef(sourceId, AL10.AL_PITCH, (float) this.pitch / 100f);
         AL10.alSourcePlay(sourceId);
     }
 
@@ -110,11 +111,40 @@ public class LWJGLAudio implements Audio {
     }
 
     @Override
-    public void changeVolume(int volume) {
+    public boolean isPlaying() {
+        if (sourceId == -1) {
+            return false;
+        }
+
+        int state = AL10.alGetSourcei(sourceId, AL10.AL_SOURCE_STATE);
+        return state == AL10.AL_PLAYING;
+    }
+
+    @Override
+    public void changeVolume(double volume) {
         initializeAudioSubSystem();
         prepareBuffer();
 
-        masterVolume = Math.clamp(volume, 0, 100);
+        this.volume = Math.clamp(volume, 0, 100);
+        if (sourceId != -1) {
+            AL10.alSourcef(sourceId, AL10.AL_GAIN, (float) this.volume / 100f);
+        }
+    }
+
+    @Override
+    public void changePitch(double pitch) {
+        initializeAudioSubSystem();
+        prepareBuffer();
+
+        this.pitch = Math.clamp(pitch, 50, 200);
+        if (sourceId != -1) {
+            AL10.alSourcef(sourceId, AL10.AL_PITCH, (float) this.pitch / 100f);
+        }
+    }
+
+    @Override
+    public Audio copy() {
+        return new LWJGLAudio(origin);
     }
 
     @Override

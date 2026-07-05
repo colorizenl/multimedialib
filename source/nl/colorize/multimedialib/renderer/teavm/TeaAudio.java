@@ -6,7 +6,7 @@
 
 package nl.colorize.multimedialib.renderer.teavm;
 
-import lombok.Getter;
+import com.google.common.base.Preconditions;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.util.Subject;
 import org.teavm.jso.dom.html.HTMLAudioElement;
@@ -22,10 +22,8 @@ import org.teavm.jso.dom.html.HTMLAudioElement;
 public class TeaAudio implements Audio {
 
     private HTMLAudioElement audioElement;
-    @Getter private int masterVolume;
 
     protected TeaAudio(Subject<HTMLAudioElement> audioPromise) {
-        this.masterVolume = 100;
         audioPromise.subscribe(event -> audioElement = event);
     }
 
@@ -33,7 +31,6 @@ public class TeaAudio implements Audio {
     public void play(boolean loop) {
         stop();
         if (audioElement != null) {
-            audioElement.setVolume(masterVolume / 100f);
             audioElement.play();
         }
     }
@@ -47,11 +44,14 @@ public class TeaAudio implements Audio {
     }
 
     @Override
-    public void changeVolume(int volume) {
-        masterVolume = Math.clamp(volume, 0, 100);
-        if (audioElement != null) {
-            audioElement.setVolume(masterVolume / 100f);
+    public boolean isPlaying() {
+        if (audioElement == null) {
+            return false;
         }
+
+        return audioElement.getCurrentTime() > 0.0 &&
+            !audioElement.isPaused() &&
+            !audioElement.isEnded();
     }
 
     @Override
@@ -60,6 +60,32 @@ public class TeaAudio implements Audio {
             return 0f;
         }
         return audioElement.getDuration();
+    }
+
+    @Override
+    public void changeVolume(double volume) {
+        if (audioElement != null) {
+            float audioVolume = Math.clamp((float) volume / 100f, 0f, 1f);
+            audioElement.setVolume(audioVolume);
+        }
+    }
+
+    @Override
+    public void changePitch(double pitch) {
+        if (audioElement != null) {
+            double audioPitch = Math.clamp(pitch / 100.0, 0.5, 2.0);
+            audioElement.setPlaybackRate(audioPitch);
+        }
+    }
+
+    @Override
+    public Audio copy() {
+        Preconditions.checkState(audioElement != null,
+            "Audio element has not been preloaded and is not yet available");
+
+        HTMLAudioElement copyElement = (HTMLAudioElement) audioElement.cloneNode(true);
+        audioElement.getParentNode().appendChild(copyElement);
+        return new TeaAudio(Subject.of(copyElement));
     }
 
     @Override

@@ -18,9 +18,9 @@ import nl.colorize.multimedialib.renderer.libgdx.GDXDesktopRenderer;
 import nl.colorize.multimedialib.renderer.skija.SkijaRenderer;
 import nl.colorize.multimedialib.renderer.teavm.Browser;
 import nl.colorize.multimedialib.renderer.teavm.HtmlCanvasRenderer;
+import nl.colorize.multimedialib.scene.Actor;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.multimedialib.scene.Actor;
 import nl.colorize.util.Development;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
@@ -93,7 +93,7 @@ public final class RenderConfig {
     @With private ErrorHandler errorHandler;
     @With private List<Actor> globalHandlers;
     @With private String simulationMode;
-    private Locale userLocale;
+    @With private Locale userLocale;
 
     private static final Size SIMULATION_MODE_PHONE = new Size(350, 760);
     private static final Size SIMULATION_MODE_TABLET = new Size(570, 760);

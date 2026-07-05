@@ -71,7 +71,7 @@ public class SkijaRenderer implements Renderer, SceneContext {
         this.network = new StandardNetwork();
         this.mediaLoader = new SkijaMediaLoader();
         this.input = new LWJGLInput(config);
-        this.sceneManager = new SceneManager(this);
+        this.sceneManager = new SceneManager(config);
 
         GLFWErrorCallback.createPrint(System.err).set();
 
@@ -177,7 +177,7 @@ public class SkijaRenderer implements Renderer, SceneContext {
         while (!GLFW.glfwWindowShouldClose(windowId)) {
             input.reset();
             GLFW.glfwPollEvents();
-            sceneManager.requestFrameUpdate();
+            sceneManager.requestFrameUpdate(this);
 
             getFrameStats().markStart(FrameStats.PHASE_FRAME_RENDER);
             getStage().visit(graphics);

@@ -1,6 +1,6 @@
 plugins {
     id "io.freefair.lombok" version "9.5.0"
-    id "com.vanniktech.maven.publish" version "0.36.0"
+    id "com.vanniktech.maven.publish" version "0.37.0"
     id "com.github.ben-manes.versions" version "0.54.0"
     id "net.ltgt.errorprone" version "5.1.0"
 }
@@ -45,17 +45,17 @@ dependencies {
     implementation "com.github.xpenatan.gdx-teavm:backend-web:1.5.6"
     implementation "com.github.xpenatan.gdx-teavm:gdx-freetype-teavm:1.5.6"
 
-    implementation "io.github.humbleui:skija-macos-x64:0.143.16"
-    implementation "io.github.humbleui:skija-macos-arm64:0.143.16"
-     implementation "io.github.humbleui:skija-windows-x64:0.143.16"
+    implementation "io.github.humbleui:skija-macos-x64:0.143.17"
+    implementation "io.github.humbleui:skija-macos-arm64:0.143.17"
+    implementation "io.github.humbleui:skija-windows-x64:0.143.17"
 
-    implementation "nl.colorize:colorize-java-commons:2026.2.1"
+    implementation "nl.colorize:colorize-java-commons:2026.3"
     implementation "com.github.mgsx-dev.gdx-gltf:gltf:2.3.0"
     implementation "org.slf4j:slf4j-jdk14:2.0.17"
-    testImplementation "org.junit.jupiter:junit-jupiter:6.1.0"
+    testImplementation "org.junit.jupiter:junit-jupiter:6.1.1"
     testImplementation "com.tngtech.archunit:archunit-junit5:1.4.2"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
-    errorprone "com.google.errorprone:error_prone_core:2.49.0"
+    errorprone "com.google.errorprone:error_prone_core:2.50.0"
 }
 
 javadoc {
@@ -77,9 +77,12 @@ jacocoTestReport {
 task coverage(dependsOn: ["test", "jacocoTestReport"]) {
     doLast {
         def report = file("${buildDir}/reports/jacoco/test/html/index.html").text
-        def coverage = report =~ "tfoot.*?ctr2.*?>([\\d.]+%).*?tfoot"
+        def loc = (report =~ "tfoot.*?bar.*?>[\\d,]+ of ([\\d,]+).*?tfoot")[0][1].replace(",", "")
+        def coverage = (report =~ "tfoot.*?ctr2.*?>([\\d.]+)%.*?tfoot")[0][1]
         println "-" * 40
-        println "Test coverage: " + coverage[0][1]
+        println "Lines of code:    ${loc}"
+        println "Test coverage:    ${coverage}%"
+        file("${buildDir}/reports/coverage.yaml").text = "loc: ${loc}\ncoverage: ${coverage}\n"
     }
 }
 

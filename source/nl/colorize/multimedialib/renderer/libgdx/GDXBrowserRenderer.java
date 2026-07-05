@@ -13,21 +13,18 @@ import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.teavm.Browser;
+import nl.colorize.multimedialib.renderer.teavm.HtmlCanvasRenderer;
 import nl.colorize.multimedialib.renderer.teavm.TeaInput;
 import nl.colorize.multimedialib.renderer.teavm.TeaMediaLoader;
 import nl.colorize.multimedialib.renderer.teavm.TeaNetwork;
-import nl.colorize.multimedialib.renderer.teavm.HtmlCanvasRenderer;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneManager;
-import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.util.LogHelper;
-import nl.colorize.util.ResourceFile;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
 import org.teavm.jso.dom.html.HTMLDocument;
 
 import java.util.List;
-import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,7 +42,7 @@ public class GDXBrowserRenderer extends GDXContext implements Renderer {
     @Override
     public void start(RenderConfig config, Scene initialScene) {
         this.config = config;
-        this.sceneManager = new SceneManager(this, initialScene);
+        this.sceneManager = new SceneManager(config, initialScene);
 
         try {
             createCanvas();
@@ -84,8 +81,8 @@ public class GDXBrowserRenderer extends GDXContext implements Renderer {
         GraphicsMode graphicsMode = config.getGraphicsMode();
         Canvas canvas = config.getCanvas();
 
-        mediaLoader = new GDXBrowserMediaLoader(new TeaMediaLoader());
-        graphics = new GDXGraphics(graphicsMode, canvas, mediaLoader);
+        mediaLoader = new GDXBrowserMediaLoader(new GDXMediaLoader(), new TeaMediaLoader());
+        graphics = new GDXGraphics(graphicsMode, canvas);
         input = new TeaInput(canvas);
         network = new TeaNetwork();
 
@@ -105,45 +102,5 @@ public class GDXBrowserRenderer extends GDXContext implements Renderer {
     @Override
     public List<GraphicsMode> getSupportedGraphicsModes() {
         return List.of(GraphicsMode.MODE_2D, GraphicsMode.MODE_3D);
-    }
-
-    /**
-     * The {@code gdx-teavm} back-end doesn't support audio yet, so loading
-     * and playing audio does not rely on libGDX and instead uses the browser
-     * API directly via TeaVM.
-     */
-    private static class GDXBrowserMediaLoader extends GDXMediaLoader {
-
-        private TeaMediaLoader browserMedia;
-
-        public GDXBrowserMediaLoader(TeaMediaLoader browserMedia) {
-            super(browserMedia);
-            this.browserMedia = browserMedia;
-        }
-
-        @Override
-        public Audio loadAudio(ResourceFile file) {
-            return browserMedia.loadAudio(file);
-        }
-
-        @Override
-        public String loadText(ResourceFile file) {
-            return browserMedia.loadText(file);
-        }
-
-        @Override
-        public boolean containsResourceFile(ResourceFile file) {
-            return browserMedia.containsResourceFile(file);
-        }
-
-        @Override
-        public Properties loadApplicationData(String appName) {
-            return browserMedia.loadApplicationData(appName);
-        }
-
-        @Override
-        public void saveApplicationData(String appName, Properties data) {
-            browserMedia.saveApplicationData(appName, data);
-        }
     }
 }

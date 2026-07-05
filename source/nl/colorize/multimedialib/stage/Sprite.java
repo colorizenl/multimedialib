@@ -75,6 +75,17 @@ public class Sprite implements Spatial2D {
     }
 
     /**
+     * Creates a sprite that automatically registers all available animations
+     * from a sprite atlas as its graphics.
+     */
+    public Sprite(SpriteAtlas atlas) {
+        this();
+        for (String name : atlas.getAnimationNames()) {
+            addGraphics(name, atlas.getAnimation(name));
+        }
+    }
+
+    /**
      * Adds graphics to this sprite. If the sprite does not contain graphics
      * yet, this will automatically change the sprite's current graphics.
      * Otherwise, changing the sprite's graphics can be done later using the

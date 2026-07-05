@@ -12,8 +12,6 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.loader.G3dModelLoader;
 import com.badlogic.gdx.graphics.g3d.loader.ObjLoader;
@@ -28,12 +26,16 @@ import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.Mesh;
-import nl.colorize.util.Cache;
+import nl.colorize.util.Platform;
+import nl.colorize.util.PropertyUtils;
 import nl.colorize.util.ResourceFile;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+
+import static nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader.APPLICATION_DATA_FILE_NAME;
 
 /**
  * Loads media assets using the libGDX framework. Media is loaded using "pure"
@@ -47,20 +49,14 @@ import java.util.Properties;
  */
 public class GDXMediaLoader implements MediaLoader, Disposable {
 
-    private MediaLoader appDataLoader;
     private List<Disposable> loaded;
-    private Cache<FontFace, BitmapFont> fontCache;
     private GLTFLoader gltfLoader;
     private G3dModelLoader g3dLoader;
 
     private static final Texture.TextureFilter TEXTURE_FILTER = Texture.TextureFilter.Linear;
-    private static final int FONT_CACHE_SIZE = 100;
-    private static final int BITMAP_FONT_SCALE = 2;
 
-    public GDXMediaLoader(MediaLoader appDataLoader) {
-        this.appDataLoader = appDataLoader;
+    public GDXMediaLoader() {
         this.loaded = new ArrayList<>();
-        this.fontCache = Cache.from(this::generateBitmapFont, FONT_CACHE_SIZE);
         this.gltfLoader = new GLTFLoader();
         this.g3dLoader = new G3dModelLoader(new UBJsonReader(), new InternalFileHandleResolver());
     }
@@ -82,29 +78,7 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
 
     @Override
     public FontFace loadFont(ResourceFile file, String family, int size, ColorRGB color) {
-        FontFace font = new FontFace(file, family, size, color);
-        getBitmapFont(font);
-        return font;
-    }
-
-    protected BitmapFont getBitmapFont(FontFace font) {
-        return fontCache.get(font);
-    }
-
-    private BitmapFont generateBitmapFont(FontFace font) {
-        var config = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        config.size = font.size() * BITMAP_FONT_SCALE;
-        config.color = toColor(font.color());
-        config.minFilter = TEXTURE_FILTER;
-        config.magFilter = TEXTURE_FILTER;
-
-        FileHandle file = getFileHandle(font.origin());
-
-        FreeTypeFontGenerator fontGenerator = new FreeTypeFontGenerator(file);
-        BitmapFont bitmapFont = fontGenerator.generateFont(config);
-        bitmapFont.getData().setScale(1f / BITMAP_FONT_SCALE);
-        fontGenerator.dispose();
-        return bitmapFont;
+        return new FontFace(file, family, size, color);
     }
 
     @Override
@@ -134,16 +108,20 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
 
     @Override
     public Properties loadApplicationData(String appName) {
-        return appDataLoader.loadApplicationData(appName);
+        FileHandle dataFile = getApplicationDataFile(appName);
+        String contents = dataFile.exists() ? dataFile.readString("UTF-8") : "";
+        return PropertyUtils.loadProperties(contents);
     }
 
     @Override
     public void saveApplicationData(String appName, Properties data) {
-        appDataLoader.saveApplicationData(appName, data);
+        FileHandle dataFile = getApplicationDataFile(appName);
+        dataFile.writeString(PropertyUtils.serializeProperties(data), false, "UTF-8");
     }
 
-    protected FileHandle getFileHandle(ResourceFile file) {
-        return Gdx.files.internal(file.path());
+    private FileHandle getApplicationDataFile(String appName) {
+        File dataFile = Platform.getApplicationData(appName, APPLICATION_DATA_FILE_NAME);
+        return Gdx.files.absolute(dataFile.getAbsolutePath());
     }
 
     @Override
@@ -155,7 +133,10 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
     public void dispose() {
         loaded.forEach(Disposable::dispose);
         loaded.clear();
-        fontCache.invalidate();
+    }
+
+    protected static FileHandle getFileHandle(ResourceFile file) {
+        return Gdx.files.internal(file.path());
     }
 
     protected static Color toColor(ColorRGB color) {

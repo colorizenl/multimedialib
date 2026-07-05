@@ -21,11 +21,10 @@ import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.RendererException;
-import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
 import nl.colorize.multimedialib.renderer.java2d.StandardNetwork;
+import nl.colorize.multimedialib.scene.Actor;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneManager;
-import nl.colorize.multimedialib.scene.Actor;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.TextUtils;
@@ -168,7 +167,7 @@ public class GDXDesktopRenderer extends GDXContext implements Renderer {
     @Override
     public void start(RenderConfig config, Scene initialScene) {
         this.config = config;
-        this.sceneManager = new SceneManager(this, initialScene);
+        this.sceneManager = new SceneManager(config, initialScene);
 
         try {
             Lwjgl3ApplicationConfiguration gdxConfig = configure();
@@ -213,8 +212,8 @@ public class GDXDesktopRenderer extends GDXContext implements Renderer {
     @Override
     protected void initContext() {
         input = new GDXInput(config);
-        mediaLoader = new GDXMediaLoader(new StandardMediaLoader());
-        graphics = new GDXGraphics(config.getGraphicsMode(), config.getCanvas(), mediaLoader);
+        mediaLoader = new GDXMediaLoader();
+        graphics = new GDXGraphics(config.getGraphicsMode(), config.getCanvas());
         network = new StandardNetwork();
     }
 

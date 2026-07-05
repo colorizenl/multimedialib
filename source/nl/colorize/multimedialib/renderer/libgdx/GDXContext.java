@@ -14,6 +14,7 @@ import lombok.Getter;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.InputDevice;
+import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.scene.SceneContext;
@@ -34,7 +35,7 @@ public abstract class GDXContext implements ApplicationListener, SceneContext {
 
     protected GDXGraphics graphics;
     protected InputDevice input;
-    protected GDXMediaLoader mediaLoader;
+    protected MediaLoader mediaLoader;
     protected Network network;
 
     @Override
@@ -72,7 +73,7 @@ public abstract class GDXContext implements ApplicationListener, SceneContext {
 
     @Override
     public final void render() {
-        sceneManager.requestFrameUpdate();
+        sceneManager.requestFrameUpdate(this);
 
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);

@@ -27,14 +27,14 @@ public class StandardNetworkTest {
         StandardNetwork internetAccess = new StandardNetwork();
         EventQueue<Response> eventQueue = internetAccess.get("https://clrz.nl");
 
-        Thread.sleep(3000);
+        Thread.sleep(5000);
 
         HeadlessRenderer renderer = new HeadlessRenderer();
         renderer.attach(eventQueue, response -> responses.add(response.getBody()), errors::add);
         renderer.doFrame();
 
         assertEquals(1, responses.size());
-        assertTrue(responses.get(0).contains("<title>Colorize"));
+        assertTrue(responses.getFirst().contains("<title>Colorize"));
         assertEquals(0, errors.size());
     }
 }

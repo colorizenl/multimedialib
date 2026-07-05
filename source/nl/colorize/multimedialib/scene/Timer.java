@@ -52,6 +52,7 @@ public class Timer implements Actor {
         return duration - position;
     }
 
+    @Override
     public boolean isCompleted() {
         return position >= duration;
     }
