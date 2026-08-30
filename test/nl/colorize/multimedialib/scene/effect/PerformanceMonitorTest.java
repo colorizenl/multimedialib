@@ -20,8 +20,9 @@ class PerformanceMonitorTest {
         HeadlessRenderer renderer = new HeadlessRenderer();
         renderer.start(new MockScene());
 
-        PerformanceMonitor performanceMonitor = new PerformanceMonitor(renderer, true);
+        PerformanceMonitor performanceMonitor = new PerformanceMonitor(renderer.getFrameStats());
         renderer.attach(performanceMonitor);
+        renderer.getStage().getRoot().addChild(performanceMonitor.getGraphics());
 
         for (int i = 0; i < 20; i++) {
             FrameStats frameStats = renderer.getFrameStats();

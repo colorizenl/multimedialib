@@ -21,7 +21,9 @@ import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.util.LogHelper;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -51,6 +53,8 @@ public final class Stage {
     private Point3D cameraFocus;
     private ColorRGB ambientLightColor;
 
+    private final Set<Audio> audioPlaylist;
+
     private static final String ROOT_CONTAINER_2D = "$$root";
     private static final String ROOT_CONTAINER_3D = "$$root3D";
     private static final ColorRGB DEFAULT_AMBIENT_LIGHT_COLOR = new ColorRGB(220, 220, 220);
@@ -69,6 +73,8 @@ public final class Stage {
         this.cameraPosition = new Point3D(0, 20, 10);
         this.cameraFocus = Point3D.ORIGIN;
         this.ambientLightColor = DEFAULT_AMBIENT_LIGHT_COLOR;
+
+        this.audioPlaylist = new LinkedHashSet<>();
     }
 
     /**
@@ -134,6 +140,9 @@ public final class Stage {
     public void clear() {
         root.getChildren().clear();
         root3D.getChildren().clear();
+
+        audioPlaylist.forEach(Audio::stop);
+        audioPlaylist.clear();
     }
 
     /**

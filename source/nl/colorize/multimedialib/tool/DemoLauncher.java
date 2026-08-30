@@ -11,8 +11,11 @@ import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.renderer.WindowOptions;
+import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.util.cli.Arg;
 import nl.colorize.util.cli.CommandLineArgumentParser;
+
+import java.io.File;
 
 import static nl.colorize.multimedialib.renderer.GraphicsMode.MODE_2D;
 import static nl.colorize.multimedialib.renderer.GraphicsMode.MODE_3D;
@@ -28,11 +31,11 @@ import static nl.colorize.multimedialib.tool.Demo2D.DEFAULT_CANVAS_WIDTH;
  */
 public class DemoLauncher {
 
-    @Arg(name = "--renderer", usage = "One of 'java2d', 'javafx', 'gdx', 'skija'.")
+    @Arg(name = "--renderer", usage = "One of 'java2d', 'gdx', 'regression'.")
     protected String rendererName;
 
-    @Arg(usage = "Either '2d' or '3d'.")
-    protected String graphics;
+    @Arg(name = "--demo", usage = "One of '2d', '3d', 'form'.")
+    protected String demoMode;
 
     @Arg(defaultValue = "60", usage = "Framerate, default is 60 fps.")
     protected int framerate;
@@ -43,6 +46,9 @@ public class DemoLauncher {
     @Arg(name = "--zoom", usage = "Uses a fixed canvas size to display graphics.")
     protected boolean canvasZoom;
 
+    @Arg(name = "--screenshot", required = false, usage = "Saves a screenshot then exits.")
+    protected File screenshotFile;
+
     public static void main(String[] argv) {
         CommandLineArgumentParser argParser = new CommandLineArgumentParser(DemoLauncher.class);
         DemoLauncher launcher = argParser.parse(argv, DemoLauncher.class);
@@ -50,18 +56,23 @@ public class DemoLauncher {
     }
 
     private void start() {
-        GraphicsMode graphicsMode = graphics.equals("3d") ? MODE_3D : MODE_2D;
+        GraphicsMode graphicsMode = demoMode.equals("3d") ? MODE_3D : MODE_2D;
         ScaleStrategy scaleStrategy = canvasZoom ? ScaleStrategy.scale() : ScaleStrategy.flexible();
         Canvas canvas = new Canvas(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT, scaleStrategy);
 
-        RenderConfig config = RenderConfig.forDesktop(rendererName, graphicsMode, canvas)
+        RenderConfig.forDesktop(rendererName, graphicsMode, canvas)
             .withFramerate(framerate)
-            .withWindowOptions(new WindowOptions("MultimediaLib - Demo", fullscreen));
+            .withWindowOptions(new WindowOptions("MultimediaLib - Demo", fullscreen))
+            .start(prepareDemo());
+    }
 
-        switch (graphics) {
-            case "2d" -> config.start(new Demo2D());
-            case "3d" -> config.start(new Demo3D());
+    private Scene prepareDemo() {
+        return switch (demoMode) {
+            case "2d" -> new Demo2D();
+            case "3d" -> new Demo3D();
+            case "form" -> new FormDemo();
+            case "regression" -> new RegressionDemo(screenshotFile);
             default -> throw new UnsupportedOperationException();
-        }
+        };
     }
 }

@@ -11,12 +11,11 @@ import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.SegmentedLine;
 import nl.colorize.multimedialib.renderer.FrameStats;
-import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.Actor;
+import nl.colorize.multimedialib.scene.GraphicsProvider;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
-import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Spatial2D;
 import nl.colorize.multimedialib.stage.Text;
@@ -27,6 +26,7 @@ import java.util.List;
 
 import static nl.colorize.multimedialib.stage.ColorRGB.BLACK;
 import static nl.colorize.multimedialib.stage.ColorRGB.WHITE;
+import static nl.colorize.multimedialib.stage.FontFace.DEFAULT_FONT;
 
 /**
  * Depicts various performance statistics, both in terms of overall
@@ -38,36 +38,37 @@ import static nl.colorize.multimedialib.stage.ColorRGB.WHITE;
  * This widget is included as part of the library so that it can be used as a
  * debugging tool in applications.
  */
-public class PerformanceMonitor implements Actor {
+public class PerformanceMonitor implements Actor, GraphicsProvider {
 
-    private SceneContext context;
+    private FrameStats stats;
+    private boolean detailed;
+
     private Container container;
     private Text framerate;
     private Container frameDataContainer;
-    private boolean detailed;
 
     private static final ColorRGB FRAME_COLOR = ColorRGB.parseHex("#e45d61");
     private static final ColorRGB UPDATE_COLOR = ColorRGB.parseHex("#DC9498");
     private static final ColorRGB RENDER_COLOR = ColorRGB.parseHex("#DCBEC0");
     private static final ColorRGB LINE_COLOR = ColorRGB.parseHex("#adadad");
 
-    public PerformanceMonitor(SceneContext context, boolean detailed) {
-        this.context = context;
+    public PerformanceMonitor(FrameStats stats, boolean detailed) {
+        this.stats = stats;
         this.detailed = detailed;
-        container = new Container();
-        container.addChild(new Primitive(new Rect(0, 0, 300, 100), BLACK, 50));
-
-        attachGraphics();
+        initGraphics();
     }
 
-    private void attachGraphics() {
-        context.getStage().getRoot().addChild(container);
+    public PerformanceMonitor(FrameStats stats) {
+        this(stats, true);
+    }
 
+    private void initGraphics() {
+        container = new Container();
+        container.addChild(new Primitive(new Rect(0, 0, 300, 100), BLACK, 50));
         frameDataContainer = new Container();
         container.addChild(frameDataContainer);
 
-        FontFace font = context.getMediaLoader().loadDefaultFont(12, WHITE);
-        framerate = new Text("", font.derive(30), Align.RIGHT);
+        framerate = new Text("", DEFAULT_FONT.derive(30), Align.RIGHT);
         framerate.getTransform().setPosition(290, 30);
         container.addChild(framerate);
 
@@ -75,7 +76,7 @@ public class PerformanceMonitor implements Actor {
             container.addChild(new Primitive(new Line(0, i * 20, 300, i * 20), LINE_COLOR));
 
             if (i > 0) {
-                Text label = new Text((i * 10) + "ms", font.derive(10).derive(LINE_COLOR));
+                Text label = new Text((i * 10) + "ms", DEFAULT_FONT.derive(10).derive(LINE_COLOR));
                 label.getTransform().setPosition(5, (5 - i) * 20 + 12);
                 container.addChild(label);
             }
@@ -89,10 +90,8 @@ public class PerformanceMonitor implements Actor {
 
     @Override
     public void update(double deltaTime) {
-        FrameStats stats = context.getFrameStats();
-
         if (isActive() && stats.getBufferSize() >= 10) {
-            container.setPosition(20, context.getCanvas().getHeight() - 120);
+            container.getTransform().setPosition(20, 20);
             framerate.setText(TextUtils.numberFormat(stats.getAverageFramerate(), 1));
 
             Iterable<Long> frameTimes = stats.getFrameTimes(FrameStats.PHASE_FRAME_TIME);
@@ -129,5 +128,10 @@ public class PerformanceMonitor implements Actor {
 
     public boolean isActive() {
         return container.getTransform().isVisible();
+    }
+
+    @Override
+    public Spatial2D getGraphics() {
+        return container;
     }
 }

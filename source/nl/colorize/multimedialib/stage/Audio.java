@@ -6,6 +6,8 @@
 
 package nl.colorize.multimedialib.stage;
 
+import nl.colorize.util.Subject;
+
 /**
  * Describes an audio clip that has been loaded by the renderer. There is no
  * difference between the audio data and audio playback, an instance of this
@@ -17,10 +19,20 @@ public interface Audio {
     /**
      * Plays this audio clip once. If this method is called while the audio
      * clip is already playing, it will be replayed from the beginning.
-     * Calling this method is equivelant to calling {@code play(false)}.
+     * Calling this method is equivalent to calling {@code play(false)}.
      */
     default void play() {
         play(false);
+    }
+
+    /**
+     * Plays this audio clip, then keeps looping it indefinitely until it is
+     * stopped. If this method is called while the audio clip is already
+     * playing, it will be replayed from the beginning. Calling this method
+     * is equivalent to calling {@code play(true)}.
+     */
+    default void loop() {
+        play(true);
     }
 
     /**
@@ -60,6 +72,23 @@ public interface Audio {
      * and during playback.
      */
     public void changePitch(double pitch);
+
+    /**
+     * Allows subscribers to be notified whenever this audio clip starts
+     * playing. Note the audio queue is shared between all {@link Audio}
+     * instances that are owned by this renderer. Use {@link #monitor()}
+     * if you want to only track playback for this particular {@link Audio}
+     * instance.
+     */
+    public Subject<Audio> getAudioQueue();
+
+    /**
+     * Allows subscribers to be notified whenever this audio clip starts
+     * playing.
+     */
+    default Subject<Audio> monitor() {
+        return getAudioQueue().filter(audio -> this == audio);
+    }
 
     /**
      * Returns a new {@link Audio} instance that is based on the same audio

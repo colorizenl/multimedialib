@@ -205,8 +205,8 @@ public class TeaInput implements InputDevice {
             pointers.put(identifier, touchPointer);
         }
 
-        double pageX = touch.getClientX();
-        double pageY = touch.getClientY();
+        double pageX = touch.getPageX();
+        double pageY = touch.getPageY();
         touchPointer.setPosition(getPointerCanvasPosition(pageX, pageY));
 
         switch (eventType) {

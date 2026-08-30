@@ -7,7 +7,7 @@
 package nl.colorize.multimedialib.tool;
 
 import com.github.xpenatan.gdx.teavm.backends.shared.config.AssetFileHandle;
-import com.github.xpenatan.gdx.teavm.backends.shared.config.compiler.TeaCompiler;
+import com.github.xpenatan.gdx.teavm.backends.shared.config.builder.TeaBuilder;
 import com.github.xpenatan.gdx.teavm.backends.web.config.backend.WebBackend;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
@@ -40,11 +40,13 @@ import java.io.PrintWriter;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -238,7 +240,7 @@ public class TeaVMTranspilerTool {
     private void copyResources() throws IOException {
         File tempDir = FileUtils.createTempDir();
 
-        new TeaCompiler(new WebBackend())
+        new TeaBuilder(new WebBackend())
             .addAssets(prepareAssetsDir())
             .setOptimizationLevel(TeaVMOptimizationLevel.SIMPLE)
             .setMainClass(mainClassName)
@@ -253,24 +255,25 @@ public class TeaVMTranspilerTool {
 
         replaceLoadingImage(assetsDir);
 
-        List<File> textResourceFiles = FileUtils.walkFiles(assetsDir, this::isTextResourceFile);
+        List<File> textResourceFiles = findTextResourceFiles();
         List<File> jsLibraries = copyJavaScriptLibraries(scriptsDir);
 
         rewriteHTML(textResourceFiles, jsLibraries);
+        generatePreloadAssetFile();
     }
 
     /**
      * The {@code gdx-teavm} library only allows assets directories, meaning
-     * it's not possible to load assets from the classpath. Therefore, we first
-     * copy both the application resource files and the classpath resource
-     * files to a temporary directory, which we then use as the asset
-     * directory.
+     * it's not possible to load assets from the classpath. Therefore, we
+     * first copy both the application resource files and the classpath
+     * resource files to a temporary directory, which we then use as the
+     * asset directory.
      */
     private AssetFileHandle prepareAssetsDir() throws IOException {
         File tempDir = FileUtils.createTempDir();
         File tempAssetsDir = new File(tempDir, "assets");
 
-        FileUtils.copyDirectory(resourceDir, tempAssetsDir);
+        copyResourceDir(tempAssetsDir);
 
         for (String path : FRAMEWORK_RESOURCE_FILES) {
             ResourceFile frameworkResourceFile = new ResourceFile(path);
@@ -284,6 +287,35 @@ public class TeaVMTranspilerTool {
         }
 
         return new AssetFileHandle(tempAssetsDir.getAbsolutePath());
+    }
+
+    /**
+     * Copies the application's resource directory to the (temporary) assets
+     * directory. Note this <em>only</em> covers the application resource
+     * files, <em>not</em> the framework resource files.
+     * <p>
+     * Text-based resource files are embedded into the HTML. Therefore, this
+     * method will not copy those files.
+     */
+    private void copyResourceDir(File tempAssetsDir) throws IOException {
+        try (Stream<Path> stream = Files.walk(resourceDir.toPath())) {
+            for (Path childPath : stream.toList()) {
+                if (!isTextResourceFile(childPath.toFile())) {
+                    Path relativePath = resourceDir.toPath().relativize(childPath);
+                    Path targetPath = tempAssetsDir.toPath().resolve(relativePath);
+                    Files.copy(childPath, targetPath, StandardCopyOption.COPY_ATTRIBUTES);
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns a list of all text-based application resource files, which
+     * should be embedded into the HTML. Note this only returns application
+     * resource files, not framework resource files.
+     */
+    private List<File> findTextResourceFiles() throws IOException {
+        return FileUtils.walkFiles(resourceDir, this::isTextResourceFile);
     }
 
     private List<File> copyJavaScriptLibraries(File scriptsDir) {
@@ -390,16 +422,41 @@ public class TeaVMTranspilerTool {
     }
 
     private String generateResourceFileManifest() throws IOException {
+        List<String> textEntries = findTextResourceFiles().stream()
+            .map(file -> FileUtils.getRelativePath(file, resourceDir))
+            .toList();
+
         File assetsDir = new File(outputDir, "assets");
 
-        return FileUtils.walkFiles(assetsDir, f -> true).stream()
-            .filter(file -> !file.getName().endsWith(".js"))
-            .filter(file -> !file.getName().endsWith(".DS_Store"))
+        List<String> binaryEntries = FileUtils.walkFiles(assetsDir, this::isBinaryAssetFile).stream()
             .map(file -> FileUtils.getRelativePath(file, assetsDir))
-            .filter(file -> !MANIFEST_EXCLUDES.contains(file))
+            .toList();
+
+        return Stream.concat(binaryEntries.stream(), textEntries.stream())
             .distinct()
             .sorted()
+            .filter(file -> !MANIFEST_EXCLUDES.contains(file))
+            .filter(file -> !file.endsWith(".js"))
             .collect(Collectors.joining("\n"));
+    }
+
+    private boolean isBinaryAssetFile(File file) {
+        return !file.isDirectory() &&
+            !file.getName().endsWith(".js") &&
+            !file.getName().equals(".DS_Store");
+    }
+
+    private void generatePreloadAssetFile() throws IOException {
+        File assetsDir = new File(outputDir, "assets");
+
+        String contents = FileUtils.walkFiles(assetsDir, this::isBinaryAssetFile).stream()
+            .filter(file -> !isTextResourceFile(file))
+            .map(f -> "i:b:" + FileUtils.getRelativePath(f, assetsDir) + ":" + f.length() + ":1")
+            .sorted()
+            .collect(Collectors.joining("\n"));
+
+        File preloadFile = new File(outputDir, "assets/preload-assets.txt");
+        Files.writeString(preloadFile.toPath(), contents, UTF_8);
     }
 
     private String getScriptFileName() {

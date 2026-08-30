@@ -8,6 +8,7 @@ package nl.colorize.multimedialib.renderer.headless;
 
 import lombok.Getter;
 import nl.colorize.multimedialib.stage.Audio;
+import nl.colorize.util.Subject;
 
 /**
  * A no-op audio implementation of {@link Audio} for (headless) renderers that
@@ -16,27 +17,31 @@ import nl.colorize.multimedialib.stage.Audio;
 @Getter
 public class NullAudio implements Audio {
 
+    private String name;
+    private boolean playing;
     private double duration;
     private double volume;
     private double pitch;
+    private Subject<Audio> audioQueue;
 
-    public NullAudio() {
+    public NullAudio(String name, Subject<Audio> audioQueue) {
+        this.name = name;
+        this.playing = false;
         this.duration = 0.0;
         this.volume = 100.0;
         this.pitch = 100.0;
+        this.audioQueue = audioQueue;
     }
 
     @Override
     public void play(boolean loop) {
+        playing = true;
+        audioQueue.next(this);
     }
 
     @Override
     public void stop() {
-    }
-
-    @Override
-    public boolean isPlaying() {
-        return false;
+        playing = false;
     }
 
     @Override
@@ -51,6 +56,11 @@ public class NullAudio implements Audio {
 
     @Override
     public Audio copy() {
-        return new NullAudio();
+        return new NullAudio(name, audioQueue);
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 }

@@ -37,7 +37,6 @@ public class ArchitectureTest {
             .filter(c -> !c.startsWith("nl.colorize.multimedialib.tool."))
             .filter(c -> !c.startsWith("nl.colorize.multimedialib.renderer.java2d."))
             .filter(c -> !c.startsWith("nl.colorize.multimedialib.renderer.libgdx."))
-            .filter(c -> !c.startsWith("nl.colorize.multimedialib.renderer.skija."))
             .filter(c -> !c.endsWith(".RenderConfig"))
             .distinct()
             .sorted()
@@ -53,7 +52,10 @@ public class ArchitectureTest {
             .filter(m -> m.getReturnType().getName().startsWith("nl.colorize.util.Subject"))
             .map(m -> m.getOwner().getName())
             .filter(name -> !name.endsWith(".SceneContext"))
+            .filter(name -> !name.endsWith("MediaLoader"))
+            .filter(name -> !name.endsWith("Audio"))
             .filter(name -> !name.contains(".teavm."))
+            .filter(name -> !name.contains(".ui."))
             .distinct()
             .sorted()
             .collect(Collectors.joining("\n"));

@@ -8,6 +8,7 @@ package nl.colorize.multimedialib.tool;
 
 import com.google.common.annotations.VisibleForTesting;
 import nl.colorize.util.FileUtils;
+import nl.colorize.util.swing.Utils2D;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -20,6 +21,7 @@ import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -44,11 +46,6 @@ public class TeaVMTranspilerToolTest {
             ncmt_TeaVMTranspilerToolTest$MockApp_main = $args => {
                 let $result;
                 ncmt_TeaVMTranspilerToolTest$MockApp_$callClinit();
-                $result = ju_ArrayList__init_1();
-                $result.$add($rt_s(2));
-                $result.$add($rt_s(3));
-                $result.$clear();
-            },
             """;
 
         assertEquals(1, scriptFiles.size());
@@ -94,7 +91,7 @@ public class TeaVMTranspilerToolTest {
                     <title>test</title>
                     <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no" />
                     <link rel="shortcut icon" type="image/x-icon" href="assets/browser/assets/favicon.png" />
-                    <link rel="apple-touch-icon" href="assets/browser/assetsapple-favicon.png" />
+                    <link rel="apple-touch-icon" href="assets/browser/assets/apple-favicon.png" />
                     <link rel="stylesheet" type="text/css" href="assets/browser/assets/multimedialib.css" />
             
                     <meta name="build-id" content="1234" />
@@ -178,10 +175,79 @@ public class TeaVMTranspilerToolTest {
             net/mgsx/gltf/shaders/pbr/shadows.glsl
             net/mgsx/gltf/shaders/skybox.fs.glsl
             net/mgsx/gltf/shaders/skybox.vs.glsl
-            preload.txt
             startup-logo.png""";
 
         assertEquals(expected, manifest);
+    }
+
+    @Test
+    void generateGdxPreloadFile(@TempDir File outputDir) throws IOException {
+        TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
+        tool.projectName = "test";
+        tool.resourceDir = RESOURCES_DIR;
+        tool.outputDir = outputDir;
+        tool.mainClassName = MockApp.class.getName();
+        tool.buildId = "1234";
+        tool.run();
+
+        File preloadFile = new File(outputDir, "assets/preload-assets.txt");
+
+        String expected = """
+            i:b:OpenSans-Regular.ttf:217360:1
+            i:b:browser/assets/apple-favicon.png:11392:1
+            i:b:browser/assets/favicon.png:9307:1
+            i:b:browser/assets/loading.gif:3208:1
+            i:b:browser/assets/multimedialib.css:1424:1
+            i:b:browser/index.html:1230:1
+            i:b:colorize-emblem-180.png:11392:1
+            i:b:colorize-emblem-64.png:2661:1
+            i:b:colorize-icon-256.png:20839:1
+            i:b:colorize-icon-32.png:1300:1
+            i:b:colorize-icon.icns:29644:1
+            i:b:colorize-logo-180.png:60743:1
+            i:b:com/badlogic/gdx/utils/lsans-15.png:10270:1
+            i:b:demo/colorize-logo.gltf:36365:1
+            i:b:demo/crate.vox.mtl:133:1
+            i:b:demo/crate.vox.obj:4602:1
+            i:b:demo/crate.vox.png:1273:1
+            i:b:demo/demo-sound.ogg:13600:1
+            i:b:demo/demo.png:42861:1
+            i:b:effects/particle-circle.png:819:1
+            i:b:effects/particle-diamond.png:416:1
+            i:b:net/mgsx/gltf/shaders/brdfLUT.png:16623:1
+            i:b:startup-logo.png:241:1
+            """;
+
+        assertTrue(preloadFile.exists());
+        assertEquals(expected.trim(), Files.readString(preloadFile.toPath(), UTF_8).trim());
+    }
+
+    @Test
+    void noDoubleCopyTextFiles(@TempDir File resourcesDir, @TempDir File outputDir) throws IOException {
+        Utils2D.savePNG(Utils2D.createTestImage(100, 100), new File(resourcesDir, "x-a.png"));
+        Files.writeString(resourcesDir.toPath().resolve("x-b.txt"), "test", UTF_8);
+
+        TeaVMTranspilerTool tool = new TeaVMTranspilerTool();
+        tool.projectName = "test";
+        tool.resourceDir = resourcesDir;
+        tool.outputDir = outputDir;
+        tool.mainClassName = MockApp.class.getName();
+        tool.buildId = "1234";
+        tool.run();
+
+        File htmlFile = new File(outputDir, "index.html");
+        String html = Files.readString(htmlFile.toPath(), UTF_8);
+        String manifest = html.split("<div id=\"resource-file-manifest\">")[1].split("</div>")[0];
+
+        assertTrue(manifest.contains("x-a.png"));
+        assertTrue(manifest.contains("x-b.txt"));
+        assertTrue(manifest.contains("browser/assets/multimedialib.css"));
+        assertTrue(manifest.contains("net/mgsx/gltf/shaders/default.fs.glsl"));
+
+        assertTrue(new File(outputDir, "assets/x-a.png").exists());
+        assertFalse(new File(outputDir, "assets/x-b.txt").exists());
+        assertTrue(new File(outputDir, "assets/browser/assets/multimedialib.css").exists());
+        assertTrue(new File(outputDir, "assets/net/mgsx/gltf/shaders/default.fs.glsl").exists());
     }
 
     @Test

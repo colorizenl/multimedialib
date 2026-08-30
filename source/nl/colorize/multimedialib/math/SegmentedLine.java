@@ -103,4 +103,23 @@ public record SegmentedLine(List<Point2D> points) implements Shape {
     public String toString() {
         return Joiner.on(" -> ").join(points);
     }
+
+    /**
+     * Factory method that creates a {@link SegmentedLine} that follows the
+     * outline of the specified polygon.
+     */
+    public static SegmentedLine fromOutline(Polygon polygon) {
+        List<Point2D> points = new ArrayList<>();
+        points.addAll(polygon.points());
+        points.add(polygon.points().getFirst());
+        return new SegmentedLine(points);
+    }
+
+    /**
+     * Factory method that creates a {@link SegmentedLine} that follows the
+     * outline of the specified rectangle.
+     */
+    public static SegmentedLine fromOutline(Rect rect) {
+        return fromOutline(rect.toPolygon());
+    }
 }

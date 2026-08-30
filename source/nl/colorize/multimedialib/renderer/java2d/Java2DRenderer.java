@@ -15,10 +15,10 @@ import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.renderer.Renderer;
 import nl.colorize.multimedialib.renderer.WindowOptions;
+import nl.colorize.multimedialib.scene.Actor;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.SceneManager;
-import nl.colorize.multimedialib.scene.Actor;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.ResourceFile;
@@ -93,9 +93,7 @@ public class Java2DRenderer implements Renderer, SceneContext, ApplicationMenuLi
         mediaLoader = new StandardMediaLoader();
         graphicsContext = new Java2DGraphicsContext(config.getCanvas());
         network = new StandardNetwork();
-        sceneManager = new SceneManager(config);
-
-        changeScene(initialScene);
+        sceneManager = new SceneManager(config, initialScene);
 
         Thread renderingThread = new Thread(this::runAnimationLoop, "MultimediaLib-Java2D-Renderer");
         renderingThread.start();
@@ -273,20 +271,25 @@ public class Java2DRenderer implements Renderer, SceneContext, ApplicationMenuLi
         if (input != null && input.isKeyReleased(KeyCode.F12)) {
             File screenshotFile = new File(Platform.getUserDesktopDir(),
                 "screenshot-" + System.currentTimeMillis() + ".png");
-            BufferedImage image = new BufferedImage(window.getWidth(), window.getHeight(),
-                BufferedImage.TYPE_INT_ARGB);
-            Java2DGraphicsContext screenshotContext = new Java2DGraphicsContext(config.getCanvas());
-            Graphics2D g2 = Utils2D.createGraphics(image, false, false);
-            screenshotContext.bind(g2);
-            getStage().visit(screenshotContext);
-            screenshotContext.dispose();
+            captureScreenshot(screenshotFile);
+        }
+    }
 
-            try {
-                Utils2D.savePNG(image, screenshotFile);
-                LOGGER.info("Saved screenshot to " + screenshotFile.getAbsolutePath());
-            } catch (IOException e) {
-                LOGGER.log(Level.WARNING, "Error while taking screenshot", e);
-            }
+    @Override
+    public void captureScreenshot(File pngFile) {
+        BufferedImage image = new BufferedImage(window.getWidth(), window.getHeight(),
+            BufferedImage.TYPE_INT_ARGB);
+        Java2DGraphicsContext screenshotContext = new Java2DGraphicsContext(config.getCanvas());
+        Graphics2D g2 = Utils2D.createGraphics(image, false, false);
+        screenshotContext.bind(g2);
+        getStage().visit(screenshotContext);
+        screenshotContext.dispose();
+
+        try {
+            Utils2D.savePNG(image, pngFile);
+            LOGGER.info("Saved screenshot to " + pngFile.getAbsolutePath());
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Error while taking screenshot", e);
         }
     }
 

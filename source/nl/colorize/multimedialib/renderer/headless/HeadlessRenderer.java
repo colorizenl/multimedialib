@@ -30,6 +30,7 @@ import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.Development;
 import nl.colorize.util.EventQueue;
 
+import java.io.File;
 import java.util.List;
 
 import static nl.colorize.multimedialib.stage.ColorRGB.BLACK;
@@ -59,6 +60,7 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
     private Point2D pointer;
     private boolean pointerPressed;
     private boolean pointerReleased;
+    private EventQueue<String> textInputQueue;
 
     public static final FontFace DEFAULT_FONT = new FontFace(null, "sans-serif", 10, BLACK);
 
@@ -68,6 +70,7 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
         this.pointer = new Point2D(0f, 0f);
         this.pointerPressed = false;
         this.pointerReleased = false;
+        this.textInputQueue = new EventQueue<>();
 
         // The headless renderer doesn't need to be started explicitly
         // and can be used immediately after creation.
@@ -100,6 +103,11 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
     @Override
     public List<GraphicsMode> getSupportedGraphicsModes() {
         return List.of(GraphicsMode.HEADLESS);
+    }
+
+    @Override
+    public void captureScreenshot(File pngFile) {
+        throw new UnsupportedOperationException();
     }
 
     @Deprecated
@@ -169,7 +177,7 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
 
     @Override
     public EventQueue<String> requestTextInput(String label, String initialValue) {
-        return new EventQueue<>();
+        return textInputQueue;
     }
 
     @Override

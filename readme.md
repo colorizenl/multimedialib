@@ -37,15 +37,15 @@ to the dependencies section in `pom.xml`:
 <dependency>
     <groupId>nl.colorize</groupId>
     <artifactId>multimedialib</artifactId>
-    <version>2026.4</version>
-</dependency>  
+    <version>2026.5</version>
+</dependency>
 ```
     
 The library can also be used in Gradle projects:
 
 ```groovy
 dependencies {
-    implementation "nl.colorize:multimedialib:2026.4"
+    implementation "nl.colorize:multimedialib:2026.5"
 }
 ```
     
@@ -63,25 +63,20 @@ The following renderer implementations are available:
 |--------------------------------------------------------------|----------|--------------------------------|
 | Java2D renderer                                              | 2D       | Windows, Mac, Linux            |
 | [libGDX](https://libgdx.badlogicgames.com) renderer          | 2D + 3D  | Windows, Mac, Android, Browser |
-| [Skija](https://github.com/HumbleUI/Skija) renderer *(Beta)* | 2D       | Windows, Mac                   |
 | HTML canvas renderer                                         | 2D       | Browser, iOS, Android          |
 | Headless renderer                                            | Headless | Testing/simulation             |
 
-The current selection of renderers can be divided into different categories:
+The current selection of renderers can be divided into two main categories:
 
 - Basic renderers that focus on portability, such as the Java2D renderer for desktop platforms
   and the HTML canvas renderer for browser-based applications.
 - Hardware-accelerated renderers, which have superior graphics quality and performance, with the
   libGDX renderer supporting all platforms.
-- The Skija renderer is experimental and mainly exists to have a desktop renderer that has
-  [Direct3D](https://en.wikipedia.org/wiki/Direct3D) and
-  [Metal](https://en.wikipedia.org/wiki/Metal_(API)) as its underlying graphics API, instead
-  of relying on [OpenGL](https://en.wikipedia.org/wiki/OpenGL).
 
 Older versions of MultimediaLib used to support additional renderers, such as
-[JavaFX](https://openjfx.io), [PixiJS](https://www.pixijs.com), and [three.js](https://threejs.org).
-However, with the current selection of renderers, these alternative implementations are no longer
-necessary.
+[JavaFX](https://openjfx.io), [PixiJS](https://www.pixijs.com), [three.js](https://threejs.org),
+and [Skija](https://github.com/HumbleUI/Skija). However, with the current selection of renderers,
+these alternative implementations are no longer necessary.
 
 When using a browser-based renderer, the application needs to be transpiled to JavaScript
 using via [TeaVM](https://teavm.org) in order for it to run. MultimediaLib comes with a
@@ -133,19 +128,24 @@ used as an example when using the framework to create applications. The demo app
 also be used for verification purposes when testing the framework on new platforms. Two demo
 applications are included: one for 2D graphics and one for 3D graphics. 
 
-To run the demo for desktop platforms, create a normal build of the library using
-`gradle assemble`, which builds both the desktop and browser versions.
+On desktop platforms, you can launch the demo application using `gradle launchDemoApplication`.
+Alternatively, you can run the class `nl.colorize.multimedialib.tool.DemoLauncher`.
+Both versions support the following command line arguments:
 
-To start the desktop version of the demo application, run the class
-`nl.colorize.multimedialib.tool.DemoLauncher`. This class supports the following command line 
-parameters:
+| Name           | Required | Description                                          |
+|----------------|----------|------------------------------------------------------|
+| `--renderer`   | yes      | One of 'java2d', 'javafx', 'gdx'.                    |
+| `--demo`       | yes      | One of '2d', '3d', 'form', 'regression'.             |
+| `--framerate`  | no       | Demo framerate, default is 60 fps.                   |
+| `--canvas`     | no       | Uses a fixed canvas size to display graphics.        |
+| `--screenshot` | no       | Saves a screenshot to the specifie file, then exits. |
 
-| Name                | Required | Description                                   |
-|---------------------|----------|-----------------------------------------------|
-| `--renderer`        | yes      | One of 'java2d', 'javafx', 'gdx', 'skija'.    |
-| `--graphics`        | yes      | Either '2d' or '3d'.                          |
-| `--framerate`       | no       | Demo framerate, default is 60 fps.            |
-| `--canvas`          | no       | Uses a fixed canvas size to display graphics. |
+If you are running the demo launcher via Gradle, you can provide these command line arguments
+by adding e.g. `--args='--renderer java2d --demo 2d'` to your Gradle command. 
+
+For the browser version, run `gradle transpileDemoApplication`, serve the results using 
+`jwebserver -d build/browserdemo -p 7788` and open the resulting application in a browser.
+You can change the launcher options using the URL query string, e.g. `?renderer=gdx&demo=2d`.
 
 Transpiling applications to HTML/JavaScript
 -------------------------------------------
@@ -248,6 +248,14 @@ The following Gradle build tasks are available:
 - `gradle dependencyUpdates` checks for and reports on library updates
 - `gradle publishToMavenCentral` publishes the library to Maven Central.
   Requires [credentials](https://vanniktech.github.io/gradle-maven-publish-plugin/central/#secrets).
+
+### Visual renderer regression test
+
+In addition to the normal Java unit tests, the codebase also includes a visual regression test
+that is performed for every renderer. You can run this test by using the shell script
+`./_development/renderer-regression-test.sh`. However, you might not have all required environment
+dependencies available locally. The alternative is to run the test in Docker using the
+[Colorize CI Docker container](https://hub.docker.com/r/colorizenl/colorize-ci).
 
 ### Portability
 

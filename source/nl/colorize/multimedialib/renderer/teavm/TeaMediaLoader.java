@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.renderer.teavm;
 
 import com.google.common.base.Preconditions;
+import lombok.Getter;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.stage.Audio;
@@ -53,6 +54,7 @@ public class TeaMediaLoader implements MediaLoader {
     private BrowserBridge bridge;
     private String timestamp;
 
+    @Getter private Subject<Audio> audioQueue;
     private Map<ResourceFile, HTMLImageElement> preloadedImages;
     private Map<ResourceFile, HTMLAudioElement> preloadedAudio;
     private Map<ResourceFile, String> preloadedFonts;
@@ -67,6 +69,7 @@ public class TeaMediaLoader implements MediaLoader {
         this.bridge = Browser.getBrowserBridge();
         this.timestamp = bridge.getMeta("build-id", String.valueOf(System.currentTimeMillis()));
 
+        audioQueue = new Subject<>();
         preloadedImages = new HashMap<>();
         preloadedAudio = new HashMap<>();
         preloadedFonts = new HashMap<>();
@@ -138,10 +141,10 @@ public class TeaMediaLoader implements MediaLoader {
     public Audio loadAudio(ResourceFile file) {
         if (preloadedAudio.containsKey(file)) {
             HTMLAudioElement audioElement = preloadedAudio.get(file);
-            return new TeaAudio(Subject.of(audioElement));
+            return new TeaAudio(Subject.of(audioElement), audioQueue);
         } else {
             Subject<HTMLAudioElement> audioElement = appendAudioElement(file);
-            return new TeaAudio(audioElement);
+            return new TeaAudio(audioElement, audioQueue);
         }
     }
 
@@ -149,11 +152,13 @@ public class TeaMediaLoader implements MediaLoader {
         Subject<HTMLAudioElement> promise = new Subject<>();
         HTMLAudioElement audioElement = (HTMLAudioElement) document.createElement("audio");
         audioElement.setCrossOrigin("anonymous");
-        audioElement.addEventListener("loadeddata", _ -> {
-            preloadedAudio.put(file, audioElement);
-            promise.next(audioElement);
-        });
         audioElement.setSrc(getResourceFileURL(file));
+        // The loading events don't fire on iOS until
+        // the audio clip is played for the first time,
+        // meaning we cannot use this events to wait
+        // for the audio to pre-load.
+        preloadedAudio.put(file, audioElement);
+        promise.next(audioElement);
         return promise;
     }
 

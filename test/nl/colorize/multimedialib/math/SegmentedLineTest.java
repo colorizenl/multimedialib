@@ -89,4 +89,17 @@ class SegmentedLineTest {
 
         assertEquals("(10, 20) -> (30, 10)", direct.toString());
     }
+
+    @Test
+    void fromOutline() {
+        Rect rect = new Rect(10, 20, 30, 40);
+        SegmentedLine line = SegmentedLine.fromOutline(rect);
+
+        assertEquals(5, line.points().size());
+        assertEquals("(10, 20)", line.points().get(0).toString());
+        assertEquals("(40, 20)", line.points().get(1).toString());
+        assertEquals("(40, 60)", line.points().get(2).toString());
+        assertEquals("(10, 60)", line.points().get(3).toString());
+        assertEquals("(10, 20)", line.points().get(4).toString());
+    }
 }

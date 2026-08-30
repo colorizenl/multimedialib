@@ -17,8 +17,10 @@ import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.util.EventQueue;
 import nl.colorize.util.Platform;
 import nl.colorize.util.Subject;
+import nl.colorize.util.animation.Animatable;
 import nl.colorize.util.animation.Timeline;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
@@ -80,9 +82,9 @@ public interface SceneContext {
      * currently active scene. The actor will remain active until either its
      * parent scene ends or it is marked as completed, whichever comes first.
      */
-    default void attach(Actor onFrame, BooleanSupplier completed, Runnable onComplete) {
+    default void attach(Animatable onFrame, BooleanSupplier completed, Runnable onComplete) {
         FluentActor actor = FluentActor.create()
-            .withFrameHandler(onFrame)
+            .withFrameHandler(deltaTime -> onFrame.onFrame(deltaTime))
             .withCompletionCheck(completed)
             .withCompletionHandler(onComplete);
 
@@ -94,7 +96,7 @@ public interface SceneContext {
      * active until either its parent scene ends or it is marked as completed,
      * whichever comes first.
      *
-     * @deprecated Prefer using {@link #attach(Actor)}.
+     * @deprecated Prefer using {@link #attach(Actor)} instead.
      */
     @Deprecated
     default void attach(Runnable callback) {
@@ -144,7 +146,12 @@ public interface SceneContext {
      * once when the timer has completed.
      */
     default void attachTimer(Timer timer, Runnable callback) {
-        attach(timer, timer::isCompleted, callback);
+        FluentActor actor = FluentActor.create()
+            .withTimerHandler(timer, _ -> {})
+            .withCompletionCheck(timer::isCompleted)
+            .withCompletionHandler(callback);
+
+        getSceneManager().attach(actor);
     }
 
     /**
@@ -194,6 +201,19 @@ public interface SceneContext {
     }
 
     /**
+     * Attaches an actor that will periodically perform an action every X
+     * seconds, which will continue until the completion condition has been
+     * reached.
+     */
+    default void attachPollingHandler(double duration, Runnable action, BooleanSupplier completed) {
+        FluentActor actor = FluentActor.create()
+            .withPollingHandler(duration, action)
+            .withCompletionCheck(completed);
+
+        getSceneManager().attach(actor);
+    }
+
+    /**
      * Attaches an actor that is <em>not</em> tied to the currently active
      * scene. Instead, it will remain active for the remainder of the
      * application's life cycle.
@@ -211,6 +231,16 @@ public interface SceneContext {
      */
     default void terminate() {
     }
+
+    /**
+     * Captures a screenshot that depicts this renderer's current graphics,
+     * then saves this screenshot to a PNG file.
+     *
+     * @throws UnsupportedOperationException if this renderer does not support
+     *         capturing screenshots, or if this renderer does not have access
+     *         to the local file system.
+     */
+    public void captureScreenshot(File pngFile);
 
     /**
      * Returns debug and support information that can be displayed when running

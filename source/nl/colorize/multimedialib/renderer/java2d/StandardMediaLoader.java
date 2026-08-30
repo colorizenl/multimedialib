@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.renderer.java2d;
 
 import com.google.common.base.Preconditions;
+import lombok.Getter;
 import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.headless.NullAudio;
@@ -19,6 +20,7 @@ import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.PropertyUtils;
 import nl.colorize.util.ResourceFile;
+import nl.colorize.util.Subject;
 import nl.colorize.util.swing.Utils2D;
 
 import java.awt.HeadlessException;
@@ -37,10 +39,17 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * These APIs are available on server and desktop platforms, but not on headless
  * server environments and not on Android.
  */
+@Getter
 public class StandardMediaLoader implements MediaLoader {
+
+    private Subject<Audio> audioQueue;
 
     public static final String APPLICATION_DATA_FILE_NAME = "data.properties";
     private static final Logger LOGGER = LogHelper.getLogger(StandardMediaLoader.class);
+
+    public StandardMediaLoader() {
+        this.audioQueue = new Subject<>();
+    }
 
     /**
      * Returns the location in the classpath for the specified resource file.
@@ -86,9 +95,9 @@ public class StandardMediaLoader implements MediaLoader {
     @Override
     public Audio loadAudio(ResourceFile file) {
         if (Platform.isWindows() || Platform.isMac()) {
-            return new LWJGLAudio(file);
+            return new LWJGLAudio(file, audioQueue);
         } else {
-            return new NullAudio();
+            return new NullAudio(file.toString(), audioQueue);
         }
     }
 

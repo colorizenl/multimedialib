@@ -9,11 +9,14 @@ package nl.colorize.multimedialib.scene;
 import lombok.Getter;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.InputDevice;
+import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.renderer.Renderer;
+import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.util.Stopwatch;
+import nl.colorize.util.Subject;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -35,8 +38,10 @@ public class SceneManager {
     private long elapsedTime;
     @Getter private FrameStats frameStats;
 
-    private SceneLogic activeScene;
     @Getter private Stage stage;
+    private Subject<Audio> audioQueue;
+
+    private SceneLogic activeScene;
     private Queue<SceneLogic> requestedSceneQueue;
     private List<Actor> globalActors;
 
@@ -44,25 +49,20 @@ public class SceneManager {
     private static final double MIN_FRAME_TIME = 0.01f;
     private static final double MAX_FRAME_TIME = 0.2f;
 
-    protected SceneManager(RenderConfig config, Stopwatch timer) {
+    protected SceneManager(RenderConfig config, Stopwatch timer, Scene initialScene) {
         this.animationTimer = timer;
         this.elapsedTime = 0L;
         this.frameStats = new FrameStats();
 
-        activeScene = null;
         stage = new Stage(config.getCanvas());
         requestedSceneQueue = new ArrayDeque<>();
         globalActors = new ArrayList<>();
-    }
 
-    public SceneManager(RenderConfig config, Scene initialScene) {
-        this(config, new Stopwatch());
         changeScene(initialScene);
     }
 
-    @Deprecated
-    public SceneManager(RenderConfig config) {
-        this(config, new Stopwatch());
+    public SceneManager(RenderConfig config, Scene initialScene) {
+        this(config, new Stopwatch(), initialScene);
     }
 
     /**
@@ -121,6 +121,7 @@ public class SceneManager {
      */
     protected void performFrameUpdate(SceneContext context, double deltaTime) {
         updateInput(context.getInput(), deltaTime);
+        updateAudioQueue(context.getMediaLoader());
 
         if (!requestedSceneQueue.isEmpty()) {
             activateRequestedScene(context);
@@ -140,6 +141,15 @@ public class SceneManager {
         for (Pointer pointer : input.getPointers()) {
             pointer.update(deltaTime);
         }
+    }
+
+    private void updateAudioQueue(MediaLoader mediaLoader) {
+        if (audioQueue == null) {
+            audioQueue = mediaLoader.getAudioQueue();
+            audioQueue.subscribe(audio -> stage.getAudioPlaylist().add(audio));
+        }
+
+        stage.getAudioPlaylist().removeIf(audio -> !audio.isPlaying());
     }
 
     private void updateActors(List<Actor> actors, double deltaTime) {
@@ -182,11 +192,7 @@ public class SceneManager {
      * receive frame updates.
      */
     private void activateRequestedScene(SceneContext context) {
-        if (activeScene != null) {
-            activeScene.scene.end(context);
-            stage.clear();
-            stage.getAnimationTimer().reset();
-        }
+        resetScene(context);
 
         SceneLogic requestedScene = requestedSceneQueue.poll();
 
@@ -197,6 +203,15 @@ public class SceneManager {
             if (!requestedSceneQueue.isEmpty()) {
                 activateRequestedScene(context);
             }
+        }
+    }
+
+    private void resetScene(SceneContext context) {
+        if (activeScene != null) {
+            activeScene.scene.end(context);
+
+            stage.clear();
+            stage.getAnimationTimer().reset();
         }
     }
 

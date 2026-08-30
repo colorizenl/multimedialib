@@ -245,12 +245,17 @@ public class GDXDesktopRenderer extends GDXContext implements Renderer {
         if (input != null && input.isKeyReleased(KeyCode.F12)) {
             File screenshotFile = new File(Platform.getUserDesktopDir(),
                 "screenshot-" + System.currentTimeMillis() + ".png");
-            FileHandle file = Gdx.files.absolute(screenshotFile.getAbsolutePath());
-            Pixmap screenshot = prepareScreenshot();
-            PixmapIO.writePNG(file, screenshot, Deflater.DEFAULT_COMPRESSION, false);
-            screenshot.dispose();
-            LOGGER.info("Saved screenshot to " + screenshotFile.getAbsolutePath());
+            captureScreenshot(screenshotFile);
         }
+    }
+
+    @Override
+    public void captureScreenshot(File pngFile) {
+        FileHandle file = Gdx.files.absolute(pngFile.getAbsolutePath());
+        Pixmap screenshot = prepareScreenshot();
+        PixmapIO.writePNG(file, screenshot, Deflater.DEFAULT_COMPRESSION, false);
+        screenshot.dispose();
+        LOGGER.info("Saved screenshot to " + pngFile.getAbsolutePath());
     }
 
     private Pixmap prepareScreenshot() {

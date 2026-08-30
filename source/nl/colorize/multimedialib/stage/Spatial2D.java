@@ -32,7 +32,7 @@ import org.jspecify.annotations.Nullable;
 public interface Spatial2D extends Spatial<Transform> {
 
     /**
-     * Returns this node's parent node. Returns {@code null} if thos node does
+     * Returns this node's parent node. Returns {@code null} if this node does
      * not have a parent, or if this is the root node.
      */
     public @Nullable Container getParent();

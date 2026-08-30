@@ -6,6 +6,7 @@
 
 package nl.colorize.multimedialib.scene;
 
+import com.google.common.base.Preconditions;
 import nl.colorize.util.animation.Timeline;
 
 import java.util.function.BooleanSupplier;
@@ -57,6 +58,20 @@ public class FluentActor implements Actor {
         withFrameHandler(frameHandler);
         withCompletionCheck(() -> timeline.isCompleted() && !timeline.isLoop());
         return this;
+    }
+
+    public FluentActor withPollingHandler(double duration, Runnable action) {
+        Preconditions.checkArgument(duration > 0.0, "Invalid duration: " + duration);
+
+        Timer timer = new Timer(duration);
+
+        return withFrameHandler(deltaTime -> {
+            timer.update(deltaTime);
+            if (timer.isCompleted()) {
+                action.run();
+                timer.reset();
+            }
+        });
     }
 
     public FluentActor withCompletionCheck(BooleanSupplier callback) {

@@ -13,6 +13,7 @@ import nl.colorize.multimedialib.mock.MockScene;
 import nl.colorize.multimedialib.mock.MockStageVisitor;
 import nl.colorize.multimedialib.mock.MockStopwatch;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
+import nl.colorize.multimedialib.renderer.headless.NullAudio;
 import nl.colorize.multimedialib.stage.Animation;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Primitive;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static nl.colorize.multimedialib.math.Shape.EPSILON;
@@ -47,8 +49,7 @@ public class SceneManagerTest {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        SceneManager sceneManager = new SceneManager(context.getConfig());
-        sceneManager.changeScene(sceneA);
+        SceneManager sceneManager = new SceneManager(context.getConfig(), sceneA);
         sceneManager.performFrameUpdate(context, 1f);
         sceneManager.performFrameUpdate(context, 1f);
 
@@ -64,8 +65,7 @@ public class SceneManagerTest {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        SceneManager sceneManager = new SceneManager(context.getConfig());
-        sceneManager.changeScene(sceneA);
+        SceneManager sceneManager = new SceneManager(context.getConfig(), sceneA);
         sceneManager.performFrameUpdate(context, 1f);
         sceneManager.changeScene(sceneB);
         sceneManager.performFrameUpdate(context, 1f);
@@ -83,8 +83,7 @@ public class SceneManagerTest {
         MockScene sceneA = new MockScene();
         MockScene sceneB = new MockScene();
 
-        SceneManager sceneManager = new SceneManager(context.getConfig());
-        sceneManager.changeScene(sceneA);
+        SceneManager sceneManager = new SceneManager(context.getConfig(), sceneA);
         sceneManager.performFrameUpdate(context, 1f);
         sceneManager.changeScene(sceneB);
         sceneManager.performFrameUpdate(context, 1f);
@@ -100,10 +99,9 @@ public class SceneManagerTest {
         MockScene sceneA = new MockScene();
         List<String> tracker = new ArrayList<>();
 
-        SceneManager sceneManager = new SceneManager(context.getConfig());
-        sceneManager.changeScene(sceneA);
-        sceneManager.attach(deltaTime -> tracker.add("a"));
-        sceneManager.attach(deltaTime -> tracker.add("b"));
+        SceneManager sceneManager = new SceneManager(context.getConfig(), sceneA);
+        sceneManager.attach(_ -> tracker.add("a"));
+        sceneManager.attach(_ -> tracker.add("b"));
         sceneManager.performFrameUpdate(context, 1f);
 
         assertEquals(ImmutableList.of("a", "b"), tracker);
@@ -115,14 +113,13 @@ public class SceneManagerTest {
         MockScene sceneB = new MockScene();
         List<String> tracker = new ArrayList<>();
 
-        SceneManager sceneManager = new SceneManager(context.getConfig());
-        sceneManager.changeScene(sceneA);
-        sceneManager.attach(deltaTime -> tracker.add("a"));
-        sceneManager.attach(deltaTime -> tracker.add("b"));
+        SceneManager sceneManager = new SceneManager(context.getConfig(), sceneA);
+        sceneManager.attach(_ -> tracker.add("a"));
+        sceneManager.attach(_ -> tracker.add("b"));
         sceneManager.performFrameUpdate(context, 1f);
         sceneManager.performFrameUpdate(context, 1f);
         sceneManager.changeScene(sceneB);
-        sceneManager.attach(deltaTime -> tracker.add("c"));
+        sceneManager.attach(_ -> tracker.add("c"));
         sceneManager.performFrameUpdate(context, 1f);
 
         assertEquals(List.of("a", "b", "a", "b", "c"), tracker);
@@ -130,8 +127,7 @@ public class SceneManagerTest {
 
     @Test
     void addSystemDuringIteration() {
-        SceneManager sceneManager = new SceneManager(context.getConfig());
-        sceneManager.changeScene(new MockScene());
+        SceneManager sceneManager = new SceneManager(context.getConfig(), new MockScene());
 
         List<String> buffer = new ArrayList<>();
         sceneManager.attach(_ -> {
@@ -153,8 +149,7 @@ public class SceneManagerTest {
         MockScene parent = new MockScene();
         MockScene child = new MockScene();
 
-        SceneManager sceneManager = new SceneManager(context.getConfig());
-        sceneManager.changeScene(parent);
+        SceneManager sceneManager = new SceneManager(context.getConfig(), parent);
         sceneManager.attach(child);
         sceneManager.performFrameUpdate(context, 1f);
         sceneManager.performFrameUpdate(context, 1f);
@@ -171,8 +166,7 @@ public class SceneManagerTest {
     void completedParentSceneIsNotStopped() {
         MockScene parent = new MockScene();
 
-        SceneManager sceneManager = new SceneManager(context.getConfig());
-        sceneManager.changeScene(parent);
+        SceneManager sceneManager = new SceneManager(context.getConfig(), parent);
         sceneManager.performFrameUpdate(context, 1f);
         sceneManager.performFrameUpdate(context, 1f);
         parent.setCompleted(true);
@@ -188,8 +182,7 @@ public class SceneManagerTest {
         MockScene child1 = new MockScene();
         MockScene child2 = new MockScene();
 
-        SceneManager sceneManager = new SceneManager(context.getConfig());
-        sceneManager.changeScene(parent);
+        SceneManager sceneManager = new SceneManager(context.getConfig(), parent);
         sceneManager.attach(child1);
         sceneManager.performFrameUpdate(context, 1f);
         sceneManager.attach(child2);
@@ -208,8 +201,7 @@ public class SceneManagerTest {
         MockScene newParent = new MockScene();
         MockScene child2 = new MockScene();
 
-        SceneManager sceneManager = new SceneManager(context.getConfig());
-        sceneManager.changeScene(parent);
+        SceneManager sceneManager = new SceneManager(context.getConfig(), parent);
         sceneManager.attach(child1);
         sceneManager.performFrameUpdate(context, 1f);
         sceneManager.changeScene(newParent);
@@ -233,8 +225,7 @@ public class SceneManagerTest {
         MockScene scene3 = new MockScene();
         MockScene scene4 = new MockScene();
 
-        SceneManager sceneManager = new SceneManager(context.getConfig());
-        sceneManager.changeScene(scene1);
+        SceneManager sceneManager = new SceneManager(context.getConfig(), scene1);
         sceneManager.attach(scene2);
         sceneManager.attachGlobalActor(scene3);
         sceneManager.performFrameUpdate(context, 1f);
@@ -258,8 +249,7 @@ public class SceneManagerTest {
             .withCompletionCheck(timer::isCompleted)
             .withCompletionHandler(() -> child.start(context));
 
-        SceneManager sceneManager = new SceneManager(context.getConfig());
-        sceneManager.changeScene(parent);
+        SceneManager sceneManager = new SceneManager(context.getConfig(), parent);
         sceneManager.attach(timerSubScene);
         sceneManager.performFrameUpdate(context, 1f);
         sceneManager.performFrameUpdate(context, 1f);
@@ -273,10 +263,9 @@ public class SceneManagerTest {
 
     @Test
     void nativeFramerate() {
-        SceneManager sceneManager = new SceneManager(context.getConfig(),
-            new MockStopwatch(1000, 1100, 1200));
         Counter counter = new Counter();
-        sceneManager.changeScene(counter);
+        SceneManager sceneManager = new SceneManager(context.getConfig(),
+            new MockStopwatch(1000, 1100, 1200), counter);
 
         for (int i = 0; i < 3; i++) {
             sceneManager.requestFrameUpdate(context);
@@ -287,10 +276,9 @@ public class SceneManagerTest {
 
     @Test
     void applicationFramerateSlowerThanRefreshRate() {
-        SceneManager sceneManager = new SceneManager(context.getConfig(),
-            new MockStopwatch(1000, 1100, 1150, 1200, 1300));
         Counter counter = new Counter();
-        sceneManager.changeScene(counter);
+        SceneManager sceneManager = new SceneManager(context.getConfig(),
+            new MockStopwatch(1000, 1100, 1150, 1200, 1300), counter);
 
         for (int i = 0; i < 5; i++) {
             sceneManager.requestFrameUpdate(context);
@@ -301,10 +289,9 @@ public class SceneManagerTest {
 
     @Test
     void slowerFramerateWithNonExactMatch() {
-        SceneManager sceneManager = new SceneManager(context.getConfig(),
-            new MockStopwatch(1000, 1100, 1130, 1160, 1190, 1220, 1250, 1300));
         Counter counter = new Counter();
-        sceneManager.changeScene(counter);
+        SceneManager sceneManager = new SceneManager(context.getConfig(),
+            new MockStopwatch(1000, 1100, 1130, 1160, 1190, 1220, 1250, 1300), counter);
 
         for (int i = 0; i < 8; i++) {
             sceneManager.requestFrameUpdate(context);
@@ -315,10 +302,9 @@ public class SceneManagerTest {
 
     @Test
     void applicationFramerateFasterThanRefreshRate() {
-        SceneManager sceneManager = new SceneManager(context.getConfig(),
-            new MockStopwatch(1000, 1200, 1400));
         Counter counter = new Counter();
-        sceneManager.changeScene(counter);
+        SceneManager sceneManager = new SceneManager(context.getConfig(),
+            new MockStopwatch(1000, 1200, 1400), counter);
 
         for (int i = 0; i < 3; i++) {
             sceneManager.requestFrameUpdate(context);
@@ -329,10 +315,9 @@ public class SceneManagerTest {
 
     @Test
     void limitExtremelyLargeDeltaTime() {
-        SceneManager sceneManager = new SceneManager(context.getConfig(),
-            new MockStopwatch(1000, 1100, 9999));
         Counter counter = new Counter();
-        sceneManager.changeScene(counter);
+        SceneManager sceneManager = new SceneManager(context.getConfig(),
+            new MockStopwatch(1000, 1100, 9999), counter);
 
         for (int i = 0; i < 3; i++) {
             sceneManager.requestFrameUpdate(context);
@@ -343,10 +328,9 @@ public class SceneManagerTest {
 
     @Test
     void allowFramesThatAreLittleBitTooShort() {
-        SceneManager sceneManager = new SceneManager(context.getConfig(),
-            new MockStopwatch(1000, 1100, 1195, 1300));
         Counter counter = new Counter();
-        sceneManager.changeScene(counter);
+        SceneManager sceneManager = new SceneManager(context.getConfig(),
+            new MockStopwatch(1000, 1100, 1195, 1300), counter);
 
         for (int i = 0; i < 4; i++) {
             sceneManager.requestFrameUpdate(context);
@@ -360,13 +344,11 @@ public class SceneManagerTest {
         Counter a = new Counter();
         Counter b = new Counter();
 
-        SceneManager sceneManager = new SceneManager(context.getConfig(),
-            new MockStopwatch(1000, 1100, 1200, 1300, 1400));
-        sceneManager.changeScene(new Scene() {
+        Scene scene = new Scene() {
             @Override
             public void start(SceneContext context) {
                 a.start(context);
-                sceneManager.changeScene(b);
+                context.getSceneManager().changeScene(b);
             }
 
             @Override
@@ -378,7 +360,11 @@ public class SceneManagerTest {
             public void update(SceneContext context, double deltaTime) {
                 a.update(context, deltaTime);
             }
-        });
+        };
+
+        SceneManager sceneManager = new SceneManager(context.getConfig(),
+            new MockStopwatch(1000, 1100, 1200, 1300, 1400), scene);
+        context.setSceneManager(sceneManager);
         sceneManager.requestFrameUpdate(context);
         sceneManager.requestFrameUpdate(context);
 
@@ -409,9 +395,8 @@ public class SceneManagerTest {
         Sprite sprite = new Sprite(new Animation(List.of(a, b), 10f, false));
         sprite.animate(Timer.none());
 
-        SceneManager sceneManager = new SceneManager(context.getConfig());
+        SceneManager sceneManager = new SceneManager(context.getConfig(), new MockScene());
         context.setSceneManager(sceneManager);
-        sceneManager.changeScene(new MockScene());
         context.getStage().getRoot().addChild(sprite);
 
         MockStageVisitor visitor = new MockStageVisitor();
@@ -591,6 +576,67 @@ public class SceneManagerTest {
         context.doFrame(1f);
 
         assertEquals(List.of("1", "2", "complete"), events);
+    }
+
+    @Test
+    void attachPollingHandler() {
+        List<String> events = new ArrayList<>();
+        context.attachPollingHandler(2.0, () -> events.add("frame"), () -> events.size() >= 3);
+
+        context.doFrame(1f);
+        context.doFrame(1f);
+        context.doFrame(1f);
+        context.doFrame(1f);
+        context.doFrame(1f);
+
+        assertEquals(2, events.size());
+    }
+
+    @Test
+    void updateAudioQueue() {
+        SceneManager sceneManager = context.getSceneManager();
+
+        NullAudio audio1 = new NullAudio("1", context.getMediaLoader().getAudioQueue());
+        audio1.play();
+
+        NullAudio audio2 = new NullAudio("2", context.getMediaLoader().getAudioQueue());
+        audio2.play();
+
+        sceneManager.performFrameUpdate(context, 1.0);
+
+        assertTrue(audio1.isPlaying());
+        assertTrue(audio2.isPlaying());
+        assertEquals(Set.of(audio1, audio2), sceneManager.getStage().getAudioPlaylist());
+
+        audio2.stop();
+        sceneManager.performFrameUpdate(context, 1.0);
+
+        assertTrue(audio1.isPlaying());
+        assertFalse(audio2.isPlaying());
+        assertEquals(Set.of(audio1), sceneManager.getStage().getAudioPlaylist());
+    }
+
+    @Test
+    void clearAudioAtEndOfScene() {
+        SceneManager sceneManager = context.getSceneManager();
+
+        NullAudio audio1 = new NullAudio("1", context.getMediaLoader().getAudioQueue());
+
+        NullAudio audio2 = new NullAudio("2", context.getMediaLoader().getAudioQueue());
+        audio2.play();
+
+        sceneManager.performFrameUpdate(context, 1.0);
+
+        assertFalse(audio1.isPlaying());
+        assertTrue(audio2.isPlaying());
+        assertEquals(Set.of(audio2), sceneManager.getStage().getAudioPlaylist());
+
+        sceneManager.changeScene(new MockScene());
+        sceneManager.performFrameUpdate(context, 1.0);
+
+        assertFalse(audio1.isPlaying());
+        assertFalse(audio2.isPlaying());
+        assertEquals(Set.of(), sceneManager.getStage().getAudioPlaylist());
     }
 
     private record Counter(List<String> frames) implements Scene {

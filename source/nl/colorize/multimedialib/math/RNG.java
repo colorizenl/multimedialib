@@ -7,7 +7,7 @@
 package nl.colorize.multimedialib.math;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
+import nl.colorize.multimedialib.stage.ColorRGB;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * Utility class to help with random number generation. This class uses a
@@ -77,15 +76,32 @@ public class RNG {
     }
 
     /**
-     * Produces a random double between 0.0 and 1.0, then compares that number
-     * against {@code n} and returns the result. In other words, passing a value
-     * of 0.9 against this method will have a 90% chance of returning true.
+     * Generates a random number between 0.0 and 1.0, then returns true if that
+     * number is within {@code probability}. In other words, passing a value of
+     * 0.7 to this method has a 70% chance of returning true.
+     * <p>
+     * Do not call this method every frame, as that would make the actual
+     * probability dependent on the frame rate. For example, a 0.1 probability
+     * per frame is 3 times per second at 30 fps and 6 times per second at
+     * 60 fps. If you want to use this method during frame updates, then
+     * multiply the value of {@code probability} with the delta time to get a
+     * probability per second that is not dependent on the frame rate.
+     *
+     * @throws IllegalArgumentException if {@code probability} is outside the
+     *         range between 0.0 and 1.0.
      */
-    public static boolean chance(double n) {
-        Preconditions.checkArgument(n >= 0f && n <= 1f, "Number out of range: " + n);
+    public static boolean chance(double probability) {
+        Preconditions.checkArgument(probability >= 0.0 && probability <= 1.0,
+            "Probability out of range: " + probability);
 
-        double value = generator.nextDouble();
-        return value <= n;
+        if (probability == 0.0) {
+            return false;
+        } else if (probability == 1.0) {
+            return true;
+        } else {
+            double value = generator.nextDouble();
+            return value <= probability;
+        }
     }
 
     /**
@@ -102,6 +118,7 @@ public class RNG {
     
     /**
      * Picks and returns a random element from the specified set.
+     *
      * @throws IllegalArgumentException if the provided set is empty.
      */
     @SuppressWarnings("unchecked")
@@ -111,24 +128,6 @@ public class RNG {
         Object[] buffer = elements.toArray(new Object[0]);
         int index = getInt(0, buffer.length);
         return (T) buffer[index];
-    }
-
-    /**
-     * Picks and returns a random element from the specified iterator.
-     *
-     * @throws IllegalArgumentException if the provided iterator is empty.
-     */
-    public static <T> T pick(Iterable<T> elements) {
-        return pick(ImmutableList.copyOf(elements));
-    }
-
-    /**
-     * Picks and returns a random element from the specified stream.
-     *
-     * @throws IllegalArgumentException if the provided stream is empty.
-     */
-    public static <T> T pick(Stream<T> elements) {
-        return pick(elements.toList());
     }
 
     /**

@@ -1,15 +1,14 @@
 plugins {
     id "io.freefair.lombok" version "9.5.0"
     id "com.vanniktech.maven.publish" version "0.37.0"
-    id "com.github.ben-manes.versions" version "0.54.0"
-    id "net.ltgt.errorprone" version "5.1.0"
+    id "io.github.ben-manes.versions" version "0.61.0"
 }
 
 apply plugin: "java-library"
 apply plugin: "jacoco"
 
 group = "nl.colorize"
-version = "2026.4"
+version = "2026.5"
 compileJava.options.encoding = "UTF-8"
 
 java {
@@ -37,29 +36,29 @@ dependencies {
         exclude group: "org.lwjgl.lwjgl"
     }
     
-    implementation "org.teavm:teavm-jso:0.14.1"
-    implementation "org.teavm:teavm-jso-apis:0.14.1"
-    implementation "org.teavm:teavm-classlib:0.14.1"
-    implementation "org.teavm:teavm-tooling:0.14.1"
+    implementation "org.teavm:teavm-jso:0.15.0"
+    implementation "org.teavm:teavm-jso-apis:0.15.0"
+    implementation "org.teavm:teavm-classlib:0.15.0"
+    implementation "org.teavm:teavm-tooling:0.15.0"
 
-    implementation "com.github.xpenatan.gdx-teavm:backend-web:1.5.6"
-    implementation "com.github.xpenatan.gdx-teavm:gdx-freetype-teavm:1.5.6"
-
-    implementation "io.github.humbleui:skija-macos-x64:0.143.17"
-    implementation "io.github.humbleui:skija-macos-arm64:0.143.17"
-    implementation "io.github.humbleui:skija-windows-x64:0.143.17"
+    implementation "com.github.xpenatan.gdx-teavm:backend-web:1.6.2"
+    implementation "com.github.xpenatan.gdx-teavm:gdx-freetype-web:1.6.2"
 
     implementation "nl.colorize:colorize-java-commons:2026.3"
     implementation "com.github.mgsx-dev.gdx-gltf:gltf:2.3.0"
     implementation "org.slf4j:slf4j-jdk14:2.0.17"
-    testImplementation "org.junit.jupiter:junit-jupiter:6.1.1"
-    testImplementation "com.tngtech.archunit:archunit-junit5:1.4.2"
+    testImplementation "org.junit.jupiter:junit-jupiter:6.1.3"
+    testImplementation "com.tngtech.archunit:archunit-junit5:1.5.0"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
-    errorprone "com.google.errorprone:error_prone_core:2.50.0"
 }
 
 javadoc {
-    exclude "**/java2d/**", "**/libgdx/**", "**/jfx/**", "**/teavm/**", "**/skija/**", "**/headless/**"
+    exclude "**/java2d/**",
+            "**/libgdx/**",
+            "**/jfx/**",
+            "**/teavm/**",
+            "**/headless/**",
+            "**/tool/**"
 }
 
 test {
@@ -86,34 +85,19 @@ task coverage(dependsOn: ["test", "jacocoTestReport"]) {
     }
 }
 
-tasks.withType(JavaCompile).configureEach {
-    options.errorprone.allErrorsAsWarnings = true
-    options.errorprone.disable("EffectivelyPrivate")
-    options.errorprone.disable("FormatStringShouldUsePlaceholders")
-    options.errorprone.disable("JavaUtilDate")
-    options.errorprone.disable("InlineMeSuggester")
-    options.errorprone.disable("StringCaseLocaleUsage")
-    options.errorprone.disable("ThreadPriorityCheck")
+task launchDemoApplication(type: JavaExec, dependsOn: jar) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = "nl.colorize.multimedialib.tool.DemoLauncher"
 }
 
-task transpileDemoApplication2D(type: JavaExec, dependsOn: jar) {
+task transpileDemoApplication(type: JavaExec, dependsOn: jar) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = "nl.colorize.multimedialib.tool.TeaVMTranspilerTool"
-    args "--project", "MultimediaLib-TeaVM-Demo2D",
+    args "--project", "MultimediaLib TeaVM demo application",
          "--resources", "resources",
-         "--out", "${buildDir}/browserdemo2d",
+         "--out", "${buildDir}/browserdemo",
          "--main", "nl.colorize.multimedialib.tool.TeaDemoLauncher",
          "--meta", "demo:2d"
-}
-
-task transpileDemoApplication3D(type: JavaExec, dependsOn: jar) {
-    classpath = sourceSets.main.runtimeClasspath
-    mainClass = "nl.colorize.multimedialib.tool.TeaVMTranspilerTool"
-    args "--project", "MultimediaLib-TeaVM-Demo3D",
-         "--resources", "resources",
-         "--out", "${buildDir}/browserdemo3d",
-         "--main", "nl.colorize.multimedialib.tool.TeaDemoLauncher",
-         "--meta", "demo:3d"
 }
 
 mavenPublishing {

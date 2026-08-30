@@ -21,10 +21,10 @@ class ContainerTest {
     @Test
     void getStageBounds() {
         Sprite a = new Sprite(new MockImage(100, 100));
-        a.setPosition(10, 20);
+        a.getTransform().setPosition(10, 20);
 
         Sprite b = new Sprite(new MockImage(50, 50));
-        b.setPosition(70, 20);
+        b.getTransform().setPosition(70, 20);
 
         Container container = new Container();
         container.addChild(a);

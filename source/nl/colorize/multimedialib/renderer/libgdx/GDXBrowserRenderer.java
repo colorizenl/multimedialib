@@ -6,8 +6,13 @@
 
 package nl.colorize.multimedialib.renderer.libgdx;
 
+import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.ApplicationListener;
 import com.github.xpenatan.gdx.teavm.backends.web.WebApplication;
 import com.github.xpenatan.gdx.teavm.backends.web.WebApplicationConfiguration;
+import com.github.xpenatan.gdx.teavm.backends.web.WebAssetPreloadListener;
+import com.github.xpenatan.gdx.teavm.backends.web.assetloader.AssetLoader;
+import com.github.xpenatan.gdx.teavm.backends.web.assetloader.AssetLoaderListener;
 import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.RenderConfig;
@@ -24,6 +29,7 @@ import org.teavm.jso.browser.Window;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
 import org.teavm.jso.dom.html.HTMLDocument;
 
+import java.io.File;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,6 +43,7 @@ import java.util.logging.Logger;
 public class GDXBrowserRenderer extends GDXContext implements Renderer {
 
     private static final String CANVAS_ID = "multimediaLibCanvas";
+    private static final boolean SHOW_DOWNLOADED_ASSETS = true;
     private static final Logger LOGGER = LogHelper.getLogger(GDXBrowserRenderer.class);
 
     @Override
@@ -48,18 +55,25 @@ public class GDXBrowserRenderer extends GDXContext implements Renderer {
             createCanvas();
             Browser.getBrowserBridge().prepareAnimationLoop();
 
-            WebApplicationConfiguration webConfig = new WebApplicationConfiguration();
-            webConfig.width = 0;
-            webConfig.height = 0;
-            webConfig.canvasID = CANVAS_ID;
-            webConfig.usePhysicalPixels = true;
-            webConfig.preloadListener = assetLoader -> assetLoader.loadScript("freetype.js");
-            new WebApplication(this, webConfig);
+            WebApplicationConfiguration webConfig = createWebAppConfig();
+            ApplicationListener preloadListener = new ApplicationAdapter() {};
+            new WebApplication(this, preloadListener, webConfig);
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error during animation loop", e);
             config.getErrorHandler().onError(this, e);
             throw e;
         }
+    }
+
+    private WebApplicationConfiguration createWebAppConfig() {
+        WebApplicationConfiguration webConfig = new WebApplicationConfiguration();
+        webConfig.width = 0;
+        webConfig.height = 0;
+        webConfig.canvasID = CANVAS_ID;
+        webConfig.usePhysicalPixels = true;
+        webConfig.preloadListener = new AssetPreloader();
+        webConfig.showDownloadLogs = SHOW_DOWNLOADED_ASSETS;
+        return webConfig;
     }
 
     /**
@@ -95,6 +109,11 @@ public class GDXBrowserRenderer extends GDXContext implements Renderer {
     }
 
     @Override
+    public void captureScreenshot(File pngFile) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public String getDisplayName() {
         return "libGDX/TeaVM renderer";
     }
@@ -102,5 +121,30 @@ public class GDXBrowserRenderer extends GDXContext implements Renderer {
     @Override
     public List<GraphicsMode> getSupportedGraphicsModes() {
         return List.of(GraphicsMode.MODE_2D, GraphicsMode.MODE_3D);
+    }
+
+    /**
+     * Custom version of the {@code gdx-teavm} asset loading process.
+     * MultimediaLib supports multiple renderers, so it cannot fully
+     * rely on the "standard" {@code gdx-teavm} build and asset loading
+     * process.
+     */
+    private static class AssetPreloader implements WebAssetPreloadListener, AssetLoaderListener<Void> {
+
+        @Override
+        public void onPreload(AssetLoader assetLoader) {
+            assetLoader.loadScript("freetype.js");
+            assetLoader.preload("preload-assets.txt", this);
+        }
+
+        @Override
+        public void onSuccess(String url, Void result) {
+            WebApplication.get().setPreloadReady();
+        }
+
+        @Override
+        public void onFailure(String url) {
+            LOGGER.severe("Failed to preload resource file: " + url);
+        }
     }
 }

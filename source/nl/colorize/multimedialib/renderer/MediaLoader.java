@@ -15,6 +15,7 @@ import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
 import nl.colorize.util.PropertyUtils;
 import nl.colorize.util.ResourceFile;
+import nl.colorize.util.Subject;
 import nl.colorize.util.TranslationBundle;
 
 import java.util.List;
@@ -74,10 +75,12 @@ public interface MediaLoader {
     /**
      * Loads the default font, the open source font Open Sans. This is included
      * in MultimediaLib and therefore guaranteed to be always available.
+     *
+     * @deprecated Use {@link FontFace#DEFAULT_FONT} instead.
      */
+    @Deprecated
     default FontFace loadDefaultFont(int size, ColorRGB color) {
-        ResourceFile file = new ResourceFile("OpenSans-Regular.ttf");
-        return loadFont(file, "Open Sans", size, color);
+        return loadFont(new ResourceFile("OpenSans-Regular.ttf"), "Open Sans", size, color);
     }
 
     /**
@@ -154,4 +157,10 @@ public interface MediaLoader {
      * data is supported by all platforms.
      */
     public void saveApplicationData(String appName, Properties data);
+
+    /**
+     * Allows subscribers to be notified whenever any of the {@link Audio}
+     * instances owned by this renderer start playing.
+     */
+    public Subject<Audio> getAudioQueue();
 }

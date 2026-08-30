@@ -30,4 +30,13 @@ class RegionTest {
         assertEquals(30, moved.width());
         assertEquals(40, moved.height());
     }
+
+    @Test
+    void toRect() {
+        Region region = new Region(10, 20, 30, 40);
+        Rect rect = region.toRect();
+
+        assertEquals("(10, 20, 30, 40)", rect.toString());
+        assertEquals(new Rect(10, 20, 30, 40), rect);
+    }
 }

@@ -6,6 +6,7 @@
 
 package nl.colorize.multimedialib.stage;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import lombok.Getter;
 import lombok.Setter;
@@ -127,6 +128,12 @@ public class Text implements Spatial2D {
         for (int i = 0; i < lines.size(); i++) {
             callback.accept(i, lines.get(i));
         }
+    }
+
+    public void setLineWidth(int lineWidth) {
+        Preconditions.checkArgument(lineWidth >= 0, "Invalid line width:" + lineWidth);
+        this.lineWidth = lineWidth;
+        setText(getLines());
     }
 
     @Override

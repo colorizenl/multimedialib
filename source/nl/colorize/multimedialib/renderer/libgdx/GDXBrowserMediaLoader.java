@@ -15,6 +15,7 @@ import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.util.ResourceFile;
+import nl.colorize.util.Subject;
 
 import java.util.Properties;
 
@@ -39,6 +40,11 @@ public class GDXBrowserMediaLoader implements MediaLoader {
     @Override
     public Audio loadAudio(ResourceFile file) {
         return teaMediaLoader.loadAudio(file);
+    }
+
+    @Override
+    public Subject<Audio> getAudioQueue() {
+        return teaMediaLoader.getAudioQueue();
     }
 
     @Override

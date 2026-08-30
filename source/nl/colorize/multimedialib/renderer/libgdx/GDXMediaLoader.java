@@ -17,6 +17,7 @@ import com.badlogic.gdx.graphics.g3d.loader.G3dModelLoader;
 import com.badlogic.gdx.graphics.g3d.loader.ObjLoader;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.UBJsonReader;
+import lombok.Getter;
 import net.mgsx.gltf.loaders.gltf.GLTFLoader;
 import net.mgsx.gltf.scene3d.scene.SceneAsset;
 import nl.colorize.multimedialib.renderer.MediaException;
@@ -29,6 +30,7 @@ import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.util.Platform;
 import nl.colorize.util.PropertyUtils;
 import nl.colorize.util.ResourceFile;
+import nl.colorize.util.Subject;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -52,6 +54,7 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
     private List<Disposable> loaded;
     private GLTFLoader gltfLoader;
     private G3dModelLoader g3dLoader;
+    @Getter private Subject<Audio> audioQueue;
 
     private static final Texture.TextureFilter TEXTURE_FILTER = Texture.TextureFilter.Linear;
 
@@ -59,6 +62,7 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
         this.loaded = new ArrayList<>();
         this.gltfLoader = new GLTFLoader();
         this.g3dLoader = new G3dModelLoader(new UBJsonReader(), new InternalFileHandleResolver());
+        this.audioQueue = new Subject<>();
     }
 
     @Override
@@ -73,7 +77,7 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
     public Audio loadAudio(ResourceFile file) {
         Sound sound = Gdx.audio.newSound(getFileHandle(file));
         loaded.add(sound);
-        return new GDXAudio(sound);
+        return new GDXAudio(sound, audioQueue);
     }
 
     @Override
@@ -144,7 +148,10 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
     }
 
     protected static ColorRGB toColor(Color color) {
-        return new ColorRGB(Math.round(color.r * 255f), Math.round(color.g * 255f),
-            Math.round(color.b * 255f));
+        return new ColorRGB(
+            Math.round(color.r * 255f),
+            Math.round(color.g * 255f),
+            Math.round(color.b * 255f)
+        );
     }
 }

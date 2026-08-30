@@ -33,6 +33,10 @@ public record Region(int x, int y, int width, int height) {
         return new Region(x + deltaX, y + deltaY, width, height);
     }
 
+    public Rect toRect() {
+        return new Rect(x, y, width, height);
+    }
+
     @Override
     public String toString() {
         return x + ", " + y + ", " + width + ", " + height;

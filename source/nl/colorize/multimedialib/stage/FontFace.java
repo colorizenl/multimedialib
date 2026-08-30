@@ -22,6 +22,9 @@ import nl.colorize.util.ResourceFile;
  */
 public record FontFace(ResourceFile origin, String family, int size, ColorRGB color) {
 
+    public static FontFace DEFAULT_FONT = new FontFace(new ResourceFile("OpenSans-Regular.ttf"),
+        "Open Sans", 12, ColorRGB.WHITE);
+
     public FontFace {
         Preconditions.checkArgument(!family.isEmpty(), "Missing font family");
         Preconditions.checkArgument(size >= 1, "Invalid font size");
@@ -32,6 +35,10 @@ public record FontFace(ResourceFile origin, String family, int size, ColorRGB co
     }
 
     public FontFace derive(ColorRGB color) {
+        return new FontFace(origin, family, size, color);
+    }
+
+    public FontFace derive(int size, ColorRGB color) {
         return new FontFace(origin, family, size, color);
     }
 

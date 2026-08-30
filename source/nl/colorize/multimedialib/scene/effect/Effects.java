@@ -97,4 +97,42 @@ public final class Effects {
             graphics.getTransform().setPosition(canvas.getCenter());
         };
     }
+
+    public static Actor keepMiddleLeft(Spatial2D gfx, Canvas canvas, double marginX, double offsetY) {
+        return _ -> gfx.getTransform().setPosition(marginX, canvas.getHeight() / 2.0 + offsetY);
+    }
+
+    public static Actor keepBottomLeft(Spatial2D gfx, Canvas canvas, double marginX, double marginY) {
+        return _ -> gfx.getTransform().setPosition(marginX, canvas.getHeight() - marginY);
+    }
+
+    public static Actor keepTopCenter(Spatial2D gfx, Canvas canvas, double marginY) {
+        return _ -> gfx.getTransform().setPosition(canvas.getCenter().x(), marginY);
+    }
+
+    public static Actor keepCenter(Spatial2D gfx, Canvas canvas, double offsetY) {
+        return _ -> gfx.getTransform().setPosition(canvas.getCenter().add(0, offsetY));
+    }
+
+    public static Actor keepBottomCenter(Spatial2D gfx, Canvas canvas, double marginY) {
+        return _ -> gfx.getTransform().setPosition(canvas.getCenter().x(), canvas.getHeight() - marginY);
+    }
+
+    public static Actor keepTopRight(Spatial2D gfx, Canvas canvas, double marginX, double offsetY) {
+        return _ -> gfx.getTransform().setPosition(canvas.getWidth() - marginX, offsetY);
+    }
+
+    public static Actor keepMiddleRight(Spatial2D gfx, Canvas canvas, double marginX, double offsetY) {
+        return _ -> gfx.getTransform().setPosition(
+            canvas.getWidth() - marginX,
+            canvas.getHeight() / 2.0 + offsetY
+        );
+    }
+
+    public static Actor keepBottomRight(Spatial2D gfx, Canvas canvas, double marginX, double marginY) {
+        return _ -> gfx.getTransform().setPosition(
+            canvas.getWidth() - marginX,
+            canvas. getHeight() - marginY
+        );
+    }
 }

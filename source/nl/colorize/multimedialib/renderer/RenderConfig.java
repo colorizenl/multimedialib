@@ -15,7 +15,6 @@ import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
 import nl.colorize.multimedialib.renderer.java2d.Java2DRenderer;
 import nl.colorize.multimedialib.renderer.libgdx.GDXBrowserRenderer;
 import nl.colorize.multimedialib.renderer.libgdx.GDXDesktopRenderer;
-import nl.colorize.multimedialib.renderer.skija.SkijaRenderer;
 import nl.colorize.multimedialib.renderer.teavm.Browser;
 import nl.colorize.multimedialib.renderer.teavm.HtmlCanvasRenderer;
 import nl.colorize.multimedialib.scene.Actor;
@@ -210,7 +209,6 @@ public final class RenderConfig {
         Supplier<Renderer> launcher = switch (renderer.toLowerCase()) {
             case "java2d" -> Java2DRenderer::new;
             case "libgdx", "gdx" -> GDXDesktopRenderer::new;
-            case "skija" -> SkijaRenderer::new;
             default -> throw new IllegalArgumentException("Unknown desktop renderer: " + renderer);
         };
 

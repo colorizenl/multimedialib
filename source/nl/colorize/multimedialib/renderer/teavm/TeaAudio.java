@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.renderer.teavm;
 
 import com.google.common.base.Preconditions;
+import lombok.Getter;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.util.Subject;
 import org.teavm.jso.dom.html.HTMLAudioElement;
@@ -19,12 +20,15 @@ import org.teavm.jso.dom.html.HTMLAudioElement;
  * Supported audio formats depend on the browser, although MP3 and OGG are
  * now supported by all modern browsers.
  */
+@Getter
 public class TeaAudio implements Audio {
 
     private HTMLAudioElement audioElement;
+    private Subject<Audio> audioQueue;
 
-    protected TeaAudio(Subject<HTMLAudioElement> audioPromise) {
+    protected TeaAudio(Subject<HTMLAudioElement> audioPromise, Subject<Audio> audioQueue) {
         audioPromise.subscribe(event -> audioElement = event);
+        this.audioQueue = audioQueue;
     }
 
     @Override
@@ -32,6 +36,7 @@ public class TeaAudio implements Audio {
         stop();
         if (audioElement != null) {
             audioElement.play();
+            audioQueue.next(this);
         }
     }
 
@@ -85,7 +90,7 @@ public class TeaAudio implements Audio {
 
         HTMLAudioElement copyElement = (HTMLAudioElement) audioElement.cloneNode(true);
         audioElement.getParentNode().appendChild(copyElement);
-        return new TeaAudio(Subject.of(copyElement));
+        return new TeaAudio(Subject.of(copyElement), audioQueue);
     }
 
     @Override

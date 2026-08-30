@@ -17,6 +17,7 @@ import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.SceneManager;
 import org.teavm.jso.browser.Window;
 
+import java.io.File;
 import java.util.List;
 
 /**
@@ -109,6 +110,11 @@ public class HtmlCanvasRenderer implements Renderer, SceneContext {
     private void handleError(String error) {
         RuntimeException cause = new RuntimeException("JavaScript error\n\n" + error);
         config.getErrorHandler().onError(this, cause);
+    }
+
+    @Override
+    public void captureScreenshot(File pngFile) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

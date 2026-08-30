@@ -31,7 +31,7 @@ import org.jspecify.annotations.Nullable;
 public interface Spatial3D extends Spatial<Transform3D> {
 
     /**
-     * Returns this node's parent node. Returns {@code null} if thos node does
+     * Returns this node's parent node. Returns {@code null} if this node does
      * not have a parent, or if this is the root node.
      */
     public @Nullable Group getParent();

@@ -6,13 +6,17 @@
 
 package nl.colorize.multimedialib.scene.effect;
 
+import com.google.common.base.Preconditions;
 import lombok.Getter;
 import nl.colorize.multimedialib.math.Point2D;
-import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.renderer.Canvas;
+import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.scene.Actor;
+import nl.colorize.multimedialib.scene.GraphicsProvider;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Image;
+import nl.colorize.multimedialib.stage.Spatial2D;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.animation.Timeline;
@@ -26,15 +30,15 @@ import java.util.List;
  * where the particles slowly reveal the screen. Both effects would typically
  * be used on either side of the transition.
  */
-public class ParticleWipe implements Actor {
+public class ParticleWipe implements Actor, GraphicsProvider {
 
-    private SceneContext context;
-    @Getter private Container container;
-
-    private boolean reverse;
+    private Canvas canvas;
     private Image particleImage;
-    private double duration;
-    private ColorRGB fillColor;
+    @Getter private ColorRGB particleColor;
+    @Getter private double duration;
+    @Getter private boolean reverse;
+
+    private Container container;
     private List<Particle> particles;
 
     public static final ResourceFile DIAMOND = new ResourceFile("effects/particle-diamond.png");
@@ -42,29 +46,42 @@ public class ParticleWipe implements Actor {
 
     private static final int PARTICLE_SIZE = 64;
     private static final int PADDING = PARTICLE_SIZE / 2;
+    private static final double DEFAULT_DURATION = 1.2;
 
-    /**
-     * Creates a new wipe transition based on the specified particle image. If
-     * {@code reverse} is true, the transition will start fully obscured and
-     * will then play backwards, slowly revealing the stage.
-     */
-    public ParticleWipe(SceneContext context, Image particleImage, ColorRGB color,
-                        double duration, boolean reverse) {
-        this.context = context;
-        this.container = new Container();
-        this.duration = duration;
+    public ParticleWipe(Canvas canvas, Image particleImage, ColorRGB particleColor) {
+        this.canvas = canvas;
         this.particleImage = particleImage;
-        this.fillColor = color;
-        this.reverse = reverse;
-        this.particles = new ArrayList<>();
+        this.particleColor = particleColor;
+        this.duration = DEFAULT_DURATION;
+        this.reverse = false;
 
-        attachGraphics();
+        container = new Container();
+        particles = new ArrayList<>();
     }
 
-    private void attachGraphics() {
+    @Override
+    public void update(double deltaTime) {
+        if (particles.isEmpty()) {
+            spawnParticles();
+        }
+
+        for (Particle particle : particles) {
+            particle.timeline.movePlayhead(deltaTime);
+            particle.sprite.getTransform().setMaskColor(particleColor);
+            particle.sprite.getTransform().setPosition(particle.position);
+            particle.sprite.getTransform().setScale(getParticleScale(particle));
+            particle.sprite.getTransform().setVisible(particle.sprite.getTransform().getScaleX() > 1);
+        }
+
+        if (isCompleted()) {
+            container.detach();
+        }
+    }
+
+    private void spawnParticles() {
         int columnIndex = 0;
-        int endX = context.getCanvas().getWidth() + PADDING;
-        int endY = context.getCanvas().getHeight() + PADDING;
+        int endX = canvas.getWidth() + PADDING;
+        int endY = canvas.getHeight() + PADDING;
 
         for (int x = -PADDING; x <= endX; x += PARTICLE_SIZE) {
             columnIndex++;
@@ -75,23 +92,6 @@ public class ParticleWipe implements Actor {
                 particles.add(particle);
                 container.addChild(particle.sprite);
             }
-        }
-
-        context.getStage().getRoot().addChild(container);
-    }
-
-    @Override
-    public void update(double deltaTime) {
-        for (Particle particle : particles) {
-            particle.timeline.movePlayhead(deltaTime);
-            particle.sprite.getTransform().setMaskColor(fillColor);
-            particle.sprite.getTransform().setPosition(particle.position);
-            particle.sprite.getTransform().setScale(getParticleScale(particle));
-            particle.sprite.getTransform().setVisible(particle.sprite.getTransform().getScaleX() > 1);
-        }
-
-        if (isCompleted()) {
-            container.detach();
         }
     }
 
@@ -105,8 +105,58 @@ public class ParticleWipe implements Actor {
 
     @Override
     public boolean isCompleted() {
+        if (particles.isEmpty()) {
+            spawnParticles();
+        }
+
         return particles.stream()
             .allMatch(particle -> particle.timeline.isCompleted());
+    }
+
+    @Override
+    public Spatial2D getGraphics() {
+        return container;
+    }
+
+    /**
+     * Returns a new {@link ParticleWipe} with the same configuration as this
+     * one, but that plays the animation in reverse. If this instance is
+     * already reversed, it will return a non-reversed instance.
+     */
+    public ParticleWipe reversed() {
+        ParticleWipe copy = new ParticleWipe(canvas, particleImage, particleColor);
+        copy.reverse = !reverse;
+        return copy;
+    }
+
+    /**
+     * Returns a new {@link ParticleWipe} with the same configuration as this
+     * one, but with the specified custom animation duration.
+     */
+    public ParticleWipe withDuration(double duration) {
+        Preconditions.checkArgument(duration > 0.0, "Invalid duration: " + duration);
+
+        ParticleWipe copy = new ParticleWipe(canvas, particleImage, particleColor);
+        copy.duration = duration;
+        return copy;
+    }
+
+    /**
+     * Factory method that returns a {@link ParticleWipe} based on the default
+     * diamond-shaped particles in the specified color.
+     */
+    public static ParticleWipe diamonds(MediaLoader mediaLoader, Canvas canvas, ColorRGB color) {
+        Image diamondImage = mediaLoader.loadImage(DIAMOND);
+        return new ParticleWipe(canvas, diamondImage, color);
+    }
+
+    /**
+     * Factory method that returns a {@link ParticleWipe} based on the default
+     * circle-shaped particles in the specified color.
+     */
+    public static ParticleWipe circles(MediaLoader mediaLoader, Canvas canvas, ColorRGB color) {
+        Image circleImage = mediaLoader.loadImage(CIRCLE);
+        return new ParticleWipe(canvas, circleImage, color);
     }
 
     /**

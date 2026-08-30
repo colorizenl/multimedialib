@@ -8,7 +8,9 @@ package nl.colorize.multimedialib.renderer.libgdx;
 
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.backends.lwjgl3.audio.OpenALSound;
+import lombok.Getter;
 import nl.colorize.multimedialib.stage.Audio;
+import nl.colorize.util.Subject;
 
 /**
  * Uses libGDX's sound system for audio playback. Concurrent playback of the
@@ -19,14 +21,16 @@ public class GDXAudio implements Audio {
 
     private Sound sound;
     private long playbackId;
-    private double volume;
-    private double pitch;
+    @Getter private double volume;
+    @Getter private double pitch;
+    @Getter private Subject<Audio> audioQueue;
 
-    public GDXAudio(Sound sound) {
+    public GDXAudio(Sound sound, Subject<Audio> audioQueue) {
         this.sound = sound;
         this.playbackId = -1;
         this.volume = 100;
         this.pitch = 100;
+        this.audioQueue = audioQueue;
     }
 
     @Override
@@ -38,6 +42,8 @@ public class GDXAudio implements Audio {
         } else {
             playbackId = sound.play((float) volume / 100f, (float) pitch / 100f, 0f);
         }
+
+        audioQueue.next(this);
     }
 
     @Override
@@ -53,6 +59,7 @@ public class GDXAudio implements Audio {
         return playbackId != -1;
     }
 
+    @Override
     public double getDuration() {
         if (sound instanceof OpenALSound openAL) {
             return openAL.duration();
@@ -79,6 +86,6 @@ public class GDXAudio implements Audio {
 
     @Override
     public Audio copy() {
-        return new GDXAudio(sound);
+        return new GDXAudio(sound, audioQueue);
     }
 }

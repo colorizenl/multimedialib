@@ -10,6 +10,7 @@ import com.google.common.base.Preconditions;
 import lombok.Getter;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.util.ResourceFile;
+import nl.colorize.util.Subject;
 import org.lwjgl.openal.AL;
 import org.lwjgl.openal.AL10;
 import org.lwjgl.openal.ALC;
@@ -38,24 +39,30 @@ import java.nio.ShortBuffer;
  */
 public class LWJGLAudio implements Audio {
 
-    private ResourceFile origin;
     private byte[] oggData;
-    @Getter private double duration;
     private int bufferId;
     private int sourceId;
-    private double volume;
-    private double pitch;
+
+    @Getter private double duration;
+    @Getter private double volume;
+    @Getter private double pitch;
+    @Getter private Subject<Audio> audioQueue;
 
     private static AudioSubSystem audioSubSystem;
 
-    public LWJGLAudio(ResourceFile origin) {
-        this.origin = origin;
-        this.oggData = origin.readBytes();
-        this.duration = 0f;
+    public LWJGLAudio(ResourceFile origin, Subject<Audio> audioQueue) {
+        this(origin.readBytes(), audioQueue);
+    }
+
+    public LWJGLAudio(byte[] oggData, Subject<Audio> audioQueue) {
+        this.oggData = oggData;
         this.bufferId = -1;
         this.sourceId = -1;
+
+        this.duration = 0f;
         this.volume = 100;
         this.pitch = 100;
+        this.audioQueue = audioQueue;
     }
 
     private void prepareBuffer() {
@@ -94,12 +101,14 @@ public class LWJGLAudio implements Audio {
     public void play(boolean loop) {
         initializeAudioSubSystem();
         prepareBuffer();
-
         stop();
+
         AL10.alSourcei(sourceId, AL10.AL_LOOPING, loop ? AL10.AL_TRUE : AL10.AL_FALSE);
         AL10.alSourcef(sourceId, AL10.AL_GAIN, (float) volume / 100f);
         AL10.alSourcef(sourceId, AL10.AL_PITCH, (float) this.pitch / 100f);
         AL10.alSourcePlay(sourceId);
+
+        audioQueue.next(this);
     }
 
     @Override
@@ -144,12 +153,7 @@ public class LWJGLAudio implements Audio {
 
     @Override
     public Audio copy() {
-        return new LWJGLAudio(origin);
-    }
-
-    @Override
-    public String toString() {
-        return origin.toString();
+        return new LWJGLAudio(oggData, audioQueue);
     }
 
     /**

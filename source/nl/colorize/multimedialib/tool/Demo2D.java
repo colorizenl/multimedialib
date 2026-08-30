@@ -29,6 +29,7 @@ import nl.colorize.multimedialib.renderer.teavm.PeerMessage;
 import nl.colorize.multimedialib.scene.Actor;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
+import nl.colorize.multimedialib.scene.effect.Effects;
 import nl.colorize.multimedialib.scene.effect.ParticleWipe;
 import nl.colorize.multimedialib.scene.effect.PerformanceMonitor;
 import nl.colorize.multimedialib.scene.effect.SwipeTracker;
@@ -142,9 +143,10 @@ public class Demo2D implements Scene, ErrorHandler {
         sendHttpRequest(context.getNetwork());
         loadApplicationData();
 
-        performanceMonitor = new PerformanceMonitor(context, true);
+        performanceMonitor = new PerformanceMonitor(context.getFrameStats());
         performanceMonitor.setActive(false);
         context.attach(performanceMonitor);
+        hudLayer.addChild(performanceMonitor.getGraphics());
     }
 
     private void initBlocks() {
@@ -236,20 +238,15 @@ public class Demo2D implements Scene, ErrorHandler {
         button.addChild(text);
         hudLayer.addChild(button);
 
-        // Need to keep the button in position for when the canvas
-        // is resized.
-        context.attach(deltaTime -> {
-            int buttonX = context.getCanvas().getWidth() - BUTTON_WIDTH / 2;
-            button.getTransform().setPosition(buttonX, y);
-        });
-
+        context.attach(Effects.keepTopRight(button, context.getCanvas(), BUTTON_WIDTH / 2.0, y));
         context.attachClickHandler(bounds, click);
     }
 
     private void initWipeEffect() {
-        Image diamond = context.getMediaLoader().loadImage(ParticleWipe.DIAMOND);
-        ParticleWipe wipe = new ParticleWipe(context, diamond, COLORIZE_COLOR, 1.5f, true);
+        ParticleWipe wipe = ParticleWipe.diamonds(context.getMediaLoader(),
+            context.getCanvas(), COLORIZE_COLOR).reversed();
         context.attach(wipe);
+        context.getStage().getRoot().addChild(wipe.getGraphics());
     }
 
     private void initLogoEffect() {
@@ -262,7 +259,7 @@ public class Demo2D implements Scene, ErrorHandler {
         hudLayer.addChild(sprite);
 
         context.attachTimeline(timeline, value -> {
-            sprite.setPosition(600, context.getCanvas().getHeight() - 50);
+            sprite.getTransform().setPosition(600, context.getCanvas().getHeight() - 50);
             sprite.getTransform().setScale(80 + value * 40f);
         });
         context.attach(dt -> sprite.getTransform().addRotation(dt * 100f));
@@ -277,7 +274,7 @@ public class Demo2D implements Scene, ErrorHandler {
                 .map(Pointer::getPosition)
                 .anyMatch(p -> prim.getStageShape().contains(p));
 
-            prim.setPosition(xOffset, context.getCanvas().getHeight() - 40);
+            prim.getTransform().setPosition(xOffset, context.getCanvas().getHeight() - 40);
             prim.setColor(hover ? WHITE : RED_BUTTON);
         });
 
@@ -415,7 +412,7 @@ public class Demo2D implements Scene, ErrorHandler {
     private PeerConnection openPeerConnection() {
         PeerConnection peerConnection = context.getNetwork().openPeerConnection();
 
-        context.attach(() -> {
+        context.attach(_ -> {
             for (PeerMessage message : peerConnection.flushReceivedMessages()) {
                 LOGGER.info("Received message: " + message.type() + " / " + message.value());
                 if (message.type().equals(PeerMessage.TYPE_INIT)) {

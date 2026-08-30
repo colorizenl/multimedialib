@@ -11,6 +11,7 @@ import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.renderer.teavm.Browser;
+import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.util.LogHelper;
 
@@ -44,15 +45,20 @@ public class TeaDemoLauncher {
         String rendererName = Browser.getBrowserBridge().getQueryParameter("renderer", defaultRenderer);
         LOGGER.info("Renderer: " + rendererName);
 
-        RenderConfig config = RenderConfig.forBrowser(rendererName, graphicsMode, canvas)
+        RenderConfig.forBrowser(rendererName, graphicsMode, canvas)
             .withFramerate(BROWSER_FRAMERATE)
-            .withErrorHandler(TeaDemoLauncher::logError);
+            .withErrorHandler(TeaDemoLauncher::logError)
+            .start(prepareDemo(demoMode));
+    }
 
-        switch (demoMode) {
-            case "2d" -> config.start(new Demo2D());
-            case "3d" -> config.start(new Demo3D());
+    private static Scene prepareDemo(String demoMode) {
+        return switch (demoMode) {
+            case "2d" -> new Demo2D();
+            case "3d" -> new Demo3D();
+            case "form" -> new FormDemo();
+            case "regression" -> new RegressionDemo(null);
             default -> throw new UnsupportedOperationException();
-        }
+        };
     }
 
     private static String getDemoMode() {

@@ -21,7 +21,11 @@ class ParticleWipeTest {
         HeadlessRenderer renderer = new HeadlessRenderer();
         renderer.start(new MockScene());
 
-        renderer.attach(new ParticleWipe(renderer, new MockImage(), ColorRGB.RED, 10f, false));
+        ParticleWipe wipe = new ParticleWipe(renderer.getCanvas(), new MockImage(), ColorRGB.RED)
+            .withDuration(10);
+
+        renderer.attach(wipe);
+        renderer.getStage().getRoot().addChild(wipe.getGraphics());
         renderer.doFrame();
         renderer.doFrame();
 
