@@ -11,8 +11,8 @@ jobs:
         run: gradle -Djava.awt.headless=true coverage --info
       - name: Copyright header check
         run: copyright_check.py
-      - name: Transpile TeaVM demo applications
-        run: gradle transpileDemoApplication2D transpileDemoApplication3D
+      - name: Transpile TeaVM demo application
+        run: gradle transpileDemoApplication
     env:
       ORG_GRADLE_PROJECT_githubPackagesOwner: "colorizenl"
       ORG_GRADLE_PROJECT_githubPackagesToken: "${{ secrets.TEAVM_PACKAGES_TOKEN }}"
