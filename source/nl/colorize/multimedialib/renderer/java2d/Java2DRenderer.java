@@ -102,7 +102,7 @@ public class Java2DRenderer implements Renderer, SceneContext, ApplicationMenuLi
     private JFrame initializeWindow(WindowOptions windowOptions) {
         window = new JFrame();
         window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        window.setResizable(true);
+        window.setResizable(false);
         window.setIgnoreRepaint(true);
         window.setFocusTraversalKeysEnabled(false);
         window.addWindowListener(createWindowCloseListener());

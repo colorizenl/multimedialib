@@ -44,4 +44,15 @@ public interface Scene {
      */
     default void end(SceneContext context) {
     }
+
+    /**
+     * Controls how this scene behaves when the canvas is resizes. By default,
+     * this will return false, indicating the scene takes responsibility to
+     * adapt itself for the new canvas size. If this returns true, the renderer
+     * will abort and then recreate this scene when the canvas is resized,
+     * effectively creating a new scene for the new canvas size.
+     */
+    default boolean shouldRestartOnResize() {
+        return false;
+    }
 }

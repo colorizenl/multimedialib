@@ -6,9 +6,10 @@
 
 package nl.colorize.multimedialib.mock;
 
+import lombok.Setter;
+import nl.colorize.multimedialib.scene.Actor;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
-import nl.colorize.multimedialib.scene.Actor;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -19,12 +20,14 @@ public class MockScene implements Scene, Actor {
     private AtomicInteger endCount;
     private AtomicInteger frameUpdateCount;
     private AtomicBoolean completed;
+    @Setter private boolean restartOnResize;
 
     public MockScene() {
         this.startCount = new AtomicInteger(0);
         this.endCount = new AtomicInteger(0);
         this.frameUpdateCount = new AtomicInteger(0);
         this.completed = new AtomicBoolean(false);
+        this.restartOnResize = false;
     }
 
     @Override
@@ -66,5 +69,10 @@ public class MockScene implements Scene, Actor {
     @Override
     public boolean isCompleted() {
         return completed.get();
+    }
+
+    @Override
+    public boolean shouldRestartOnResize() {
+        return restartOnResize;
     }
 }

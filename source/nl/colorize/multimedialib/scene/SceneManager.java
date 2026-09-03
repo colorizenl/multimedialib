@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.scene;
 
 import lombok.Getter;
+import nl.colorize.multimedialib.math.Size;
 import nl.colorize.multimedialib.renderer.FrameStats;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.MediaLoader;
@@ -40,14 +41,16 @@ public class SceneManager {
 
     @Getter private Stage stage;
     private Subject<Audio> audioQueue;
+    private Size lastCanvasSize;
 
     private SceneLogic activeScene;
     private Queue<SceneLogic> requestedSceneQueue;
     private List<Actor> globalActors;
 
     private static final long FRAME_LEEWAY_MS = 5;
-    private static final double MIN_FRAME_TIME = 0.01f;
-    private static final double MAX_FRAME_TIME = 0.2f;
+    private static final double MIN_FRAME_TIME = 0.01;
+    private static final double MAX_FRAME_TIME = 0.2;
+    private static final int CANVAS_RESIZE_LEEWAY = 10;
 
     protected SceneManager(RenderConfig config, Stopwatch timer, Scene initialScene) {
         this.animationTimer = timer;
@@ -55,6 +58,8 @@ public class SceneManager {
         this.frameStats = new FrameStats();
 
         stage = new Stage(config.getCanvas());
+        lastCanvasSize = config.getCanvas().getSize();
+
         requestedSceneQueue = new ArrayDeque<>();
         globalActors = new ArrayList<>();
 
@@ -131,6 +136,13 @@ public class SceneManager {
         updateActors(activeScene.attachedActors, deltaTime);
         stage.getAnimationTimer().update(deltaTime);
         updateActors(globalActors, deltaTime);
+
+        if (isCanvasResize(context)) {
+            lastCanvasSize = context.getCanvas().getSize();
+            if (activeScene.scene.shouldRestartOnResize()) {
+                changeScene(activeScene.scene);
+            }
+        }
     }
 
     private void updateInput(InputDevice input, double deltaTime) {
@@ -253,6 +265,12 @@ public class SceneManager {
      */
     public void attachGlobalActor(Actor actor) {
         globalActors.add(actor);
+    }
+
+    private boolean isCanvasResize(SceneContext context) {
+        Size canvasSize = context.getCanvas().getSize();
+        return Math.abs(canvasSize.width() - lastCanvasSize.width()) >= CANVAS_RESIZE_LEEWAY ||
+            Math.abs(canvasSize.height() - lastCanvasSize.height()) >= CANVAS_RESIZE_LEEWAY;
     }
 
     /**

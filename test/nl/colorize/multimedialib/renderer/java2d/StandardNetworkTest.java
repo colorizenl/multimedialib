@@ -11,30 +11,36 @@ import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
 import nl.colorize.util.EventQueue;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StandardNetworkTest {
 
     @Test
-    public void testSendGetRequest() throws InterruptedException {
-        List<String> responses = new ArrayList<>();
-        List<Throwable> errors = new ArrayList<>();
+    public void testSendGetRequest() {
+        List<String> responses = new CopyOnWriteArrayList<>();
+        List<Throwable> errors = new CopyOnWriteArrayList<>();
 
         StandardNetwork internetAccess = new StandardNetwork();
         EventQueue<Response> eventQueue = internetAccess.get("https://clrz.nl");
 
-        Thread.sleep(5000);
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+            HeadlessRenderer renderer = new HeadlessRenderer();
+            renderer.attach(eventQueue, response -> responses.add(response.getBody()), errors::add);
 
-        HeadlessRenderer renderer = new HeadlessRenderer();
-        renderer.attach(eventQueue, response -> responses.add(response.getBody()), errors::add);
-        renderer.doFrame();
+            while (responses.isEmpty()) {
+                renderer.doFrame();
+                Thread.sleep(1000);
+            }
 
-        assertEquals(1, responses.size());
-        assertTrue(responses.getFirst().contains("<title>Colorize"));
-        assertEquals(0, errors.size());
+            assertEquals(1, responses.size());
+            assertTrue(responses.getFirst().contains("<title>Colorize"));
+            assertEquals(0, errors.size());
+        });
     }
 }

@@ -382,6 +382,7 @@ public class Demo2D implements Scene, ErrorHandler {
             info.getTransform().setPosition(context.getCanvas().getWidth() - 20,
                 context.getCanvas().getHeight() - 200);
             hudLayer.addChild(info);
+            context.attachTimer(2.0, info::detach);
         }
     }
 
@@ -394,6 +395,8 @@ public class Demo2D implements Scene, ErrorHandler {
 
             MediaLoader mediaLoader = context.getMediaLoader();
             mediaLoader.saveApplicationData("MultimediaLib-Demo2D", data);
+
+            loadApplicationData();
         });
     }
 

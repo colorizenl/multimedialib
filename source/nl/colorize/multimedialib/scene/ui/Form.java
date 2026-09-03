@@ -144,7 +144,6 @@ public class Form implements Actor, GraphicsProvider {
         Region bounds = prepareNextWidgetBounds(0);
         Spatial2D graphics = style.createButton(translate(buttonLabel), signal, bounds.toRect());
         addWidget(graphics, bounds, () -> {
-            signal.set(null);
             // We have to force a change, since there is
             // no actual value that changes.
             signal.getChanges().next((Void) null);

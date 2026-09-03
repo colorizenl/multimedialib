@@ -186,6 +186,7 @@ public class GDXDesktopRenderer extends GDXContext implements Renderer {
         gdxConfig.setTitle(config.getWindowOptions().getTitle());
         gdxConfig.setWindowIcon(Internal, config.getWindowOptions().getIconFile().path());
         gdxConfig.setDecorated(true);
+        gdxConfig.setResizable(false);
         if (config.getWindowOptions().isFullscreen()) {
             //     see https://github.com/libgdx/libgdx/issues/6896
             //     Also note this extension will be retired altogether

@@ -639,6 +639,31 @@ public class SceneManagerTest {
         assertEquals(Set.of(), sceneManager.getStage().getAudioPlaylist());
     }
 
+    @Test
+    void retainSceneAfterResize() {
+        MockScene scene = new MockScene();
+
+        SceneManager sceneManager = new SceneManager(context.getConfig(), scene);
+        sceneManager.performFrameUpdate(context, 1f);
+        context.getCanvas().resizeScreen(100, 100);
+
+        assertEquals(1, scene.getStartCount());
+    }
+
+    @Test
+    void recreateSceneAfterResize() {
+        MockScene scene = new MockScene();
+        scene.setRestartOnResize(true);
+
+        SceneManager sceneManager = new SceneManager(context.getConfig(), scene);
+        sceneManager.performFrameUpdate(context, 1f);
+        context.getCanvas().resizeScreen(100, 100);
+        sceneManager.performFrameUpdate(context, 1f);
+        sceneManager.performFrameUpdate(context, 1f);
+
+        assertEquals(2, scene.getStartCount());
+    }
+
     private record Counter(List<String> frames) implements Scene {
 
         public Counter() {

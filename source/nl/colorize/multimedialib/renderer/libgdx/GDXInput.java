@@ -21,14 +21,8 @@ import nl.colorize.util.EventQueue;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.Subject;
-import nl.colorize.util.swing.MacIntegration;
-import nl.colorize.util.swing.Popups;
 import nl.colorize.util.swing.SwingUtils;
 
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-import java.awt.BorderLayout;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +31,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static nl.colorize.util.swing.MacIntegration.MACOS_TAHOE;
 
 public class GDXInput implements InputDevice {
 
@@ -201,7 +194,7 @@ public class GDXInput implements InputDevice {
         if (Platform.isMac()) {
             showAppleScriptTextInputDialog(labelText, initialValue, subject);
         } else {
-            showSwingTextInputDialog(labelText, initialValue, subject);
+            showTextInputDialog(labelText, initialValue, subject);
         }
         return EventQueue.subscribe(subject);
     }
@@ -231,20 +224,21 @@ public class GDXInput implements InputDevice {
         }
     }
 
-    private void showSwingTextInputDialog(String labelText, String value, Subject<String> subject) {
-        JLabel label = new JLabel(labelText);
-        JTextField field = new JTextField(value);
+    private void showTextInputDialog(String labelText, String value, Subject<String> subject) {
+        Gdx.app.postRunnable(() -> {
+            Gdx.input.getTextInput(new Input.TextInputListener() {
+                @Override
+                public void input(String text) {
+                    if (text != null && !text.isEmpty()) {
+                        subject.next(text);
+                    }
+                }
 
-        JPanel panel = new JPanel(new BorderLayout(0, 5));
-        panel.add(label, BorderLayout.NORTH);
-        panel.add(field, BorderLayout.CENTER);
-        SwingUtils.setPreferredWidth(panel, 300);
-
-        Popups.message(null, "", panel);
-
-        if (field.getText() != null && !field.getText().isEmpty()) {
-            subject.next(field.getText());
-        }
+                @Override
+                public void canceled() {
+                }
+            }, labelText, value, "");
+        });
     }
 
     @Override
