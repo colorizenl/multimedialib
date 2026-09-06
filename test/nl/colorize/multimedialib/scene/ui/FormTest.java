@@ -59,11 +59,12 @@ class FormTest {
                                 Rect [(50, 20, 50, 20)]
                                 SegmentedLine
                             Text [b]
-                        Container [2]
+                        Container [3]
                             Container [2]
                                 Rect [(0, 40, 20, 20)]
                                 SegmentedLine
                             Rect [(3, 43, 14, 14)]
+                            Text [test]
                         Container [2]
                             Container [0]
                             Text [test]
