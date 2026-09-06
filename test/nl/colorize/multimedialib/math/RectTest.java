@@ -99,12 +99,14 @@ public class RectTest {
     void expand() {
         Rect original = new Rect(10, 20, 30, 40);
         Rect larger = original.expand(20);
-        Rect smaller = original.expand(-20);
+        Rect smaller = original.expand(-20, -10);
 
         assertEquals("(0, 10, 50, 60)", larger.toString());
         assertEquals(original.getCenter(), larger.getCenter());
+        assertEquals("(0, 10)", larger.getTopLeft().toString());
+        assertEquals("(50, 70)", larger.getBottomRight().toString());
 
-        assertEquals("(20, 30, 10, 20)", smaller.toString());
+        assertEquals("(20, 25, 10, 30)", smaller.toString());
         assertEquals(original.getCenter(), smaller.getCenter());
     }
 
@@ -115,5 +117,13 @@ public class RectTest {
         Rect combined = original.combine(other);
 
         assertEquals("(10, 20, 70, 80)", combined.toString());
+    }
+
+    @Test
+    void add() {
+        Rect original = new Rect(10, 20, 30, 40);
+
+        assertEquals("(10, 20, 30, 40)", original.add(Point2D.ORIGIN).toString());
+        assertEquals("(20, 40, 30, 40)", original.add(new Point2D(10, 20)).toString());
     }
 }

@@ -22,7 +22,6 @@ import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Spatial2D;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Text;
-import nl.colorize.util.Signal;
 
 import java.util.List;
 
@@ -101,6 +100,11 @@ public class DeclarativeStyle implements WidgetStyle {
     }
 
     @Override
+    public Spatial2D createTitle(String title, Rect bounds) {
+        return createLabel(title, bounds);
+    }
+
+    @Override
     public Text createLabel(String label, Rect bounds) {
         Rect textBounds = bounds.expand(-2 * padding);
         Text labelText = new Text(label, font, align, (int) textBounds.width());
@@ -110,7 +114,7 @@ public class DeclarativeStyle implements WidgetStyle {
     }
 
     @Override
-    public Spatial2D createButton(String label, Signal<Void> value, Rect bounds) {
+    public Spatial2D createButton(String label, InputModel<Void> value, Rect bounds) {
         Container button = new Container();
         button.addChild(createBackground(bounds));
         button.addChild(createLabel(label, bounds));
@@ -118,18 +122,22 @@ public class DeclarativeStyle implements WidgetStyle {
     }
 
     @Override
-    public Spatial2D createCheckbox(Signal<Boolean> value, Rect bounds) {
+    public Spatial2D createCheckbox(String label, InputModel<Boolean> model, Rect bounds) {
         Point2D center = getCheckboxCenter(bounds);
         Rect outerSize = Rect.around(center, bounds.height(), bounds.height());
         Rect innerSize = Rect.around(center, bounds.height() * 0.7, bounds.height() * 0.7);
 
         Primitive inner = new Primitive(innerSize, getFontColor());
-        inner.getTransform().setVisible(value.get());
-        value.getChanges().subscribe(inner.getTransform()::setVisible);
+        inner.getTransform().setVisible(model.getValue().get());
+        model.getValue().getChanges().subscribe(inner.getTransform()::setVisible);
+
+        Rect labelBounds = new Rect(bounds.x() + outerSize.width() * 1.2, bounds.y(),
+            bounds.width() - outerSize.width() * 1.2, bounds.height());
 
         Container checkbox = new Container();
         checkbox.addChild(createBackground(outerSize));
         checkbox.addChild(inner);
+        checkbox.addChild(createLabel(label, labelBounds));
         return checkbox;
     }
 
@@ -142,9 +150,9 @@ public class DeclarativeStyle implements WidgetStyle {
     }
 
     @Override
-    public Spatial2D createInputField(Signal<String> value, Rect bounds) {
-        Text text = createLabel(value.get(), bounds);
-        value.getChanges().subscribe(text::setText);
+    public Spatial2D createInputField(InputModel<String> model, Rect bounds) {
+        Text text = createLabel(model.getValue().get(), bounds);
+        model.getValue().getChanges().subscribe(text::setText);
 
         Container input = new Container();
         input.addChild(createBackground(bounds));
@@ -153,9 +161,9 @@ public class DeclarativeStyle implements WidgetStyle {
     }
 
     @Override
-    public Spatial2D createSelectField(Signal<String> value, List<String> choices, Rect bounds) {
-        Text text = createLabel(value.get(), bounds);
-        value.getChanges().subscribe(text::setText);
+    public Spatial2D createSelectField(InputModel<String> model, List<String> choices, Rect bounds) {
+        Text text = createLabel(model.getValue().get(), bounds);
+        model.getValue().getChanges().subscribe(text::setText);
 
         Container select = new Container();
         select.addChild(createBackground(bounds));

@@ -117,4 +117,9 @@ public class RegressionDemo implements Scene {
             });
         }
     }
+
+    @Override
+    public boolean shouldRestartOnResize() {
+        return true;
+    }
 }

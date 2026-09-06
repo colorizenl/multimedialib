@@ -224,6 +224,8 @@ public class Demo2D implements Scene, ErrorHandler {
             createButton(context, "Open connection", BLUE_BUTTON, 210, this::openPeerConnection);
             createButton(context, "Join connection", BLUE_BUTTON, 240, this::joinPeerConnection);
         }
+        createButton(context, "Form demo", ORANGE_BUTTON, 400, this::startFormDemo);
+        createButton(context, "Regression demo", ORANGE_BUTTON, 430, this::startRegressionDemo);
     }
 
     private void createButton(SceneContext context, String label, ColorRGB color, int y, Runnable click) {
@@ -378,9 +380,8 @@ public class Demo2D implements Scene, ErrorHandler {
         String message = data.getProperty("test", "");
 
         if (!message.isEmpty()) {
-            Text info = new Text("Loaded message:\n" + message, font, Align.RIGHT);
-            info.getTransform().setPosition(context.getCanvas().getWidth() - 20,
-                context.getCanvas().getHeight() - 200);
+            Text info = new Text("Loaded message:\n" + message, font, Align.LEFT);
+            info.getTransform().setPosition(20, 400);
             hudLayer.addChild(info);
             context.attachTimer(2.0, info::detach);
         }
@@ -589,6 +590,19 @@ public class Demo2D implements Scene, ErrorHandler {
 
             polygonA.setColor(currentA.intersects(currentB) ? WHITE : RED);
         });
+    }
+
+    private void startFormDemo() {
+        context.changeScene(new FormDemo());
+    }
+
+    private void startRegressionDemo() {
+        context.changeScene(new RegressionDemo(null));
+    }
+
+    @Override
+    public boolean shouldRestartOnResize() {
+        return true;
     }
 
     /**

@@ -65,6 +65,7 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
     public static final FontFace DEFAULT_FONT = new FontFace(null, "sans-serif", 10, BLACK);
 
     public HeadlessRenderer() {
+        this.graphics = new CollectingStageVisitor();
         this.touchAvailable = false;
         this.keyboardAvailable = false;
         this.pointer = new Point2D(0f, 0f);
@@ -83,7 +84,6 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
     @Override
     public void start(RenderConfig config, Scene initialScene) {
         this.config = config;
-        this.graphics = null;
         this.mediaLoader = new StandardMediaLoader();
         this.network = new StandardNetwork();
         this.sceneManager = new SimulatedSceneManager(this, initialScene);
@@ -132,6 +132,8 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
         if (sceneManager instanceof SimulatedSceneManager simulated) {
             simulated.simulateFrameUpdate(deltaTime);
         }
+
+        getStage().visit(graphics);
     }
 
     //-------------------------------------------------------------------------

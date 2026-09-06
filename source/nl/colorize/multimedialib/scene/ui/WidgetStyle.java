@@ -8,7 +8,6 @@ package nl.colorize.multimedialib.scene.ui;
 
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.stage.Spatial2D;
-import nl.colorize.util.Signal;
 
 import java.util.List;
 
@@ -20,13 +19,15 @@ import java.util.List;
  */
 public interface WidgetStyle {
 
+    public Spatial2D createTitle(String title, Rect bounds);
+
     public Spatial2D createLabel(String label, Rect bounds);
 
-    public Spatial2D createButton(String label, Signal<Void> value, Rect bounds);
+    public Spatial2D createButton(String label, InputModel<Void> model, Rect bounds);
 
-    public Spatial2D createCheckbox(Signal<Boolean> value, Rect bounds);
+    public Spatial2D createCheckbox(String label, InputModel<Boolean> model, Rect bounds);
 
-    public Spatial2D createInputField(Signal<String> value, Rect bounds);
+    public Spatial2D createInputField(InputModel<String> model, Rect bounds);
 
-    public Spatial2D createSelectField(Signal<String> value, List<String> choices, Rect bounds);
+    public Spatial2D createSelectField(InputModel<String> model, List<String> choices, Rect bounds);
 }

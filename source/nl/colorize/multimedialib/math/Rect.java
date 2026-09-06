@@ -43,6 +43,14 @@ public record Rect(double x, double y, double width, double height) implements S
         return new Point2D(getCenterX(), getCenterY());
     }
 
+    public Point2D getTopLeft() {
+        return new Point2D(x, y);
+    }
+
+    public Point2D getBottomRight() {
+        return new Point2D(x + width, y + height);
+    }
+
     /**
      * Returns true if the specified point is located within this rectangle.
      */
@@ -83,6 +91,14 @@ public record Rect(double x, double y, double width, double height) implements S
     }
 
     /**
+     * Returns a new rectangle that has the same width and height as this
+     * rectangle, but moves its X and Y coordinates by the specified delta.
+     */
+    public Rect add(Point2D delta) {
+        return new Rect(x + delta.x(), y + delta.y(), width, height);
+    }
+
+    /**
      * Returns a new rectangle that encompasses both this rectangle and the
      * specified other rectangle.
      */
@@ -106,14 +122,25 @@ public record Rect(double x, double y, double width, double height) implements S
     }
 
     /**
-     * Expands this rectangle by the specified amount, and returns the
-     * resulting new rectangle. The rectangle is expanded around its center,
-     * i.e. {@code r.getCenter().equals(r.expand(...).getCenter())}.
+     * Expands this rectangle by the specified amount and returns the
+     * resulting new rectangle. The rectangle is expanded around its center.
+     * That is, {@code r.getCenter().equals(r.expand(...).getCenter())}.
+     * Using a negative value for {@code amount} is possible and will result
+     * in a rectangle that is smaller than the original.
+     */
+    public Rect expand(double amountX, double amountY) {
+        return around(getCenter(), width + amountX, height + amountY);
+    }
+
+    /**
+     * Expands this rectangle by the specified amount and returns the
+     * resulting new rectangle. The rectangle is expanded around its center.
+     * That is, {@code r.getCenter().equals(r.expand(...).getCenter())}.
      * Using a negative value for {@code amount} is possible and will result
      * in a rectangle that is smaller than the original.
      */
     public Rect expand(double amount) {
-        return around(getCenter(), width + amount, height + amount);
+        return expand(amount, amount);
     }
 
     public Polygon toPolygon() {

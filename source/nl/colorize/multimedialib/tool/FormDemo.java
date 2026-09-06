@@ -64,7 +64,7 @@ public class FormDemo implements Scene {
         form.addButton("Click here", BUTTON_STYLE)
             .subscribe(_ -> showMessage("Button clicked"));
         form.addLabel("Checkbox:", LABEL_STYLE);
-        form.addCheckbox(false, CHECKBOX_STYLE)
+        form.addCheckbox("Label", false, CHECKBOX_STYLE)
             .subscribe(value -> showMessage("Checkbox: " + value));
         form.addLabel("Input:", LABEL_STYLE);
         form.addInputField("Click here", INPUT_STYLE)

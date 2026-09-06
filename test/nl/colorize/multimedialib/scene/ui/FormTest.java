@@ -42,7 +42,7 @@ class FormTest {
         form.addTitle("a", STYLE);
         form.addLabel("b", STYLE);
         form.addButton("b", BUTTON_STYLE);
-        form.addCheckbox(true, BUTTON_STYLE);
+        form.addCheckbox("test", true, BUTTON_STYLE);
         form.addInputField("test", STYLE);
         form.addSelectField("one", List.of("one", "two", "three"), STYLE);
 
@@ -217,6 +217,35 @@ class FormTest {
     }
 
     @Test
+    void handleClicksIfFormIsMoved() {
+        HeadlessRenderer renderer = new HeadlessRenderer();
+        Stage stage = renderer.getStage();
+        List<String> events = new ArrayList<>();
+
+        Form form = new Form(renderer, 100, 20);
+        form.addButton("a", BUTTON_STYLE).subscribe(_ -> events.add("button"));
+
+        stage.getRoot().addChild(form.getGraphics());
+        renderer.attach(form);
+        form.getGraphics().getTransform().setPosition(1000, 0);
+        renderer.doFrame(1.0);
+
+        assertEquals(List.of(), events);
+
+        renderer.setPointer(new Point2D(10, 10));
+        renderer.setPointerReleased(true);
+        renderer.doFrame(1.0);
+
+        assertEquals(List.of(), events);
+
+        renderer.setPointer(new Point2D(1010, 10));
+        renderer.setPointerReleased(true);
+        renderer.doFrame(1.0);
+
+        assertEquals(List.of("button"), events);
+    }
+
+    @Test
     void pipeInputEvents() {
         HeadlessRenderer renderer = new HeadlessRenderer();
         Stage stage = renderer.getStage();
@@ -293,5 +322,24 @@ class FormTest {
 
         assertEquals(25.0, backgroundSprite.getTransform().getScaleX(), EPSILON);
         assertEquals(20.0, backgroundSprite.getTransform().getScaleY(), EPSILON);
+    }
+
+    @Test
+    void getFormHeight() {
+        HeadlessRenderer renderer = new HeadlessRenderer();
+
+        Form form = new Form(renderer, 100, 20);
+        form.setGap(0, 10);
+        renderer.getStage().getRoot().addChild(form.getGraphics());
+
+        assertEquals(0, form.getFormHeight());
+
+        form.addTitle("a", STYLE);
+
+        assertEquals(20, form.getFormHeight());
+
+        form.addLabel("b", STYLE);
+
+        assertEquals(50, form.getFormHeight());
     }
 }

@@ -114,6 +114,10 @@ public final class Effects {
         return _ -> gfx.getTransform().setPosition(canvas.getCenter().add(0, offsetY));
     }
 
+    public static Actor keepCenter(Spatial2D gfx, Canvas canvas) {
+        return keepCenter(gfx, canvas, 0);
+    }
+
     public static Actor keepBottomCenter(Spatial2D gfx, Canvas canvas, double marginY) {
         return _ -> gfx.getTransform().setPosition(canvas.getCenter().x(), canvas.getHeight() - marginY);
     }

@@ -123,7 +123,7 @@ class EffectsTest {
         HeadlessRenderer context = new HeadlessRenderer();
         Canvas canvas = context.getCanvas();
 
-        List<Sprite> sprites = IntStream.range(0, 8)
+        List<Sprite> sprites = IntStream.range(0, 9)
             .mapToObj(_ -> new Sprite(new MockImage(100, 100)))
             .peek(sprite -> context.getStage().getRoot().addChild(sprite))
             .toList();
@@ -136,6 +136,7 @@ class EffectsTest {
         context.attach(Effects.keepTopRight(sprites.get(5), canvas, 10, 20));
         context.attach(Effects.keepMiddleRight(sprites.get(6), canvas, 10, 20));
         context.attach(Effects.keepBottomRight(sprites.get(7), canvas, 10, 20));
+        context.attach(Effects.keepCenter(sprites.get(8), canvas));
         context.doFrame(1.0);
 
         assertEquals(800, canvas.getWidth());
@@ -148,5 +149,6 @@ class EffectsTest {
         assertEquals("(790, 20)", sprites.get(5).getTransform().getPosition().toString());
         assertEquals("(790, 320)", sprites.get(6).getTransform().getPosition().toString());
         assertEquals("(790, 580)", sprites.get(7).getTransform().getPosition().toString());
+        assertEquals("(400, 300)", sprites.get(8).getTransform().getPosition().toString());
     }
 }
