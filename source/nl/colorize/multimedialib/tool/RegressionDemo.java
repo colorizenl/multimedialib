@@ -8,13 +8,16 @@ package nl.colorize.multimedialib.tool;
 
 import lombok.AllArgsConstructor;
 import nl.colorize.multimedialib.math.Circle;
+import nl.colorize.multimedialib.math.Point3D;
 import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.SegmentedLine;
+import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontFace;
+import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Text;
@@ -36,9 +39,11 @@ import static nl.colorize.multimedialib.stage.ColorRGB.WHITE;
 @AllArgsConstructor
 public class RegressionDemo implements Scene {
 
+    private GraphicsMode graphicsMode;
     private File screenshotFile;
 
     private static final ResourceFile IMAGE_FILE = new ResourceFile("colorize-emblem-64.png");
+    private static final ResourceFile MODEL_FILE = new ResourceFile("demo/crate.vox.obj");
     private static final ColorRGB RED = ColorRGB.parseHex("#e45d61");
     private static final ColorRGB GRAY = ColorRGB.parseHex("#adadad");
     private static final Logger LOGGER = LogHelper.getLogger(RegressionDemo.class);
@@ -46,6 +51,10 @@ public class RegressionDemo implements Scene {
     @Override
     public void start(SceneContext context) {
         Rect bounds = context.getCanvas().getBounds();
+
+        if (graphicsMode == GraphicsMode.MODE_3D) {
+            addPolygonModels(context);
+        }
 
         addBackground(context, bounds);
         addSprites(context);
@@ -105,6 +114,18 @@ public class RegressionDemo implements Scene {
         Primitive polygon = new Primitive(Polygon.createCircle(32, 8), RED, 50);
         polygon.getTransform().setPosition(bounds.getEndX() - 70, 340);
         context.getStage().getRoot().addChild(polygon);
+    }
+
+    private void addPolygonModels(SceneContext context) {
+        context.getStage().setCameraPosition(new Point3D(0, 6, 8));
+        context.getStage().setCameraFocus(Point3D.ORIGIN);
+
+        Mesh crateTemplate = context.getMediaLoader().loadModel(MODEL_FILE);
+        Mesh model = crateTemplate.copy();
+        model.getTransform().setPosition(new Point3D(0, 1, 0));
+        model.getTransform().setScale(60);
+        model.getTransform().setRotation(0, 45, 0);
+        context.getStage().getRoot3D().addChild(model);
     }
 
     @Override

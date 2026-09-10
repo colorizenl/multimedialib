@@ -205,6 +205,13 @@ public class TeaVMTranspilerToolTest {
             i:b:colorize-icon-32.png:1300:1
             i:b:colorize-icon.icns:29644:1
             i:b:colorize-logo-180.png:60743:1
+            i:b:com/badlogic/gdx/graphics/g3d/particles/particles.fragment.glsl:820:1
+            i:b:com/badlogic/gdx/graphics/g3d/particles/particles.vertex.glsl:2886:1
+            i:b:com/badlogic/gdx/graphics/g3d/shaders/default.fragment.glsl:5874:1
+            i:b:com/badlogic/gdx/graphics/g3d/shaders/default.vertex.glsl:9096:1
+            i:b:com/badlogic/gdx/graphics/g3d/shaders/depth.fragment.glsl:869:1
+            i:b:com/badlogic/gdx/graphics/g3d/shaders/depth.vertex.glsl:2931:1
+            i:b:com/badlogic/gdx/utils/lsans-15.fnt:17711:1
             i:b:com/badlogic/gdx/utils/lsans-15.png:10270:1
             i:b:demo/colorize-logo.gltf:36365:1
             i:b:demo/crate.vox.mtl:133:1
@@ -215,6 +222,26 @@ public class TeaVMTranspilerToolTest {
             i:b:effects/particle-circle.png:819:1
             i:b:effects/particle-diamond.png:416:1
             i:b:net/mgsx/gltf/shaders/brdfLUT.png:16623:1
+            i:b:net/mgsx/gltf/shaders/default.fs.glsl:5176:1
+            i:b:net/mgsx/gltf/shaders/default.vs.glsl:8824:1
+            i:b:net/mgsx/gltf/shaders/depth.fs.glsl:867:1
+            i:b:net/mgsx/gltf/shaders/depth.vs.glsl:4377:1
+            i:b:net/mgsx/gltf/shaders/emissive-only.fs.glsl:2921:1
+            i:b:net/mgsx/gltf/shaders/ibl-sun.fs.glsl:492:1
+            i:b:net/mgsx/gltf/shaders/ibl-sun.vs.glsl:185:1
+            i:b:net/mgsx/gltf/shaders/pbr/compat.fs.glsl:958:1
+            i:b:net/mgsx/gltf/shaders/pbr/compat.vs.glsl:276:1
+            i:b:net/mgsx/gltf/shaders/pbr/env.glsl:650:1
+            i:b:net/mgsx/gltf/shaders/pbr/functions.glsl:1520:1
+            i:b:net/mgsx/gltf/shaders/pbr/ibl.glsl:6953:1
+            i:b:net/mgsx/gltf/shaders/pbr/iridescence.glsl:5118:1
+            i:b:net/mgsx/gltf/shaders/pbr/lights.glsl:9214:1
+            i:b:net/mgsx/gltf/shaders/pbr/material.glsl:6993:1
+            i:b:net/mgsx/gltf/shaders/pbr/pbr.fs.glsl:8575:1
+            i:b:net/mgsx/gltf/shaders/pbr/pbr.vs.glsl:8492:1
+            i:b:net/mgsx/gltf/shaders/pbr/shadows.glsl:2853:1
+            i:b:net/mgsx/gltf/shaders/skybox.fs.glsl:1951:1
+            i:b:net/mgsx/gltf/shaders/skybox.vs.glsl:516:1
             i:b:startup-logo.png:241:1
             """;
 

@@ -31,7 +31,7 @@ import static nl.colorize.multimedialib.tool.Demo2D.DEFAULT_CANVAS_WIDTH;
  */
 public class DemoLauncher {
 
-    @Arg(name = "--renderer", usage = "One of 'java2d', 'gdx', 'regression'.")
+    @Arg(name = "--renderer", usage = "One of 'java2d', 'gdx', 'regression', 'regression3d'.")
     protected String rendererName;
 
     @Arg(name = "--demo", usage = "One of '2d', '3d', 'form'.")
@@ -56,7 +56,7 @@ public class DemoLauncher {
     }
 
     private void start() {
-        GraphicsMode graphicsMode = demoMode.equals("3d") ? MODE_3D : MODE_2D;
+        GraphicsMode graphicsMode = demoMode.endsWith("3d") ? MODE_3D : MODE_2D;
         ScaleStrategy scaleStrategy = canvasZoom ? ScaleStrategy.scale() : ScaleStrategy.flexible();
         Canvas canvas = new Canvas(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT, scaleStrategy);
 
@@ -71,7 +71,8 @@ public class DemoLauncher {
             case "2d" -> new Demo2D();
             case "3d" -> new Demo3D();
             case "form" -> new FormDemo();
-            case "regression" -> new RegressionDemo(screenshotFile);
+            case "regression" -> new RegressionDemo(MODE_2D, screenshotFile);
+            case "regression3d" -> new RegressionDemo(MODE_3D, screenshotFile);
             default -> throw new UnsupportedOperationException();
         };
     }

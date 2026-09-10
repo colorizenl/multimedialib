@@ -132,13 +132,13 @@ On desktop platforms, you can launch the demo application using `gradle launchDe
 Alternatively, you can run the class `nl.colorize.multimedialib.tool.DemoLauncher`.
 Both versions support the following command line arguments:
 
-| Name           | Required | Description                                          |
-|----------------|----------|------------------------------------------------------|
-| `--renderer`   | yes      | One of 'java2d', 'javafx', 'gdx'.                    |
-| `--demo`       | yes      | One of '2d', '3d', 'form', 'regression'.             |
-| `--framerate`  | no       | Demo framerate, default is 60 fps.                   |
-| `--canvas`     | no       | Uses a fixed canvas size to display graphics.        |
-| `--screenshot` | no       | Saves a screenshot to the specifie file, then exits. |
+| Name           | Required | Description                                              |
+|----------------|----------|----------------------------------------------------------|
+| `--renderer`   | yes      | One of 'java2d', 'javafx', 'gdx'.                        |
+| `--demo`       | yes      | One of '2d', '3d', 'form', 'regression', 'regression3d'. |
+| `--framerate`  | no       | Demo framerate, default is 60 fps.                       |
+| `--canvas`     | no       | Uses a fixed canvas size to display graphics.            |
+| `--screenshot` | no       | Saves a screenshot to the specifie file, then exits.     |
 
 If you are running the demo launcher via Gradle, you can provide these command line arguments
 by adding e.g. `--args='--renderer java2d --demo 2d'` to your Gradle command. 

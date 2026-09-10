@@ -18,7 +18,9 @@ import nl.colorize.multimedialib.math.RNG;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.math.Shape;
+import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.ErrorHandler;
+import nl.colorize.multimedialib.renderer.GraphicsMode;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.MediaLoader;
@@ -309,8 +311,10 @@ public class Demo2D implements Scene, ErrorHandler {
 
         context.attach(deltaTime -> {
             timeline.movePlayhead(deltaTime);
-            leftPrimitive.setPosition(xOffset, context.getCanvas().getHeight() - 40);
-            rightPrimitive.setPosition(timeline.getValue(), context.getCanvas().getHeight() - 40);
+
+            Canvas canvas = context.getCanvas();
+            leftPrimitive.getTransform().setPosition(xOffset, canvas.getHeight() - 40);
+            rightPrimitive.getTransform().setPosition(timeline.getValue(), canvas.getHeight() - 40);
 
             Polygon currentLeft = (Polygon) leftPrimitive.getStageShape();
             Polygon currentRight = (Polygon) rightPrimitive.getStageShape();
@@ -348,11 +352,13 @@ public class Demo2D implements Scene, ErrorHandler {
     }
 
     private void sendHttpRequest(Network network) {
+        Canvas canvas = context.getCanvas();
+
         Map<String, String> headers = Map.of(HttpHeaders.ACCEPT, "text/plain");
         PostData data = PostData.create("message", "1234");
 
         Text info = new Text("Network request pending", font, Align.RIGHT);
-        info.setPosition(context.getCanvas().getWidth() - 20, context.getCanvas().getHeight() - 100);
+        info.getTransform().setPosition(canvas.getWidth() - 20, canvas.getHeight() - 100);
         hudLayer.addChild(info);
 
         context.attach(network.post(EXAMPLE_URL, headers, data), response -> {
@@ -597,7 +603,7 @@ public class Demo2D implements Scene, ErrorHandler {
     }
 
     private void startRegressionDemo() {
-        context.changeScene(new RegressionDemo(null));
+        context.changeScene(new RegressionDemo(GraphicsMode.MODE_2D, null));
     }
 
     @Override

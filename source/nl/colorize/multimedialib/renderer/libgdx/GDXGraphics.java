@@ -25,6 +25,7 @@ import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.PointLight;
+import com.badlogic.gdx.graphics.g3d.utils.DefaultShaderProvider;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Intersector;
@@ -86,6 +87,7 @@ public class GDXGraphics implements StageVisitor, World3D {
 
     protected PerspectiveCamera camera;
     private Environment environment;
+    private DefaultShaderProvider shader;
     private ModelBatch modelBatch;
     private List<ModelInstance> displayList;
 
@@ -109,14 +111,13 @@ public class GDXGraphics implements StageVisitor, World3D {
         camera.near = (float) NEAR_PLANE;
         camera.far = (float) FAR_PLANE;
         camera.update();
-
-        restartBatch();
     }
 
     protected void restartBatch() {
         spriteBatch = new SpriteBatch();
         shapeBatch = new ShapeRenderer();
-        modelBatch = new ModelBatch();
+        modelBatch = new ModelBatch(shader);
+
         if (displayList != null) {
             displayList.clear();
         }
@@ -125,7 +126,7 @@ public class GDXGraphics implements StageVisitor, World3D {
     @Override
     public void prepareStage(Stage stage) {
         if (displayList == null) {
-            displayList = new ArrayList<>();
+            initDisplayList();
         }
 
         if (graphicsMode == GraphicsMode.MODE_3D) {
@@ -133,6 +134,19 @@ public class GDXGraphics implements StageVisitor, World3D {
             prepareEnvironment(stage);
             displayList.clear();
         }
+    }
+
+    private void initDisplayList() {
+        displayList = new ArrayList<>();
+
+        if (graphicsMode == GraphicsMode.MODE_3D) {
+            shader = new DefaultShaderProvider(
+                Gdx.files.internal("com/badlogic/gdx/graphics/g3d/shaders/default.vertex.glsl"),
+                Gdx.files.internal("com/badlogic/gdx/graphics/g3d/shaders/default.fragment.glsl")
+            );
+        }
+
+        restartBatch();
     }
 
     private void prepareCamera(Stage stage) {

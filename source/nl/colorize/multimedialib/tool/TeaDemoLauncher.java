@@ -40,7 +40,7 @@ public class TeaDemoLauncher {
 
         String demoMode = getDemoMode();
         Canvas canvas = new Canvas(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT, ScaleStrategy.balanced());
-        GraphicsMode graphicsMode = demoMode.equals("3d") ? MODE_3D : MODE_2D;
+        GraphicsMode graphicsMode = demoMode.endsWith("3d") ? MODE_3D : MODE_2D;
         String defaultRenderer = graphicsMode == MODE_3D ? "gdx" : "canvas";
         String rendererName = Browser.getBrowserBridge().getQueryParameter("renderer", defaultRenderer);
         LOGGER.info("Renderer: " + rendererName);
@@ -56,7 +56,8 @@ public class TeaDemoLauncher {
             case "2d" -> new Demo2D();
             case "3d" -> new Demo3D();
             case "form" -> new FormDemo();
-            case "regression" -> new RegressionDemo(null);
+            case "regression" -> new RegressionDemo(MODE_2D, null);
+            case "regression3d" -> new RegressionDemo(MODE_3D, null);
             default -> throw new UnsupportedOperationException();
         };
     }

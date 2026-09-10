@@ -52,15 +52,4 @@ public interface Spatial2D extends Spatial<Transform> {
      * the stage. This method uses {@link #getGlobalTransform()}.
      */
     public Rect getStageBounds();
-
-    /**
-     * Convenience method of changing this graphic's position. The X and Y
-     * coordinates are relative to the graphic's local transform.
-     *
-     * @deprecated Prefer using {@code getTransform().setPosition(x, y)}.
-     */
-    @Deprecated
-    default void setPosition(double x, double y) {
-        getTransform().setPosition(x, y);
-    }
 }

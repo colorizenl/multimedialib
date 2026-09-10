@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8"/>
+        <title>MultimediaLib | Emulated input field</title>
+        <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no" />
+        <style>
+            #input {
+                width: 400px;
+                background-color: #adadad;
+                color: #181818;
+                padding: 20px;
+            }
+
+            .focus {
+                background-color: #e45d61 !important;
+                color: #ffffff !important;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="input" tabindex="0" onclick="startEditing()">
+            This is an input field. Click/Touch to start typing.
+            <br /><br />
+        </div>
+
+        <script>
+            let focus = false;
+
+            function startEditing() {
+                const inputField = document.getElementById("input");
+                inputField.classList.add("focus");
+                focus = true;
+            }
+
+            document.addEventListener("DOMContentLoaded", _ => {
+                const inputField = document.getElementById("input");
+                inputField.addEventListener("keyup", e => {
+                    if (focus) {
+                        if (e.keyCode == 8 && inputField.innerText.length > 0) {
+                            const text = inputField.innerText;
+                            inputField.innerText = text.substring(0, text.length - 1);
+                        } else {
+                            inputField.innerText += e.key;
+                        }
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>

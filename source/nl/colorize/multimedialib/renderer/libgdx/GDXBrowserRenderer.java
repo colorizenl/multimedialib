@@ -43,7 +43,7 @@ import java.util.logging.Logger;
 public class GDXBrowserRenderer extends GDXContext implements Renderer {
 
     private static final String CANVAS_ID = "multimediaLibCanvas";
-    private static final boolean SHOW_DOWNLOADED_ASSETS = true;
+    private static final boolean SHOW_DOWNLOADED_ASSETS = false;
     private static final Logger LOGGER = LogHelper.getLogger(GDXBrowserRenderer.class);
 
     @Override

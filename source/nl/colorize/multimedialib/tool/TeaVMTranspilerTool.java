@@ -446,11 +446,15 @@ public class TeaVMTranspilerTool {
             !file.getName().equals(".DS_Store");
     }
 
+    private boolean isPreloadAsset(File file) {
+        return isBinaryAssetFile(file) || file.getName().endsWith(".glsl");
+    }
+
     private void generatePreloadAssetFile() throws IOException {
         File assetsDir = new File(outputDir, "assets");
 
-        String contents = FileUtils.walkFiles(assetsDir, this::isBinaryAssetFile).stream()
-            .filter(file -> !isTextResourceFile(file))
+        String contents = FileUtils.walkFiles(assetsDir, this::isPreloadAsset).stream()
+            .filter(file -> !isTextResourceFile(file) || isPreloadAsset(file))
             .map(f -> "i:b:" + FileUtils.getRelativePath(f, assetsDir) + ":" + f.length() + ":1")
             .sorted()
             .collect(Collectors.joining("\n"));

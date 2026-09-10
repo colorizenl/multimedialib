@@ -11,6 +11,9 @@ gradle launchDemoApplication \
 
 gradle launchDemoApplication \
   --args='--renderer gdx --demo regression --screenshot build/renderer-regression-test/desktop-gdx.png'
+  
+gradle launchDemoApplication \
+  --args='--renderer gdx --demo regression3d --screenshot build/renderer-regression-test/desktop-gdx-3d.png'
 
 gradle transpileDemoApplication
 jwebserver -d build/browserdemo -p 7788 &
@@ -28,6 +31,12 @@ browser_screenshot.py \
   --width 503 \
   --height 1311 \
   --out build/renderer-regression-test/browser-gdx.png
+  
+browser_screenshot.py \
+  --url "http://localhost:7788/?demo=regression3d&renderer=gdx" \
+  --width 503 \
+  --height 1311 \
+  --out build/renderer-regression-test/browser-gdx-3d.png
 
 # Compare screenshots against baseline
 
@@ -42,6 +51,12 @@ echo "Comparing results for libGDX desktop renderer"
 compare_screenshots.py \
   _development/renderer-regression-test-baseline/desktop-gdx.png \
   build/renderer-regression-test/desktop-gdx.png
+  
+echo "Comparing results for libGDX desktop renderer (3D)"
+
+compare_screenshots.py \
+  _development/renderer-regression-test-baseline/desktop-gdx-3d.png \
+  build/renderer-regression-test/desktop-gdx-3d.png
 
 echo "Comparing results for HTML canvas renderer"
 
@@ -54,5 +69,11 @@ echo "Comparing results for libGDX browser renderer"
 compare_screenshots.py \
   _development/renderer-regression-test-baseline/browser-gdx.png \
   build/renderer-regression-test/browser-gdx.png
+  
+echo "Comparing results for libGDX browser renderer (3D)"
+
+compare_screenshots.py \
+  _development/renderer-regression-test-baseline/browser-gdx-3d.png \
+  build/renderer-regression-test/browser-gdx-3d.png
 
 echo "Renderer visual regression test OK"
