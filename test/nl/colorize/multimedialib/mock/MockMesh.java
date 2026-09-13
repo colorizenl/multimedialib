@@ -8,7 +8,6 @@ package nl.colorize.multimedialib.mock;
 
 import lombok.Getter;
 import lombok.Setter;
-import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Group;
 import nl.colorize.multimedialib.stage.Image;
@@ -51,6 +50,6 @@ public class MockMesh implements Mesh {
     }
 
     @Override
-    public void animate(Timer animationTimer) {
+    public void animate(double animationTime) {
     }
 }

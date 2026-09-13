@@ -34,11 +34,16 @@ public interface Spatial<T> {
 
     /**
      * Called by the renderer at the end of each frame update, before drawing
-     * this node. The value of {@code animationTimer} represents the elapsed
-     * time since the currently active scene was started. Note the renderer
-     * will <em>only</em> call this method if this node is actually visible.
+     * this node. Note the renderer will <em>only</em> call this method if
+     * this node is actually visible. This is why this method uses the overall
+     * scene time, instead of the delta time since the last frame, since the
+     * definition of "last frame" is dependent on when this graphic was last
+     * visible.
+     *
+     * @param animationTime The elapsed time since the currently active scene
+     *                      was started, in seconds.
      */
-    public void animate(Timer animationTimer);
+    public void animate(double animationTime);
 
     /**
      * Returns this node's local transform, which is interpreted relative to

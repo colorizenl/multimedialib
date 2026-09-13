@@ -15,7 +15,6 @@ import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import lombok.Getter;
 import lombok.Setter;
-import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Group;
 import nl.colorize.multimedialib.stage.Image;
@@ -49,9 +48,9 @@ public class GDXModel implements Mesh {
     }
 
     @Override
-    public void animate(Timer animationTimer) {
+    public void animate(double animationTime) {
         if (dynamicTexture != null) {
-            dynamicTexture.animate(animationTimer);
+            dynamicTexture.animate(animationTime);
             applyTexture(dynamicTexture.getCurrentGraphics());
         }
     }

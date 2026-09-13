@@ -190,4 +190,38 @@ public class StateMachineTest {
         assertEquals("b", stateMachine.getCurrentState());
         assertEquals(1.0, stateMachine.getCurrentStateTimer().getTime(), EPSILON);
     }
+
+    @Test
+    void changingToSameStateShouldRespectNewDuration() {
+        StateMachine<String> stateMachine = StateMachine.withDefaultState("a");
+        stateMachine.changeState("a", 1.0);
+        stateMachine.update(1.0);
+        stateMachine.changeState("a", 2.0);
+        stateMachine.update(1.0);
+
+        assertEquals(1.0, stateMachine.getCurrentStateTimer().getTime(), EPSILON);
+        assertEquals(2.0, stateMachine.getCurrentStateTimer().getDuration(), EPSILON);
+    }
+
+    @Test
+    void changingStateShouldNotClearQueue() {
+        StateMachine<String> stateMachine = StateMachine.withDefaultState("a");
+        stateMachine.changeState("a", 2.0);
+        stateMachine.queueState("b", 2.0);
+        stateMachine.queueState("c", 2.0);
+
+        stateMachine.update(1.0);
+        stateMachine.update(1.0);
+
+        assertEquals("b", stateMachine.getCurrentState());
+        assertEquals(0.0, stateMachine.getCurrentStateTimer().getTime(), EPSILON);
+        assertEquals(2.0, stateMachine.getCurrentStateTimer().getDuration(), EPSILON);
+
+        stateMachine.update(1.0);
+        stateMachine.update(1.0);
+
+        assertEquals("c", stateMachine.getCurrentState());
+        assertEquals(0.0, stateMachine.getCurrentStateTimer().getTime(), EPSILON);
+        assertEquals(2.0, stateMachine.getCurrentStateTimer().getDuration(), EPSILON);
+    }
 }

@@ -392,8 +392,8 @@ public class SceneManagerTest {
     void updateBasedOnGlobalSceneTimer() {
         MockImage a = new MockImage();
         MockImage b = new MockImage();
-        Sprite sprite = new Sprite(new Animation(List.of(a, b), 10f, false));
-        sprite.animate(Timer.none());
+        MockSprite sprite = new MockSprite(new Animation(List.of(a, b), 10f, false));
+        sprite.animate(0.0);
 
         SceneManager sceneManager = new SceneManager(context.getConfig(), new MockScene());
         context.setSceneManager(sceneManager);
@@ -683,6 +683,18 @@ public class SceneManagerTest {
         @Override
         public void update(SceneContext context, double deltaTime) {
             frames.add(String.format("%.2f", deltaTime));
+        }
+    }
+
+    private static class MockSprite extends Sprite {
+
+        public MockSprite(Animation anim) {
+            super(anim);
+        }
+
+        @Override
+        public Timer getCurrentStateTimer() {
+            return super.getCurrentStateTimer();
         }
     }
 }

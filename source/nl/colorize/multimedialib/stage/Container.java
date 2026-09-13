@@ -11,7 +11,6 @@ import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
-import nl.colorize.multimedialib.scene.Timer;
 
 import java.util.Iterator;
 import java.util.List;
@@ -146,7 +145,7 @@ public class Container implements Spatial2D, Iterable<Spatial2D> {
     }
 
     @Override
-    public void animate(Timer sceneTime) {
+    public void animate(double animationTime) {
     }
 
     @Override

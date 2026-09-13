@@ -26,9 +26,10 @@ import java.util.Deque;
  * states in the queue. If there is no default state, the state machine will
  * remain in the current state until a new state is queued.
  * <p>
- * {@link StateMachine} instances should be encapsulated by the object for
- * which the state applies. The state machine itself does not have any
- * knowledge on when it is appropriate to change the state.
+ * {@link StateMachine} instances should typically be encapsulated by the
+ * object for which the state applies. The state machine itself does not
+ * have any knowledge on "valid" state transitions, or on when it is
+ * appropriate to change the state.
  *
  * @param <S> The type of state represented by this finite state machine.
  *            Two objects are considered "the same state" based on
@@ -50,10 +51,24 @@ public class StateMachine<S> implements Actor {
         this.defaultState = defaultState;
     }
 
+    private void enterState(RequestedState<S> newState, boolean force) {
+        if (currentState.equals(newState.state) && !force) {
+            return;
+        }
+
+        currentState = newState.state;
+        currentStateTimer = new Timer(newState.duration);
+
+        if (force) {
+            requestedStates.clear();
+        }
+    }
+
     /**
      * Changes this state machine to the specified state, immediately changing
      * to the requested state regardless of the currently active state. The new
-     * state will remain active indefinitely.
+     * state will remain active indefinitely. If this state machine is already
+     * in the requested state, this method does nothing.
      */
     public void changeState(S state) {
         changeState(state, Double.MAX_VALUE);
@@ -62,14 +77,12 @@ public class StateMachine<S> implements Actor {
     /**
      * Changes this state machine to the specified state, immediately changing
      * to the requested state regardless of the currently active state. The new
-     * state will remain active for the specified duration (in seconds).
+     * state will remain active for the specified duration (in seconds). If
+     * this state machine is already in the requested state, this method does
+     * nothing.
      */
     public void changeState(S state, double duration) {
         Preconditions.checkArgument(duration >= 0.0, "Invalid duration: " + duration);
-
-        if (currentState.equals(state)) {
-            return;
-        }
 
         // The new overloads of this method use Double.MAX_VALUE,
         // but we also interpret zero duration as infinite, for
@@ -78,9 +91,8 @@ public class StateMachine<S> implements Actor {
             duration = Double.MAX_VALUE;
         }
 
-        currentState = state;
-        currentStateTimer = new Timer(duration);
-        requestedStates.clear();
+        RequestedState<S> requestedState = new RequestedState<>(state, duration);
+        enterState(requestedState, true);
     }
 
     /**
@@ -100,10 +112,6 @@ public class StateMachine<S> implements Actor {
     public void queueState(S state, double duration) {
         Preconditions.checkArgument(duration >= 0.0, "Invalid duration: " + duration);
 
-        if (currentState.equals(state)) {
-            return;
-        }
-
         // The new overloads of this method use Double.MAX_VALUE,
         // but we also interpret zero duration as infinite, for
         // backward compatibility.
@@ -111,13 +119,21 @@ public class StateMachine<S> implements Actor {
             duration = Double.MAX_VALUE;
         }
 
+        RequestedState<S> requestedState = new RequestedState<>(state, duration);
+
         if (currentStateTimer.isInfinite() || currentStateTimer.isCompleted()) {
-            changeState(state, duration);
+            enterState(requestedState, false);
         } else {
-            requestedStates.push(new RequestedState<>(state, duration));
+            requestedStates.offer(requestedState);
         }
     }
 
+    /**
+     * Updates this state machine for the current frame. If the current state,
+     * as returned by {@link #getCurrentState()}, implements the {@link Actor}
+     * interface, it will automatically receive the frame update via the state
+     * machine.
+     */
     @Override
     public void update(double deltaTime) {
         if (currentState instanceof Actor stateActor) {
@@ -129,7 +145,7 @@ public class StateMachine<S> implements Actor {
         if (currentStateTimer.isCompleted()) {
             if (!requestedStates.isEmpty()) {
                 RequestedState<S> nextState = requestedStates.pop();
-                changeState(nextState.state, nextState.duration);
+                enterState(nextState, false);
             } else if (defaultState != null) {
                 changeState(defaultState);
             }

@@ -8,7 +8,6 @@ package nl.colorize.multimedialib.stage;
 
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.mock.MockImage;
-import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.util.TupleList;
 import org.junit.jupiter.api.Test;
 
@@ -29,12 +28,12 @@ public class SpriteTest {
         sprite.addGraphics("a", imageA);
         sprite.addGraphics("b", imageB);
 
-        assertEquals("a", sprite.getActiveState());
+        assertEquals("a", sprite.getCurrentState());
         assertEquals(imageA, sprite.getCurrentGraphics());
 
         sprite.changeGraphics("b");
 
-        assertEquals("b", sprite.getActiveState());
+        assertEquals("b", sprite.getCurrentState());
         assertEquals(imageB, sprite.getCurrentGraphics());
     }
 
@@ -59,8 +58,8 @@ public class SpriteTest {
         sprite.addGraphics("a", new Animation(List.of(first, second, third), 1f, false));
         sprite.addGraphics("b", fourth);
 
-        sprite.animate(Timer.at(1f));
-        sprite.animate(Timer.at(10f));
+        sprite.animate(1);
+        sprite.animate(10);
 
         assertEquals(third, sprite.getCurrentGraphics());
 
@@ -73,7 +72,7 @@ public class SpriteTest {
     @Test
     public void testCannotAnimateSpriteWithoutStates() {
         Sprite sprite = new Sprite();
-        assertThrows(IllegalStateException.class, () -> sprite.animate(Timer.at(1f)));
+        assertThrows(IllegalStateException.class, () -> sprite.animate(1));
     }
 
     @Test
@@ -95,8 +94,8 @@ public class SpriteTest {
         Sprite copy = sprite.copy();
         copy.changeGraphics("b");
 
-        assertEquals("a", sprite.getActiveState());
-        assertEquals("b", copy.getActiveState());
+        assertEquals("a", sprite.getCurrentState());
+        assertEquals("b", copy.getCurrentState());
     }
 
     @Test

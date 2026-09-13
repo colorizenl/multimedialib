@@ -168,7 +168,7 @@ public final class Stage {
             return;
         }
 
-        node.animate(animationTimer);
+        node.animate(animationTimer.getTime());
 
         switch (node) {
             case Container container -> visitContainer(container, globalTransform, visitor);
@@ -225,7 +225,7 @@ public final class Stage {
             return;
         }
 
-        node.animate(animationTimer);
+        node.animate(animationTimer.getTime());
 
         switch (node) {
             case Group group -> visitGroup(group, globalTransform, visitor);

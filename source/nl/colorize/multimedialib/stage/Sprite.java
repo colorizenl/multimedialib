@@ -122,6 +122,20 @@ public class Sprite implements Spatial2D {
         addGraphics(stateName, new Animation(stateGraphics));
     }
 
+    public Set<String> getAvailableStates() {
+        return availableStates.keySet();
+    }
+
+    public boolean hasState(String stateName) {
+        return availableStates.containsKey(stateName);
+    }
+
+    public Animation getGraphics(String stateName) {
+        StateGraphics state = availableStates.get(stateName);
+        Preconditions.checkState(state != null, "No such state: " + stateName);
+        return state.graphics;
+    }
+
     /**
      * Changes this sprite's graphics to the state identified by the specified
      * name. If the sprite is already in that state, this method does nothing.
@@ -140,38 +154,15 @@ public class Sprite implements Spatial2D {
         }
     }
 
-    /**
-     * Leaves the sprite in its current state, but resets the graphics for that
-     * state to play from the beginning.
-     */
-    public void resetCurrentGraphics() {
-        stateMachine.getCurrentStateTimer().reset();
-        updateCurrentGraphics();
-    }
-
-    public String getActiveState() {
+    public String getCurrentState() {
         return stateMachine.getCurrentState().name;
     }
 
-    public Set<String> getAvailableStates() {
-        return availableStates.keySet();
-    }
-
-    public boolean hasState(String stateName) {
-        return availableStates.containsKey(stateName);
-    }
-
-    public Animation getGraphics(String stateName) {
-        return availableStates.get(stateName).graphics;
-    }
-
-    @Deprecated
     public Animation getCurrentStateGraphics() {
         return stateMachine.getCurrentState().graphics;
     }
 
-    @Deprecated
-    public Timer getCurrentStateTimer() {
+    protected Timer getCurrentStateTimer() {
         StateGraphics currentState = stateMachine.getCurrentState();
         double time = stateMachine.getCurrentStateTimer().getTime();
 
@@ -195,19 +186,17 @@ public class Sprite implements Spatial2D {
     }
 
     @Override
-    public void animate(Timer sceneTime) {
+    public void animate(double animationTime) {
         Preconditions.checkState(getCurrentGraphics() != null, "Sprite does not contain graphics");
 
-        double tick = sceneTime.getTime();
-
         if (lastTick >= 0f) {
-            double deltaTime = tick - lastTick;
+            double deltaTime = animationTime - lastTick;
             Timer stateTimer = stateMachine.getCurrentStateTimer();
             stateTimer.setTime(stateTimer.getTime() + deltaTime);
         }
 
         updateCurrentGraphics();
-        lastTick = tick;
+        lastTick = animationTime;
     }
 
     private void updateCurrentGraphics() {
@@ -240,7 +229,7 @@ public class Sprite implements Spatial2D {
 
     @Override
     public String toString() {
-        return "Sprite [" + stateMachine.getCurrentState().name + "]";
+        return "Sprite [" + stateMachine.getCurrentState() + "]";
     }
 
     /**
@@ -255,5 +244,10 @@ public class Sprite implements Spatial2D {
         private final String name;
         private final Animation graphics;
         private Image current;
+
+        @Override
+        public String toString() {
+            return name;
+        }
     }
 }

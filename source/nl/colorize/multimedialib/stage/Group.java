@@ -9,7 +9,6 @@ package nl.colorize.multimedialib.stage;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.Setter;
-import nl.colorize.multimedialib.scene.Timer;
 import nl.colorize.util.SubscribableCollection;
 
 import java.util.Iterator;
@@ -88,7 +87,7 @@ public class Group implements Spatial3D, Iterable<Spatial3D> {
     }
 
     @Override
-    public void animate(Timer animationTimer) {
+    public void animate(double animationTime) {
     }
 
     @Override

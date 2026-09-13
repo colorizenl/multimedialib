@@ -11,7 +11,6 @@ import lombok.Setter;
 import nl.colorize.multimedialib.math.Circle;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Shape;
-import nl.colorize.multimedialib.scene.Timer;
 
 import static lombok.AccessLevel.NONE;
 import static lombok.AccessLevel.PROTECTED;
@@ -76,7 +75,7 @@ public class Primitive implements Spatial2D {
     }
 
     @Override
-    public void animate(Timer sceneTime) {
+    public void animate(double animationTime) {
     }
 
     @Override
