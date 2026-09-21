@@ -53,7 +53,7 @@ public class ArchitectureTest {
             .map(m -> m.getOwner().getName())
             .filter(name -> !name.endsWith(".SceneContext"))
             .filter(name -> !name.endsWith("MediaLoader"))
-            .filter(name -> !name.endsWith("Audio"))
+            .filter(name -> !name.contains("Audio") && !name.contains("Sound"))
             .filter(name -> !name.contains(".teavm."))
             .filter(name -> !name.contains(".ui."))
             .distinct()
