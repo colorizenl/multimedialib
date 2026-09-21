@@ -6,9 +6,14 @@ jobs:
     container: colorizenl/colorize-ci
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
+      - name: Compile
+        run: gradle compileJava
       - name: Unit tests
         run: gradle -Djava.awt.headless=true coverage --info
+      - name: SpotBugs quality check
+        run: gradle spotbugsMain
+        continue-on-error: true
       - name: Copyright header check
         run: copyright_check.py
       - name: Transpile TeaVM demo application

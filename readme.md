@@ -37,7 +37,7 @@ to the dependencies section in `pom.xml`:
 <dependency>
     <groupId>nl.colorize</groupId>
     <artifactId>multimedialib</artifactId>
-    <version>2026.5</version>
+    <version>2026.6</version>
 </dependency>
 ```
     
@@ -244,6 +244,7 @@ The following Gradle build tasks are available:
 - `gradle assemble` creates the JAR file for distribution
 - `gradle test` runs all unit tests
 - `gradle coverage` runs all unit tests and reports on test coverage
+- `gradle spotbugsMain` runs the [SpotBugs](https://spotbugs.github.io) quality check.
 - `gradle javadoc` generates the JavaDoc API documentation
 - `gradle dependencyUpdates` checks for and reports on library updates
 - `gradle publishToMavenCentral` publishes the library to Maven Central.

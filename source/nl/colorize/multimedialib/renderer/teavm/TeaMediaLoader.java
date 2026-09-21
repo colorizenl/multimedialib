@@ -8,7 +8,6 @@ package nl.colorize.multimedialib.renderer.teavm;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
-import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.ColorRGB;
@@ -17,6 +16,7 @@ import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.util.Cache;
 import nl.colorize.util.LogHelper;
+import nl.colorize.util.ResourceException;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.Subject;
 import org.teavm.jso.browser.Storage;
@@ -200,7 +200,7 @@ public class TeaMediaLoader implements MediaLoader {
     public String loadText(ResourceFile file) {
         HTMLElement resource = document.getElementById(normalizeFilePath(file));
         if (resource == null) {
-            throw new MediaException("Unknown text resource file: " + file);
+            throw new ResourceException("Unknown text resource file: " + file);
         }
         return resource.getInnerText().trim();
     }

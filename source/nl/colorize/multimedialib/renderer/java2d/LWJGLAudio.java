@@ -59,7 +59,7 @@ public class LWJGLAudio implements Audio {
         this.bufferId = -1;
         this.sourceId = -1;
 
-        this.duration = 0f;
+        this.duration = 0;
         this.volume = 100;
         this.pitch = 100;
         this.audioQueue = audioQueue;

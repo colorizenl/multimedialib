@@ -8,7 +8,6 @@ package nl.colorize.multimedialib.renderer.java2d;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
-import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.headless.NullAudio;
 import nl.colorize.multimedialib.stage.Audio;
@@ -19,6 +18,7 @@ import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.PropertyUtils;
+import nl.colorize.util.ResourceException;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.Subject;
 import nl.colorize.util.swing.Utils2D;
@@ -73,7 +73,7 @@ public class StandardMediaLoader implements MediaLoader {
                 return new AWTImage(original);
             }
         } catch (IOException e) {
-            throw new MediaException("Cannot load image from " + file.path(), e);
+            throw new ResourceException("Cannot load image from " + file.path(), e);
         }
     }
 
@@ -94,7 +94,9 @@ public class StandardMediaLoader implements MediaLoader {
 
     @Override
     public Audio loadAudio(ResourceFile file) {
-        if (Platform.isWindows() || Platform.isMac()) {
+        if (Platform.isMac()) {
+            return new JavaSoundPlayer(file, file.readBytes(), audioQueue);
+        } else if (Platform.isWindows()) {
             return new LWJGLAudio(file, audioQueue);
         } else {
             return new NullAudio(file.toString(), audioQueue);

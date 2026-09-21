@@ -268,11 +268,7 @@ public class TeaInput implements InputDevice {
     @Override
     public EventQueue<String> requestTextInput(String label, String initialValue) {
         Subject<String> subject = new Subject<>();
-
-        bridge.requestTextInput(label, initialValue, (name, value) -> {
-            subject.next(value);
-        });
-
+        bridge.requestTextInput(label, initialValue, (_, value) -> subject.next(value));
         return EventQueue.subscribe(subject);
     }
 

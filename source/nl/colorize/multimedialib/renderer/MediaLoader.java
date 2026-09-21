@@ -14,6 +14,7 @@ import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
 import nl.colorize.util.PropertyUtils;
+import nl.colorize.util.ResourceException;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.Subject;
 import nl.colorize.util.TranslationBundle;
@@ -25,8 +26,8 @@ import java.util.Properties;
  * Loads media files such as images or audio in a format that can later be used
  * by the renderer. Using this interface to load resource files is guaranteed
  * to work on all platforms that are supported by MultimediaLib. Using other
- * ways of loading files, such as directly from the file system or from the
- * classpath, may not be supported on some platforms.
+ * ways of loading files (e.g. directly from the file system or from the
+ * classpath) may not be supported on some platforms.
  */
 public interface MediaLoader {
 
@@ -35,7 +36,7 @@ public interface MediaLoader {
      * renderer and the current platform. JPEG and PNG formats are guaranteed
      * to be supported by all renderers.
      *
-     * @throws MediaException if the format is not supported by the renderer.
+     * @throws ResourceException if the format is not supported by the renderer.
      */
     public Image loadImage(ResourceFile file);
 
@@ -59,7 +60,7 @@ public interface MediaLoader {
      * renderer and the current platform. OGG format is guaranteed to be
      * supported by all renderers.
      *
-     * @throws MediaException if the format is not supported by the renderer.
+     * @throws ResourceException if the format is not supported by the renderer.
      */
     public Audio loadAudio(ResourceFile file);
 
@@ -68,7 +69,7 @@ public interface MediaLoader {
      * for text rendering. This will return a font for the specified style,
      * alternative styles can be derived from the returned font.
      *
-     * @throws MediaException if the format is not supported by the renderer.
+     * @throws ResourceException if the format is not supported by the renderer.
      */
     public FontFace loadFont(ResourceFile file, String family, int size, ColorRGB color);
 
@@ -85,10 +86,10 @@ public interface MediaLoader {
 
     /**
      * Loads a polygon model from the specified file. Only the OBJ and GLTF
-     * format are guaranteed to be supported, though certain renderers may
+     * formats are guaranteed to be supported, though certain renderers may
      * support additional file formats.
      *
-     * @throws MediaException if the format is not supported by this renderer.
+     * @throws ResourceException if the format is not supported by this renderer.
      * @throws UnsupportedOperationException if this renderer does not support
      *         3D graphics.
      */
@@ -97,7 +98,7 @@ public interface MediaLoader {
     /**
      * Loads a text-based resource file using UTF-8 encoding.
      *
-     * @throws MediaException if the file does not exist.
+     * @throws ResourceException if the file does not exist.
      */
     public String loadText(ResourceFile file);
 
@@ -105,7 +106,7 @@ public interface MediaLoader {
      * Loads a text-based resource file using UTF-8 encoding, and returns
      * it as a list of lines.
      *
-     * @throws MediaException if the file does not exist.
+     * @throws ResourceException if the file does not exist.
      */
     default List<String> loadTextLines(ResourceFile file) {
         String contents = loadText(file);

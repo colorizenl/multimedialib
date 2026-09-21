@@ -20,7 +20,6 @@ import com.badlogic.gdx.utils.UBJsonReader;
 import lombok.Getter;
 import net.mgsx.gltf.loaders.gltf.GLTFLoader;
 import net.mgsx.gltf.scene3d.scene.SceneAsset;
-import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.stage.Audio;
 import nl.colorize.multimedialib.stage.ColorRGB;
@@ -29,6 +28,7 @@ import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.Mesh;
 import nl.colorize.util.Platform;
 import nl.colorize.util.PropertyUtils;
+import nl.colorize.util.ResourceException;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.Subject;
 
@@ -101,7 +101,7 @@ public class GDXMediaLoader implements MediaLoader, Disposable {
             ObjLoader objLoader = new ObjLoader();
             return objLoader.loadModel(file);
         } else {
-            throw new MediaException("Unsupported model file format: " + file);
+            throw new ResourceException("Unsupported model file format: " + file);
         }
     }
 

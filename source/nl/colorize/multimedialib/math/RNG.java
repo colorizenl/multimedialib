@@ -7,7 +7,6 @@
 package nl.colorize.multimedialib.math;
 
 import com.google.common.base.Preconditions;
-import nl.colorize.multimedialib.stage.ColorRGB;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -143,9 +142,9 @@ public class RNG {
 
         List<T> elements = new ArrayList<>();
 
-        for (T element : choices.keySet()) {
-            for (int i = 0; i < choices.get(element); i++) {
-                elements.add(element);
+        for (Map.Entry<T, Integer> entry : choices.entrySet()) {
+            for (int i = 0; i < entry.getValue(); i++) {
+                elements.add(entry.getKey());
             }
         }
 

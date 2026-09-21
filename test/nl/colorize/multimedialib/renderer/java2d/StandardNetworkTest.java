@@ -6,7 +6,7 @@
 
 package nl.colorize.multimedialib.renderer.java2d;
 
-import nl.colorize.multimedialib.renderer.Response;
+import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
 import nl.colorize.util.EventQueue;
 import org.junit.jupiter.api.Test;
@@ -27,11 +27,11 @@ public class StandardNetworkTest {
         List<Throwable> errors = new CopyOnWriteArrayList<>();
 
         StandardNetwork internetAccess = new StandardNetwork();
-        EventQueue<Response> eventQueue = internetAccess.get("https://clrz.nl");
+        EventQueue<Network.Response> eventQueue = internetAccess.get("https://clrz.nl");
 
         assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
             HeadlessRenderer renderer = new HeadlessRenderer();
-            renderer.attach(eventQueue, response -> responses.add(response.getBody()), errors::add);
+            renderer.attach(eventQueue, response -> responses.add(response.body()), errors::add);
 
             while (responses.isEmpty()) {
                 renderer.doFrame();
@@ -41,6 +41,28 @@ public class StandardNetworkTest {
             assertEquals(1, responses.size());
             assertTrue(responses.getFirst().contains("<title>Colorize"));
             assertEquals(0, errors.size());
+        });
+    }
+
+    @Test
+    void headerNamesAreCaseInsensitive() {
+        List<Network.Response> responses = new CopyOnWriteArrayList<>();
+
+        StandardNetwork internetAccess = new StandardNetwork();
+        EventQueue<Network.Response> eventQueue = internetAccess.get("https://clrz.nl");
+
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+            HeadlessRenderer renderer = new HeadlessRenderer();
+            renderer.attach(eventQueue, responses::add, _ -> {});
+
+            while (responses.isEmpty()) {
+                renderer.doFrame();
+                Thread.sleep(1000);
+            }
+
+            assertEquals(1, responses.size());
+            assertEquals("text/html", responses.getFirst().getHeader("Content-Type").orElse(""));
+            assertEquals("text/html", responses.getFirst().getHeader("content-type").orElse(""));
         });
     }
 }

@@ -6,13 +6,11 @@
 
 package nl.colorize.multimedialib.renderer.java2d;
 
+import com.google.common.base.Joiner;
 import com.google.common.net.HttpHeaders;
 import nl.colorize.multimedialib.renderer.Network;
-import nl.colorize.multimedialib.renderer.PeerConnection;
-import nl.colorize.multimedialib.renderer.Response;
 import nl.colorize.util.EventQueue;
 import nl.colorize.util.Platform;
-import nl.colorize.util.TupleList;
 import nl.colorize.util.http.URLLoader;
 import org.jspecify.annotations.Nullable;
 
@@ -21,6 +19,8 @@ import java.net.http.HttpResponse;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Sends HTTP requests using the HTTP client included as part of the Java
@@ -28,6 +28,8 @@ import java.util.Map;
  * Java-WebSocket library.
  */
 public class StandardNetwork implements Network {
+
+    private static final Joiner HEADER_JOINER = Joiner.on(", ");
 
     @Override
     public EventQueue<Response> send(
@@ -50,24 +52,38 @@ public class StandardNetwork implements Network {
     }
 
     private Response mapResponse(HttpResponse<String> response) {
-        TupleList<String, String> headers = new TupleList<>();
+        Map<String, String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
         for (Map.Entry<String, List<String>> header : response.headers().map().entrySet()) {
-            for (String value : header.getValue()) {
-                headers.add(header.getKey(), value);
-            }
+            String value = HEADER_JOINER.join(header.getValue());
+            headers.put(header.getKey(), value);
         }
 
         return new Response(response.statusCode(), headers, response.body());
     }
 
     @Override
-    public PeerConnection openPeerConnection() {
+    public boolean isPeerToPeerSupported() {
+        return false;
+    }
+
+    @Override
+    public EventQueue<PeerMessage> openPeerConnection() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean isPeerToPeerSupported() {
-        return false;
+    public EventQueue<PeerMessage> joinPeerConnection(String peerId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void sendPeerConnection(String message) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Set<String> getPeerConnectionIds() {
+        throw new UnsupportedOperationException();
     }
 }

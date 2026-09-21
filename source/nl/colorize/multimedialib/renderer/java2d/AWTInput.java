@@ -274,7 +274,8 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
 
     @Override
     public boolean isKeyPressed(KeyCode keyCode) {
-        return isKeyPressed(KEY_CODE_MAPPING.get(keyCode));
+        Integer key = KEY_CODE_MAPPING.get(keyCode);
+        return key != null && isKeyPressed(key);
     }
 
     public boolean isKeyPressed(int keycode) {
@@ -283,7 +284,8 @@ public class AWTInput implements InputDevice, KeyListener, MouseListener, MouseM
 
     @Override
     public boolean isKeyReleased(KeyCode keyCode) {
-        return isKeyReleased(KEY_CODE_MAPPING.get(keyCode));
+        Integer key = KEY_CODE_MAPPING.get(keyCode);
+        return key != null && isKeyReleased(key);
     }
     
     public boolean isKeyReleased(int keycode) {

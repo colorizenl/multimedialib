@@ -15,6 +15,7 @@ import nl.colorize.multimedialib.renderer.RenderConfig;
 import nl.colorize.multimedialib.stage.Spatial2D;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.util.EventQueue;
+import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.Subject;
 import nl.colorize.util.animation.Animatable;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
 
 /**
  * The scene context is provided to the currently active scene by
@@ -113,6 +115,22 @@ public interface SceneContext {
     default <T> void attach(EventQueue<T> events, Consumer<T> onEvent, Consumer<Exception> onError) {
         Actor actor = _ -> events.flush(onEvent, onError);
         attach(actor);
+    }
+
+    /**
+     * Attaches an actor that processes an {@link EventQueue} using the
+     * specified callback functions. Errors are logged, but do not use an
+     * explicit error callback. This ensures asynchronous events are
+     * processed during frame updates, instead of immediately when they
+     * are received.
+     */
+    default <T> void attach(EventQueue<T> events, Consumer<T> onEvent) {
+        Logger logger = LogHelper.getLogger(getClass());
+        attach(
+            events,
+            onEvent,
+            e -> logger.warning("Error during asynchronous event: " + e.getMessage())
+        );
     }
 
     /**

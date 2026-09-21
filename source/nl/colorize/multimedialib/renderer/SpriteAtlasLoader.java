@@ -11,6 +11,7 @@ import nl.colorize.multimedialib.math.Coordinate;
 import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.stage.Image;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
+import nl.colorize.util.ResourceException;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.TextUtils;
 import nl.colorize.util.Tuple;
@@ -48,7 +49,7 @@ public class SpriteAtlasLoader {
 
     protected SpriteAtlas load(ResourceFile file) {
         if (!file.getName().endsWith(".atlas")) {
-            throw new MediaException("Provided file is not a sprite atlas: " + file);
+            throw new ResourceException("Provided file is not a sprite atlas: " + file);
         }
 
         ParserState state = new ParserState();

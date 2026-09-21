@@ -7,21 +7,21 @@
 package nl.colorize.multimedialib.renderer.teavm;
 
 import org.teavm.jso.JSObject;
-import org.teavm.jso.JSProperty;
 
 /**
  * TeaVM interface for the {@code peerjs-bridge.js} JavaScript implementation.
  */
 public interface PeerjsBridge extends JSObject {
 
-    @JSProperty
-    public boolean isInitialized();
+    public void registerCallback(MessageCallback callback);
 
-    public void open(MessageCallback messageCallback);
+    public void open();
 
-    public void connect(String peerId, MessageCallback messageCallback);
+    public void join(String peerId);
 
-    public void sendMessage(String message);
+    public void send(String message);
 
-    public void sendMessageToPeer(String peerId, String message);
+    public String[] getPeerConnectionIds();
+
+    public boolean isConnectionInitialized();
 }

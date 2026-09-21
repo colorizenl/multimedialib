@@ -13,10 +13,10 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.xml.XmlEscapers;
-import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.util.DateParser;
 import nl.colorize.util.FileUtils;
 import nl.colorize.util.LogHelper;
+import nl.colorize.util.ResourceException;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.Stopwatch;
 import nl.colorize.util.cli.Arg;
@@ -145,10 +145,10 @@ public class TeaVMTranspilerTool {
             "Resource directory not found: " + resourceDir.getAbsolutePath());
 
         Stopwatch timer = new Stopwatch();
-        outputDir.mkdir();
-        checkMainClass();
 
         try {
+            FileUtils.mkdir(outputDir);
+            checkMainClass();
             cleanOutputDir();
             transpile();
             copyFrameworkFiles();
@@ -280,7 +280,10 @@ public class TeaVMTranspilerTool {
             try (InputStream stream = frameworkResourceFile.openStream()) {
                 Path outputFile = tempAssetsDir.toPath().resolve(path);
                 if (!Files.exists(outputFile)) {
-                    Files.createDirectories(outputFile.getParent());
+                    Path parent = outputFile.getParent();
+                    if (parent != null) {
+                        Files.createDirectories(parent);
+                    }
                     Files.copy(stream, outputFile);
                 }
             }
@@ -368,7 +371,7 @@ public class TeaVMTranspilerTool {
                 writer.println(line);
             }
         } catch (IOException e) {
-            throw new MediaException("Cannot write to file: " + outputFile.getAbsolutePath(), e);
+            throw new ResourceException("Cannot write to file: " + outputFile.getAbsolutePath(), e);
         }
     }
 

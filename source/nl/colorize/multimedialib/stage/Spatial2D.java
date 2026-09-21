@@ -8,7 +8,6 @@ package nl.colorize.multimedialib.stage;
 
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.Actor;
-import nl.colorize.multimedialib.scene.Timer;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -26,7 +25,7 @@ import org.jspecify.annotations.Nullable;
  * spatials not guaranteed to receive frame updates during every frame. For
  * performance reasons, the renderer will only animate and draw graphics that
  * are currently visible. Therefore, instead of relying on frame updates,
- * spatials use {@link #animate(Timer)} to animate graphics while rendering
+ * spatials use {@link #animate(double)} to animate graphics while rendering
  * the stage.
  */
 public interface Spatial2D extends Spatial<Transform> {
@@ -42,8 +41,9 @@ public interface Spatial2D extends Spatial<Transform> {
      * nothing if this node does not have a parent.
      */
     default void detach() {
-        if (getParent() != null) {
-            getParent().removeChild(this);
+        Container parent = getParent();
+        if (parent != null) {
+            parent.removeChild(this);
         }
     }
 

@@ -25,9 +25,7 @@ import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
-import nl.colorize.multimedialib.renderer.PeerConnection;
 import nl.colorize.multimedialib.renderer.Pointer;
-import nl.colorize.multimedialib.renderer.teavm.PeerMessage;
 import nl.colorize.multimedialib.scene.Actor;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
@@ -226,8 +224,8 @@ public class Demo2D implements Scene, ErrorHandler {
             createButton(context, "Open connection", BLUE_BUTTON, 210, this::openPeerConnection);
             createButton(context, "Join connection", BLUE_BUTTON, 240, this::joinPeerConnection);
         }
-        createButton(context, "Form demo", ORANGE_BUTTON, 400, this::startFormDemo);
-        createButton(context, "Regression demo", ORANGE_BUTTON, 430, this::startRegressionDemo);
+        createButton(context, "Form demo", ORANGE_BUTTON, 320, this::startFormDemo);
+        createButton(context, "Regression demo", ORANGE_BUTTON, 350, this::startRegressionDemo);
     }
 
     private void createButton(SceneContext context, String label, ColorRGB color, int y, Runnable click) {
@@ -364,8 +362,12 @@ public class Demo2D implements Scene, ErrorHandler {
         context.attach(network.post(EXAMPLE_URL, headers, data), response -> {
             List<String> text = new ArrayList<>();
             text.add("Network request succeeded");
-            text.add("Content-Type: " + response.getContentType().orElse("?"));
-            text.addAll(Splitter.on("\n").omitEmptyStrings().splitToList(response.getBody()));
+            text.add("Content-Type: " + response.getHeader(HttpHeaders.CONTENT_TYPE).orElse("?"));
+            for (String line : Splitter.on("\n").omitEmptyStrings().split(response.body())) {
+                if (!line.startsWith("userAgent")) {
+                    text.add(line);
+                }
+            }
             info.setText(text);
         }, e -> info.setText("Failed to send network request"));
     }
@@ -419,30 +421,34 @@ public class Demo2D implements Scene, ErrorHandler {
         performanceMonitor.setActive(!performanceMonitor.isActive());
     }
 
-    private PeerConnection openPeerConnection() {
-        PeerConnection peerConnection = context.getNetwork().openPeerConnection();
-
-        context.attach(_ -> {
-            for (PeerMessage message : peerConnection.flushReceivedMessages()) {
-                LOGGER.info("Received message: " + message.type() + " / " + message.value());
-                if (message.type().equals(PeerMessage.TYPE_INIT)) {
-                    context.getInput().fillClipboard(message.value());
-                } else if (!message.type().equals(PeerMessage.TYPE_CONNECT)) {
-                    showNotification("Received message: " + message.value());
-                }
-            }
-        });
-
-        return peerConnection;
+    private void openPeerConnection() {
+        showPeerToPeerMessages(context.getNetwork().openPeerConnection());
     }
 
     private void joinPeerConnection() {
         EventQueue<String> event = context.getInput().requestTextInput("Peer-to-peer connection ID", "");
 
-        context.attach(event).subscribe(id -> {
-            PeerConnection peerConnection = openPeerConnection();
-            peerConnection.connect(id);
-            peerConnection.sendMessage("Hello from a peer-to-peer connection");
+        context.attach(event).subscribe(peerId -> {
+            showPeerToPeerMessages(context.getNetwork().joinPeerConnection(peerId));
+            context.getNetwork().sendPeerConnection("Hello from a peer-to-peer connection");
+        });
+    }
+
+    private void showPeerToPeerMessages(EventQueue<Network.PeerMessage> messages) {
+        context.attach(messages, message -> {
+            String label = "Received peer-to-peer message: " + message.body();
+            LOGGER.info(label);
+
+            if (message.body().equals(Network.PeerMessage.OPEN)) {
+                context.getInput().fillClipboard(message.peerId());
+                showNotification("Peer-to-peer connection is now open");
+            } else if (!message.isSystemMessage()) {
+                showNotification(label);
+            }
+        }, e -> {
+            String label = "Peer-to-peer connection error: " + e.getMessage();
+            LOGGER.warning(label);
+            showNotification(label);
         });
     }
 
@@ -460,9 +466,7 @@ public class Demo2D implements Scene, ErrorHandler {
             .addKeyFrame(0f, context.getCanvas().getCenter().y())
             .addKeyFrame(4f, context.getCanvas().getCenter().y() - 100f);
 
-        context.attachTimeline(timeline,
-            value -> notification.getTransform().setY(value),
-            () -> hudLayer.removeChild(notification));
+        context.attachTimeline(timeline, notification.getTransform()::setY, notification::detach);
     }
 
     @Override

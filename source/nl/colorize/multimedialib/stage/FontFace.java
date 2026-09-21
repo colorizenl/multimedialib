@@ -22,8 +22,8 @@ import nl.colorize.util.ResourceFile;
  */
 public record FontFace(ResourceFile origin, String family, int size, ColorRGB color) {
 
-    public static FontFace DEFAULT_FONT = new FontFace(new ResourceFile("OpenSans-Regular.ttf"),
-        "Open Sans", 12, ColorRGB.WHITE);
+    public static final FontFace DEFAULT_FONT = new FontFace(
+        new ResourceFile("OpenSans-Regular.ttf"), "Open Sans", 12, ColorRGB.WHITE);
 
     public FontFace {
         Preconditions.checkArgument(!family.isEmpty(), "Missing font family");

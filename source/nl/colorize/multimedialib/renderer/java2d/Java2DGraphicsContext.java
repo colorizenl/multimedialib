@@ -14,7 +14,6 @@ import nl.colorize.multimedialib.math.Polygon;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.SegmentedLine;
 import nl.colorize.multimedialib.renderer.Canvas;
-import nl.colorize.multimedialib.renderer.MediaException;
 import nl.colorize.multimedialib.stage.Align;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.FontFace;
@@ -29,6 +28,7 @@ import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.multimedialib.stage.Transform3D;
 import nl.colorize.util.Cache;
+import nl.colorize.util.ResourceException;
 import nl.colorize.util.swing.Utils2D;
 
 import java.awt.AlphaComposite;
@@ -280,7 +280,7 @@ public class Java2DGraphicsContext implements StageVisitor {
             Font baseFont = Font.createFont(Font.TRUETYPE_FONT, stream);
             return baseFont.deriveFont(Font.PLAIN, fontInfo.size());
         } catch (IOException | FontFormatException e) {
-            throw new MediaException("Cannot load font from " + fontInfo.origin().path(), e);
+            throw new ResourceException("Cannot load font from " + fontInfo.origin().path(), e);
         }
     }
 

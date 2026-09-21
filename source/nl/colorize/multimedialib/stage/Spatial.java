@@ -7,7 +7,6 @@
 package nl.colorize.multimedialib.stage;
 
 import nl.colorize.multimedialib.scene.Actor;
-import nl.colorize.multimedialib.scene.Timer;
 
 /**
  * Base interface for all graphics that can be added to the stage's
@@ -24,7 +23,7 @@ import nl.colorize.multimedialib.scene.Timer;
  * spatials not guaranteed to receive frame updates during every frame. For
  * performance reasons, the renderer will only animate and draw graphics that
  * are currently visible. Therefore, instead of relying on frame updates,
- * spatials use {@link #animate(Timer)} to animate graphics while rendering
+ * spatials use {@link #animate(double)} to animate graphics while rendering
  * the stage.
  *
  * @param <T> The type of local/global transform that is applied to this
