@@ -62,16 +62,19 @@ public class JavaSoundPlayer implements Audio, LineListener {
 
     @Override
     public void play(boolean loop) {
-        if (playing != null) {
-            return;
+        if (isPlaying()) {
+            stop();
         }
 
         try (AudioInputStream rawStream = openStream()) {
+            if (playing == null) {
+                playing = AudioSystem.getClip();
+                playing.addLineListener(this);
+            }
+
             AudioFormat pcmFormat = convertAudioFormat(rawStream.getFormat());
 
             try (AudioInputStream pcmStream = AudioSystem.getAudioInputStream(pcmFormat, rawStream)) {
-                playing = AudioSystem.getClip();
-                playing.addLineListener(this);
                 playing.open(pcmStream);
                 changeVolume(volume);
 
@@ -103,12 +106,14 @@ public class JavaSoundPlayer implements Audio, LineListener {
 
     @Override
     public void stop() {
-        if (playing != null) {
+        if (isPlaying()) {
             try {
+                playing.stop();
+                playing.setFramePosition(0);
                 playing.close();
                 playing = null;
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "Error while closing audio clip", e);
+                LOGGER.log(Level.WARNING, "Error while stopping audio clip", e);
             }
         }
     }
@@ -117,20 +122,19 @@ public class JavaSoundPlayer implements Audio, LineListener {
     public void update(LineEvent event) {
         if (event.getType().equals(LineEvent.Type.STOP)) {
             stop();
-            playing = null;
         }
     }
 
     @Override
     public boolean isPlaying() {
-        return playing != null;
+        return playing != null && playing.isRunning();
     }
 
     @Override
     public void changeVolume(double volume) {
         this.volume = Math.clamp(volume, 0.0, 100.0);
 
-        if (playing != null) {
+        if (isPlaying()) {
             FloatControl gainControl = (FloatControl) playing.getControl(MASTER_GAIN);
             gainControl.setValue(20f * (float) Math.log10(this.volume / 100f));
         }

@@ -107,7 +107,7 @@ public class Java2DGraphicsContext implements StageVisitor {
 
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(graphic.getTransform().getAlpha());
-        g2.setStroke(new BasicStroke((float) graphic.getStroke()));
+        g2.setStroke(new BasicStroke((float) graphic.getStroke() * (float) canvas.getZoomLevel()));
         g2.setColor(getPrimitiveColor(graphic));
         g2.drawLine((int) Math.round(x0), (int) Math.round(y0),
             (int) Math.round(x1), (int) Math.round(y1));
@@ -118,7 +118,7 @@ public class Java2DGraphicsContext implements StageVisitor {
     public void drawSegmentedLine(Primitive graphic, SegmentedLine line, Transform globalTransform) {
         Composite originalComposite = g2.getComposite();
         applyAlphaComposite(graphic.getTransform().getAlpha());
-        g2.setStroke(new BasicStroke((float) graphic.getStroke()));
+        g2.setStroke(new BasicStroke((float) graphic.getStroke() * (float) canvas.getZoomLevel()));
         g2.setColor(getPrimitiveColor(graphic));
 
         for (Line segment : line.getSegments()) {

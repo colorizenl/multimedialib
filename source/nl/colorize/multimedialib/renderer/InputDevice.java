@@ -9,8 +9,8 @@ package nl.colorize.multimedialib.renderer;
 import com.google.common.collect.Streams;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.scene.Actor;
+import nl.colorize.multimedialib.scene.EventSource;
 import nl.colorize.multimedialib.stage.Spatial2D;
-import nl.colorize.util.EventQueue;
 
 /**
  * Used to poll the status of the platform's input devices. This includes
@@ -100,7 +100,7 @@ public interface InputDevice extends Actor {
      * Shows a dialog window with a text input field. The dialog window is not
      * part of the scene, it uses the platform's native user interface.
      */
-    public EventQueue<String> requestTextInput(String label, String initialValue);
+    public EventSource<String> requestTextInput(String label, String initialValue);
 
     /**
      * Copies the specified text to the system clipboard.

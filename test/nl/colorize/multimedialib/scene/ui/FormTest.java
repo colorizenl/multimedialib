@@ -267,7 +267,7 @@ class FormTest {
 
         assertEquals(List.of(), events);
 
-        renderer.getTextInputQueue().onNext("abcd");
+        renderer.getTextInput().next("abcd");
         renderer.doFrame(1.0);
 
         assertEquals(List.of("abcd"), events);

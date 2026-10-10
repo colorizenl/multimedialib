@@ -9,7 +9,7 @@ package nl.colorize.multimedialib.renderer.java2d;
 import com.google.common.base.Joiner;
 import com.google.common.net.HttpHeaders;
 import nl.colorize.multimedialib.renderer.Network;
-import nl.colorize.util.EventQueue;
+import nl.colorize.multimedialib.scene.EventSource;
 import nl.colorize.util.Platform;
 import nl.colorize.util.http.URLLoader;
 import org.jspecify.annotations.Nullable;
@@ -32,7 +32,7 @@ public class StandardNetwork implements Network {
     private static final Joiner HEADER_JOINER = Joiner.on(", ");
 
     @Override
-    public EventQueue<Response> send(
+    public EventSource<Response> send(
         String method,
         String url,
         Map<String, String> headers,
@@ -44,11 +44,7 @@ public class StandardNetwork implements Network {
         combinedHeaders.putAll(headers);
 
         HttpRequest request = URLLoader.buildRequest(method, url, combinedHeaders, body);
-        EventQueue<Response> eventQueue = new EventQueue<>();
-        URLLoader.sendAsync(request)
-            .map(this::mapResponse)
-            .subscribe(eventQueue::onNext, eventQueue::onError);
-        return eventQueue;
+        return EventSource.from(URLLoader.sendAsync(request).map(this::mapResponse));
     }
 
     private Response mapResponse(HttpResponse<String> response) {
@@ -68,12 +64,12 @@ public class StandardNetwork implements Network {
     }
 
     @Override
-    public EventQueue<PeerMessage> openPeerConnection() {
+    public EventSource<PeerMessage> openPeerConnection() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public EventQueue<PeerMessage> joinPeerConnection(String peerId) {
+    public EventSource<PeerMessage> joinPeerConnection(String peerId) {
         throw new UnsupportedOperationException();
     }
 

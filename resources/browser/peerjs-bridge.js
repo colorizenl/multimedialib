@@ -50,7 +50,7 @@ class PeerJsBridge {
     }
 
     handleError(connection, error) {
-        console.warn("Peer connection error: " + error.type);
+        console.warn("Peer connection error: " + error);
         this.notifyCallbacks(connection.label, "$$error");
     }
 

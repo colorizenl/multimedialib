@@ -12,7 +12,7 @@ import nl.colorize.multimedialib.renderer.Canvas;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Pointer;
-import nl.colorize.util.EventQueue;
+import nl.colorize.multimedialib.scene.EventSource;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Subject;
 import org.teavm.jso.browser.Window;
@@ -266,10 +266,10 @@ public class TeaInput implements InputDevice {
     }
 
     @Override
-    public EventQueue<String> requestTextInput(String label, String initialValue) {
+    public EventSource<String> requestTextInput(String label, String initialValue) {
         Subject<String> subject = new Subject<>();
         bridge.requestTextInput(label, initialValue, (_, value) -> subject.next(value));
-        return EventQueue.subscribe(subject);
+        return EventSource.from(subject);
     }
 
     @Override

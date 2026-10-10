@@ -16,11 +16,11 @@ import nl.colorize.multimedialib.math.Region;
 import nl.colorize.multimedialib.math.SegmentedLine;
 import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.scene.Actor;
+import nl.colorize.multimedialib.scene.EventSource;
 import nl.colorize.multimedialib.scene.GraphicsProvider;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Spatial2D;
-import nl.colorize.util.EventQueue;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Subject;
 import nl.colorize.util.TranslationBundle;
@@ -181,8 +181,8 @@ public class Form implements Actor, GraphicsProvider {
         Region bounds = prepareNextWidgetBounds(0);
         Spatial2D graphics = style.createInputField(model, bounds.toRect());
         addWidget(model, graphics, bounds, () -> {
-            EventQueue<String> eventQueue = input.requestTextInput("", value);
-            pipe(eventQueue, model);
+            EventSource<String> inputSource = input.requestTextInput("", value);
+            pipe(inputSource, model);
         });
         return model;
     }
@@ -237,8 +237,9 @@ public class Form implements Actor, GraphicsProvider {
         return input.isPointerReleased(stageBounds);
     }
 
-    private <T> void pipe(EventQueue<T> eventQueue, InputModel<T> model) {
-        eventPipes.add(_ -> eventQueue.flush(
+    @SuppressWarnings("deprecation")
+    private <T> void pipe(EventSource<T> eventSource, InputModel<T> model) {
+        eventPipes.add(_ -> eventSource.poll(
             event -> model.getValue().set(event),
             e -> LOGGER.warning("Failed to pipe form event: " + e.getMessage())
         ));

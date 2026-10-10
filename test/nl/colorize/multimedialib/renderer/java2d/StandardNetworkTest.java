@@ -8,7 +8,7 @@ package nl.colorize.multimedialib.renderer.java2d;
 
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
-import nl.colorize.util.EventQueue;
+import nl.colorize.multimedialib.scene.EventSource;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -27,11 +27,13 @@ public class StandardNetworkTest {
         List<Throwable> errors = new CopyOnWriteArrayList<>();
 
         StandardNetwork internetAccess = new StandardNetwork();
-        EventQueue<Network.Response> eventQueue = internetAccess.get("https://clrz.nl");
+        EventSource<Network.Response> eventQueue = internetAccess.get("https://clrz.nl");
 
         assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
             HeadlessRenderer renderer = new HeadlessRenderer();
-            renderer.attach(eventQueue, response -> responses.add(response.body()), errors::add);
+            renderer.attach(eventQueue)
+                .subscribe(response -> responses.add(response.body()))
+                .subscribeErrors(errors::add);
 
             while (responses.isEmpty()) {
                 renderer.doFrame();
@@ -49,11 +51,11 @@ public class StandardNetworkTest {
         List<Network.Response> responses = new CopyOnWriteArrayList<>();
 
         StandardNetwork internetAccess = new StandardNetwork();
-        EventQueue<Network.Response> eventQueue = internetAccess.get("https://clrz.nl");
+        EventSource<Network.Response> eventQueue = internetAccess.get("https://clrz.nl");
 
         assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
             HeadlessRenderer renderer = new HeadlessRenderer();
-            renderer.attach(eventQueue, responses::add, _ -> {});
+            renderer.attach(eventQueue).subscribe(responses::add);
 
             while (responses.isEmpty()) {
                 renderer.doFrame();

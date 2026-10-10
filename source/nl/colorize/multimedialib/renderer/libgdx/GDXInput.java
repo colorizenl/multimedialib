@@ -17,7 +17,7 @@ import nl.colorize.multimedialib.renderer.InputDevice;
 import nl.colorize.multimedialib.renderer.KeyCode;
 import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.multimedialib.renderer.RenderConfig;
-import nl.colorize.util.EventQueue;
+import nl.colorize.multimedialib.scene.EventSource;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Platform;
 import nl.colorize.util.Subject;
@@ -189,14 +189,14 @@ public class GDXInput implements InputDevice {
     }
 
     @Override
-    public EventQueue<String> requestTextInput(String labelText, String initialValue) {
+    public EventSource<String> requestTextInput(String labelText, String initialValue) {
         Subject<String> subject = new Subject<>();
         if (Platform.isMac()) {
             showAppleScriptTextInputDialog(labelText, initialValue, subject);
         } else {
             showTextInputDialog(labelText, initialValue, subject);
         }
-        return EventQueue.subscribe(subject);
+        return EventSource.from(subject);
     }
 
     /**

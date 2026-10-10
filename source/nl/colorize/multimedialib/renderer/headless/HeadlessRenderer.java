@@ -22,13 +22,14 @@ import nl.colorize.multimedialib.renderer.ScaleStrategy;
 import nl.colorize.multimedialib.renderer.World3D;
 import nl.colorize.multimedialib.renderer.java2d.StandardMediaLoader;
 import nl.colorize.multimedialib.renderer.java2d.StandardNetwork;
+import nl.colorize.multimedialib.scene.EventSource;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.SceneManager;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.StageVisitor;
 import nl.colorize.util.Development;
-import nl.colorize.util.EventQueue;
+import nl.colorize.util.Subject;
 
 import java.io.File;
 import java.util.List;
@@ -60,7 +61,7 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
     private Point2D pointer;
     private boolean pointerPressed;
     private boolean pointerReleased;
-    private EventQueue<String> textInputQueue;
+    private Subject<String> textInput;
 
     public static final FontFace DEFAULT_FONT = new FontFace(null, "sans-serif", 10, BLACK);
 
@@ -71,7 +72,7 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
         this.pointer = new Point2D(0f, 0f);
         this.pointerPressed = false;
         this.pointerReleased = false;
-        this.textInputQueue = new EventQueue<>();
+        this.textInput = new Subject<>();
 
         // The headless renderer doesn't need to be started explicitly
         // and can be used immediately after creation.
@@ -178,8 +179,8 @@ public class HeadlessRenderer implements Renderer, SceneContext, InputDevice {
     }
 
     @Override
-    public EventQueue<String> requestTextInput(String label, String initialValue) {
-        return textInputQueue;
+    public EventSource<String> requestTextInput(String label, String initialValue) {
+        return EventSource.from(textInput);
     }
 
     @Override

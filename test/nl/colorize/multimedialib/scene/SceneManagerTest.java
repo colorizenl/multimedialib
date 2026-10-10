@@ -18,8 +18,6 @@ import nl.colorize.multimedialib.stage.Animation;
 import nl.colorize.multimedialib.stage.ColorRGB;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Sprite;
-import nl.colorize.util.EventQueue;
-import nl.colorize.util.Subject;
 import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
 import org.junit.jupiter.api.BeforeEach;
@@ -496,72 +494,6 @@ public class SceneManagerTest {
         context.doFrame(1f);
 
         assertEquals(List.of("click"), events);
-    }
-
-    @Test
-    void handleEventsDuringFrameUpdates() throws InterruptedException {
-        List<String> events = new ArrayList<>();
-        List<Throwable> errors = new ArrayList<>();
-
-        Subject<String> subject = Subject.runAsync(() -> {
-            Thread.sleep(100);
-            return "1";
-        });
-
-        EventQueue<String> eventQueue = new EventQueue<>();
-        subject.subscribe(eventQueue);
-
-        HeadlessRenderer renderer = new HeadlessRenderer();
-        renderer.attach(eventQueue, events::add, errors::add);
-
-        Thread.sleep(3000);
-
-        assertEquals(0, events.size());
-        renderer.doFrame();
-        assertEquals(1, events.size());
-        assertEquals(0, errors.size());
-    }
-
-    @Test
-    void handleErrors() throws InterruptedException {
-        List<String> events = new ArrayList<>();
-        List<Throwable> errors = new ArrayList<>();
-
-        Subject<String> subject = Subject.runAsync(() -> {
-            Thread.sleep(100);
-            throw new RuntimeException();
-        });
-
-        EventQueue<String> eventQueue = new EventQueue<>();
-        subject.subscribe(eventQueue);
-
-        HeadlessRenderer renderer = new HeadlessRenderer();
-        renderer.attach(eventQueue, events::add, errors::add);
-
-        Thread.sleep(3000);
-
-        assertEquals(0, events.size());
-        assertEquals(0, errors.size());
-        renderer.doFrame();
-        assertEquals(0, events.size());
-        assertEquals(1, errors.size());
-    }
-
-    @Test
-    void eventQueueToFrameUpdateSubject() {
-        List<String> events = new ArrayList<>();
-        List<Throwable> errors = new ArrayList<>();
-        Subject<String> originalSubject = Subject.of("a");
-        EventQueue<String> eventQueue = EventQueue.subscribe(originalSubject);
-
-        HeadlessRenderer renderer = new HeadlessRenderer();
-        renderer.attach(eventQueue).subscribe(events::add, errors::add);
-
-        assertEquals(0, events.size());
-        assertEquals(0, errors.size());
-        renderer.doFrame();
-        assertEquals(1, events.size());
-        assertEquals(0, errors.size());
     }
 
     @Test

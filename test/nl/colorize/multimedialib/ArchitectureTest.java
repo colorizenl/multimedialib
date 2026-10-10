@@ -52,6 +52,8 @@ public class ArchitectureTest {
             .filter(m -> m.getReturnType().getName().startsWith("nl.colorize.util.Subject"))
             .map(m -> m.getOwner().getName())
             .filter(name -> !name.endsWith(".SceneContext"))
+            .filter(name -> !name.endsWith(".EventSource"))
+            .filter(name -> !name.endsWith(".HeadlessRenderer"))
             .filter(name -> !name.endsWith("MediaLoader"))
             .filter(name -> !name.contains("Audio") && !name.contains("Sound"))
             .filter(name -> !name.contains(".teavm."))

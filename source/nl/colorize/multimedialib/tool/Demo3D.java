@@ -192,7 +192,7 @@ public class Demo3D implements Scene, ErrorHandler {
         Text label = new Text("", font, Align.CENTER);
         hudContainer.addChild(label);
 
-        context.attach(() -> {
+        context.attach(_ -> {
             Transform3D transform = model.getGlobalTransform();
             Point3D worldPosition = transform.getPosition();
             Point2D canvasPosition = context.getStage().getWorld3D().project(worldPosition);
@@ -207,7 +207,7 @@ public class Demo3D implements Scene, ErrorHandler {
         Text hudText = new Text("", font);
         hudText.getTransform().setPosition(20, 30);
         hudText.setLineHeight(20);
-        context.attach(() -> updateHUD(hudText));
+        context.attach(_ -> updateHUD(hudText));
 
         hudContainer = new Container("hud");
         hudContainer.addChild(hudText);

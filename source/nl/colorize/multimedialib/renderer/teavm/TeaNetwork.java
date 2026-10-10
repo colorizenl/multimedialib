@@ -10,8 +10,9 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import nl.colorize.multimedialib.renderer.Network;
-import nl.colorize.util.EventQueue;
+import nl.colorize.multimedialib.scene.EventSource;
 import nl.colorize.util.LogHelper;
+import nl.colorize.util.Subject;
 import nl.colorize.util.http.HttpException;
 import org.jspecify.annotations.Nullable;
 import org.teavm.jso.ajax.XMLHttpRequest;
@@ -43,7 +44,7 @@ public class TeaNetwork implements Network {
     private PeerjsBridge peerBridge;
     private List<String> peerConnectBuffer;
     private List<String> peerSendBuffer;
-    private EventQueue<PeerMessage> peerReceiveBuffer;
+    private Subject<PeerMessage> peerReceiveBuffer;
 
     private static final Splitter HEADER_SPLITTER = Splitter.on(CharMatcher.anyOf("\r\n"));
     private static final List<String> SYSTEM_MESSAGES = List.of(OPEN, CONNECT, DISCONNECT, ERROR);
@@ -52,19 +53,19 @@ public class TeaNetwork implements Network {
     public TeaNetwork() {
         this.peerConnectBuffer = new CopyOnWriteArrayList<>();
         this.peerSendBuffer = new CopyOnWriteArrayList<>();
-        this.peerReceiveBuffer = new EventQueue<>();
+        this.peerReceiveBuffer = new Subject<>();
     }
 
     @Override
-    public EventQueue<Response> send(
+    public EventSource<Response> send(
         String method,
         String url,
         Map<String, String> headers,
         @Nullable String body
     ) {
         XMLHttpRequest request = XMLHttpRequest.create();
-        EventQueue<Response> eventQueue = new EventQueue<>();
-        request.setOnReadyStateChange(() -> handleResponse(request, eventQueue));
+        Subject<Response> events = new Subject<>();
+        request.setOnReadyStateChange(() -> handleResponse(request, events));
         request.open(method, url, true);
         addRequestHeaders(request, headers);
         if (body != null && !body.isEmpty()) {
@@ -72,7 +73,7 @@ public class TeaNetwork implements Network {
         } else {
             request.send();
         }
-        return eventQueue;
+        return EventSource.from(events);
     }
 
     private void addRequestHeaders(XMLHttpRequest request, Map<String, String> headers) {
@@ -80,14 +81,14 @@ public class TeaNetwork implements Network {
         headers.forEach(request::setRequestHeader);
     }
 
-    private void handleResponse(XMLHttpRequest request, EventQueue<Response> eventQueue) {
+    private void handleResponse(XMLHttpRequest request, Subject<Response> events) {
         if (request.getReadyState() == XMLHttpRequest.DONE) {
             if (request.getStatus() >= 200 && request.getStatus() <= 204) {
-                eventQueue.onNext(mapResponse(request));
+                events.next(mapResponse(request));
             } else {
                 HttpException error = new HttpException(
                     "AJAX request failed: " + request.getStatusText(), request.getStatus());
-                eventQueue.onError(error);
+                events.nextError(error);
             }
         }
     }
@@ -120,18 +121,22 @@ public class TeaNetwork implements Network {
         return true;
     }
 
-    @Override
-    public EventQueue<PeerMessage> openPeerConnection() {
-        Preconditions.checkState(peerBridge == null, "Peer-to-peer connection already active");
-        peerBridge = Browser.getPeerJsBridge();
-        peerBridge.registerCallback(this::handlePeerMessage);
-        peerBridge.open();
-        return peerReceiveBuffer;
+    private void initPeerConnection() {
+        if (peerBridge == null) {
+            peerBridge = Browser.getPeerJsBridge();
+            peerBridge.registerCallback(this::handlePeerMessage);
+            peerBridge.open();
+        }
     }
 
     @Override
-    public EventQueue<PeerMessage> joinPeerConnection(String peerId) {
-        Preconditions.checkState(peerBridge == null, "Peer-to-peer connection already active");
+    public EventSource<PeerMessage> openPeerConnection() {
+        initPeerConnection();
+        return EventSource.from(peerReceiveBuffer);
+    }
+
+    @Override
+    public EventSource<PeerMessage> joinPeerConnection(String peerId) {
         peerConnectBuffer.add(peerId);
         return openPeerConnection();
     }
@@ -151,7 +156,7 @@ public class TeaNetwork implements Network {
         }
 
         PeerMessage peerMessage = new PeerMessage(id, message);
-        peerReceiveBuffer.onNext(peerMessage);
+        peerReceiveBuffer.next(peerMessage);
     }
 
     @Override

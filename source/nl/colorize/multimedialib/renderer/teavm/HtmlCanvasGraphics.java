@@ -149,7 +149,7 @@ public class HtmlCanvasGraphics implements StageVisitor {
     @Override
     public void drawLine(Primitive graphic, Line line, Transform globalTransform) {
         context.setStrokeStyle(getPrimitiveColorHex(graphic));
-        context.setLineWidth(graphic.getStroke());
+        context.setLineWidth(graphic.getStroke() * sceneCanvas.getZoomLevel());
         context.beginPath();
         context.moveTo(toScreenX(line.start()), toScreenY(line.start()));
         context.lineTo(toScreenX(line.end()), toScreenY(line.end()));
@@ -159,7 +159,7 @@ public class HtmlCanvasGraphics implements StageVisitor {
     @Override
     public void drawSegmentedLine(Primitive graphic, SegmentedLine line, Transform globalTransform) {
         context.setStrokeStyle(getPrimitiveColorHex(graphic));
-        context.setLineWidth(graphic.getStroke());
+        context.setLineWidth(graphic.getStroke() * sceneCanvas.getZoomLevel());
         context.beginPath();
         context.moveTo(toScreenX(line.getHead()), toScreenY(line.getHead()));
         for (Point2D p : line.points()) {

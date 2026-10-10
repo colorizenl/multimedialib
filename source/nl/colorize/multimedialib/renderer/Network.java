@@ -6,7 +6,7 @@
 
 package nl.colorize.multimedialib.renderer;
 
-import nl.colorize.util.EventQueue;
+import nl.colorize.multimedialib.scene.EventSource;
 import nl.colorize.util.http.PostData;
 import org.jspecify.annotations.Nullable;
 
@@ -18,7 +18,7 @@ import java.util.Set;
 /**
  * Interface for the platform-specific mechanism for network access. HTTP
  * requests are sent asynchronously to avoid blocking the application. These
- * asynchronous operations return a {@link EventQueue} that can be used to
+ * asynchronous operations return a {@link EventSource} that can be used to
  * process the response during frame updates.
  * <p>
  * This class does not use the standard HTTP client in {@code java.net.http},
@@ -27,30 +27,30 @@ import java.util.Set;
  */
 public interface Network {
 
-    public EventQueue<Response> send(
+    public EventSource<Response> send(
         String method,
         String url,
         Map<String, String> headers,
         @Nullable String body
     );
 
-    default EventQueue<Response> get(String url, Map<String, String> headers) {
+    default EventSource<Response> get(String url, Map<String, String> headers) {
         return send("GET", url, headers, null);
     }
 
-    default EventQueue<Response> get(String url) {
+    default EventSource<Response> get(String url) {
         return send("GET", url, Collections.emptyMap(), null);
     }
 
-    default EventQueue<Response> post(String url, Map<String, String> headers, String body) {
+    default EventSource<Response> post(String url, Map<String, String> headers, String body) {
         return send("POST", url, headers, body);
     }
 
-    default EventQueue<Response> post(String url, Map<String, String> headers, PostData body) {
+    default EventSource<Response> post(String url, Map<String, String> headers, PostData body) {
         return post(url, headers, body.encode());
     }
 
-    default EventQueue<Response> post(String url, PostData body) {
+    default EventSource<Response> post(String url, PostData body) {
         return post(url, Collections.emptyMap(), body.encode());
     }
 
@@ -62,7 +62,7 @@ public interface Network {
 
     /**
      * Opens a peer-to-peer connection that will listen for other peers to
-     * connect. Returns an {@link EventQueue} that can be used to process
+     * connect. Returns an {@link EventSource} that can be used to process
      * all received messages during frame updates. This includes the
      * {@link PeerMessage#OPEN} initialization message that can be used to
      * determine this peer connection's ID, which can then be shared with
@@ -71,22 +71,20 @@ public interface Network {
      * @throws UnsupportedOperationException if peer-to-peer connections are
      *         not supported by the current platform or renderer. This can
      *         be checked using {@link #isPeerToPeerSupported()}.
-     * @throws IllegalStateException if a peer connection is already open.
      */
-    public EventQueue<PeerMessage> openPeerConnection();
+    public EventSource<PeerMessage> openPeerConnection();
 
     /**
      * Opens a peer-to-peer connection by connecting to the peer with the
-     * specified ID. Returns an {@link EventQueue} that can be used to
+     * specified ID. Returns an {@link EventSource} that can be used to
      * process all received messages during frame updates. Failure to join
      * will result in an error message being added to the event queue.
      *
      * @throws UnsupportedOperationException if peer-to-peer connections are
      *         not supported by the current platform or renderer. This can
      *         be checked using {@link #isPeerToPeerSupported()}.
-     * @throws IllegalStateException if a peer connection is already open.
      */
-    public EventQueue<PeerMessage> joinPeerConnection(String peerId);
+    public EventSource<PeerMessage> joinPeerConnection(String peerId);
 
     /**
      * Sends a message to all currently active peer-to-peer connections.
@@ -96,9 +94,8 @@ public interface Network {
      * @throws UnsupportedOperationException if peer-to-peer connections are
      *         not supported by the current platform or renderer. This can
      *         be checked using {@link #isPeerToPeerSupported()}.
-     * @throws IllegalStateException if the peer-to-peer subsystem is not
-     *         active, i.e. no peer-to-peer connections have been either
-     *         opened or joined.
+     * @throws IllegalStateException if no peer-to-peer connection is
+     *         currently open.
      */
     public void sendPeerConnection(String message);
 
@@ -110,9 +107,8 @@ public interface Network {
      * @throws UnsupportedOperationException if peer-to-peer connections are
      *         not supported by the current platform or renderer. This can
      *         be checked using {@link #isPeerToPeerSupported()}.
-     * @throws IllegalStateException if the peer-to-peer subsystem is not
-     *         active, i.e. no peer-to-peer connections have been either
-     *         opened or joined.
+     * @throws IllegalStateException if no peer-to-peer connection is
+     *         currently open.
      */
     public Set<String> getPeerConnectionIds();
 
@@ -131,16 +127,6 @@ public interface Network {
 
         public Optional<String> getHeader(String name) {
             return Optional.ofNullable(headers.get(name));
-        }
-
-        /**
-         * @deprecated Use {@link #body()} instead. This method exists only
-         *            to retain backward compatibility with older versions
-         *            of MultimediaLib.
-         */
-        @Deprecated
-        public String getBody() {
-            return body();
         }
     }
 

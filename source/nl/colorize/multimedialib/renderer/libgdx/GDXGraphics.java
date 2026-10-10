@@ -195,7 +195,7 @@ public class GDXGraphics implements StageVisitor, World3D {
         if (graphic.getStroke() == 1f) {
             drawBasicLines(List.of(line), color);
         } else {
-            drawComplexLines(List.of(line), color, graphic.getStroke());
+            drawComplexLines(List.of(line), color, graphic.getStroke() * canvas.getZoomLevel());
         }
     }
 
@@ -205,7 +205,7 @@ public class GDXGraphics implements StageVisitor, World3D {
         if (graphic.getStroke() == 1f) {
             drawBasicLines(line.getSegments(), color);
         } else {
-            drawComplexLines(line.getSegments(), color, graphic.getStroke());
+            drawComplexLines(line.getSegments(), color, graphic.getStroke() * canvas.getZoomLevel());
         }
     }
 

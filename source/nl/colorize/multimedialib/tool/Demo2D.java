@@ -27,6 +27,7 @@ import nl.colorize.multimedialib.renderer.MediaLoader;
 import nl.colorize.multimedialib.renderer.Network;
 import nl.colorize.multimedialib.renderer.Pointer;
 import nl.colorize.multimedialib.scene.Actor;
+import nl.colorize.multimedialib.scene.EventSource;
 import nl.colorize.multimedialib.scene.Scene;
 import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.effect.Effects;
@@ -45,7 +46,6 @@ import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.SpriteAtlas;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
-import nl.colorize.util.EventQueue;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.ResourceFile;
 import nl.colorize.util.animation.Interpolation;
@@ -271,7 +271,7 @@ public class Demo2D implements Scene, ErrorHandler {
         Primitive prim = new Primitive(shape, RED_BUTTON);
         hudLayer.addChild(prim);
 
-        context.attach(() -> {
+        context.attach(_ -> {
             boolean hover = Streams.stream(context.getInput().getPointers())
                 .map(Pointer::getPosition)
                 .anyMatch(p -> prim.getStageShape().contains(p));
@@ -359,7 +359,7 @@ public class Demo2D implements Scene, ErrorHandler {
         info.getTransform().setPosition(canvas.getWidth() - 20, canvas.getHeight() - 100);
         hudLayer.addChild(info);
 
-        context.attach(network.post(EXAMPLE_URL, headers, data), response -> {
+        context.attach(network.post(EXAMPLE_URL, headers, data)).subscribe(response -> {
             List<String> text = new ArrayList<>();
             text.add("Network request succeeded");
             text.add("Content-Type: " + response.getHeader(HttpHeaders.CONTENT_TYPE).orElse("?"));
@@ -396,7 +396,7 @@ public class Demo2D implements Scene, ErrorHandler {
     }
 
     private void saveApplicationData() {
-        EventQueue<String> event = context.getInput().requestTextInput("Enter some text:", "");
+        EventSource<String> event = context.getInput().requestTextInput("Enter some text:", "");
 
         context.attach(event).subscribe(input -> {
             Properties data = new Properties();
@@ -426,7 +426,8 @@ public class Demo2D implements Scene, ErrorHandler {
     }
 
     private void joinPeerConnection() {
-        EventQueue<String> event = context.getInput().requestTextInput("Peer-to-peer connection ID", "");
+        InputDevice input = context.getInput();
+        EventSource<String> event = input.requestTextInput("Peer-to-peer connection ID", "");
 
         context.attach(event).subscribe(peerId -> {
             showPeerToPeerMessages(context.getNetwork().joinPeerConnection(peerId));
@@ -434,8 +435,8 @@ public class Demo2D implements Scene, ErrorHandler {
         });
     }
 
-    private void showPeerToPeerMessages(EventQueue<Network.PeerMessage> messages) {
-        context.attach(messages, message -> {
+    private void showPeerToPeerMessages(EventSource<Network.PeerMessage> messages) {
+        context.attach(messages).subscribe(message -> {
             String label = "Received peer-to-peer message: " + message.body();
             LOGGER.info(label);
 
