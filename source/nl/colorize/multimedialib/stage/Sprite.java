@@ -208,8 +208,8 @@ public class Sprite implements Spatial2D {
     @Override
     public Rect getStageBounds() {
         Point2D position = globalTransform.getPosition();
-        double width = Math.max(getCurrentWidth() * (globalTransform.getScaleX() / 100f), 1f);
-        double height = Math.max(getCurrentHeight() * (globalTransform.getScaleY() / 100f), 1f);
+        double width = Math.max(getCurrentWidth() * Math.abs(globalTransform.getScaleX() / 100f), 1f);
+        double height = Math.max(getCurrentHeight() * Math.abs(globalTransform.getScaleY() / 100f), 1f);
         return new Rect(position.x() - width / 2f, position.y() - height / 2f, width, height);
     }
 

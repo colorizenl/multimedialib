@@ -154,7 +154,7 @@ public class SpriteAtlas {
     }
 
     public boolean contains(String name) {
-        return subImages.containsKey(name);
+        return subImages.containsKey(name) || subImages.containsKey(normalizeSubImageName(name));
     }
 
     /**

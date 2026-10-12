@@ -8,7 +8,6 @@ package nl.colorize.multimedialib.renderer.libgdx;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import nl.colorize.multimedialib.math.Point2D;
@@ -105,7 +104,6 @@ public class GDXInput implements InputDevice {
         .put(KeyCode.EQUALS, Input.Keys.EQUALS)
         .build();
 
-    private static final CharMatcher APPLE_SCRIPT_QUOTES = CharMatcher.anyOf("\"'");
     private static final Logger LOGGER = LogHelper.getLogger(GDXInput.class);
 
     protected GDXInput(RenderConfig config) {
@@ -205,12 +203,14 @@ public class GDXInput implements InputDevice {
      * when using LWJGL 3.
      */
     private void showAppleScriptTextInputDialog(String label, String value, Subject<String> subject) {
-        String script = String.format("display dialog \"%s\" default answer \"%s\"",
-            APPLE_SCRIPT_QUOTES.removeFrom(label), APPLE_SCRIPT_QUOTES.removeFrom(value));
-
         try {
-            Process process = new ProcessBuilder("osascript", "-e", script)
-                .start();
+            Process process = new ProcessBuilder(
+                "osascript",
+                "-e", "on run argv",
+                "-e", "display dialog (item 1 of argv) default answer (item 2 of argv)",
+                "-e", "end run",
+                label, value
+            ).start();
 
             if (process.waitFor() == 0) {
                 String output = new String(process.getInputStream().readAllBytes(), UTF_8);

@@ -94,9 +94,7 @@ public class StandardMediaLoader implements MediaLoader {
 
     @Override
     public Audio loadAudio(ResourceFile file) {
-        if (Platform.isMac()) {
-            return new JavaSoundPlayer(file, file.readBytes(), audioQueue);
-        } else if (Platform.isWindows()) {
+        if (Platform.isMac() || Platform.isWindows()) {
             return new LWJGLAudio(file, audioQueue);
         } else {
             return new NullAudio(file.toString(), audioQueue);

@@ -48,7 +48,7 @@ public record FontFace(ResourceFile origin, String family, int size, ColorRGB co
      * indicated in the font style should also be scaled accordingly.
      */
     public FontFace scale(Canvas canvas) {
-        int actualDisplaySize = (int) Math.round(canvas.getZoomLevel() * size);
+        int actualDisplaySize = (int) Math.round(canvas.getZoomLevel() * Math.max(size, 2));
         return derive(actualDisplaySize);
     }
 

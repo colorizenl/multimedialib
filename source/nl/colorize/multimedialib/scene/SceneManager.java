@@ -170,13 +170,13 @@ public class SceneManager {
         for (Actor actor : snapshot) {
             if (!actor.isCompleted()) {
                 updateActor(actor, deltaTime);
+            }
 
-                // We need to check an actor's status again,
-                // in case it has been marked as completed
-                // during the frame update that just happened.
-                if (actor.isCompleted()) {
-                    actors.remove(actor);
-                }
+            // We need to check an actor's status again,
+            // in case it has been marked as completed
+            // during the frame update that just happened.
+            if (actor.isCompleted()) {
+                actors.remove(actor);
             }
         }
     }

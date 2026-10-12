@@ -156,6 +156,10 @@ public interface MediaLoader {
      * Saves the application data for the application with the specified name.
      * Application data is limited to key/value properties, as this type of
      * data is supported by all platforms.
+     *
+     * @throws IllegalArgumentException if the application name contains
+     *         characters that are not allowed in application names on the
+     *         current platform.
      */
     public void saveApplicationData(String appName, Properties data);
 

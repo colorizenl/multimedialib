@@ -96,6 +96,8 @@ public class SpriteAtlasLoader {
                 indent++;
             } else if (line.charAt(i) == '\t') {
                 indent += 4;
+            } else {
+                break;
             }
         }
 

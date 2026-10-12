@@ -55,12 +55,12 @@ public class EventSource<T> implements Actor {
     }
 
     @SuppressWarnings("unchecked")
-    private void flush(Consumer<T> onEvent, Consumer<Exception> onError) {
+    private void flush(Consumer<T> onEvent, Consumer<Throwable> onError) {
         List<Object> snapshot = List.copyOf(buffer);
         buffer.clear();
 
         for (Object event : snapshot) {
-            if (event instanceof Exception error) {
+            if (event instanceof Throwable error) {
                 output.nextError(error);
                 if (onError != null) {
                     onError.accept(error);
@@ -85,7 +85,7 @@ public class EventSource<T> implements Actor {
      * @deprecated Prefer {@link SceneContext#attach(EventSource)}.
      */
     @Deprecated
-    public void poll(Consumer<T> onEvent, Consumer<Exception> onError) {
+    public void poll(Consumer<T> onEvent, Consumer<Throwable> onError) {
         Preconditions.checkState(!attached, "EventSource already attached to scene");
         flush(onEvent, onError);
     }

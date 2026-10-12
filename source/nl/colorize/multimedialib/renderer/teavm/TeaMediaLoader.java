@@ -238,7 +238,12 @@ public class TeaMediaLoader implements MediaLoader {
         for (int i = 0; i < localStorage.getLength(); i++) {
             String name = localStorage.key(i);
             String value = localStorage.getItem(name);
-            data.setProperty(name, value);
+            String prefix = getApplicationNamePrefix(appName);
+
+            if (name.startsWith(prefix)) {
+                String propertyName = name.substring(prefix.length());
+                data.setProperty(propertyName, value);
+            }
         }
 
         return data;
@@ -248,8 +253,14 @@ public class TeaMediaLoader implements MediaLoader {
     public void saveApplicationData(String appName, Properties data) {
         for (String name : data.stringPropertyNames()) {
             String value = data.getProperty(name);
-            bridge.saveApplicationData(name, value);
+            bridge.saveApplicationData(getApplicationNamePrefix(appName) + name, value);
         }
+    }
+
+    private String getApplicationNamePrefix(String appName) {
+        Preconditions.checkArgument(!appName.contains(" :: "),
+            "Invalid application name: " + appName);
+        return appName + " :: ";
     }
 
     /**

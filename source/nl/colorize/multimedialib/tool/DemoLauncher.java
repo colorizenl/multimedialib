@@ -31,7 +31,7 @@ import static nl.colorize.multimedialib.tool.Demo2D.DEFAULT_CANVAS_WIDTH;
  */
 public class DemoLauncher {
 
-    @Arg(name = "--renderer", usage = "One of 'java2d', 'gdx', 'regression', 'regression3d'.")
+    @Arg(name = "--renderer", usage = "One of 'java2d', 'gdx'.")
     protected String rendererName;
 
     @Arg(name = "--demo", usage = "One of '2d', '3d', 'form'.")

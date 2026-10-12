@@ -187,7 +187,7 @@ public final class RenderConfig {
         if (matcher.matches()) {
             userLocale = new Locale(matcher.group(1).toLowerCase(), matcher.group(2).toUpperCase());
         } else if (browserLanguage.length() == 2) {
-            userLocale = new Locale(matcher.group(1).toLowerCase());
+            userLocale = new Locale(browserLanguage.toLowerCase());
         }
     }
 

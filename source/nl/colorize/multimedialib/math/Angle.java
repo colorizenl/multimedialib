@@ -6,6 +6,8 @@
 
 package nl.colorize.multimedialib.math;
 
+import com.google.common.base.Preconditions;
+
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -20,6 +22,8 @@ public record Angle(double degrees) {
     public static final List<Angle> INTERCARDINAL = toAngles(0, 45, 90, 135, 180, 225, 270, 315);
 
     public Angle(double degrees) {
+        Preconditions.checkArgument(Double.isFinite(degrees), "Invalid angle: " + degrees);
+
         while (degrees < 0f) {
             degrees += 360f;
         }

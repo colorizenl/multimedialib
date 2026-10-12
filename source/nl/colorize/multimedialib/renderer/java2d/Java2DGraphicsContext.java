@@ -151,6 +151,10 @@ public class Java2DGraphicsContext implements StageVisitor {
 
     @Override
     public void drawCircle(Primitive graphic, Circle circle, Transform globalTransform) {
+        if (circle.radius() < 2) {
+            return;
+        }
+
         Color color = getPrimitiveColor(graphic);
         CircleImage key = new CircleImage(circle.radius(), color);
         BufferedImage image = circleCache.get(key);
