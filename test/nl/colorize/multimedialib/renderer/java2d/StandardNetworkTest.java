@@ -7,64 +7,22 @@
 package nl.colorize.multimedialib.renderer.java2d;
 
 import nl.colorize.multimedialib.renderer.Network;
-import nl.colorize.multimedialib.renderer.headless.HeadlessRenderer;
 import nl.colorize.multimedialib.scene.EventSource;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StandardNetworkTest {
 
     @Test
-    public void testSendGetRequest() {
-        List<String> responses = new CopyOnWriteArrayList<>();
-        List<Throwable> errors = new CopyOnWriteArrayList<>();
-
-        StandardNetwork internetAccess = new StandardNetwork();
-        EventSource<Network.Response> eventQueue = internetAccess.get("https://clrz.nl");
-
-        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
-            HeadlessRenderer renderer = new HeadlessRenderer();
-            renderer.attach(eventQueue)
-                .subscribe(response -> responses.add(response.body()))
-                .subscribeErrors(errors::add);
-
-            while (responses.isEmpty()) {
-                renderer.doFrame();
-                Thread.sleep(1000);
-            }
-
-            assertEquals(1, responses.size());
-            assertTrue(responses.getFirst().contains("<title>Colorize"));
-            assertEquals(0, errors.size());
-        });
-    }
-
-    @Test
     void headerNamesAreCaseInsensitive() {
-        List<Network.Response> responses = new CopyOnWriteArrayList<>();
-
         StandardNetwork internetAccess = new StandardNetwork();
         EventSource<Network.Response> eventQueue = internetAccess.get("https://clrz.nl");
+        Network.Response response = eventQueue.block(10).orElseThrow();
 
-        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
-            HeadlessRenderer renderer = new HeadlessRenderer();
-            renderer.attach(eventQueue).subscribe(responses::add);
-
-            while (responses.isEmpty()) {
-                renderer.doFrame();
-                Thread.sleep(1000);
-            }
-
-            assertEquals(1, responses.size());
-            assertEquals("text/html", responses.getFirst().getHeader("Content-Type").orElse(""));
-            assertEquals("text/html", responses.getFirst().getHeader("content-type").orElse(""));
-        });
+        assertTrue(response.body().contains("<title>Colorize"));
+        assertEquals("text/html", response.getHeader("Content-Type").orElse(""));
+        assertEquals("text/html", response.getHeader("content-type").orElse(""));
     }
 }

@@ -336,11 +336,30 @@ class FormTest {
         assertEquals(0, form.getFormHeight());
 
         form.addTitle("a", STYLE);
-
         assertEquals(20, form.getFormHeight());
 
         form.addLabel("b", STYLE);
-
         assertEquals(50, form.getFormHeight());
+    }
+
+    @Test
+    void invisibleFormOrWidgetShouldNotClick() {
+        HeadlessRenderer renderer = new HeadlessRenderer();
+        Stage stage = renderer.getStage();
+        List<String> events = new ArrayList<>();
+
+        Form form = new Form(renderer, 100, 20);
+        form.addButton("a", BUTTON_STYLE).subscribe(_ -> events.add("button"));
+        form.addSelectField("select1", List.of("select1", "select2"), BUTTON_STYLE).subscribe(events::add);
+
+        stage.getRoot().addChild(form.getGraphics());
+        renderer.attach(form);
+        form.getGraphics().getTransform().setVisible(false);
+        renderer.doFrame(1.0);
+        renderer.setPointer(new Point2D(10, 10));
+        renderer.setPointerReleased(true);
+        renderer.doFrame(1.0);
+
+        assertEquals(List.of(), events);
     }
 }

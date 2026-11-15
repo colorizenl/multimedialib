@@ -21,6 +21,7 @@ import nl.colorize.multimedialib.scene.GraphicsProvider;
 import nl.colorize.multimedialib.stage.Container;
 import nl.colorize.multimedialib.stage.Primitive;
 import nl.colorize.multimedialib.stage.Spatial2D;
+import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Subject;
 import nl.colorize.util.TranslationBundle;
@@ -232,7 +233,12 @@ public class Form implements Actor, GraphicsProvider {
             return false;
         }
 
-        Point2D formStagePosition = container.getGlobalTransform().getPosition();
+        Transform globalTransform = container.getGlobalTransform();
+        if (!globalTransform.isVisible()) {
+            return false;
+        }
+
+        Point2D formStagePosition = globalTransform.getPosition();
         Rect stageBounds = widget.bounds.toRect().add(formStagePosition);
         return input.isPointerReleased(stageBounds);
     }

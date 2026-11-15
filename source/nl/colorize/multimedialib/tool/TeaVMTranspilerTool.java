@@ -73,6 +73,9 @@ public class TeaVMTranspilerTool {
     @Arg(name = "out", usage = "Output directory for transpiled application")
     protected File outputDir;
 
+    @Arg(name = "favicon", required = false, usage = "Base image used to generate favicon.")
+    protected File faviconFile;
+
     @Arg(usage = "Build ID used for caching resource files, default is random")
     protected String buildId = String.valueOf(System.currentTimeMillis());
 
@@ -98,6 +101,7 @@ public class TeaVMTranspilerTool {
         "colorize-icon-32.png",
         "colorize-logo-180.png",
         "OpenSans-Regular.ttf",
+        "browser/assets/apple-favicon.png",
         "browser/assets/favicon.png",
         "browser/assets/loading.gif",
         "browser/assets/multimedialib.css",
@@ -153,6 +157,9 @@ public class TeaVMTranspilerTool {
             transpile();
             copyFrameworkFiles();
             copyResources();
+            if (faviconFile != null) {
+                generateFavicons();
+            }
             printSummary(timer);
         } catch (TeaVMToolException | IOException e) {
             LOGGER.log(Level.SEVERE, "Transpiling failed", e);
@@ -485,5 +492,15 @@ public class TeaVMTranspilerTool {
                 FileUtils.deleteDirectory(subDir);
             }
         }
+    }
+
+    private void generateFavicons() throws IOException {
+        BufferedImage original = Utils2D.loadImage(faviconFile);
+        BufferedImage defaultFavicon = Utils2D.scaleImage(original, 32, 32, true);
+        BufferedImage appleFavicon = Utils2D.scaleImage(original, 180, 180, true);
+
+        File browserAssetsOutputDir = new File(outputDir, "assets/browser/assets");
+        Utils2D.savePNG(defaultFavicon, new File(browserAssetsOutputDir, "favicon.png"));
+        Utils2D.savePNG(appleFavicon, new File(browserAssetsOutputDir, "apple-favicon.png"));
     }
 }

@@ -58,7 +58,6 @@ public final class Stage {
     private static final String ROOT_CONTAINER_2D = "$$root";
     private static final String ROOT_CONTAINER_3D = "$$root3D";
     private static final ColorRGB DEFAULT_AMBIENT_LIGHT_COLOR = new ColorRGB(220, 220, 220);
-    private static final double SAFE_ZONE_PADDING = 64f;
     private static final Logger LOGGER = LogHelper.getLogger(Stage.class);
 
     public Stage(Canvas canvas) {
@@ -164,7 +163,7 @@ public final class Stage {
     private void visitNode2D(Spatial2D node, Transform globalTransform, StageVisitor visitor) {
         node.getGlobalTransform().set(globalTransform);
 
-        if (!globalTransform.isVisible() || !shouldDraw(node)) {
+        if (!globalTransform.isVisible()) {
             return;
         }
 
@@ -177,22 +176,6 @@ public final class Stage {
             case Text text -> visitor.drawText(text, globalTransform);
             default -> LOGGER.warning("Unknown 2D graphics type: " + node.getClass());
         }
-    }
-
-    private boolean shouldDraw(Spatial2D node) {
-        if (node instanceof Container) {
-            return true;
-        }
-
-        if (canvas.getBounds().contains(node.getGlobalTransform().getPosition())) {
-            return true;
-        }
-
-        if (node instanceof Text) {
-            return false;
-        }
-
-        return canvas.getBounds().expand(SAFE_ZONE_PADDING).intersects(node.getStageBounds());
     }
 
     private void visitContainer(Container container, Transform globalTransform, StageVisitor visitor) {

@@ -37,7 +37,7 @@ to the dependencies section in `pom.xml`:
 <dependency>
     <groupId>nl.colorize</groupId>
     <artifactId>multimedialib</artifactId>
-    <version>2026.6</version>
+    <version>2026.6.1</version>
 </dependency>
 ```
     
@@ -45,7 +45,7 @@ The library can also be used in Gradle projects:
 
 ```groovy
 dependencies {
-    implementation "nl.colorize:multimedialib:2026.5"
+    implementation "nl.colorize:multimedialib:2026.6.1"
 }
 ```
     
@@ -134,7 +134,7 @@ Both versions support the following command line arguments:
 
 | Name           | Required | Description                                              |
 |----------------|----------|----------------------------------------------------------|
-| `--renderer`   | yes      | One of 'java2d', 'javafx', 'gdx'.                        |
+| `--renderer`   | yes      | One of 'java2d', 'gdx'.                                  |
 | `--demo`       | yes      | One of '2d', '3d', 'form', 'regression', 'regression3d'. |
 | `--framerate`  | no       | Demo framerate, default is 60 fps.                       |
 | `--canvas`     | no       | Uses a fixed canvas size to display graphics.            |
@@ -161,7 +161,8 @@ included as part of the library, and supports the following arguments:
 | `--main`      | yes      | Main class that acts as application entry point.                           |
 | `--resources` | yes      | Directory containing the application's resource files.                     |
 | `--out`       | yes      | Output directory for the generated files.                                  |
-| `--buildid`   | no       | Build ID used for caching resource files, default is random.               | 
+| `--buildid`   | no       | Build ID used for caching resource files, default is random.               |
+| `--favicon`   | no       | Base image used to generate favicon. |
 | `--meta`      | no       | Inserts `<meta>` tags into the HTML, passed as `name:value`.               |
 | `--lang`      | no       | Primary application language, defaults to `en-US`.                         |
 | `--demo`      | no       | Overrides the application with the demo application, for testing purposes. |

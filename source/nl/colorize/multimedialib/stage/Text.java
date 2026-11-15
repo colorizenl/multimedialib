@@ -146,7 +146,14 @@ public class Text implements Spatial2D {
 
         double approximateWidth = longestLine * estimateCharWidth();
         double approximateHeight = font.size() * lines.size();
-        return Rect.around(position, approximateWidth, approximateHeight);
+        double x = position.x();
+        double baseY = position.y() - approximateHeight / 2.0;
+
+        return switch (align) {
+            case LEFT -> new Rect(x, baseY, approximateWidth, approximateHeight);
+            case CENTER -> Rect.around(position, approximateWidth, approximateHeight);
+            case RIGHT -> new Rect(x - approximateWidth, baseY, approximateWidth, approximateHeight);
+        };
     }
 
     private double estimateCharWidth() {

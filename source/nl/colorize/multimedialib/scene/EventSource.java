@@ -7,11 +7,19 @@
 package nl.colorize.multimedialib.scene;
 
 import com.google.common.base.Preconditions;
+import nl.colorize.util.Development;
 import nl.colorize.util.Subject;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * Accumulates asynchronous events, then forwards them to subscribers during
@@ -26,14 +34,18 @@ import java.util.function.Consumer;
  */
 public class EventSource<T> implements Actor {
 
+    private Subject<T> publisher;
     private List<Object> buffer;
     private Subject<T> output;
     private boolean attached;
 
-    private EventSource() {
+    private EventSource(Subject<T> publisher) {
+        this.publisher = publisher;
         this.buffer = new CopyOnWriteArrayList<>();
         this.output = new Subject<>();
         this.attached = false;
+
+        publisher.subscribe(buffer::add, buffer::add);
     }
 
     /**
@@ -90,9 +102,76 @@ public class EventSource<T> implements Actor {
         flush(onEvent, onError);
     }
 
+    /**
+     * Blocks the current thread until the next event has been received from
+     * the underlying asynchronous operation. Throws an exception if the
+     * duration has been reached before the event is received.
+     * <p>
+     * <strong>Important note:</strong> This method is only provided for
+     * testing purposes; so that tests can cover application logic that
+     * requires asynchronous operations. MultimediaLib applications should
+     * <em>never</em> block the current thread as this would cause the
+     * renderer to freeze.
+     *
+     * @throws IllegalArgumentException if {@code timeout} is negative or zero.
+     *
+     * @deprecated Only use this method in test code, for the reasons explained
+     *             above.
+     */
+    @Development
+    @Deprecated
+    public Optional<T> block(double timeout) {
+        Preconditions.checkArgument(timeout > 0.0, "Invalid timeout: " + timeout);
+        Preconditions.checkArgument(timeout < 500L, "Unlikely timeout, did you mean milliseconds?");
+
+        // This can build on top of Subject.block() once that is available.
+        BlockingQueue<T> queue = new ArrayBlockingQueue<>(1);
+        publisher.subscribe(queue::add);
+        try {
+            T result = queue.poll(Math.round(timeout * 1000), TimeUnit.MILLISECONDS);
+            return Optional.ofNullable(result);
+        } catch (InterruptedException e) {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Returns a new {@link EventSource} that performs the specified operation
+     * on received events before forwarding them to subscribers.
+     *
+     * @throws IllegalStateException if this {@link EventSource} has already
+     *         been attached to the currently active scene.
+     */
+    public <S> EventSource<S> map(Function<T, S> mapper) {
+        Preconditions.checkState(!attached, "EventSource already attached to scene");
+        return new EventSource<>(publisher.map(mapper));
+    }
+
+    /**
+     * Returns a new {@link EventSource} that performs the specified operation
+     * on received events before forwarding them to subscribers.
+     *
+     * @throws IllegalStateException if this {@link EventSource} has already
+     *         been attached to the currently active scene.
+     */
+    public <S> EventSource<S> flatMap(Function<T, Stream<S>> mapper) {
+        Preconditions.checkState(!attached, "EventSource already attached to scene");
+        return new EventSource<>(publisher.flatMap(mapper));
+    }
+
+    /**
+     * Returns a new {@link EventSource} that only forwards events matching
+     * the specified predicate to subscribers.
+     *
+     * @throws IllegalStateException if this {@link EventSource} has already
+     *         been attached to the currently active scene.
+     */
+    public EventSource<T> filter(Predicate<T> condition) {
+        Preconditions.checkState(!attached, "EventSource already attached to scene");
+        return new EventSource<>(publisher.filter(condition));
+    }
+
     public static <T> EventSource<T> from(Subject<T> publisher) {
-        EventSource<T> eventSource = new EventSource<>();
-        publisher.subscribe(eventSource.buffer::add, eventSource.buffer::add);
-        return eventSource;
+        return new EventSource<>(publisher);
     }
 }

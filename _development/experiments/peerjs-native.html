@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8"/>
+        <title>MultimediaLib | PeerJS Demo</title>
+        <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no" />
+    </head>
+
+    <body>
+        <form>
+            <textarea id="console" style="width: 500px; height: 300px;"></textarea>
+            <div>
+                <input type="text" id="connectionField" value="" style="width: 400px;" />
+                <button type="button" onclick="connect()">Connect</button>
+            </div>
+            <div>
+                <input type="text" id="messageField" value="" style="width: 400px;" />
+                <button type="button" onclick="send()">Send</button>
+            </div>
+        </form>
+
+        <script>
+            //---------------------------------------
+            // Native implementation of PeerJS client
+            //---------------------------------------
+
+            const PEER_SERVER = "0.peerjs.com:443";
+            const PEER_SERVER_KEY = "peerjs";
+            const PEER_HEARTBEAT_INTERVAL = 5000;
+            const PEER_RTC_CONFIG = {
+                iceServers: [
+                    {urls: "stun:stun.l.google.com:19302"},
+                    {
+                        urls: ["turn:eu-0.turn.peerjs.com:3478", "turn:us-0.turn.peerjs.com:3478"],
+                        username: "peerjs",
+                        credential: "peerjsp"
+                    }
+                ]
+            };
+
+            function randomToken() {
+                return Math.random().toString(36).slice(2);
+            }
+
+            // Minimal implementation of the BinaryPack format, which is the default
+            // serialization used by PeerJS clients.
+            const BinaryPack = {
+                pack(value) {
+                    const bytes = [];
+                    const encoder = new TextEncoder();
+                    const pushUint = (n, size) => {
+                        for (let i = size - 1; i >= 0; i--) {
+                            bytes.push(Math.floor(n / 2 ** (8 * i)) & 0xff);
+                        }
+                    };
+                    const pushBytes = data => {
+                        for (let b of data) {
+                            bytes.push(b);
+                        }
+                    };
+                    const pushHeader = (length, fixType, type16, type32) => {
+                        if (length <= 0x0f) {
+                            bytes.push(fixType + length);
+                        } else if (length <= 0xffff) {
+                            bytes.push(type16);
+                            pushUint(length, 2);
+                        } else {
+                            bytes.push(type32);
+                            pushUint(length, 4);
+                        }
+                    };
+                    const write = value => {
+                        if (value === null) {
+                            bytes.push(0xc0);
+                        } else if (value === undefined) {
+                            bytes.push(0xc1);
+                        } else if (typeof value === "boolean") {
+                            bytes.push(value ? 0xc3 : 0xc2);
+                        } else if (typeof value === "number") {
+                            if (Number.isInteger(value) && value >= -0x20 && value <= 0x7f) {
+                                bytes.push(value & 0xff);
+                            } else {
+                                const view = new DataView(new ArrayBuffer(8));
+                                view.setFloat64(0, value);
+                                bytes.push(0xcb);
+                                pushBytes(new Uint8Array(view.buffer));
+                            }
+                        } else if (typeof value === "string") {
+                            const utf8 = encoder.encode(value);
+                            pushHeader(utf8.length, 0xb0, 0xd8, 0xd9);
+                            pushBytes(utf8);
+                        } else if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
+                            const raw = value instanceof ArrayBuffer ? new Uint8Array(value) :
+                                new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+                            pushHeader(raw.length, 0xa0, 0xda, 0xdb);
+                            pushBytes(raw);
+                        } else if (Array.isArray(value)) {
+                            pushHeader(value.length, 0x90, 0xdc, 0xdd);
+                            value.forEach(write);
+                        } else {
+                            const entries = Object.entries(value);
+                            pushHeader(entries.length, 0x80, 0xde, 0xdf);
+                            for (let [key, entry] of entries) {
+                                write(key);
+                                write(entry);
+                            }
+                        }
+                    };
+                    write(value);
+                    return new Uint8Array(bytes).buffer;
+                },
+
+                unpack(buffer) {
+                    const view = new DataView(buffer);
+                    const decoder = new TextDecoder();
+                    let offset = 0;
+                    const readUint = size => {
+                        let n = 0;
+                        for (let i = 0; i < size; i++) {
+                            n = n * 256 + view.getUint8(offset++);
+                        }
+                        return n;
+                    };
+                    const readBytes = length => buffer.slice(offset, offset += length);
+                    const readString = length => decoder.decode(readBytes(length));
+                    const readArray = length => Array.from({length}, () => read());
+                    const readMap = length => {
+                        const map = {};
+                        for (let i = 0; i < length; i++) {
+                            const key = read();
+                            map[key] = read();
+                        }
+                        return map;
+                    };
+                    const readView = (size, getter) => {
+                        offset += size;
+                        return getter.call(view, offset - size);
+                    };
+                    const read = () => {
+                        const type = view.getUint8(offset++);
+                        if (type < 0x80) return type;
+                        if (type >= 0xe0) return type - 0x100;
+                        if (type < 0x90) return readMap(type - 0x80);
+                        if (type < 0xa0) return readArray(type - 0x90);
+                        if (type < 0xb0) return readBytes(type - 0xa0);
+                        if (type < 0xc0) return readString(type - 0xb0);
+
+                        switch (type) {
+                            case 0xc0: return null;
+                            case 0xc1: return undefined;
+                            case 0xc2: return false;
+                            case 0xc3: return true;
+                            case 0xca: return readView(4, view.getFloat32);
+                            case 0xcb: return readView(8, view.getFloat64);
+                            case 0xcc: return readUint(1);
+                            case 0xcd: return readUint(2);
+                            case 0xce: return readUint(4);
+                            case 0xcf: return readUint(8);
+                            case 0xd0: return readView(1, view.getInt8);
+                            case 0xd1: return readView(2, view.getInt16);
+                            case 0xd2: return readView(4, view.getInt32);
+                            case 0xd3: return Number(readView(8, view.getBigInt64));
+                            case 0xd8: return readString(readUint(2));
+                            case 0xd9: return readString(readUint(4));
+                            case 0xda: return readBytes(readUint(2));
+                            case 0xdb: return readBytes(readUint(4));
+                            case 0xdc: return readArray(readUint(2));
+                            case 0xdd: return readArray(readUint(4));
+                            case 0xde: return readMap(readUint(2));
+                            case 0xdf: return readMap(readUint(4));
+                        }
+                        throw new Error("Unsupported BinaryPack type " + type);
+                    };
+                    return read();
+                }
+            };
+
+            class PeerJsBridge {
+                constructor() {
+                    this.peer = null;
+                    this.connections = {};
+                    this.callbacks = [];
+                }
+
+                registerCallback(callback) {
+                    this.callbacks.push(callback);
+                }
+
+                notifyCallbacks(id, message) {
+                    for (let callback of this.callbacks) {
+                        callback(id, message);
+                    }
+                }
+
+                open() {
+                    const peer = {id: null, token: randomToken(), socket: null, heartbeat: null};
+                    this.peer = peer;
+                    this.connections = {};
+
+                    fetch(`https://${PEER_SERVER}/${PEER_SERVER_KEY}/id?ts=${Date.now()}${Math.random()}`)
+                        .then(response => response.text())
+                        .then(peerId => {
+                            peer.id = peerId;
+                            peer.socket = new WebSocket(`wss://${PEER_SERVER}/peerjs?key=${PEER_SERVER_KEY}` +
+                                `&id=${peerId}&token=${peer.token}`);
+                            peer.socket.onopen = () => {
+                                peer.heartbeat = setInterval(() => this.sendServerMessage("HEARTBEAT"),
+                                    PEER_HEARTBEAT_INTERVAL);
+                            };
+                            peer.socket.onmessage = event => this.handleServerMessage(JSON.parse(event.data));
+                            peer.socket.onclose = () => {
+                                clearInterval(peer.heartbeat);
+                                console.error("Peer disconnected");
+                            };
+                            peer.socket.onerror = () => this.handleError(null, "Peer server socket error");
+                        })
+                        .catch(error => this.handleError(null, error));
+                }
+
+                sendServerMessage(type, dst, payload) {
+                    const socket = this.peer.socket;
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        socket.send(JSON.stringify({type, dst, payload}));
+                    }
+                }
+
+                handleServerMessage(message) {
+                    const payload = message.payload || {};
+                    const connection = Object.values(this.connections)
+                        .find(c => c.peerId === message.src && c.connectionId === payload.connectionId);
+
+                    switch (message.type) {
+                        case "OPEN":
+                            this.notifyCallbacks(this.peer.id, "$$open");
+                            break;
+                        case "OFFER":
+                            if (payload.type === "data") {
+                                this.handleOffer(message.src, payload);
+                            }
+                            break;
+                        case "ANSWER":
+                            if (connection) {
+                                connection.peerConnection.setRemoteDescription(payload.sdp)
+                                    .then(() => this.flushCandidates(connection))
+                                    .catch(error => this.handleError(connection, error));
+                            }
+                            break;
+                        case "CANDIDATE":
+                            if (connection) {
+                                this.addCandidate(connection, payload.candidate);
+                            }
+                            break;
+                        case "LEAVE":
+                        case "EXPIRE":
+                            for (let c of Object.values(this.connections).filter(c => c.peerId === message.src)) {
+                                if (message.type === "EXPIRE") {
+                                    this.handleError(c, "Could not connect to peer " + message.src);
+                                }
+                                this.handleDisconnect(c);
+                            }
+                            break;
+                        case "ERROR":
+                        case "ID-TAKEN":
+                        case "INVALID-KEY":
+                            this.handleError(null, payload.msg || message.type);
+                            break;
+                    }
+                }
+
+                createConnection(peerId, connectionId, label, serialization) {
+                    return {
+                        peerId,
+                        connectionId,
+                        label,
+                        serialization,
+                        peerConnection: new RTCPeerConnection(PEER_RTC_CONFIG),
+                        dataChannel: null,
+                        pendingCandidates: [],
+                        chunks: {}
+                    };
+                }
+
+                handleOffer(peerId, payload) {
+                    const connection = this.createConnection(peerId, payload.connectionId,
+                        payload.label || payload.connectionId, payload.serialization || "binary");
+                    const peerConnection = connection.peerConnection;
+                    this.handleConnect(connection);
+
+                    peerConnection.setRemoteDescription(payload.sdp)
+                        .then(() => this.flushCandidates(connection))
+                        .then(() => peerConnection.createAnswer())
+                        .then(answer => peerConnection.setLocalDescription(answer))
+                        .then(() => this.sendServerMessage("ANSWER", peerId, {
+                            sdp: peerConnection.localDescription,
+                            type: "data",
+                            connectionId: connection.connectionId
+                        }))
+                        .catch(error => this.handleError(connection, error));
+                }
+
+                addCandidate(connection, candidate) {
+                    if (connection.pendingCandidates) {
+                        connection.pendingCandidates.push(candidate);
+                    } else {
+                        connection.peerConnection.addIceCandidate(candidate)
+                            .catch(error => this.handleError(connection, error));
+                    }
+                }
+
+                flushCandidates(connection) {
+                    const pending = connection.pendingCandidates;
+                    connection.pendingCandidates = null;
+                    pending.forEach(candidate => this.addCandidate(connection, candidate));
+                }
+
+                handleConnect(connection) {
+                    const peerConnection = connection.peerConnection;
+                    this.connections[connection.label] = connection;
+
+                    peerConnection.onicecandidate = event => {
+                        if (event.candidate && event.candidate.candidate) {
+                            this.sendServerMessage("CANDIDATE", connection.peerId, {
+                                candidate: event.candidate,
+                                type: "data",
+                                connectionId: connection.connectionId
+                            });
+                        }
+                    };
+
+                    peerConnection.onconnectionstatechange = () => {
+                        if (peerConnection.connectionState === "failed") {
+                            this.handleError(connection, "Connection to peer " + connection.peerId + " failed");
+                            this.handleDisconnect(connection);
+                        }
+                    };
+
+                    const initDataChannel = dataChannel => {
+                        connection.dataChannel = dataChannel;
+                        dataChannel.binaryType = "arraybuffer";
+
+                        dataChannel.onopen = () => {
+                            dataChannel.onmessage = event => this.handleData(connection, event.data);
+                            dataChannel.onclose = () => this.handleDisconnect(connection);
+                            dataChannel.onerror = event => this.handleError(connection, event.error);
+
+                            this.notifyCallbacks(connection.label, "$$connect");
+                        };
+                    };
+
+                    if (connection.dataChannel) {
+                        initDataChannel(connection.dataChannel);
+                    } else {
+                        peerConnection.ondatachannel = event => initDataChannel(event.channel);
+                    }
+                }
+
+                handleData(connection, data) {
+                    if (connection.serialization === "raw" || connection.serialization === "none") {
+                        this.notifyCallbacks(connection.label, data);
+                        return;
+                    }
+
+                    const message = connection.serialization === "json" ?
+                        JSON.parse(typeof data === "string" ? data : new TextDecoder().decode(data)) :
+                        BinaryPack.unpack(data);
+                    const peerData = message != null ? message.__peerData : undefined;
+
+                    if (peerData === undefined) {
+                        this.notifyCallbacks(connection.label, message);
+                    } else if (peerData.type === "close") {
+                        this.handleDisconnect(connection);
+                    } else {
+                        // Large messages sent by PeerJS clients are split into chunks.
+                        const chunk = connection.chunks[peerData] || {parts: [], count: 0, size: 0};
+                        connection.chunks[peerData] = chunk;
+                        chunk.parts[message.n] = new Uint8Array(message.data);
+                        chunk.count++;
+                        chunk.size += chunk.parts[message.n].length;
+
+                        if (chunk.count === message.total) {
+                            delete connection.chunks[peerData];
+                            const combined = new Uint8Array(chunk.size);
+                            let offset = 0;
+                            for (let part of chunk.parts) {
+                                combined.set(part, offset);
+                                offset += part.length;
+                            }
+                            this.handleData(connection, combined.buffer);
+                        }
+                    }
+                }
+
+                handleError(connection, error) {
+                    console.warn("Peer connection error: " + error);
+                    this.notifyCallbacks(connection ? connection.label : undefined, "$$error");
+                }
+
+                handleDisconnect(connection) {
+                    if (this.connections[connection.label] !== connection) {
+                        return;
+                    }
+
+                    delete this.connections[connection.label];
+                    connection.peerConnection.close();
+                    this.notifyCallbacks(connection.label, "$$disconnect");
+                }
+
+                join(peerId) {
+                    const connectionId = "dc_" + randomToken();
+                    const connection = this.createConnection(peerId, connectionId, connectionId, "binary");
+                    const peerConnection = connection.peerConnection;
+                    connection.dataChannel = peerConnection.createDataChannel(connection.label, {ordered: true});
+                    this.handleConnect(connection);
+
+                    peerConnection.createOffer()
+                        .then(offer => peerConnection.setLocalDescription(offer))
+                        .then(() => this.sendServerMessage("OFFER", peerId, {
+                            sdp: peerConnection.localDescription,
+                            type: "data",
+                            connectionId: connection.connectionId,
+                            label: connection.label,
+                            reliable: true,
+                            serialization: connection.serialization
+                        }))
+                        .catch(error => this.handleError(connection, error));
+                }
+
+                send(message) {
+                    for (let connection of Object.values(this.connections)) {
+                        const dataChannel = connection.dataChannel;
+                        if (dataChannel && dataChannel.readyState === "open") {
+                            dataChannel.send(this.serialize(connection, message));
+                        }
+                    }
+                }
+
+                serialize(connection, message) {
+                    switch (connection.serialization) {
+                        case "raw":
+                        case "none":
+                            return message;
+                        case "json":
+                            return new TextEncoder().encode(JSON.stringify(message));
+                        default:
+                            return BinaryPack.pack(message);
+                    }
+                }
+
+                getPeerConnectionIds() {
+                    return Object.keys(this.connections);
+                }
+
+                isConnectionInitialized() {
+                    return this.peer != null;
+                }
+            }
+
+            //----------------------------------------
+            // Example application
+            //----------------------------------------
+
+            const bridge = new PeerJsBridge();
+
+            bridge.registerCallback((id, message) => {
+                const console = document.getElementById("console");
+                console.value += `Received message from ${id}\n${message}\n\n`;
+            });
+
+            function connect() {
+                const hostField = document.getElementById("connectionField");
+                bridge.join(hostField.value);
+                return false;
+            }
+
+            function send() {
+                const messageField = document.getElementById("messageField");
+                bridge.send(messageField.value);
+                messageField.value = "";
+                return false;
+            }
+
+            document.addEventListener("DOMContentLoaded", _ => {
+                bridge.open();
+            });
+        </script>
+    </body>
+</html>

@@ -59,6 +59,7 @@ public class TeaVMTranspilerToolTest {
         tool.resourceDir = RESOURCES_DIR;
         tool.outputDir = outputDir;
         tool.mainClassName = MockApp.class.getName();
+        tool.faviconFile = new File("_development/colorize.png");
         tool.run();
 
         assertTrue(new File(outputDir, "multimedialib.js").exists());
@@ -67,6 +68,8 @@ public class TeaVMTranspilerToolTest {
         assertTrue(new File(outputDir, "assets/browser").exists());
         assertTrue(new File(outputDir, "assets/browser/assets").exists());
         assertTrue(new File(outputDir, "assets/browser/assets/multimedialib.css").exists());
+        assertTrue(new File(outputDir, "assets/browser/assets/favicon.png").exists());
+        assertTrue(new File(outputDir, "assets/browser/assets/apple-favicon.png").exists());
     }
 
     @Test
@@ -195,7 +198,7 @@ public class TeaVMTranspilerToolTest {
         String expected = """
             i:b:OpenSans-Regular.ttf:217360:1
             i:b:browser/assets/apple-favicon.png:11392:1
-            i:b:browser/assets/favicon.png:9307:1
+            i:b:browser/assets/favicon.png:1031:1
             i:b:browser/assets/loading.gif:3208:1
             i:b:browser/assets/multimedialib.css:1424:1
             i:b:browser/index.html:1230:1

@@ -38,25 +38,35 @@ class PeerJsBridge {
     }
 
     handleConnect(connection) {
-        this.connections[connection.label] = connection;
+        this.connections[connection.peer] = connection;
 
         connection.on("open", () => {
-            connection.on("data", data => this.notifyCallbacks(connection.label, data));
+            console.log("Peer connection opened: " + connection.peer)
+            connection.on("data", data => this.handleMessage(connection, data));
             connection.on("close", () => this.handleDisconnect(connection));
             connection.on("error", error => this.handleError(error));
 
-            this.notifyCallbacks(connection.label, "$$connect");
+            this.notifyCallbacks(connection.peer, "$$connect");
         });
+    }
+
+    handleMessage(connection, data) {
+        if (data.startsWith("$$")) {
+            console.warn("Invalid peer message: " + data);
+            return;
+        }
+
+        this.notifyCallbacks(connection.peer, data);
     }
 
     handleError(connection, error) {
         console.warn("Peer connection error: " + error);
-        this.notifyCallbacks(connection.label, "$$error");
+        this.notifyCallbacks(connection.peer, "$$error");
     }
 
     handleDisconnect(connection) {
-        delete this.connections[connection.label];
-        this.notifyCallbacks(connection.label, "$$disconnect");
+        delete this.connections[connection.peer];
+        this.notifyCallbacks(connection.peer, "$$disconnect");
     }
 
     join(peerId) {
