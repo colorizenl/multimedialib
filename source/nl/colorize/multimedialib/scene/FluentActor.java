@@ -7,6 +7,7 @@
 package nl.colorize.multimedialib.scene;
 
 import com.google.common.base.Preconditions;
+import nl.colorize.util.animation.Animatable;
 import nl.colorize.util.animation.Timeline;
 
 import java.util.function.BooleanSupplier;
@@ -18,7 +19,7 @@ import java.util.function.Consumer;
  */
 public class FluentActor implements Actor {
 
-    private Actor onFrame;
+    private Animatable onFrame;
     private BooleanSupplier completed;
     private Runnable onComplete;
     private boolean terminated;
@@ -29,17 +30,21 @@ public class FluentActor implements Actor {
         this.terminated = false;
     }
 
-    public FluentActor withFrameHandler(Actor callback) {
-        Actor existingCallback = onFrame;
+    public FluentActor withFrameHandler(Animatable callback) {
+        Animatable existingCallback = onFrame;
         onFrame = deltaTime -> {
-            existingCallback.update(deltaTime);
-            callback.update(deltaTime);
+            existingCallback.onFrame(deltaTime);
+            callback.onFrame(deltaTime);
         };
         return this;
     }
 
+    public FluentActor withFrameHandler(Timer timer) {
+        return withFrameHandler(timer::update);
+    }
+
     public FluentActor withTimerHandler(Timer timer, Consumer<Double> callback) {
-        Actor frameHandler = deltaTime -> {
+        Animatable frameHandler = deltaTime -> {
             timer.update(deltaTime);
             callback.accept(timer.getPosition());
         };
@@ -50,7 +55,7 @@ public class FluentActor implements Actor {
     }
 
     public FluentActor withTimelineHandler(Timeline timeline, Consumer<Double> callback) {
-        Actor frameHandler = deltaTime -> {
+        Animatable frameHandler = deltaTime -> {
             timeline.movePlayhead(deltaTime);
             callback.accept(timeline.getValue());
         };
@@ -95,7 +100,7 @@ public class FluentActor implements Actor {
 
     @Override
     public void update(double deltaTime) {
-        onFrame.update(deltaTime);
+        onFrame.onFrame(deltaTime);
 
         // Make sure we have a chance to run the completion
         // handler if this turns out to be the last frame

@@ -22,7 +22,7 @@ public record Angle(double degrees) {
     public static final List<Angle> INTERCARDINAL = toAngles(0, 45, 90, 135, 180, 225, 270, 315);
 
     public Angle(double degrees) {
-        Preconditions.checkArgument(Double.isFinite(degrees), "Invalid angle: " + degrees);
+        Preconditions.checkArgument(Double.isFinite(degrees), "Angle cannot be NaN or infinite");
 
         while (degrees < 0f) {
             degrees += 360f;

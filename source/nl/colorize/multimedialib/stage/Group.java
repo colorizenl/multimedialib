@@ -11,8 +11,8 @@ import lombok.Getter;
 import lombok.Setter;
 import nl.colorize.util.SubscribableCollection;
 
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import static lombok.AccessLevel.PROTECTED;
 
@@ -39,7 +39,7 @@ public class Group implements Spatial3D, Iterable<Spatial3D> {
 
     public Group(String name) {
         this.name = name;
-        this.children = SubscribableCollection.wrap(new CopyOnWriteArrayList<>());
+        this.children = SubscribableCollection.wrap(new ArrayList<>());
         this.transform = new Transform3D();
         this.globalTransform = new Transform3D();
     }
@@ -82,8 +82,9 @@ public class Group implements Spatial3D, Iterable<Spatial3D> {
     }
 
     public void clearChildren() {
-        children.forEach(this::removeChild);
-        children.clear();
+        while (!children.isEmpty()) {
+            removeChild(children.getFirst());
+        }
     }
 
     @Override

@@ -39,6 +39,6 @@ public record Region(int x, int y, int width, int height) {
 
     @Override
     public String toString() {
-        return x + ", " + y + ", " + width + ", " + height;
+        return String.format("[%d, %d, %d, %d]", x, y, width, height);
     }
 }

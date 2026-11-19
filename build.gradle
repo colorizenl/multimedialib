@@ -9,7 +9,7 @@ apply plugin: "java-library"
 apply plugin: "jacoco"
 
 group = "nl.colorize"
-version = "2026.6.1"
+version = "2026.7"
 compileJava.options.encoding = "UTF-8"
 
 java {

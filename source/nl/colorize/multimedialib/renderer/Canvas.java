@@ -74,7 +74,7 @@ public class Canvas {
      */
     @Deprecated
     public void resizeScreen(int screenWidth, int screenHeight) {
-        resizeScreen(screenWidth, screenHeight, 1f);
+        resizeScreen(screenWidth, screenHeight, 1.0);
     }
 
     /**

@@ -14,6 +14,7 @@ import nl.colorize.multimedialib.scene.SceneContext;
 import nl.colorize.multimedialib.scene.effect.Effects;
 import nl.colorize.multimedialib.scene.ui.DeclarativeStyle;
 import nl.colorize.multimedialib.scene.ui.Form;
+import nl.colorize.multimedialib.scene.ui.FormLayout;
 import nl.colorize.multimedialib.stage.FontFace;
 import nl.colorize.multimedialib.stage.Stage;
 import nl.colorize.multimedialib.stage.Text;
@@ -57,8 +58,7 @@ public class FormDemo implements Scene {
         nextMessageX = canvas.getCenter().x();
         nextMessageY = canvas.getCenter().y() + 50;
 
-        Form form = new Form(context.getInput(), FORM_WIDTH, 30);
-        form.setGap(5, 10);
+        Form form = new Form(context.getInput(), FormLayout.column(FORM_WIDTH, 30, 5, 10), null);
         form.addTitle("Form Demo", TITLE_STYLE);
         form.addLabel("Button:", LABEL_STYLE);
         form.addButton("Click here", BUTTON_STYLE)

@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class FormTest {
 
+    private static final FormLayout COLUMN_LAYOUT = FormLayout.column(100, 20, 0, 0);
     private static final DeclarativeStyle STYLE = new DeclarativeStyle(DEFAULT_FONT);
     private static final DeclarativeStyle BUTTON_STYLE = STYLE
         .withBackgroundColor(RED)
@@ -36,9 +37,9 @@ class FormTest {
     void addWidgets() {
         HeadlessRenderer renderer = new HeadlessRenderer();
         Stage stage = renderer.getStage();
+        var bundle = TranslationBundle.from(PropertyUtils.loadProperties("a=something"));
 
-        Form form = new Form(renderer, 100, 20);
-        form.setBundle(TranslationBundle.from(PropertyUtils.loadProperties("a=something")));
+        Form form = new Form(renderer, COLUMN_LAYOUT, bundle);
         form.addTitle("a", STYLE);
         form.addLabel("b", STYLE);
         form.addButton("b", BUTTON_STYLE);
@@ -80,9 +81,9 @@ class FormTest {
     void useTranslations() {
         HeadlessRenderer renderer = new HeadlessRenderer();
         Stage stage = renderer.getStage();
+        var bundle = TranslationBundle.from(PropertyUtils.loadProperties("a=something"));
 
-        Form form = new Form(renderer, 100, 20);
-        form.setBundle(TranslationBundle.from(PropertyUtils.loadProperties("a=something")));
+        Form form = new Form(renderer, COLUMN_LAYOUT, bundle);
         form.addLabel("a", STYLE);
         form.addLabel("b", STYLE);
 
@@ -104,7 +105,7 @@ class FormTest {
         HeadlessRenderer renderer = new HeadlessRenderer();
         Stage stage = renderer.getStage();
 
-        Form form = new Form(renderer, 100, 20);
+        Form form = new Form(renderer, COLUMN_LAYOUT, null);
         form.addLabel("a", STYLE);
         form.addSpacer();
         form.addLabel("b", STYLE);
@@ -127,65 +128,64 @@ class FormTest {
     void fullWidthRow() {
         HeadlessRenderer renderer = new HeadlessRenderer();
 
-        Form form = new Form(renderer, 100, 20);
+        Form form = new Form(renderer, COLUMN_LAYOUT, null);
         form.addTitle("a", STYLE);
         form.addButton("b", BUTTON_STYLE);
 
         assertEquals(2, form.getWidgetBounds().size());
-        assertEquals("(0, 0, 100, 20)", form.getWidgetBounds().get(0).toString());
-        assertEquals("(0, 20, 100, 20)", form.getWidgetBounds().get(1).toString());
+        assertEquals("[0, 0, 100, 20]", form.getWidgetBounds().get(0).toString());
+        assertEquals("[0, 20, 100, 20]", form.getWidgetBounds().get(1).toString());
     }
 
     @Test
     void halfWidthRow() {
         HeadlessRenderer renderer = new HeadlessRenderer();
 
-        Form form = new Form(renderer, 100, 20);
+        Form form = new Form(renderer, COLUMN_LAYOUT, null);
         form.addTitle("a", STYLE);
         form.addLabel("b", STYLE);
         form.addButton("c", BUTTON_STYLE);
         form.addButton("d", BUTTON_STYLE);
 
         assertEquals(4, form.getWidgetBounds().size());
-        assertEquals("(0, 0, 100, 20)", form.getWidgetBounds().get(0).toString());
-        assertEquals("(0, 20, 50, 20)", form.getWidgetBounds().get(1).toString());
-        assertEquals("(50, 20, 50, 20)", form.getWidgetBounds().get(2).toString());
-        assertEquals("(0, 40, 100, 20)", form.getWidgetBounds().get(3).toString());
+        assertEquals("[0, 0, 100, 20]", form.getWidgetBounds().get(0).toString());
+        assertEquals("[0, 20, 50, 20]", form.getWidgetBounds().get(1).toString());
+        assertEquals("[50, 20, 50, 20]", form.getWidgetBounds().get(2).toString());
+        assertEquals("[0, 40, 100, 20]", form.getWidgetBounds().get(3).toString());
     }
 
     @Test
     void startWithHalfWidth() {
         HeadlessRenderer renderer = new HeadlessRenderer();
 
-        Form form = new Form(renderer, 100, 20);
+        Form form = new Form(renderer, COLUMN_LAYOUT, null);
         form.addLabel("a", STYLE);
         form.addButton("b", BUTTON_STYLE);
         form.addLabel("c", STYLE);
         form.addLabel("d", STYLE);
 
         assertEquals(4, form.getWidgetBounds().size());
-        assertEquals("(0, 0, 50, 20)", form.getWidgetBounds().get(0).toString());
-        assertEquals("(50, 0, 50, 20)", form.getWidgetBounds().get(1).toString());
-        assertEquals("(0, 20, 50, 20)", form.getWidgetBounds().get(2).toString());
-        assertEquals("(50, 20, 50, 20)", form.getWidgetBounds().get(3).toString());
+        assertEquals("[0, 0, 50, 20]", form.getWidgetBounds().get(0).toString());
+        assertEquals("[50, 0, 50, 20]", form.getWidgetBounds().get(1).toString());
+        assertEquals("[0, 20, 50, 20]", form.getWidgetBounds().get(2).toString());
+        assertEquals("[50, 20, 50, 20]", form.getWidgetBounds().get(3).toString());
     }
 
     @Test
     void setGap() {
         HeadlessRenderer renderer = new HeadlessRenderer();
 
-        Form form = new Form(renderer, 100, 20);
-        form.setGap(20, 10);
+        Form form = new Form(renderer, FormLayout.column(100, 20, 20, 10), null);
         form.addLabel("a", STYLE);
         form.addButton("b", BUTTON_STYLE);
         form.addLabel("c", STYLE);
         form.addLabel("d", STYLE);
 
         assertEquals(4, form.getWidgetBounds().size());
-        assertEquals("(0, 0, 40, 20)", form.getWidgetBounds().get(0).toString());
-        assertEquals("(60, 0, 40, 20)", form.getWidgetBounds().get(1).toString());
-        assertEquals("(0, 30, 40, 20)", form.getWidgetBounds().get(2).toString());
-        assertEquals("(60, 30, 40, 20)", form.getWidgetBounds().get(3).toString());
+        assertEquals("[0, 0, 40, 20]", form.getWidgetBounds().get(0).toString());
+        assertEquals("[60, 0, 40, 20]", form.getWidgetBounds().get(1).toString());
+        assertEquals("[0, 30, 40, 20]", form.getWidgetBounds().get(2).toString());
+        assertEquals("[60, 30, 40, 20]", form.getWidgetBounds().get(3).toString());
     }
 
     @Test
@@ -194,9 +194,10 @@ class FormTest {
         Stage stage = renderer.getStage();
         List<String> events = new ArrayList<>();
 
-        Form form = new Form(renderer, 100, 20);
+        Form form = new Form(renderer, COLUMN_LAYOUT, null);
         form.addButton("a", BUTTON_STYLE).subscribe(_ -> events.add("button"));
-        form.addSelectField("select1", List.of("select1", "select2"), BUTTON_STYLE).subscribe(events::add);
+        form.addSelectField("select1", List.of("select1", "select2"), BUTTON_STYLE)
+            .subscribe(events::add);
 
         stage.getRoot().addChild(form.getGraphics());
         renderer.attach(form);
@@ -223,7 +224,7 @@ class FormTest {
         Stage stage = renderer.getStage();
         List<String> events = new ArrayList<>();
 
-        Form form = new Form(renderer, 100, 20);
+        Form form = new Form(renderer, COLUMN_LAYOUT, null);
         form.addButton("a", BUTTON_STYLE).subscribe(_ -> events.add("button"));
 
         stage.getRoot().addChild(form.getGraphics());
@@ -252,7 +253,7 @@ class FormTest {
         Stage stage = renderer.getStage();
         List<String> events = new ArrayList<>();
 
-        Form form = new Form(renderer, 100, 20);
+        Form form = new Form(renderer, COLUMN_LAYOUT, null);
         form.addInputField("a", STYLE).subscribe(events::add);
 
         stage.getRoot().addChild(form.getGraphics());
@@ -277,9 +278,9 @@ class FormTest {
     void useImageBackground() {
         HeadlessRenderer renderer = new HeadlessRenderer();
         Stage stage = renderer.getStage();
+        var bundle = TranslationBundle.from(PropertyUtils.loadProperties("a=something"));
 
-        Form form = new Form(renderer, 100, 20);
-        form.setBundle(TranslationBundle.from(PropertyUtils.loadProperties("a=something")));
+        Form form = new Form(renderer, COLUMN_LAYOUT, bundle);
         form.addButton("a", STYLE.withBackgroundImage(new MockImage()));
 
         stage.getRoot().addChild(form.getGraphics());
@@ -301,13 +302,13 @@ class FormTest {
     void autoFitImageBackground() {
         HeadlessRenderer renderer = new HeadlessRenderer();
         Stage stage = renderer.getStage();
+        var bundle = TranslationBundle.from(PropertyUtils.loadProperties("a=something"));
 
         DeclarativeStyle scaleToFitStyle = STYLE
             .withBackgroundImage(new MockImage(200, 100))
             .withBackgroundImageScaleToFit();
 
-        Form form = new Form(renderer, 100, 20);
-        form.setBundle(TranslationBundle.from(PropertyUtils.loadProperties("a=something")));
+        Form form = new Form(renderer, COLUMN_LAYOUT, bundle);
         form.addLabel("a", STYLE);
         form.addButton("b", scaleToFitStyle);
 
@@ -329,8 +330,7 @@ class FormTest {
     void getFormHeight() {
         HeadlessRenderer renderer = new HeadlessRenderer();
 
-        Form form = new Form(renderer, 100, 20);
-        form.setGap(0, 10);
+        Form form = new Form(renderer, FormLayout.column(100, 20, 0, 10), null);
         renderer.getStage().getRoot().addChild(form.getGraphics());
 
         assertEquals(0, form.getFormHeight());
@@ -348,9 +348,11 @@ class FormTest {
         Stage stage = renderer.getStage();
         List<String> events = new ArrayList<>();
 
-        Form form = new Form(renderer, 100, 20);
-        form.addButton("a", BUTTON_STYLE).subscribe(_ -> events.add("button"));
-        form.addSelectField("select1", List.of("select1", "select2"), BUTTON_STYLE).subscribe(events::add);
+        Form form = new Form(renderer, COLUMN_LAYOUT, null);
+        form.addButton("a", BUTTON_STYLE)
+            .subscribe(_ -> events.add("button"));
+        form.addSelectField("select1", List.of("select1", "select2"), BUTTON_STYLE)
+            .subscribe(events::add);
 
         stage.getRoot().addChild(form.getGraphics());
         renderer.attach(form);

@@ -18,8 +18,8 @@ import java.util.List;
 public record Rect(double x, double y, double width, double height) implements Shape {
 
     public Rect {
-        Preconditions.checkArgument(width >= 0f, "Invalid width: %s", width);
-        Preconditions.checkArgument(height >= 0f, "Invalid height: %s", height);
+        Preconditions.checkArgument(width >= 0.0, "Negative width");
+        Preconditions.checkArgument(height >= 0.0, "Negative height");
     }
 
     public double getEndX() {

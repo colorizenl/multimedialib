@@ -577,7 +577,7 @@ public class SceneManagerTest {
 
         SceneManager sceneManager = new SceneManager(context.getConfig(), scene);
         sceneManager.performFrameUpdate(context, 1f);
-        context.getCanvas().resizeScreen(100, 100);
+        context.getCanvas().resizeScreen(100, 100, 1.0);
 
         assertEquals(1, scene.getStartCount());
     }
@@ -589,7 +589,7 @@ public class SceneManagerTest {
 
         SceneManager sceneManager = new SceneManager(context.getConfig(), scene);
         sceneManager.performFrameUpdate(context, 1f);
-        context.getCanvas().resizeScreen(100, 100);
+        context.getCanvas().resizeScreen(100, 100, 1.0);
         sceneManager.performFrameUpdate(context, 1f);
         sceneManager.performFrameUpdate(context, 1f);
 

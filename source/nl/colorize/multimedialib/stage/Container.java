@@ -12,9 +12,9 @@ import lombok.Setter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 import static lombok.AccessLevel.PROTECTED;
@@ -42,7 +42,7 @@ public class Container implements Spatial2D, Iterable<Spatial2D> {
 
     public Container(String name) {
         this.name = name;
-        this.children = new CopyOnWriteArrayList<>();
+        this.children = new ArrayList<>();
         this.transform = new Transform();
         this.globalTransform = new Transform();
     }
@@ -98,6 +98,11 @@ public class Container implements Spatial2D, Iterable<Spatial2D> {
     }
 
     public void removeChild(Spatial2D child) {
+        resetParent(child);
+        children.remove(child);
+    }
+
+    private void resetParent(Spatial2D child) {
         switch (child) {
             case Container container -> container.setParent(null);
             case Primitive primitive -> primitive.setParent(null);
@@ -105,12 +110,13 @@ public class Container implements Spatial2D, Iterable<Spatial2D> {
             case Text text -> text.setParent(null);
             default -> throw new UnsupportedOperationException("Unknown graphics type: " + child);
         }
-
-        children.remove(child);
     }
 
     public void clearChildren() {
-        children.forEach(this::removeChild);
+        for (int i = 0; i < children.size(); i++) {
+            resetParent(children.get(i));
+        }
+
         children.clear();
     }
 
@@ -120,9 +126,9 @@ public class Container implements Spatial2D, Iterable<Spatial2D> {
      */
     @SuppressWarnings("unchecked")
     public <T extends Spatial2D> void forEach(Class<T> type, Consumer<T> callback) {
-        for (Spatial2D child : children) {
-            if (child.getClass() == type) {
-                callback.accept((T) child);
+        for (int i = 0; i < children.size(); i++) {
+            if (children.get(i).getClass() == type) {
+                callback.accept((T) children.get(i));
             }
         }
     }
@@ -137,9 +143,9 @@ public class Container implements Spatial2D, Iterable<Spatial2D> {
             return new Rect(0f, 0f, 0f, 0f);
         }
 
-        Rect bounds = children.iterator().next().getStageBounds();
-        for (Spatial2D child : children) {
-            bounds = bounds.combine(child.getStageBounds());
+        Rect bounds = children.getFirst().getStageBounds();
+        for (int i = 1; i < children.size(); i++) {
+            bounds = bounds.combine(children.get(i).getStageBounds());
         }
         return bounds;
     }

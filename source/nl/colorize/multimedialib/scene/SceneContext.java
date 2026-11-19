@@ -83,7 +83,7 @@ public interface SceneContext {
      */
     default void attach(Animatable onFrame, BooleanSupplier completed, Runnable onComplete) {
         FluentActor actor = FluentActor.create()
-            .withFrameHandler(deltaTime -> onFrame.onFrame(deltaTime))
+            .withFrameHandler(onFrame)
             .withCompletionCheck(completed)
             .withCompletionHandler(onComplete);
 

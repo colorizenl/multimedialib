@@ -84,10 +84,14 @@ public class SpriteAtlas {
      *         do not exist within this sprite atlas.
      */
     public void addAnimation(String name, TupleList<String, Double> frames, boolean loop) {
-        Animation animation = new Animation(loop);
+        TupleList<Image, Double> frameImages = TupleList.create();
         for (Tuple<String, Double> frame : frames) {
-            animation.addFrame(get(frame.left()), frame.right());
+            Image frameImage = get(frame.left());
+            frameImages.add(frameImage, frame.right());
         }
+
+
+        Animation animation = new Animation(frameImages, loop);
         addAnimation(name, animation);
     }
 

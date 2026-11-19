@@ -7,6 +7,8 @@
 package nl.colorize.multimedialib.stage;
 
 import com.google.common.base.Preconditions;
+import lombok.Getter;
+import nl.colorize.util.TupleList;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,44 +20,74 @@ import java.util.List;
  * After all images have been shown, the animation will either loop or keep
  * showing the last image.
  * <p>
- * Note that this class *describes* the animation, it does not contain any
- * state that relates to *showing* the animation. This allows for using the
- * same animation data to display the animation multiple times simultaneously,
- * but it does mean the animation's playback state needs to be managed by the
- * user of this class.
+ * Note that this class is immutable and describes the animation, it does not
+ * contain any state that relates to <em>showing</em> the animation. This
+ * allows multiple sprites to use the same animation data.
  */
 public class Animation {
     
     private List<Frame> frames;
-    private boolean loop;
-    
+    @Getter private boolean loop;
+    @Getter private double duration;
+
+    /**
+     * Internal constructor that creates an animation from frames that have
+     * been previously parsed by another {@link Animation} instance.
+     */
     private Animation(List<Frame> frames, boolean loop) {
         this.frames = new ArrayList<>(frames);
         this.loop = loop;
+    }
+
+    /**
+     * Creates an animation from the specified frame, with each frame being
+     * represented by an image and its frame time.
+     *
+     * @throws IllegalArgumentException if no frames have been provided, or
+     *         if one of the frames has an invalid frame time.
+     */
+    public Animation(TupleList<Image, Double> frameImages, boolean loop) {
+        Preconditions.checkArgument(!frameImages.isEmpty(), "Empty animation");
+
+        this.frames = frameImages.stream()
+            .map(frameImage -> new Frame(frameImage.left(), frameImage.right()))
+            .toList();
+        this.loop = loop;
+        this.duration = frames.stream()
+            .mapToDouble(Frame::frameTime)
+            .sum();
+    }
+
+    /**
+     * Creates an animation from the specified frame, with each frame being
+     * represented by an image and its frame time.
+     *
+     * @throws IllegalArgumentException if no frames have been provided, or
+     *         if one of the frames has an invalid frame time, or if the
+     *         number of frame images and frame times do not match.
+     */
+    public Animation(List<Image> frameImages, List<Double> frameTimes, boolean loop) {
+        this(TupleList.combine(frameImages, frameTimes), loop);
+    }
+
+    /**
+     * Creates an animation from the specified frame, with each frame having
+     * the same frame time.
+     *
+     * @throws IllegalArgumentException if no frames have been provided, or
+     *         if the frame time is invalid.
+     */
+    public Animation(List<Image> frameImages, double frameTime, boolean loop) {
+        this(TupleList.combine(frameImages, Collections.nCopies(frameImages.size(), frameTime)), loop);
     }
 
     public Animation(boolean loop) {
         this.frames = new ArrayList<>();
         this.loop = loop;
     }
-    
-    public Animation(List<Image> frames, double frameTime, boolean loop) {
-        this(loop);
-        for (Image frame : frames) {
-            addFrame(frame, frameTime);
-        }
-    }
 
     public Animation(Image frame) {
-        this(false);
-        addFrame(frame, 0f);
-    }
-
-    public void addFrame(Image frame, double frameTime) {
-        Preconditions.checkNotNull(frame, "Missing frame graphics");
-        Preconditions.checkArgument(frameTime >= 0f, "Invalid frame time: " + frameTime);
-
-        frames.add(new Frame(frame, frameTime));
+        this(TupleList.of(frame, 0.0), false);
     }
 
     public int getFrameCount() {
@@ -67,14 +99,16 @@ public class Animation {
             .map(frame -> frame.image)
             .toList();
     }
-    
+
     public Image getFrameAtIndex(int index) {
         return frames.get(index).image;
     }
 
-    public Image getFrameAtTime(double time) {
-        Preconditions.checkState(!frames.isEmpty(), "Animation does not contain any frames");
+    public double getFrameTime(int index) {
+        return frames.get(index).frameTime;
+    }
 
+    public Image getFrameAtTime(double time) {
         if (frames.size() == 1) {
             return frames.getFirst().image;
         }
@@ -93,77 +127,12 @@ public class Animation {
         return frames.getLast().image;
     }
 
-    public double getDuration() {
-        if (frames.size() <= 1) {
-            return 0f;
-        }
-
-        double duration = 0f;
-        for (Frame frame : frames) {
-            duration += frame.frameTime;
-        }
-        return duration;
-    }
-
-    /**
-     * Changes the frame time for the frame located at the specified index.
-     */
-    public void setFrameTime(int index, double frameTime) {
-        Frame frame = frames.get(index);
-        frames.set(index, new Frame(frame.image, frameTime));
-    }
-
-    /**
-     * Changes the frame time for all frames within this animation. The number
-     * of elements in the list needs to match the number of frames within this
-     * animation.
-     */
-    public void setFrameTimes(List<Double> frameTimes) {
-        Preconditions.checkArgument(frameTimes.size() == 1 || frameTimes.size() == frames.size(),
-            "Animation has " + frames.size() + " frame, but provided " + frameTimes.size());
-        
-        for (int i = 0; i < frames.size(); i++) {
-            Frame frame = frames.get(i);
-            double time = frameTimes.get(frameTimes.size() == 1 ? 0 : i);
-            frames.set(i, new Frame(frame.image, time));
-        }
-    }
-
-    /**
-     * Changes the frame time for all frames within this animation.
-     */
-    public void setFrameTime(double frameTime) {
-        for (int i = 0; i < frames.size(); i++) {
-            Frame frame = frames.get(i);
-            frames.set(i, new Frame(frame.image, frameTime));
-        }
-    }
-
-    public double getFrameTime(int index) {
-        return frames.get(index).frameTime;
-    }
-
-    public boolean isLoop() {
-        return loop;
-    }
-
-    public Animation copy() {
-        return new Animation(copyFrames(), loop);
-    }
-    
-    private List<Frame> copyFrames() {
-        return frames.stream()
-            .map(frame -> new Frame(frame.image, frame.frameTime))
-            .toList();
-    }
-    
     /**
      * Returns a new animation with the same frames as this one, but with all
      * frames and corresponding frame times in reverse compared to the original.
      */
     public Animation reverse() {
-        List<Frame> reverseFrames = new ArrayList<>();
-        reverseFrames.addAll(copyFrames());
+        List<Frame> reverseFrames = new ArrayList<>(frames);
         Collections.reverse(reverseFrames);
 
         return new Animation(reverseFrames, loop);
@@ -175,8 +144,8 @@ public class Animation {
      */
     public Animation append(Animation other) {
         List<Frame> combinedFrames = new ArrayList<>();
-        combinedFrames.addAll(copyFrames());
-        combinedFrames.addAll(other.copyFrames());
+        combinedFrames.addAll(frames);
+        combinedFrames.addAll(other.frames);
 
         return new Animation(combinedFrames, loop);
     }
@@ -194,7 +163,7 @@ public class Animation {
         
         List<Frame> repeatingFrames = new ArrayList<>();
         for (int i = 0; i < times; i++) {
-            repeatingFrames.addAll(copyFrames());
+            repeatingFrames.addAll(frames);
         }
         
         return new Animation(repeatingFrames, loop);
@@ -218,7 +187,7 @@ public class Animation {
 
         public Frame {
             Preconditions.checkNotNull(image, "Missing frame image");
-            Preconditions.checkArgument(frameTime >= 0f, "Invalid frame time: " + frameTime);
+            Preconditions.checkArgument(frameTime >= 0.0, "Invalid frame time: " + frameTime);
         }
     }
 }

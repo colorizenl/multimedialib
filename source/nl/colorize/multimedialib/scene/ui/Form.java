@@ -6,10 +6,8 @@
 
 package nl.colorize.multimedialib.scene.ui;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
-import lombok.Setter;
 import nl.colorize.multimedialib.math.Point2D;
 import nl.colorize.multimedialib.math.Rect;
 import nl.colorize.multimedialib.math.Region;
@@ -25,6 +23,7 @@ import nl.colorize.multimedialib.stage.Transform;
 import nl.colorize.util.LogHelper;
 import nl.colorize.util.Subject;
 import nl.colorize.util.TranslationBundle;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,9 +37,11 @@ import static nl.colorize.multimedialib.stage.ColorRGB.PINK;
  * application, they have to be drawn by the renderer and native UI widgets
  * cannot be used.
  * <p>
- * Forms use a two-column layout, with text labels in the left column and
- * widgets in the right column, although it is also possible to have widgets
- * span the entire column width.
+ * The form's layout is controlled by {@link FormLayout}. The layout is
+ * decided when the form is created, dynamically resizing widgets is not
+ * supported. Each widget's visual appearance is controlled by
+ * {@link WidgetStyle}. This is not a global configuration, it's possible to
+ * use different styles for different widgets.
  * <p>
  * Form field values are based on {@link Subject}s. This allows for both
  * synchronous access to the value, while also allowing objects to subscribe
@@ -51,12 +52,10 @@ import static nl.colorize.multimedialib.stage.ColorRGB.PINK;
 public class Form implements Actor, GraphicsProvider {
 
     private InputDevice input;
-    @Setter private TranslationBundle bundle;
+    private FormLayout layout;
+    private TranslationBundle bundle;
     @Getter private int formWidth;
     @Getter private int formHeight;
-    @Getter private int rowHeight;
-    @Getter private int gapX;
-    @Getter private int gapY;
 
     private Container container;
     private List<Widget> widgets;
@@ -65,60 +64,14 @@ public class Form implements Actor, GraphicsProvider {
     private static final boolean BOUNDS = "true".equals(System.getProperty("multimedialib.formbounds"));
     private static final Logger LOGGER = LogHelper.getLogger(Form.class);
 
-    public Form(InputDevice input, int formWidth, int rowHeight) {
-        Preconditions.checkArgument(formWidth > 0, "Invalid form width: " + formWidth);
-        Preconditions.checkArgument(rowHeight > 0, "Invalid row height: " + rowHeight);
-
+    public Form(InputDevice input, FormLayout layout, @Nullable TranslationBundle bundle) {
         this.input = input;
-        this.formWidth = formWidth;
-        this.formHeight = 0;
-        this.rowHeight = rowHeight;
-        this.gapX = 0;
-        this.gapY = 0;
+        this.layout = layout;
+        this.bundle = bundle;
 
         container = new Container("Form");
         widgets = new ArrayList<>();
         eventPipes = new ArrayList<>();
-    }
-
-    public void setGap(int gapX, int gapY) {
-        Preconditions.checkArgument(gapX >= 0, "Invalid X-gap: " + gapX);
-        Preconditions.checkArgument(gapY >= 0, "Invalid Y-gap: " + gapY);
-
-        this.gapX = gapX;
-        this.gapY = gapY;
-    }
-
-    /**
-     * Calculates the position and size of the next widget, based on the
-     * current contents of this form. Marking a widget as "full width"
-     * will always make it occupy an entire (new) row by itself.
-     *
-     * @param columns The number of columns that should be occupied by the
-     *                new widget. A value of zero means the widget's width
-     *                is flexible.
-     */
-    private Region prepareNextWidgetBounds(int columns) {
-        int columnWidth = (formWidth - gapX) / 2;
-
-        if (widgets.isEmpty()) {
-            int width = columns == 1 ? columnWidth : formWidth;
-            return new Region(0, 0, width, rowHeight);
-        }
-
-        Region lastWidgetBounds = widgets.getLast().bounds;
-        boolean rowHasSpace = lastWidgetBounds.x1() <= columnWidth;
-
-        if (rowHasSpace && columns != 2) {
-            // Same row, half width.
-            return new Region(columnWidth + gapX, lastWidgetBounds.y(), columnWidth, rowHeight);
-        } else if (columns == 1) {
-            // New row, half width.
-            return new Region(0, lastWidgetBounds.y1() + gapY, columnWidth, rowHeight);
-        } else {
-            // New row, full width.
-            return new Region(0, lastWidgetBounds.y1() + gapY, formWidth, rowHeight);
-        }
     }
 
     private void addWidget(InputModel<?> model, Spatial2D graphics, Region bounds, Runnable click) {
@@ -127,6 +80,7 @@ public class Form implements Actor, GraphicsProvider {
         Widget widget = new Widget(model, bounds, click);
         widgets.add(widget);
 
+        formWidth = Math.max(formWidth, bounds.x1());
         formHeight = Math.max(formHeight, bounds.y1());
 
         if (BOUNDS) {
@@ -145,21 +99,21 @@ public class Form implements Actor, GraphicsProvider {
 
     public void addTitle(String title, WidgetStyle style) {
         InputModel<String> model = new InputModel<>(title);
-        Region bounds = prepareNextWidgetBounds(2);
+        Region bounds = layout.determineNextWidgetBounds(this, 2);
         Spatial2D graphics = style.createTitle(translate(title), bounds.toRect());
         addWidget(model, graphics, bounds, null);
     }
 
     public void addLabel(String label, WidgetStyle style) {
         InputModel<String> model = new InputModel<>(label);
-        Region bounds = prepareNextWidgetBounds(1);
+        Region bounds = layout.determineNextWidgetBounds(this, 1);
         Spatial2D graphics = style.createLabel(translate(label), bounds.toRect());
         addWidget(model, graphics, bounds, null);
     }
 
     public InputModel<Void> addButton(String buttonLabel, WidgetStyle style) {
         InputModel<Void> model = new InputModel<>(null);
-        Region bounds = prepareNextWidgetBounds(0);
+        Region bounds = layout.determineNextWidgetBounds(this, 0);
         Spatial2D graphics = style.createButton(translate(buttonLabel), model, bounds.toRect());
         addWidget(model, graphics, bounds, () -> {
             // We have to force a change, since there is
@@ -171,7 +125,7 @@ public class Form implements Actor, GraphicsProvider {
 
     public InputModel<Boolean> addCheckbox(String label, boolean value, WidgetStyle style) {
         InputModel<Boolean> model = new InputModel<>(value);
-        Region bounds = prepareNextWidgetBounds(0);
+        Region bounds = layout.determineNextWidgetBounds(this, 0);
         Spatial2D graphics = style.createCheckbox(translate(label), model, bounds.toRect());
         addWidget(model, graphics, bounds, () -> model.getValue().set(!model.getValue().get()));
         return model;
@@ -179,7 +133,7 @@ public class Form implements Actor, GraphicsProvider {
 
     public InputModel<String> addInputField(String value, WidgetStyle style) {
         InputModel<String> model = new InputModel<>(value);
-        Region bounds = prepareNextWidgetBounds(0);
+        Region bounds = layout.determineNextWidgetBounds(this, 0);
         Spatial2D graphics = style.createInputField(model, bounds.toRect());
         addWidget(model, graphics, bounds, () -> {
             EventSource<String> inputSource = input.requestTextInput("", value);
@@ -193,7 +147,7 @@ public class Form implements Actor, GraphicsProvider {
         Preconditions.checkArgument(choices.contains(value), "Invalid initial choice: " + value);
 
         InputModel<String> model = new InputModel<>(value);
-        Region bounds = prepareNextWidgetBounds(0);
+        Region bounds = layout.determineNextWidgetBounds(this, 0);
         Spatial2D graphics = style.createSelectField(model, choices, bounds.toRect());
         addWidget(model, graphics, bounds, () -> {
             int oldIndex = choices.indexOf(model.getValue().get());
@@ -205,7 +159,7 @@ public class Form implements Actor, GraphicsProvider {
 
     public void addSpacer() {
         InputModel<String> model = new InputModel<>("");
-        Region bounds = prepareNextWidgetBounds(2);
+        Region bounds = layout.determineNextWidgetBounds(this, 2);
         addWidget(model, new Container(), bounds, null);
     }
 
@@ -251,10 +205,9 @@ public class Form implements Actor, GraphicsProvider {
         ));
     }
 
-    @VisibleForTesting
-    protected List<Rect> getWidgetBounds() {
+    protected List<Region> getWidgetBounds() {
         return widgets.stream()
-            .map(widget -> widget.bounds.toRect())
+            .map(widget -> widget.bounds)
             .toList();
     }
 

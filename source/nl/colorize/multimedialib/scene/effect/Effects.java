@@ -15,6 +15,7 @@ import nl.colorize.multimedialib.stage.Sprite;
 import nl.colorize.multimedialib.stage.Spatial2D;
 import nl.colorize.multimedialib.stage.Text;
 import nl.colorize.util.TextUtils;
+import nl.colorize.util.animation.Animatable;
 import nl.colorize.util.animation.Interpolation;
 import nl.colorize.util.animation.Timeline;
 
@@ -58,7 +59,7 @@ public final class Effects {
         timeline.addKeyFrame(0f, 0f);
         timeline.addKeyFrame(duration, originalText.length());
 
-        Actor onFrame = deltaTime -> {
+        Animatable onFrame = deltaTime -> {
             timeline.movePlayhead(deltaTime);
             String visibleText = originalText.substring(0, (int) timeline.getValue());
             text.setText(visibleText);
