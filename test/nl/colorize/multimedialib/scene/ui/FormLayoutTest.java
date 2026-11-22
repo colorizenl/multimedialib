@@ -31,8 +31,8 @@ class FormLayoutTest {
     }
 
     @Test
-    void horizontalLayout() {
-        Form form = new Form(null, FormLayout.horizontal(100, 50, 10, 2), null);
+    void distributeHorizontalLayout() {
+        Form form = new Form(null, FormLayout.distributeHorizontal(100, 50, 10, 2), null);
         form.addButton("a", STYLE);
         form.addButton("b", STYLE);
 
@@ -40,6 +40,20 @@ class FormLayoutTest {
 
         assertEquals(100, form.getFormWidth());
         assertEquals(50, form.getFormHeight());
-        assertEquals("[[0, 0, 45, 50], [55, 0, 45, 50]]", form.getWidgetBounds().toString());
+        assertEquals("[[0, 0, 45, 50], [55, 0, 45, 50]]",
+            form.getWidgetBounds().toString());
+    }
+
+    @Test
+    void horizontalLayout() {
+        Form form = new Form(null, FormLayout.horizontal(100, 50, 10), null);
+        form.addButton("a", STYLE);
+        form.addButton("b", STYLE);
+        form.addButton("c", STYLE);
+
+        assertEquals(320, form.getFormWidth());
+        assertEquals(50, form.getFormHeight());
+        assertEquals("[[0, 0, 100, 50], [110, 0, 100, 50], [220, 0, 100, 50]]",
+            form.getWidgetBounds().toString());
     }
 }

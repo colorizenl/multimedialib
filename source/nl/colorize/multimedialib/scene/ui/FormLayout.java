@@ -76,13 +76,14 @@ public interface FormLayout {
     }
 
     /**
-     * Creates a new {@link FormLayout} that occupies a fixed amount of space,
-     * and then assigns equal width to all widgets.
+     * Creates a new {@link FormLayout} that positions widgets in a horizontal
+     * line, occupying a fixed amount of space. The available width is then
+     * distributed equally to the widgets.
      */
-    public static FormLayout horizontal(int formWidth, int formHeight, int gapX, int widgets) {
+    public static FormLayout distributeHorizontal(int formWidth, int height, int gapX, int widgets) {
         Preconditions.checkArgument(widgets > 0, "Invalid number of widgets: " + widgets);
         Preconditions.checkArgument(formWidth > 0, "Invalid form width: " + formWidth);
-        Preconditions.checkArgument(formHeight > 0, "Invalid form height: " + formHeight);
+        Preconditions.checkArgument(height > 0, "Invalid form height: " + height);
         Preconditions.checkArgument(gapX >= 0, "Invalid X-gap: " + gapX);
 
         return (form, _) -> {
@@ -90,7 +91,25 @@ public interface FormLayout {
             Preconditions.checkState(existingWidgets.size() < widgets, "Max widgets exceeded");
             int widgetWidth = (formWidth - gapX * (widgets - 1)) / widgets;
             int widgetX = existingWidgets.size() * (widgetWidth + gapX);
-            return new Region(widgetX, 0, widgetWidth, formHeight);
+            return new Region(widgetX, 0, widgetWidth, height);
+        };
+    }
+
+    /**
+     * Creates a new {@link FormLayout} that positions widgets in a horizontal
+     * line, where each widget is assigned the same width and height. The
+     * total form width is therefore flexible and based on the number of
+     * widgets.
+     */
+    public static FormLayout horizontal(int widgetWidth, int widgetHeight, int gapX) {
+        Preconditions.checkArgument(widgetWidth > 0, "Invalid widget width: " + widgetWidth);
+        Preconditions.checkArgument(widgetHeight > 0, "Invalid widget height: " + widgetHeight);
+        Preconditions.checkArgument(gapX >= 0, "Invalid X-gap: " + gapX);
+
+        return (form, _) -> {
+            List<Region> existingWidgets = form.getWidgetBounds();
+            int widgetX = existingWidgets.size() * (widgetWidth + gapX);
+            return new Region(widgetX, 0, widgetWidth, widgetHeight);
         };
     }
 }
